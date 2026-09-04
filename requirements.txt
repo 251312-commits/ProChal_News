@@ -1,1 +1,5 @@
-requirements.txt
+streamlit
+torch
+transformers
+newspaper3k
+lxml_html_clean
