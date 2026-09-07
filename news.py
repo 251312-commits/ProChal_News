@@ -1,4 +1,7 @@
 import streamlit as st
+import gspread
+from google.oauth2.service_account import Credentials
+
 from newspaper import Article
 import re
 from urllib.parse import urlparse
@@ -20,7 +23,7 @@ def load_ai_model():
 tokenizer, model = load_ai_model()
 
 # ==========================================
-# 2. 제공해주신 기사 전처리 함수들 (그대로 사용)
+# 2. 제공해주신 기사 전처리 함수들
 # ==========================================
 UI_WORDS = {'광고', '본문', '전체재생', '동영상 고정', '동영상 고정 취소', '이미지 확대', '사진 확대', '기사본문'}
 
@@ -62,7 +65,7 @@ def remove_duplicate_and_ui_lines(text: str) -> str:
 def clean_common_text(text: str) -> str:
     text = re.sub(r'【[^】]*】', '', text)
     text = re.sub(r'(사진|이미지)\s*확대[^\n]*', '', text)
-    text = re.sub(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', '', text)
+    text = re.sub(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z2-9]{2,}', '', text)
     text = re.sub(r'\[[^\]]*(제공|DB|재판매|캡처|사진)[^\]]*\]', '', text)
     text = re.sub(r'무단\s*전재[^\n]*', '', text)
     return remove_duplicate_and_ui_lines(text)
@@ -73,56 +76,94 @@ def bring_article(url: str):
     article_obj.parse()
     domain = urlparse(url).netloc
     title = get_clean_title(article_obj, domain)
-    clean_article = clean_common_text(article_obj.text) # 간소화를 위해 공통 클리너만 적용
+    clean_article = clean_common_text(article_obj.text)
     return title, clean_article
     
 def summary(article):
-    return article # 아직 구현 전
+    # 개발 중 임시 반환값
+    return article if article else "요약본 예시 문장입니다."
 
-def similarity_check(summary, title):
-    inputs = tokenizer(summary, title, padding=True, truncation=True, return_tensors="pt", max_length=512)
+def similarity_check(summary_text, title):
+    inputs = tokenizer(summary_text, title, padding=True, truncation=True, return_tensors="pt", max_length=512)
     with torch.no_grad():
         outputs = model(**inputs)
         logits = outputs.logits.squeeze(-1)
         score = torch.sigmoid(logits).item()
     return round(score, 4)
 
+# ==========================================
+# 3. 구글 시트 연결 캐싱 (gspread)
+# ==========================================
+@st.cache_resource
+def init_gspread():
+    scope = [
+        "https://spreadsheets.google.com/feeds",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    credentials = Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"],
+        scopes=scope
+    )
+    gc = gspread.authorize(credentials)
+    
+    # 🚨 본인 구글 시트 URL 입력 필요
+    sheet_url = "https://docs.google.com/spreadsheets/d/여기에_본인_구글시트_ID입력/edit"
+    doc = gc.open_by_url(sheet_url)
+    worksheet = doc.worksheet("Users")
+    return worksheet
+
+ws = init_gspread()
 
 # ==========================================
-# 3. Streamlit 앱 로직 및 UI 구성
+# 4. Streamlit 앱 라우팅 및 상태 관리
 # ==========================================
-
-# 가상의 데이터베이스 역할 (실제 서비스시 SQLite 등 DB 연동 필요)
-if 'users_db' not in st.session_state:
-    st.session_state.users_db = {} 
-
-# 세션 상태 초기화 (페이지 라우팅 및 현재 로그인 정보)
 if 'page' not in st.session_state:
     st.session_state.page = 'login'
 if 'current_user' not in st.session_state:
     st.session_state.current_user = None
+if 'current_user_data' not in st.session_state:
+    st.session_state.current_user_data = None
 
 def change_page(page_name):
-    """페이지 이동 함수"""
     st.session_state.page = page_name
     st.rerun()
 
+# ------------------------------------------
+# 미구현 기능 플레이스홀더 (에러 방지용)
+# ------------------------------------------
+def show_placeholder_page(title_name):
+    st.title(title_name)
+    st.info("🎮 해당 콘텐츠는 현재 준비 중입니다.")
+    if st.button("⬅️ 메인으로 돌아가기"):
+        change_page('main')
+
+def show_game_1(): show_placeholder_page("게임 1")
+def show_game_2(): show_placeholder_page("게임 2")
+def show_game_3(): show_placeholder_page("게임 3")
+def show_game_4(): show_placeholder_page("게임 4")
+def show_game_5(): show_placeholder_page("게임 5")
+def show_exchange(): show_placeholder_page("🛒 교환소")
+
+# ------------------------------------------
+# 메인 화면 정의
+# ------------------------------------------
 def show_login_page():
-    st.title("Title") # 로그인 페이지 제목
-    st.markdown("subtext") # 부제목
+    st.title("뉴스 게임 서비스")
+    st.markdown("학번으로 로그인하여 시작하세요.")
 
     student_id = st.text_input("학번을 입력하세요 (숫자 5자리)", max_chars=5)
     
     if student_id:
         if len(student_id) == 5 and student_id.isdigit():
-            # 기존 유저인 경우
-            if student_id in st.session_state.users_db:
-                st.success(f"환영합니다! {st.session_state.users_db[student_id]['username']}님")
+            users_data = ws.get_all_records() 
+            user_info = next((item for item in users_data if str(item['학번']) == student_id), None)
+            
+            if user_info:
+                st.success(f"환영합니다! {user_info['아이디']}님")
                 if st.button("로그인"):
                     st.session_state.current_user = student_id
+                    st.session_state.current_user_data = user_info
                     change_page('main')
-            
-            # 신규 유저 (회원가입 절차)
             else:
                 st.info("최초 로그인입니다. 프로필을 설정해주세요.")
                 username = st.text_input("아이디 (랭킹용, 미입력 시 '익명' 처리)")
@@ -130,108 +171,82 @@ def show_login_page():
                 
                 if st.button("가입 및 로그인"):
                     final_username = username if username else f"익명_{student_id}"
+                    initial_coins = 5000
                     
-                    # 내 프로필 생성 (기본 5000 코인)
-                    st.session_state.users_db[student_id] = {
-                        "username": final_username,
-                        "coins": 5000,
-                        "streak": 0
-                    }
+                    if referral:
+                        referral_info = next((item for item in users_data if str(item['학번']) == referral), None)
+                        if referral_info:
+                            row_idx = users_data.index(referral_info) + 2 
+                            new_coins = int(referral_info['코인']) + 1000
+                            ws.update_cell(row_idx, 3, new_coins)
+                            st.toast(f"{referral}님에게 초대 보상이 지급되었습니다!")
                     
-                    # 추천인 코인 지급 로직
-                    if referral and referral in st.session_state.users_db:
-                        st.session_state.users_db[referral]['coins'] += 1000 # 추천인 1000코인
-                        st.toast(f"{referral}님에게 초대 보상이 지급되었습니다!")
+                    new_row = [student_id, final_username, initial_coins, 0, referral]
+                    ws.append_row(new_row)
                     
                     st.session_state.current_user = student_id
+                    st.session_state.current_user_data = {
+                        "학번": student_id, "아이디": final_username, "코인": initial_coins, "연승": 0
+                    }
                     change_page('main')
         else:
             st.error("학번은 5자리 숫자로 입력해주세요.")
 
 def show_main_page():
-    user = st.session_state.users_db[st.session_state.current_user]
+    user = st.session_state.current_user_data
     
-    # 좌측 상단 상태 표시창 (Sidebar 활용)
     with st.sidebar:
         st.subheader("내 정보")
-        st.write(f"**아이디:** {user['username']}")
-        st.write(f"💰 **뉴스코인:** {user['coins']} 개")
-        st.write(f"🔥 **연승 기록:** {user['streak']} 승")
+        st.write(f"**아이디:** {user['아이디']}")
+        st.write(f"💰 **뉴스코인:** {user['코인']} 개")
+        st.write(f"🔥 **연승 기록:** {user['연승']} 승")
         
         st.divider()
+        if st.button("🔄 코인 새로고침"):
+            users_data = ws.get_all_records()
+            updated_info = next((item for item in users_data if str(item['학번']) == st.session_state.current_user), None)
+            if updated_info:
+                st.session_state.current_user_data = updated_info
+                st.rerun()
+
         if st.button("로그아웃", use_container_width=True):
             st.session_state.current_user = None
+            st.session_state.current_user_data = None
             change_page('login')
 
-    st.title("Title") # 메인 화면 제목
-    st.markdown("subtext")
-    
+    st.title("메인 로비")
+    st.markdown("원하시는 콘텐츠를 선택하세요.")
     st.divider()
     
-    # 게임 및 기능 버튼들 (그리드 레이아웃)
     col1, col2, col3 = st.columns(3)
     with col1:
         if st.button("🎮 게임 1", use_container_width=True): change_page('game_1')
-        if st.button("🎮 게임 4", use_container_width=True): change_page('game_4')
     with col2:
         if st.button("🎮 게임 2", use_container_width=True): change_page('game_2')
-        if st.button("🎮 게임 5", use_container_width=True): change_page('game_5')
     with col3:
         if st.button("🎮 게임 3", use_container_width=True): change_page('game_3')
     
     st.divider()
-    
     col_a, col_b = st.columns(2)
     with col_a:
         if st.button("🛒 교환소", type="primary", use_container_width=True): change_page('exchange')
     with col_b:
         if st.button("🏆 랭킹", type="primary", use_container_width=True): change_page('ranking')
 
-# 개별 게임 및 기능 페이지들
-def show_game_1():
-    st.title("Title") # 게임 1 제목
-    st.markdown("subtext")
-    
-    # NLP 기능 테스트 UI 예시
-    url = st.text_input("뉴스 URL을 입력하세요")
-    if st.button("뉴스 분석 시작"):
-        with st.spinner("기사를 가져오고 분석하는 중..."):
-            title, text = bring_article(url)
-            summ = summary(text)
-            score = similarity_check(summ, title)
-            
-            st.write(f"**기사 제목:** {title}")
-            st.write(f"**유사도 점수:** {score}")
-            
-    if st.button("⬅️ 메인으로 돌아가기"):
-        change_page('main')
-
-def show_exchange():
-    st.title("Title") # 교환소 제목
-    st.markdown("subtext")
-    st.write("상품 목록을 여기에 구현하세요.")
-    if st.button("⬅️ 메인으로 돌아가기"): change_page('main')
-
 def show_ranking():
-    st.title("Title") # 랭킹 제목
-    st.markdown("subtext")
+    st.title("🏆 실시간 랭킹")
+    st.markdown("보유 코인 기준 순위입니다.")
     
-    # 임시 DB에서 랭킹 정렬 및 표시
-    sorted_users = sorted(st.session_state.users_db.values(), key=lambda x: x['coins'], reverse=True)
+    users_data = ws.get_all_records()
+    sorted_users = sorted(users_data, key=lambda x: int(x['코인']), reverse=True)
+    
     for i, user_info in enumerate(sorted_users):
-        st.write(f"{i+1}위: {user_info['username']} ({user_info['coins']} 코인)")
+        st.write(f"**{i+1}위**: {user_info['아이디']} ({user_info['코인']} 코인)")
         
     if st.button("⬅️ 메인으로 돌아가기"): change_page('main')
 
-# 템플릿용 더미 함수들
-def show_game_2(): st.title("게임 2"); st.markdown("subtext"); st.button("돌아가기", on_click=lambda: change_page('main'))
-def show_game_3(): st.title("게임 3"); st.markdown("subtext"); st.button("돌아가기", on_click=lambda: change_page('main'))
-def show_game_4(): st.title("게임 4"); st.markdown("subtext"); st.button("돌아가기", on_click=lambda: change_page('main'))
-def show_game_5(): st.title("게임 5"); st.markdown("subtext"); st.button("돌아가기", on_click=lambda: change_page('main'))
-
-
 # ==========================================
-# 4. 페이지 라우터 (앱 진입점)
+# 5. 페이지 라우터
 # ==========================================
 if st.session_state.page == 'login':
     show_login_page()
