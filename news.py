@@ -247,7 +247,7 @@ def show_main_page():
     mid_col1, mid_col2, mid_col3, mid_col4 = st.columns([3, 3, 1.5, 1.5])
     
     with mid_col1:
-    	clicked_game1 = clickable_images(
+        clicked_game1 = clickable_images(
             [game1_img],
             titles=["게임 1"],
             div_style={"display": "flex", "justify-content": "center"},
