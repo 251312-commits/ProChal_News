@@ -1,7 +1,7 @@
 import streamlit as st
 import gspread
 from google.oauth2.service_account import Credentials
-
+from st_clickable_images import clickable_images
 from newspaper import Article
 import re
 from urllib.parse import urlparse
@@ -234,24 +234,39 @@ def show_main_page():
 
     st.write("") # 간격 조절
     
-    # 2. 중단 그리드: 4개의 열로 분할 (비율 3:3:1.5:1.5)
+    # 사용할 이미지 URL 또는 로컬 경로 리스트 (예시 이미지 주소)
+    game1_img = "https://www.utoimage.com/?m=goods.free&mode=view&idx=22250682"
+    game2_img = "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=300"
+    
+    # 2. 중단 그리드: 4개의 열로 분할
     mid_col1, mid_col2, mid_col3, mid_col4 = st.columns([3, 3, 1.5, 1.5])
     
     with mid_col1:
-        if st.button("1 (게임 1)", use_container_width=True): change_page('game_1')
-        if st.button("2 (게임 2)", use_container_width=True): change_page('game_2')
-        
-    with mid_col2:
-        if st.button("3 (게임 3)", use_container_width=True): change_page('game_3')
-        if st.button("4 (게임 4)", use_container_width=True): change_page('game_4')
-        
-    with mid_col3:
-        if st.button("5\n(게임 5)", use_container_width=True): change_page('game_5')
-        
-    with mid_col4:
-        if st.button("Change\n(교환소)", use_container_width=True): change_page('exchange')
+        # 1번째 이미지 버튼
+        clicked_game1 = clickable_images(
+            [game1_img],
+            titles=["게임 1"], # 마우스 올렸을 때 뜨는 툴팁
+            div_style={"display": "flex", "justify-content": "center"},
+            img_style={"width": "100%", "border-radius": "10px", "cursor": "pointer", "margin-bottom": "10px"},
+            key="game1_btn" # 고유 키 필수
+        )
+        if clicked_game1 > -1: # 이미지가 클릭되었다면 (-1 초과)
+            change_page('game_1')
 
-    st.write("") # 간격 조절
+        # 2번째 이미지 버튼
+        clicked_game2 = clickable_images(
+            [game2_img],
+            titles=["게임 2"],
+            div_style={"display": "flex", "justify-content": "center"},
+            img_style={"width": "100%", "border-radius": "10px", "cursor": "pointer"},
+            key="game2_btn"
+        )
+        if clicked_game2 > -1:
+            change_page('game_2')
+            
+    with mid_col2:
+        # [게임 3, 게임 4 이미지 동일하게 추가]
+        pass
 
     # 3. 하단 바: 랭킹 (전체 너비 사용)
     if st.button("Ranking", use_container_width=True): 
