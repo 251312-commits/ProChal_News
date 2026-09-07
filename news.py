@@ -207,10 +207,9 @@ def show_login_page():
             st.error("학번은 5자리 숫자로 입력해주세요.")
 
 def show_main_page():
-    # 10초(10000ms)마다 페이지 자동 새로고침 실행
+    # 자동 새로고침 (10초마다 갱신)
     st_autorefresh(interval=10000, limit=None, key="auto_refresh")
 
-    # 자동 새로고침이 돌 때마다 구글 시트에서 최신 정보를 가져와 업데이트
     users_data = ws.get_all_records()
     updated_info = next((item for item in users_data if str(item['학번']) == st.session_state.current_user), None)
     if updated_info:
@@ -218,42 +217,45 @@ def show_main_page():
 
     user = st.session_state.current_user_data
     
-    with st.sidebar:
-        st.subheader("내 정보")
-        st.write(f"**아이디:** {user['아이디']}")
-        st.write(f"💰 **뉴스코인:** {user['코인']} 개")
-        st.write(f"🔥 **연승 기록:** {user['연승']} 승")
+    # 1. 상단 바: 유저 정보 | 타이틀 | 로그아웃 (비율 3:4:1)
+    top_col1, top_col2, top_col3 = st.columns([3, 4, 1])
+    
+    with top_col1:
+        st.markdown(f"**{user['아이디']}** | 💰 {user['코인']} | 🔥 {user['연승']}")
         
-        st.divider()
-        # [삭제됨] 수동 새로고침 버튼 제거
-
-        if st.button("로그아웃", use_container_width=True):
+    with top_col2:
+        st.markdown("<h2 style='text-align: center; margin-top: -15px;'>Title</h2>", unsafe_allow_html=True)
+        
+    with top_col3:
+        if st.button("Log out", use_container_width=True):
             st.session_state.current_user = None
             st.session_state.current_user_data = None
             change_page('login')
 
-    st.title("메인 로비")
-    st.markdown("원하시는 콘텐츠를 선택하세요.")
-    st.divider()
+    st.write("") # 간격 조절
     
-    col1, col2, col3, col4, col5= st.columns(5)
-    with col1:
-        if st.button("🎮 게임 1", use_container_width=True): change_page('game_1')
-    with col2:
-        if st.button("🎮 게임 2", use_container_width=True): change_page('game_2')
-    with col3:
-        if st.button("🎮 게임 3", use_container_width=True): change_page('game_3')
-    with col4:
-        if st.button("🎮 게임 4", use_container_width=True): change_page('game_4')
-    with col5:
-        if st.button("🎮 게임 5", use_container_width=True): change_page('game_5')
+    # 2. 중단 그리드: 4개의 열로 분할 (비율 3:3:1.5:1.5)
+    mid_col1, mid_col2, mid_col3, mid_col4 = st.columns([3, 3, 1.5, 1.5])
     
-    st.divider()
-    col_a, col_b = st.columns(2)
-    with col_a:
-        if st.button("🛒 교환소", type="primary", use_container_width=True): change_page('exchange')
-    with col_b:
-        if st.button("🏆 랭킹", type="primary", use_container_width=True): change_page('ranking')
+    with mid_col1:
+        if st.button("1 (게임 1)", use_container_width=True): change_page('game_1')
+        if st.button("2 (게임 2)", use_container_width=True): change_page('game_2')
+        
+    with mid_col2:
+        if st.button("3 (게임 3)", use_container_width=True): change_page('game_3')
+        if st.button("4 (게임 4)", use_container_width=True): change_page('game_4')
+        
+    with mid_col3:
+        if st.button("5\n(게임 5)", use_container_width=True): change_page('game_5')
+        
+    with mid_col4:
+        if st.button("Change\n(교환소)", use_container_width=True): change_page('exchange')
+
+    st.write("") # 간격 조절
+
+    # 3. 하단 바: 랭킹 (전체 너비 사용)
+    if st.button("Ranking", use_container_width=True): 
+        change_page('ranking')
 
 def show_ranking():
     st.title("🏆 실시간 랭킹")
