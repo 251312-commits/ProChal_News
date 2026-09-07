@@ -155,7 +155,7 @@ def show_login_page():
     student_id = st.text_input("학번을 입력하세요 (숫자 5자리)", max_chars=5)
     
     if student_id:
-        if len(student_id) == 5 and student_id.isdigit():
+        if student_id.isdigit():
             users_data = ws.get_all_records() 
             user_info = next((item for item in users_data if str(item['학번']) == student_id), None)
             
