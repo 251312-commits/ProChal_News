@@ -107,7 +107,7 @@ def init_gspread():
     gc = gspread.authorize(credentials)
     
     # 🚨 본인 구글 시트 URL 입력 필요
-    sheet_url = "https://docs.google.com/spreadsheets/d/여기에_본인_구글시트_ID입력/edit"
+    sheet_url = "https://docs.google.com/spreadsheets/d/1-Kx4qK9SOV3fXF9q9jIYGefPDPQl_gkZK6iHUabKwmE/edit?usp=drivesdk"
     doc = gc.open_by_url(sheet_url)
     worksheet = doc.worksheet("Users")
     return worksheet
