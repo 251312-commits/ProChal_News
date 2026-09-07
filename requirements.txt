@@ -8,3 +8,4 @@ transformers
 torch
 gspread
 google-auth
+st-clickable-images
