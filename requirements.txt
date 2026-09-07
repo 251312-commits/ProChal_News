@@ -1,6 +1,8 @@
-streamlit>=1.30.0
+streamlit
+gspread
+google-auth
 newspaper3k
-lxml_html_clean
 beautifulsoup4
 torch
 transformers
+lxml
