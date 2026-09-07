@@ -253,7 +253,7 @@ def show_main_page():
             div_style={"display": "flex", "justify-content": "center"},
             img_style={
                 "width": "100%",           # 컬럼 너비에 꽉 차게
-                "aspect-ratio": "4/3",     # 원하는 비율 지정 (예: 16/9, 1/1, 4/3)
+                "aspect-ratio": "3/3",     # 원하는 비율 지정 (예: 16/9, 1/1, 4/3)
                 "object-fit": "cover",     # 지정된 비율에 맞춰 이미지를 자름 (찌그러짐 방지)
                 "border-radius": "10px", 
                 "cursor": "pointer", 
@@ -270,7 +270,14 @@ def show_main_page():
             [game2_img],
             titles=["게임 2"],
             div_style={"display": "flex", "justify-content": "center"},
-            img_style={"width": "100%", "border-radius": "10px", "cursor": "pointer"},
+            img_style={
+                "width": "100%",           # 컬럼 너비에 꽉 차게
+                "aspect-ratio": "3/1",     # 원하는 비율 지정 (예: 16/9, 1/1, 4/3)
+                "object-fit": "cover",     # 지정된 비율에 맞춰 이미지를 자름 (찌그러짐 방지)
+                "border-radius": "10px", 
+                "cursor": "pointer", 
+                "margin-bottom": "10px"
+            },
             key="game2_btn"
         )
         if clicked_game2 > -1:
@@ -281,7 +288,14 @@ def show_main_page():
             [game3_img],
             titles=["게임 3"],
             div_style={"display": "flex", "justify-content": "center"},
-            img_style={"width": "100%", "border-radius": "10px", "cursor": "pointer"},
+            img_style={
+                "width": "100%",           # 컬럼 너비에 꽉 차게
+                "aspect-ratio": "3/1.5",     # 원하는 비율 지정 (예: 16/9, 1/1, 4/3)
+                "object-fit": "cover",     # 지정된 비율에 맞춰 이미지를 자름 (찌그러짐 방지)
+                "border-radius": "10px", 
+                "cursor": "pointer", 
+                "margin-bottom": "10px"
+            },
             key="game3_btn"
         )
         if clicked_game3 > -1:
@@ -291,7 +305,14 @@ def show_main_page():
             [game4_img],
             titles=["게임 4"],
             div_style={"display": "flex", "justify-content": "center"},
-            img_style={"width": "100%", "border-radius": "10px", "cursor": "pointer"},
+            img_style={
+                "width": "100%",           # 컬럼 너비에 꽉 차게
+                "aspect-ratio": "3/2.5",     # 원하는 비율 지정 (예: 16/9, 1/1, 4/3)
+                "object-fit": "cover",     # 지정된 비율에 맞춰 이미지를 자름 (찌그러짐 방지)
+                "border-radius": "10px", 
+                "cursor": "pointer", 
+                "margin-bottom": "10px"
+            },
             key="game4_btn"
         )
         if clicked_game2 > -1:
@@ -302,7 +323,14 @@ def show_main_page():
             [game5_img],
             titles=["게임 5"],
             div_style={"display": "flex", "justify-content": "center"},
-            img_style={"width": "100%", "border-radius": "10px", "cursor": "pointer"},
+            img_style={
+                "width": "100%",           # 컬럼 너비에 꽉 차게
+                "aspect-ratio": "1.5/4",     # 원하는 비율 지정 (예: 16/9, 1/1, 4/3)
+                "object-fit": "cover",     # 지정된 비율에 맞춰 이미지를 자름 (찌그러짐 방지)
+                "border-radius": "10px", 
+                "cursor": "pointer", 
+                "margin-bottom": "10px"
+            },
             key="game5_btn"
         )
         if clicked_game5 > -1:
@@ -313,7 +341,14 @@ def show_main_page():
             [exchange_img],
             titles=["교환소"],
             div_style={"display": "flex", "justify-content": "center"},
-            img_style={"width": "100%", "border-radius": "10px", "cursor": "pointer"},
+            img_style={
+                "width": "100%",           # 컬럼 너비에 꽉 차게
+                "aspect-ratio": "1.5/4",     # 원하는 비율 지정 (예: 16/9, 1/1, 4/3)
+                "object-fit": "cover",     # 지정된 비율에 맞춰 이미지를 자름 (찌그러짐 방지)
+                "border-radius": "10px", 
+                "cursor": "pointer", 
+                "margin-bottom": "10px"
+            },
             key="exchange_btn"
         )
         if clicked_exchange > -1:
