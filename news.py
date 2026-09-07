@@ -218,7 +218,7 @@ def show_main_page():
     user = st.session_state.current_user_data
     
     # 1. 상단 바: 유저 정보 | 타이틀 | 로그아웃 (비율 3:4:1)
-    top_col1, top_col2, top_col3 = st.columns([3, 4, 1])
+    top_col1, top_col2, top_col3 = st.columns([2, 5, 1])
     
     with top_col1:
         st.markdown(f"**{user['아이디']}** | 💰 {user['코인']} | 🔥 {user['연승']}")
@@ -257,7 +257,7 @@ def show_main_page():
                 "object-fit": "cover",     # 지정된 비율에 맞춰 이미지를 자름 (찌그러짐 방지)
                 "border-radius": "10px", 
                 "cursor": "pointer", 
-                "margin-bottom": "5px"
+                "margin-bottom": "3px"
             },
             key="game1_btn"
         )
@@ -294,7 +294,7 @@ def show_main_page():
                 "object-fit": "cover",     # 지정된 비율에 맞춰 이미지를 자름 (찌그러짐 방지)
                 "border-radius": "10px", 
                 "cursor": "pointer", 
-                "margin-bottom": "5px"
+                "margin-bottom": "3px"
             },
             key="game3_btn"
         )
