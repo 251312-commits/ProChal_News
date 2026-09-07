@@ -1,9 +1,8 @@
 streamlit
+newspaper3k
+lxml==5.1.0
+beautifulsoup4
+transformers
+torch
 gspread
 google-auth
-newspaper3k
-beautifulsoup4
-torch
-transformers
-lxml
-streamlit-autorefresh
