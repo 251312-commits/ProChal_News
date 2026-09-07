@@ -207,8 +207,8 @@ def show_login_page():
             st.error("학번은 5자리 숫자로 입력해주세요.")
 
 def show_main_page():
-    # 자동 새로고침 (10초마다 갱신)
-    st_autorefresh(interval=10000, limit=None, key="auto_refresh")
+    # 자동 새로고침 (1분마다 갱신)
+    st_autorefresh(interval=600000, limit=None, key="auto_refresh")
 
     users_data = ws.get_all_records()
     updated_info = next((item for item in users_data if str(item['학번']) == st.session_state.current_user), None)
@@ -235,8 +235,13 @@ def show_main_page():
     st.write("") # 간격 조절
     
     # 사용할 이미지 URL 또는 로컬 경로 리스트 (예시 이미지 주소)
-    game1_img = "https://www.utoimage.com/?m=goods.free&mode=view&idx=22250682"
+    game1_img = "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=300"
     game2_img = "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=300"
+    game3_img = "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=300"
+    game4_img = "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=300"
+    game5_img = "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=300"
+    rank_img = "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=300"
+    exchange_img = "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=300"
     
     # 2. 중단 그리드: 4개의 열로 분할
     mid_col1, mid_col2, mid_col3, mid_col4 = st.columns([3, 3, 1.5, 1.5])
@@ -265,8 +270,47 @@ def show_main_page():
             change_page('game_2')
             
     with mid_col2:
-        # [게임 3, 게임 4 이미지 동일하게 추가]
-        pass
+        clicked_game3 = clickable_images(
+            [game3_img],
+            titles=["게임 3"],
+            div_style={"display": "flex", "justify-content": "center"},
+            img_style={"width": "100%", "border-radius": "10px", "cursor": "pointer"},
+            key="game3_btn"
+        )
+        if clicked_game3 > -1:
+            change_page('game_3')
+        
+        clicked_game4 = clickable_images(
+            [game4_img],
+            titles=["게임 4"],
+            div_style={"display": "flex", "justify-content": "center"},
+            img_style={"width": "100%", "border-radius": "10px", "cursor": "pointer"},
+            key="game4_btn"
+        )
+        if clicked_game2 > -1:
+            change_page('game_2')
+            
+    with mid_col3:
+        clicked_game5 = clickable_images(
+            [game5_img],
+            titles=["게임 5"],
+            div_style={"display": "flex", "justify-content": "center"},
+            img_style={"width": "100%", "border-radius": "10px", "cursor": "pointer"},
+            key="game5_btn"
+        )
+        if clicked_game5 > -1:
+            change_page('game_5')
+            
+    with mid_col4:
+        clicked_exchange = clickable_images(
+            [exchange_img],
+            titles=["교환소"],
+            div_style={"display": "flex", "justify-content": "center"},
+            img_style={"width": "100%", "border-radius": "10px", "cursor": "pointer"},
+            key="exchange_btn"
+        )
+        if clicked_exchange > -1:
+            change_page('exchange')
 
     # 3. 하단 바: 랭킹 (전체 너비 사용)
     if st.button("Ranking", use_container_width=True): 
