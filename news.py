@@ -236,7 +236,7 @@ def show_main_page():
     st.markdown("원하시는 콘텐츠를 선택하세요.")
     st.divider()
     
-    col1, col2, col3 = st.columns(5)
+    col1, col2, col3, col4, col5= st.columns(5)
     with col1:
         if st.button("🎮 게임 1", use_container_width=True): change_page('game_1')
     with col2:
