@@ -164,6 +164,7 @@ def show_login_page():
                     st.session_state.current_user = student_id
                     st.session_state.current_user_data = user_info
                     change_page('main')
+                        # 신규 유저 (회원가입 절차)
             else:
                 st.info("최초 로그인입니다. 프로필을 설정해주세요.")
                 username = st.text_input("아이디 (랭킹용, 미입력 시 '익명' 처리)")
@@ -173,13 +174,24 @@ def show_login_page():
                     final_username = username if username else f"익명_{student_id}"
                     initial_coins = 5000
                     
+                    # 친구 초대 보상 확인 및 처리
                     if referral:
                         referral_info = next((item for item in users_data if str(item['학번']) == referral), None)
+                        
+                        # 1. 초대한 친구가 이미 가입한 유저인 경우
                         if referral_info:
+                            # 초대한 친구에게 2000코인 지급 (구글 시트 업데이트)
                             row_idx = users_data.index(referral_info) + 2 
-                            new_coins = int(referral_info['코인']) + 1000
+                            new_coins = int(referral_info['코인']) + 2000
                             ws.update_cell(row_idx, 3, new_coins)
-                            st.toast(f"{referral}님에게 초대 보상이 지급되었습니다!")
+                            
+                            # 새로 가입하는 본인에게 1000코인 추가 (총 6000코인)
+                            initial_coins += 1000
+                            
+                            st.toast(f"초대 보상 적용 성공! 본인 1000코인, {referral}님 2000코인 추가 지급!")
+                        # 2. 초대한 친구가 미가입 상태인 경우
+                        else:
+                            st.toast("해당 학번의 가입 내역이 없어 초대 보상이 지급되지 않았습니다.")
                     
                     new_row = [student_id, final_username, initial_coins, 0, referral]
                     ws.append_row(new_row)
@@ -189,6 +201,7 @@ def show_login_page():
                         "학번": student_id, "아이디": final_username, "코인": initial_coins, "연승": 0
                     }
                     change_page('main')
+
         else:
             st.error("학번은 5자리 숫자로 입력해주세요.")
 
