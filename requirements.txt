@@ -1,6 +1,8 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
 streamlit
+streamlit-autorefresh
 newspaper3k
-lxml==5.1.0
+lxml_html_clean
 beautifulsoup4
 transformers
 torch
