@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from streamlit_autorefresh import st_autorefresh
 
 # ==========================================
 # 1. 효율성 극대화: AI 모델 캐싱 (최초 1회만 로드)
@@ -206,6 +207,15 @@ def show_login_page():
             st.error("학번은 5자리 숫자로 입력해주세요.")
 
 def show_main_page():
+    # 10초(10000ms)마다 페이지 자동 새로고침 실행
+    st_autorefresh(interval=10000, limit=None, key="auto_refresh")
+
+    # 자동 새로고침이 돌 때마다 구글 시트에서 최신 정보를 가져와 업데이트
+    users_data = ws.get_all_records()
+    updated_info = next((item for item in users_data if str(item['학번']) == st.session_state.current_user), None)
+    if updated_info:
+        st.session_state.current_user_data = updated_info
+
     user = st.session_state.current_user_data
     
     with st.sidebar:
@@ -215,12 +225,7 @@ def show_main_page():
         st.write(f"🔥 **연승 기록:** {user['연승']} 승")
         
         st.divider()
-        if st.button("🔄 코인 새로고침"):
-            users_data = ws.get_all_records()
-            updated_info = next((item for item in users_data if str(item['학번']) == st.session_state.current_user), None)
-            if updated_info:
-                st.session_state.current_user_data = updated_info
-                st.rerun()
+        # [삭제됨] 수동 새로고침 버튼 제거
 
         if st.button("로그아웃", use_container_width=True):
             st.session_state.current_user = None
