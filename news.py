@@ -248,13 +248,21 @@ def show_main_page():
     
     with mid_col1:
         # 1번째 이미지 버튼
-        clicked_game1 = clickable_images(
+                clicked_game1 = clickable_images(
             [game1_img],
-            titles=["게임 1"], # 마우스 올렸을 때 뜨는 툴팁
+            titles=["게임 1"],
             div_style={"display": "flex", "justify-content": "center"},
-            img_style={"width": "100%", "border-radius": "10px", "cursor": "pointer", "margin-bottom": "10px"},
-            key="game1_btn" # 고유 키 필수
+            img_style={
+                "width": "100%",           # 컬럼 너비에 꽉 차게
+                "aspect-ratio": "4/3",     # 원하는 비율 지정 (예: 16/9, 1/1, 4/3)
+                "object-fit": "cover",     # 지정된 비율에 맞춰 이미지를 자름 (찌그러짐 방지)
+                "border-radius": "10px", 
+                "cursor": "pointer", 
+                "margin-bottom": "10px"
+            },
+            key="game1_btn"
         )
+
         if clicked_game1 > -1: # 이미지가 클릭되었다면 (-1 초과)
             change_page('game_1')
 
