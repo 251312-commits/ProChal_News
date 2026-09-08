@@ -325,7 +325,7 @@ def show_main_page():
             div_style={"display": "flex", "justify-content": "center"},
             img_style={
                 "width": "100%",           # 컬럼 너비에 꽉 차게
-                "aspect-ratio": "1.5/4.7",     # 원하는 비율 지정 (예: 16/9, 1/1, 4/3)
+                "aspect-ratio": "1.5/4.65",     # 원하는 비율 지정 (예: 16/9, 1/1, 4/3)
                 "object-fit": "cover",     # 지정된 비율에 맞춰 이미지를 자름 (찌그러짐 방지)
                 "border-radius": "10px", 
                 "cursor": "pointer", 
@@ -343,7 +343,7 @@ def show_main_page():
             div_style={"display": "flex", "justify-content": "center"},
             img_style={
                 "width": "100%",           # 컬럼 너비에 꽉 차게
-                "aspect-ratio": "1.5/5",     # 원하는 비율 지정 (예: 16/9, 1/1, 4/3)
+                "aspect-ratio": "1.5/4.65",     # 원하는 비율 지정 (예: 16/9, 1/1, 4/3)
                 "object-fit": "cover",     # 지정된 비율에 맞춰 이미지를 자름 (찌그러짐 방지)
                 "border-radius": "10px", 
                 "cursor": "pointer", 
