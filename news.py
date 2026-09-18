@@ -387,21 +387,21 @@ def show_main_page():
     st.markdown(
         f"""
         <div style="color: white; font-weight: bold; font-size: 0.9rem; margin-bottom: -5px;">안전의대명사 뉴스에이전놀이터</div>
-        <div style="color: #FF00FF; font-weight: bold; font-size: 0.8rem; margin-bottom: 5px;">실시간 뉴스 / 라이브 게임 / 미니게임</div>
+        <div style="color: #FF00FF; font-weight: bold; font-size: 0.8rem; margin-bottom: 5px;">실시간 뉴스 미니게임</div>
         
         <div class="neon-promo-banner">
             <div class="neon-left-box">
                 <div class="neon-numbers">
-                    VIP <span>{user.get('아이디', '알 수 없음')}</span> 입장<br>
+                    VIP <span>{user.get('아이디', '알 수 없음')}</span><br>
                     보유 <span>{user.get('코인', 0)}</span> C<br>
-                    현재 <span>{user.get('연승', 0)}</span> 연승중
+                    <span>{user.get('연승', 0)}</span> 연승중🔥🔥🔥
                 </div>
             </div>
             <div class="neon-right-box">
                 <div class="neon-logo-text">NEWS</div>
-                <div style="background: #FF00FF; color: white; padding: 2px 10px; border-radius: 10px; font-weight: bold; margin-top: 5px;">가입코드 1111</div>
-                <div class="neon-sub-text">가입첫충 30% 무한매충 10%</div>
-                <div class="neon-sub-text-2">뉴스 카지노 상한 5천만원</div>
+                <div style="background: #FF00FF; color: white; padding: 2px 10px; border-radius: 10px; font-weight: bold; margin-top: 5px;">유익하다!</div>
+                <div class="neon-sub-text">친구 초대 시 3000코인 지급</div>
+                <div class="neon-sub-text-2">당신도 가능하다 일획천금</div>
             </div>
         </div>
         """,
