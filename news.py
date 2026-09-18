@@ -155,12 +155,12 @@ def inject_casino_theme():
         <style>
         /* 1. 깔끔한 블랙 배경 */
         .stApp {
-            background-color: #05000a !important; /* 더 어두운 딥 퍼플/블랙 */
+            background-color: #05000a !important; 
             background-image: none !important; 
             color: #ffffff;
         }
 
-        /* 2. 사설 배너 스타일 컨테이너 */
+        /* 2. 사설 배너 스타일 컨테이너 (메인 페이지용) */
         .neon-promo-banner {
             display: flex;
             flex-direction: row;
@@ -177,7 +177,7 @@ def inject_casino_theme():
         /* 3. 배너 왼쪽 (점선 보너스 박스 느낌) */
         .neon-left-box {
             flex: 1.2;
-            border: 3px dashed #FF00FF; /* 핑크 네온 점선 */
+            border: 3px dashed #FF00FF; 
             box-shadow: 0 0 10px #FF00FF, inset 0 0 10px #FF00FF;
             display: flex;
             flex-direction: column;
@@ -230,6 +230,24 @@ def inject_casino_theme():
             font-size: 1rem;
         }
 
+        /* 5. 로그인 페이지 전용 네온 폼 박스 */
+        .neon-login-box {
+            background-color: #0d001a;
+            border: 3px dashed #FF00FF;
+            box-shadow: 0 0 20px rgba(138, 43, 226, 0.5), inset 0 0 15px rgba(255, 0, 255, 0.3);
+            padding: 30px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .login-warning {
+            color: #FF00FF;
+            font-weight: 900;
+            font-size: 1.2rem;
+            text-align: center;
+            text-shadow: 0 0 10px #FF00FF;
+            margin-bottom: 20px;
+        }
+
         /* 기타 스트림릿 UI 덮어쓰기 */
         h1, h2, h3 {
             color: #ffffff !important;
@@ -243,22 +261,43 @@ def inject_casino_theme():
             border: 1px solid #FF00FF !important;
             box-shadow: 0 0 10px #FF00FF;
         }
+        .stTextInput > div > div > input {
+            background-color: #000000 !important;
+            color: #FF00FF !important;
+            font-weight: bold;
+            border: 2px solid #8A2BE2 !important;
+            text-align: center;
+        }
         </style>
         """,
         unsafe_allow_html=True
     )
+    
 # ------------------------------------------
 # 메인 화면 정의
 # ------------------------------------------
 def show_login_page():
-    # 상단 텍스트를 화려하게 변경
-    st.markdown("<h1>🎰 NEWS CASINO VIP 🎰</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; font-size: 1.2rem; color: #ffd700; margin-bottom: 30px;'>선수 입장. 학번을 입력하여 게임에 참여하세요.</p>", unsafe_allow_html=True)
+    # 상단 텍스트를 배팅 사이트 홍보물 스타일로 화려하게 변경
+    st.markdown(
+        """
+        <div style="text-align: center; margin-bottom: 30px;">
+            <div style="color: white; font-weight: 900; font-size: 1.3rem; margin-bottom: -10px; text-shadow: 0 0 5px #fff;">★ 업계 1위 메이저 안전공원 ★</div>
+            <div class="neon-logo-text" style="font-size: 4rem;">NEWS PLAY</div>
+            <div style="color: #FF00FF; font-weight: bold; font-size: 1.1rem; margin-top: 15px; text-shadow: 0 0 10px #FF00FF;">
+                가입즉시 5,000C 지급 | 무한 매충 | 먹튀 이력 절대 ZERO
+            </div>
+        </div>
+        """, unsafe_allow_html=True
+    )
 
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
-        student_id = st.text_input("학번 입력 (5자리)", max_chars=5, placeholder="입력 후 반드시 Enter를 눌러주세요")
+        # 로그인 폼을 감싸는 네온 점선 박스 시작
+        st.markdown('<div class="neon-login-box">', unsafe_allow_html=True)
+        st.markdown('<div class="login-warning">⚠️ 가입코드 1111 / 학번으로 즉시 안전입장 ⚠️</div>', unsafe_allow_html=True)
+        
+        student_id = st.text_input("고유 식별번호 (학번 5자리)", max_chars=5, placeholder="입력 후 반드시 Enter를 눌러주세요")
         
         if student_id:
             clean_id = student_id.strip()
@@ -266,12 +305,10 @@ def show_login_page():
             if clean_id.isdigit():
                 users_data = ws.get_all_records() 
                 
-                # 🚨 무조건 문자열로 변환 후 찌꺼기를 잘라내고 비교하는 로직
                 user_info = None
                 for item in users_data:
                     raw_sheet_id = str(item.get('학번', ''))
                     
-                    # '12345.0' 등 소수점이 섞여 들어오면 '.'을 기준으로 쪼개서 앞자리(12345)만 취함
                     if '.' in raw_sheet_id:
                         sheet_id = raw_sheet_id.split('.')[0]
                     else:
@@ -282,21 +319,20 @@ def show_login_page():
                         break
                 
                 if user_info:
-                    st.success(f"🎟️ VIP 확인 완료: {user_info.get('아이디', '알 수 없음')}님")
-                    if st.button("입장하기 (Log In)", use_container_width=True):
+                    st.success(f"✔️ 안전 계좌 확인 완료: {user_info.get('아이디', '알 수 없음')}님 환영합니다.")
+                    if st.button("🚀 초고속 안전 입장 🚀", use_container_width=True):
                         st.session_state.current_user = clean_id
                         st.session_state.current_user_data = user_info
                         change_page('main')
                 else:
-                    st.info("신규 플레이어입니다. 닉네임을 설정해주세요.")
+                    st.info("🚨 [신규 가입 안내] 닉네임을 설정하고 꽁머니를 받으세요!")
                     username = st.text_input("닉네임 (미입력 시 '익명' 처리)", placeholder="도박사_01")
-                    referral = st.text_input("추천인 학번 (선택사항)")
+                    referral = st.text_input("지인 추천 코드 (선택사항)")
                     
-                    if st.button("가입 및 입장", use_container_width=True):
+                    if st.button("💰 가입 및 꽁머니 수령 💰", use_container_width=True):
                         final_username = username if username else f"익명_{clean_id}"
                         initial_coins = 5000
                         
-                        # 추천인 학번 확인에도 동일한 방식 적용
                         if referral:
                             clean_referral = referral.strip()
                             referral_info = None
@@ -317,11 +353,10 @@ def show_login_page():
                                 new_coins = int(referral_info.get('코인', 0)) + 3000
                                 ws.update_cell(row_idx, 3, new_coins)
                                 initial_coins += 1000
-                                st.toast(f"🎉 추천인 보상! 본인 +1000 코인, {clean_referral}님 +3000 코인 지급!")
+                                st.toast(f"🎉 지인 추천 이벤트 적용! 본인 +1000C, {clean_referral}님 +3000C 지급!")
                             else:
-                                st.toast("해당 학번이 없어 추천인 보상이 지급되지 않았습니다.")
+                                st.toast("해당 추천 코드가 존재하지 않습니다.")
                         
-                        # 시트에 새로 저장할 때 문자열 그대로 넘겨서 데이터 타입 충돌 방지
                         new_row = [clean_id, final_username, initial_coins, 0, referral.strip()]
                         ws.append_row(new_row)
                         
@@ -331,8 +366,10 @@ def show_login_page():
                         }
                         change_page('main')
             else:
-                st.error("학번은 숫자로만 입력해주세요.")
-
+                st.error("학번은 숫자로만 입력 가능합니다.")
+        
+        # 로그인 폼 네온 박스 종료
+        st.markdown('</div>', unsafe_allow_html=True)
 def show_main_page():
     st_autorefresh(interval=600000, limit=None, key="auto_refresh")
 
