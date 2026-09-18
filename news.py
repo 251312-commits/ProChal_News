@@ -144,6 +144,7 @@ def show_game_3(): show_placeholder_page("게임 3")
 def show_game_4(): show_placeholder_page("게임 4")
 def show_game_5(): show_placeholder_page("게임 5")
 def show_exchange(): show_placeholder_page("🛒 교환소")
+def show_bank(): show_placeholder_page("🏦 은행")
 
 # ------------------------------------------
 # 레이아웃
@@ -298,68 +299,114 @@ def show_main_page():
 
     user = st.session_state.current_user_data
     
-    # 2. 모바일 친화적인 상단 UI (컬럼 제거)
+    # 2. 뾰족한 말풍선 타이틀 & 사선 부제목 CSS 및 렌더링
+    st.markdown(
+        """
+        <style>
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+            margin-bottom: 25px;
+        }
+        /* 뾰족한 말풍선 본제목 */
+        .speech-bubble {
+            position: relative;
+            background: linear-gradient(135deg, #e52d27 0%, #b31217 100%);
+            color: #ffffff;
+            padding: 10px 25px;
+            border-radius: 12px;
+            font-size: 1.6rem;
+            font-weight: 900;
+            box-shadow: 0 4px 15px rgba(255, 42, 42, 0.6);
+            border: 2px solid #ffd700;
+            z-index: 2;
+        }
+        /* 말풍선 오른쪽 꼬리 */
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: -14px;
+            margin-top: -10px;
+            border-left: 14px solid #b31217;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+        }
+        /* 사선 부제목 */
+        .diagonal-text {
+            transform: rotate(-10deg);
+            color: #ffd700;
+            font-size: 1.1rem;
+            font-weight: 900;
+            margin-left: 20px;
+            text-shadow: 2px 2px 5px rgba(0,0,0,0.9);
+            z-index: 1;
+        }
+        </style>
+        <div class="header-container">
+            <div class="speech-bubble">NEWS CASINO</div>
+            <div class="diagonal-text">오늘의 잭팟은?</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # 3. 모바일 친화적인 상단 VIP 유저 정보
     st.markdown(
         f"""
-        <div class="vip-info-box">
+        <div class="vip-info-box" style="margin-bottom: 30px;">
             🎰 [VIP] {user['아이디']} | 💰 {user['코인']} COIN | 🔥 {user['연승']} WINS
         </div>
         """, 
         unsafe_allow_html=True
     )
     
-    if st.button("🚪 로그아웃", use_container_width=True):
-        st.session_state.current_user = None
-        st.session_state.current_user_data = None
-        change_page('login')
-
-    st.write("") # 간격 조절
-    
-    # 사용할 이미지 URL 리스트 (가로로 긴 와이드 해상도 이미지를 쓰면 더 좋습니다)
+    # 4. 사용할 와이드 배너 이미지 URL 목록 (은행, 랭킹을 최상단으로 배치)
     img_urls = [
-        "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800", # 게임 1
-        "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800", # 게임 2
-        "https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=800", # 게임 3
-        "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800", # 게임 4
-        "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800", # 게임 5
-        "https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=800"  # 교환소
+        "https://images.unsplash.com/photo-1601597111158-2fceff292cdc?w=800", # 0. 은행 (금고/돈 사진)
+        "https://images.unsplash.com/photo-1579547621113-e4bb34dc4bb6?w=800", # 1. 랭킹 (트로피/왕관 사진)
+        "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800", # 2. 게임 1
+        "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800", # 3. 게임 2
+        "https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=800", # 4. 게임 3
+        "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800", # 5. 게임 4
+        "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800", # 6. 게임 5
+        "https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=800"  # 7. 교환소
     ]
     
-    # 3. 세로형 와이드 배너 리스트 생성 (핵심 변경점)
+    # 5. 세로형 와이드 배너 생성
     clicked_menu = clickable_images(
         img_urls,
-        titles=["게임 1", "게임 2", "게임 3", "게임 4", "게임 5", "🛒 교환소"],
+        titles=["🏦 은행", "🏆 랭킹", "게임 1", "게임 2", "게임 3", "게임 4", "게임 5", "🛒 교환소"],
         div_style={
             "display": "flex", 
-            "flex-direction": "column", # 요소를 아래로 한 줄씩 쌓음
-            "gap": "15px",              # 배너 사이의 간격
+            "flex-direction": "column", 
+            "gap": "15px",
             "justify-content": "center"
         },
         img_style={
-            "width": "100%",            # 모바일 화면 너비에 꽉 차게
-            "height": "120px",          # 가로로 긴 배너 느낌을 주는 고정 높이
-            "object-fit": "cover",      # 비율이 달라도 이미지가 예쁘게 잘림
+            "width": "100%",            # 모바일 꽉 차게
+            "height": "110px",          # 가로로 긴 형태 유지
+            "object-fit": "cover",      
             "border-radius": "10px", 
-            "border": "2px solid #ffd700", # 카지노 테마에 맞는 황금색 테두리
+            "border": "2px solid #ffd700", 
             "box-shadow": "0 4px 10px rgba(255, 42, 42, 0.3)",
             "cursor": "pointer"
         },
         key="main_menu_banners"
     )
 
-    # 4. 단일 클릭 이벤트 처리 (라우팅)
-    if clicked_menu == 0: change_page('game_1')
-    elif clicked_menu == 1: change_page('game_2')
-    elif clicked_menu == 2: change_page('game_3')
-    elif clicked_menu == 3: change_page('game_4')
-    elif clicked_menu == 4: change_page('game_5')
-    elif clicked_menu == 5: change_page('exchange')
-
-    st.write("")
-
-    # 5. 하단 랭킹 버튼
-    if st.button("🏆 실시간 랭킹 보기", use_container_width=True): 
-        change_page('ranking')
+    # 6. 배너 클릭 시 페이지 이동 (라우팅)
+    if clicked_menu == 0: change_page('bank')     # 은행 연결 추가됨
+    elif clicked_menu == 1: change_page('ranking') # 랭킹 연결 추가됨
+    elif clicked_menu == 2: change_page('game_1')
+    elif clicked_menu == 3: change_page('game_2')
+    elif clicked_menu == 4: change_page('game_3')
+    elif clicked_menu == 5: change_page('game_4')
+    elif clicked_menu == 6: change_page('game_5')
+    elif clicked_menu == 7: change_page('exchange')
+        
 def show_ranking():
     st.title("🏆 실시간 랭킹")
     st.markdown("보유 코인 기준 순위입니다.")
