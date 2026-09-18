@@ -160,14 +160,14 @@ def inject_casino_theme():
             color: #ffffff;
         }
 
-        /* 2. 로그인 타이틀 등 (골드 네온) */
+        /* 2. 로그인 타이틀 등 (보라/빨강 네온) */
         h1, h2, h3 {
-            color: #FFD700 !important;
-            text-shadow: 0 0 10px #FFD700, 0 0 20px #FF4500, 0 0 30px #B8860B !important;
+            color: #ffffff !important;
+            text-shadow: 0 0 10px #8A2BE2, 0 0 20px #FF0000, 0 0 30px #4B0082 !important;
             text-align: center;
         }
 
-        /* 3. 정신없는 외침 말풍선 */
+        /* 3. 정신없는 외침 말풍선 (보라/빨강 베이스) */
         .header-container {
             display: flex;
             align-items: center;
@@ -177,15 +177,15 @@ def inject_casino_theme():
         }
         .speech-bubble {
             position: relative;
-            background: linear-gradient(90deg, #FFDF00, #FFA500, #FFDF00);
+            background: linear-gradient(90deg, #8A2BE2, #FF0000, #8A2BE2);
             background-size: 200% 200%;
-            color: #000000;
+            color: #ffffff;
             padding: 15px 35px;
             font-size: 1.8rem;
             font-weight: 900;
-            border: 4px dashed #FF4500;
+            border: 4px dashed #FF0000;
             transform: rotate(-3deg) scale(1.05);
-            box-shadow: 0 0 20px 10px rgba(255, 215, 0, 0.6), 0 0 40px 15px rgba(255, 69, 0, 0.4);
+            box-shadow: 0 0 20px 10px rgba(138, 43, 226, 0.6), 0 0 40px 15px rgba(255, 0, 0, 0.4);
             animation: shake 0.5s infinite alternate; /* 흔들리는 애니메이션 */
             z-index: 2;
         }
@@ -196,7 +196,7 @@ def inject_casino_theme():
             left: 30%;
             border-left: 15px solid transparent;
             border-right: 5px solid transparent;
-            border-top: 40px solid #FFA500;
+            border-top: 40px solid #FF0000;
             transform: skewX(-20deg);
         }
         @keyframes shake {
@@ -209,41 +209,41 @@ def inject_casino_theme():
             font-size: 1.2rem;
             font-weight: 900;
             margin-left: -15px;
-            background-color: #E50914;
+            background-color: #8A2BE2;
             padding: 5px 15px;
             border-radius: 5px;
-            box-shadow: 3px 3px 0px #FFD700;
+            box-shadow: 3px 3px 0px #FF0000;
             z-index: 3;
         }
 
-        /* 4. VIP 코인 정보창 (블랙 & 골드 테두리) */
+        /* 4. VIP 코인 정보창 (블랙 & 보라 테두리) */
         .vip-info-box {
-            background: linear-gradient(135deg, #1a1a1a, #000000);
-            color: #FFD700;
+            background: linear-gradient(135deg, #12001c, #000000);
+            color: #ffffff;
             padding: 15px;
-            border: 2px solid #FFD700;
+            border: 2px solid #8A2BE2;
             border-radius: 10px;
             font-size: 1.3rem;
             font-weight: 900;
             text-align: center;
-            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+            box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
             margin-bottom: 30px;
         }
 
-        /* 5. 버튼 & 입력창 스타일 */
+        /* 5. 버튼 & 입력창 스타일 (보라 -> 빨강 그라데이션) */
         .stButton > button {
-            background: linear-gradient(to right, #B8860B, #FFDF00) !important;
-            color: #000 !important;
+            background: linear-gradient(to right, #4B0082, #DC143C) !important;
+            color: #ffffff !important;
             font-weight: 900 !important;
             font-size: 1.2rem !important;
             border-radius: 8px !important;
             border: none !important;
-            box-shadow: 0 4px 10px rgba(255, 215, 0, 0.3);
+            box-shadow: 0 4px 10px rgba(138, 43, 226, 0.3);
         }
         .stTextInput > div > div > input {
-            background-color: #111 !important;
-            color: #FFD700 !important;
-            border: 2px solid #D4AF37 !important;
+            background-color: #0c0012 !important;
+            color: #ffffff !important;
+            border: 2px solid #8A2BE2 !important;
             text-align: center;
         }
         </style>
@@ -375,7 +375,7 @@ def show_main_page():
         unsafe_allow_html=True
     )
     
-    # 4. 와이드 배너 이미지 URL 목록 (안전한 테스트 링크)
+    # 4. 와이드 배너 이미지 URL 목록
     img_urls = [
         "https://picsum.photos/id/10/800/110", # 0. 은행
         "https://picsum.photos/id/20/800/110", # 1. 랭킹
@@ -387,7 +387,7 @@ def show_main_page():
         "https://picsum.photos/id/80/800/110"  # 7. 교환소
     ]
     
-    # 5. 세로형 와이드 배너 생성 (흰색 배경 제거 & 후광 추가)
+    # 5. 세로형 와이드 배너 생성 (흰색 배경 제거 & 보라/빨강 후광 추가)
     clicked_menu = clickable_images(
         img_urls,
         titles=["🏦 은행", "🏆 랭킹", "게임 1", "게임 2", "게임 3", "게임 4", "게임 5", "🛒 교환소"],
@@ -397,15 +397,15 @@ def show_main_page():
             "gap": "20px",
             "justify-content": "center",
             "padding-bottom": "30px",
-            "background-color": "#0a0a0a"  # 🚨 iframe의 기본 흰색 배경을 덮는 핵심 요소
+            "background-color": "#0a0a0a"  # 🚨 iframe의 기본 흰색 배경을 덮는 핵심 요소 (검정 배경)
         },
         img_style={
             "width": "100%",            
             "height": "110px",          
             "object-fit": "cover",      
             "border-radius": "10px", 
-            "border": "3px solid #FFD700", 
-            "box-shadow": "0 0 20px 5px rgba(255, 215, 0, 0.7), 0 0 40px 10px rgba(255, 69, 0, 0.4)", # 🚨 눈부신 금색+주황색 후광
+            "border": "3px solid #8A2BE2", 
+            "box-shadow": "0 0 20px 5px rgba(138, 43, 226, 0.7), 0 0 40px 10px rgba(255, 0, 0, 0.4)", # 🚨 보라색+빨간색 후광
             "cursor": "pointer"
         },
         key="main_menu_banners"
