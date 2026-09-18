@@ -174,17 +174,17 @@ def inject_casino_theme():
             align-items: stretch;
         }
 
-        /* 3. 배너 왼쪽 (점선 보너스 박스 느낌) */
+        /* 3. 배너 왼쪽 (점선 제거, 은은한 네온 효과만 유지) */
         .neon-left-box {
             flex: 1.2;
-            border: 3px dashed #FF00FF; 
-            box-shadow: 0 0 10px #FF00FF, inset 0 0 10px #FF00FF;
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.5), inset 0 0 10px rgba(255, 0, 255, 0.3);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             padding: 10px;
             background: rgba(255, 0, 255, 0.05);
+            border-radius: 5px;
         }
         .neon-numbers {
             color: #FFFFFF;
@@ -209,11 +209,10 @@ def inject_casino_theme():
             text-align: center;
         }
         .neon-logo-text {
-            color: transparent;
-            -webkit-text-stroke: 2px #8A2BE2;
+            color: #ffffff; /* 흰색으로 변경 */
             font-size: 3.5rem;
             font-weight: 900;
-            text-shadow: 0 0 20px #8A2BE2, 0 0 40px #FF00FF;
+            text-shadow: 0 0 20px #8A2BE2, 0 0 40px #FF00FF; /* 보라/핑크 후광 유지 */
             margin-bottom: -10px;
             letter-spacing: -3px;
         }
@@ -230,10 +229,9 @@ def inject_casino_theme():
             font-size: 1rem;
         }
 
-        /* 5. 로그인 페이지 전용 네온 폼 박스 */
+        /* 5. 로그인 페이지 전용 네온 폼 박스 (점선 제거) */
         .neon-login-box {
             background-color: #0d001a;
-            border: 3px dashed #FF00FF;
             box-shadow: 0 0 20px rgba(138, 43, 226, 0.5), inset 0 0 15px rgba(255, 0, 255, 0.3);
             padding: 30px;
             border-radius: 10px;
@@ -258,7 +256,7 @@ def inject_casino_theme():
             background: linear-gradient(to right, #4B0082, #8A2BE2) !important;
             color: #ffffff !important;
             font-weight: 900 !important;
-            border: 1px solid #FF00FF !important;
+            border: none !important;
             box-shadow: 0 0 10px #FF00FF;
         }
         .stTextInput > div > div > input {
