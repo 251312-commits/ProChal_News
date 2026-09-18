@@ -469,6 +469,9 @@ def show_ranking():
 # ==========================================
 # 5. 페이지 라우터
 # ==========================================
+# 🚨 테마 적용 함수 호출: 이 한 줄을 추가하면 모든 페이지에 카지노 레이아웃이 씌워집니다.
+inject_casino_theme()
+
 if st.session_state.page == 'login':
     show_login_page()
 elif st.session_state.page == 'main':
@@ -479,4 +482,5 @@ elif st.session_state.page == 'game_3': show_game_3()
 elif st.session_state.page == 'game_4': show_game_4()
 elif st.session_state.page == 'game_5': show_game_5()
 elif st.session_state.page == 'exchange': show_exchange()
+elif st.session_state.page == 'ranking': show_ranking()
 elif st.session_state.page == 'ranking': show_ranking()
