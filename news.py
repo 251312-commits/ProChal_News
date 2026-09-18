@@ -155,102 +155,98 @@ def inject_casino_theme():
         <style>
         /* 1. 깔끔한 블랙 배경 */
         .stApp {
-            background-color: #0a0a0a !important; 
+            background-color: #05000a !important; /* 더 어두운 딥 퍼플/블랙 */
             background-image: none !important; 
             color: #ffffff;
         }
 
-        /* 2. 로그인 타이틀 등 (보라/빨강 네온) */
-        h1, h2, h3 {
-            color: #ffffff !important;
-            text-shadow: 0 0 10px #8A2BE2, 0 0 20px #FF0000, 0 0 30px #4B0082 !important;
-            text-align: center;
+        /* 2. 사설 배너 스타일 컨테이너 */
+        .neon-promo-banner {
+            display: flex;
+            flex-direction: row;
+            background-color: #110022;
+            border: 2px solid #8A2BE2;
+            box-shadow: 0 0 15px #8A2BE2, inset 0 0 10px #8A2BE2;
+            margin-top: 10px;
+            margin-bottom: 30px;
+            padding: 10px;
+            border-radius: 5px;
+            align-items: stretch;
         }
 
-        /* 3. 정신없는 외침 말풍선 (보라/빨강 베이스) */
-        .header-container {
+        /* 3. 배너 왼쪽 (점선 보너스 박스 느낌) */
+        .neon-left-box {
+            flex: 1.2;
+            border: 3px dashed #FF00FF; /* 핑크 네온 점선 */
+            box-shadow: 0 0 10px #FF00FF, inset 0 0 10px #FF00FF;
             display: flex;
-            align-items: center;
+            flex-direction: column;
             justify-content: center;
-            margin-top: 20px;
-            margin-bottom: 40px;
+            align-items: center;
+            padding: 10px;
+            background: rgba(255, 0, 255, 0.05);
         }
-        .speech-bubble {
-            position: relative;
-            background: linear-gradient(90deg, #8A2BE2, #FF0000, #8A2BE2);
-            background-size: 200% 200%;
-            color: #ffffff;
-            padding: 15px 35px;
+        .neon-numbers {
+            color: #FFFFFF;
             font-size: 1.8rem;
             font-weight: 900;
-            border: 4px dashed #FF0000;
-            transform: rotate(-3deg) scale(1.05);
-            box-shadow: 0 0 20px 10px rgba(138, 43, 226, 0.6), 0 0 40px 15px rgba(255, 0, 0, 0.4);
-            animation: shake 0.5s infinite alternate; /* 흔들리는 애니메이션 */
-            z-index: 2;
-        }
-        .speech-bubble::after {
-            content: '';
-            position: absolute;
-            bottom: -35px;
-            left: 30%;
-            border-left: 15px solid transparent;
-            border-right: 5px solid transparent;
-            border-top: 40px solid #FF0000;
-            transform: skewX(-20deg);
-        }
-        @keyframes shake {
-            0% { transform: rotate(-3deg) scale(1.05); }
-            100% { transform: rotate(2deg) scale(1.08); }
-        }
-        .diagonal-text {
-            transform: rotate(-15deg);
-            color: #FFF;
-            font-size: 1.2rem;
-            font-weight: 900;
-            margin-left: -15px;
-            background-color: #8A2BE2;
-            padding: 5px 15px;
-            border-radius: 5px;
-            box-shadow: 3px 3px 0px #FF0000;
-            z-index: 3;
-        }
-
-        /* 4. VIP 코인 정보창 (블랙 & 보라 테두리) */
-        .vip-info-box {
-            background: linear-gradient(135deg, #12001c, #000000);
-            color: #ffffff;
-            padding: 15px;
-            border: 2px solid #8A2BE2;
-            border-radius: 10px;
-            font-size: 1.3rem;
-            font-weight: 900;
+            text-shadow: 2px 2px 0px #FF00FF, 0 0 15px #FF00FF;
             text-align: center;
-            box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
-            margin-bottom: 30px;
+            line-height: 1.2;
+        }
+        .neon-numbers span {
+            color: #FF00FF;
         }
 
-        /* 5. 버튼 & 입력창 스타일 (보라 -> 빨강 그라데이션) */
+        /* 4. 배너 오른쪽 (로고 및 VIP 텍스트) */
+        .neon-right-box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding-left: 15px;
+            text-align: center;
+        }
+        .neon-logo-text {
+            color: transparent;
+            -webkit-text-stroke: 2px #8A2BE2;
+            font-size: 3.5rem;
+            font-weight: 900;
+            text-shadow: 0 0 20px #8A2BE2, 0 0 40px #FF00FF;
+            margin-bottom: -10px;
+            letter-spacing: -3px;
+        }
+        .neon-sub-text {
+            color: #FFD700;
+            font-weight: 900;
+            font-size: 1.1rem;
+            text-shadow: 1px 1px 2px #000;
+            margin-top: 5px;
+        }
+        .neon-sub-text-2 {
+            color: #FF6347;
+            font-weight: 900;
+            font-size: 1rem;
+        }
+
+        /* 기타 스트림릿 UI 덮어쓰기 */
+        h1, h2, h3 {
+            color: #ffffff !important;
+            text-shadow: 0 0 10px #8A2BE2, 0 0 20px #FF00FF !important;
+            text-align: center;
+        }
         .stButton > button {
-            background: linear-gradient(to right, #4B0082, #DC143C) !important;
+            background: linear-gradient(to right, #4B0082, #8A2BE2) !important;
             color: #ffffff !important;
             font-weight: 900 !important;
-            font-size: 1.2rem !important;
-            border-radius: 8px !important;
-            border: none !important;
-            box-shadow: 0 4px 10px rgba(138, 43, 226, 0.3);
-        }
-        .stTextInput > div > div > input {
-            background-color: #0c0012 !important;
-            color: #ffffff !important;
-            border: 2px solid #8A2BE2 !important;
-            text-align: center;
+            border: 1px solid #FF00FF !important;
+            box-shadow: 0 0 10px #FF00FF;
         }
         </style>
         """,
         unsafe_allow_html=True
     )
-
 # ------------------------------------------
 # 메인 화면 정의
 # ------------------------------------------
@@ -338,7 +334,6 @@ def show_login_page():
                 st.error("학번은 숫자로만 입력해주세요.")
 
 def show_main_page():
-    # 1. 자동 새로고침 및 데이터 갱신
     st_autorefresh(interval=600000, limit=None, key="auto_refresh")
 
     users_data = ws.get_all_records()
@@ -349,69 +344,69 @@ def show_main_page():
 
     user = st.session_state.current_user_data
     
-    # 🚨 안전장치: 유저 데이터가 유실되었을 경우 로그인 화면으로 강제 복귀
     if not user:
         change_page('login')
         return
     
-    # 2. 상단 말풍선 타이틀 & 사선 부제목 (외침 효과)
+    # 🚨 이미지 스타일의 좌우 분할 네온 배너 HTML
     st.markdown(
-        """
-        <div class="header-container">
-            <div class="speech-bubble">NEWS CASINO</div>
-            <div class="diagonal-text">오늘의 잭팟은?!!</div>
+        f"""
+        <div style="color: white; font-weight: bold; font-size: 0.9rem; margin-bottom: -5px;">안전의대명사 뉴스에이전놀이터</div>
+        <div style="color: #FF00FF; font-weight: bold; font-size: 0.8rem; margin-bottom: 5px;">실시간 뉴스 / 라이브 게임 / 미니게임</div>
+        
+        <div class="neon-promo-banner">
+            <div class="neon-left-box">
+                <div class="neon-numbers">
+                    VIP <span>{user.get('아이디', '알 수 없음')}</span> 입장<br>
+                    보유 <span>{user.get('코인', 0)}</span> C<br>
+                    현재 <span>{user.get('연승', 0)}</span> 연승중
+                </div>
+            </div>
+            <div class="neon-right-box">
+                <div class="neon-logo-text">NEWS</div>
+                <div style="background: #FF00FF; color: white; padding: 2px 10px; border-radius: 10px; font-weight: bold; margin-top: 5px;">가입코드 1111</div>
+                <div class="neon-sub-text">가입첫충 30% 무한매충 10%</div>
+                <div class="neon-sub-text-2">뉴스 카지노 상한 5천만원</div>
+            </div>
         </div>
         """,
         unsafe_allow_html=True
     )
-
-    # 3. VIP 유저 정보
-    st.markdown(
-        f"""
-        <div class="vip-info-box" style="margin-bottom: 30px;">
-            🎰 [VIP] {user.get('아이디', '알 수 없음')} | 💰 {user.get('코인', 0)} COIN | 🔥 {user.get('연승', 0)} WINS
-        </div>
-        """, 
-        unsafe_allow_html=True
-    )
     
-    # 4. 와이드 배너 이미지 URL 목록
     img_urls = [
-        "https://picsum.photos/id/10/800/110", # 0. 은행
-        "https://picsum.photos/id/20/800/110", # 1. 랭킹
-        "https://picsum.photos/id/30/800/110", # 2. 게임 1
-        "https://picsum.photos/id/40/800/110", # 3. 게임 2
-        "https://picsum.photos/id/50/800/110", # 4. 게임 3
-        "https://picsum.photos/id/60/800/110", # 5. 게임 4
-        "https://picsum.photos/id/70/800/110", # 6. 게임 5
-        "https://picsum.photos/id/80/800/110"  # 7. 교환소
+        "https://picsum.photos/id/10/800/110", 
+        "https://picsum.photos/id/20/800/110", 
+        "https://picsum.photos/id/30/800/110", 
+        "https://picsum.photos/id/40/800/110", 
+        "https://picsum.photos/id/50/800/110", 
+        "https://picsum.photos/id/60/800/110", 
+        "https://picsum.photos/id/70/800/110", 
+        "https://picsum.photos/id/80/800/110"  
     ]
     
-    # 5. 세로형 와이드 배너 생성 (흰색 배경 제거 & 보라/빨강 후광 추가)
     clicked_menu = clickable_images(
         img_urls,
         titles=["🏦 은행", "🏆 랭킹", "게임 1", "게임 2", "게임 3", "게임 4", "게임 5", "🛒 교환소"],
         div_style={
             "display": "flex", 
             "flex-direction": "column", 
-            "gap": "20px",
+            "gap": "15px",
             "justify-content": "center",
             "padding-bottom": "30px",
-            "background-color": "#0a0a0a"  # 🚨 iframe의 기본 흰색 배경을 덮는 핵심 요소 (검정 배경)
+            "background-color": "#05000a" 
         },
         img_style={
             "width": "100%",            
             "height": "110px",          
             "object-fit": "cover",      
-            "border-radius": "10px", 
-            "border": "3px solid #8A2BE2", 
-            "box-shadow": "0 0 20px 5px rgba(138, 43, 226, 0.7), 0 0 40px 10px rgba(255, 0, 0, 0.4)", # 🚨 보라색+빨간색 후광
+            "border-radius": "5px", 
+            "border": "2px solid #8A2BE2", 
+            "box-shadow": "0 0 10px rgba(138, 43, 226, 0.8)",
             "cursor": "pointer"
         },
         key="main_menu_banners"
     )
 
-    # 6. 배너 클릭 라우팅
     if clicked_menu == 0: change_page('bank')
     elif clicked_menu == 1: change_page('ranking')
     elif clicked_menu == 2: change_page('game_1')
