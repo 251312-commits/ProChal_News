@@ -90,7 +90,7 @@ def similarity_check(summary_text, title):
         outputs = model(**inputs)
         logits = outputs.logits.squeeze(-1)
         score = torch.sigmoid(logits).item()
-    return round(score, 4)
+    return int(round(score * 100))
 
 # ==========================================
 # 3. 구글 시트 연결 캐싱 (gspread)
