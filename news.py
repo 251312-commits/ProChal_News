@@ -252,7 +252,7 @@ def show_login_page():
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
-        student_id = st.text_input("학번 입력 (5자리)", max_chars=5, placeholder="예: 12345")
+        student_id = st.text_input("학번 입력 (5자리)", max_chars=5, placeholder="입력 후 반드시 Enter를 눌러주세요")
         
         if student_id:
             clean_id = student_id.strip()
@@ -333,10 +333,16 @@ def show_main_page():
 
     users_data = ws.get_all_records()
     updated_info = next((item for item in users_data if str(item.get('학번', '')).strip().replace('.0', '') == st.session_state.current_user), None)
+    
     if updated_info:
         st.session_state.current_user_data = updated_info
 
     user = st.session_state.current_user_data
+    
+    # 🚨 안전장치: 유저 데이터가 유실되었을 경우 로그인 화면으로 강제 복귀
+    if not user:
+        change_page('login')
+        return
     
     # 2. 상단 말풍선 타이틀 & 사선 부제목
     st.markdown(
@@ -349,17 +355,17 @@ def show_main_page():
         unsafe_allow_html=True
     )
 
-    # 3. VIP 유저 정보 (블랙 & 골드 박스)
+    # 3. VIP 유저 정보 (안전한 .get() 메서드 사용)
     st.markdown(
         f"""
-        <div class="vip-info-box">
+        <div class="vip-info-box" style="margin-bottom: 30px;">
             🎰 [VIP] {user.get('아이디', '알 수 없음')} | 💰 {user.get('코인', 0)} COIN | 🔥 {user.get('연승', 0)} WINS
         </div>
         """, 
         unsafe_allow_html=True
     )
     
-    # 4. 와이드 배너 이미지 리스트 (은행, 랭킹을 0번, 1번에 배치)
+    # 4. 사용할 와이드 배너 이미지 URL 목록
     img_urls = [
         "https://images.unsplash.com/photo-1601597111158-2fceff292cdc?w=800", # 0. 은행
         "https://images.unsplash.com/photo-1579547621113-e4bb34dc4bb6?w=800", # 1. 랭킹
@@ -371,7 +377,7 @@ def show_main_page():
         "https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=800"  # 7. 교환소
     ]
     
-    # 5. 세로형 와이드 배너 생성 (flex-direction: column 적용으로 모바일 깨짐 방지)
+    # 5. 세로형 와이드 배너 단일 렌더링
     clicked_menu = clickable_images(
         img_urls,
         titles=["🏦 은행", "🏆 랭킹", "게임 1", "게임 2", "게임 3", "게임 4", "게임 5", "🛒 교환소"],
@@ -394,7 +400,7 @@ def show_main_page():
         key="main_menu_banners"
     )
 
-    # 6. 클릭 라우팅
+    # 6. 배너 클릭 라우팅
     if clicked_menu == 0: change_page('bank')
     elif clicked_menu == 1: change_page('ranking')
     elif clicked_menu == 2: change_page('game_1')
@@ -403,16 +409,6 @@ def show_main_page():
     elif clicked_menu == 5: change_page('game_4')
     elif clicked_menu == 6: change_page('game_5')
     elif clicked_menu == 7: change_page('exchange')
-
-    # 3. 모바일 친화적인 상단 VIP 유저 정보
-    st.markdown(
-        f"""
-        <div class="vip-info-box" style="margin-bottom: 30px;">
-            🎰 [VIP] {user['아이디']} | 💰 {user['코인']} COIN | 🔥 {user['연승']} WINS
-        </div>
-        """, 
-        unsafe_allow_html=True
-    )
     
     # 4. 사용할 와이드 배너 이미지 URL 목록 (은행, 랭킹을 최상단으로 배치)
     img_urls = [
