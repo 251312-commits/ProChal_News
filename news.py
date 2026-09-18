@@ -153,75 +153,88 @@ def inject_casino_theme():
     st.markdown(
         """
         <style>
-        /* 1. 빨강/검정 카지노 배경 이미지 & 다크 필터 */
+        /* 1. 깔끔한 블랙 배경 */
         .stApp {
-            /* 룰렛/카드의 묵직한 레드블랙 느낌 이미지 URL */
-            background-image: url("https://images.unsplash.com/photo-1596838132731-3301c3fd4317?q=80&w=1920"); 
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            /* 배경을 붉고 어둡게 눌러주는 효과 */
-            background-color: rgba(30, 0, 0, 0.85); 
-            background-blend-mode: multiply;
+            background-color: #0a0a0a !important; /* 깊은 검은색 */
+            background-image: none !important; /* 기존 붉은 이미지 제거 */
             color: #ffffff;
         }
 
-        /* 2. 네온 사인 타이틀 (레드 & 골드) */
-        h1 {
-            color: #ff2a2a !important;
-            text-shadow: 0 0 10px #ff2a2a, 0 0 20px #8b0000, 0 0 30px #8b0000 !important;
-            text-align: center;
-        }
-        h2, h3 {
-            color: #ffd700 !important;
-            text-shadow: 0 0 10px #ffd700, 0 0 20px #aa771c !important;
+        /* 2. 로그인 타이틀 등 (골드 네온) */
+        h1, h2, h3 {
+            color: #FFD700 !important;
+            text-shadow: 0 0 10px #FFD700, 0 0 20px #B8860B !important;
             text-align: center;
         }
 
-        /* 3. 화려한 베팅 버튼 스타일 */
-        .stButton > button {
-            background: linear-gradient(to right, #8b0000, #ff2a2a) !important;
-            border: 1px solid #ffd700 !important;
-            color: white !important;
-            font-weight: 900 !important;
-            font-size: 1.2rem !important;
-            border-radius: 8px !important;
-            box-shadow: 0 4px 15px 0 rgba(255, 42, 42, 0.6) !important;
-            transition: all 0.3s ease-in-out !important;
-            width: 100%;
+        /* 3. 메인 상단 말풍선 (금색 그라데이션) */
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+            margin-bottom: 25px;
         }
-        .stButton > button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 20px 0 rgba(255, 215, 0, 0.8) !important;
-            border: 1px solid #ffffff !important;
+        .speech-bubble {
+            position: relative;
+            background: linear-gradient(135deg, #FFDF00 0%, #D4AF37 100%);
+            color: #000000;
+            padding: 10px 25px;
+            border-radius: 12px;
+            font-size: 1.6rem;
+            font-weight: 900;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.5);
+            border: 2px solid #FFF8DC;
+            z-index: 2;
+        }
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: -14px;
+            margin-top: -10px;
+            border-left: 14px solid #D4AF37;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+        }
+        .diagonal-text {
+            transform: rotate(-10deg);
+            color: #FFD700;
+            font-size: 1.1rem;
+            font-weight: 900;
+            margin-left: 20px;
+            text-shadow: 2px 2px 5px rgba(0,0,0,0.9);
+            z-index: 1;
         }
 
-        /* 4. 텍스트 입력창 (다크 & 레드 포인트) */
-        .stTextInput > div > div > input {
-            background-color: rgba(0, 0, 0, 0.7) !important;
-            color: #ffd700 !important;
-            border: 2px solid #8b0000 !important;
-            border-radius: 5px !important;
-            font-weight: bold;
-            text-align: center;
-        }
-        .stTextInput > div > div > input:focus {
-            border-color: #ffd700 !important;
-            box-shadow: 0 0 10px #ffd700 !important;
-        }
-
-        /* 5. VIP 코인 정보창 */
+        /* 4. VIP 코인 정보창 (블랙 & 골드 테두리) */
         .vip-info-box {
-            background: linear-gradient(135deg, #2a0800, #5c0000, #2a0800);
-            color: #ffd700;
+            background: linear-gradient(135deg, #1a1a1a, #000000);
+            color: #FFD700;
             padding: 15px;
-            border: 1px solid #ffd700;
+            border: 1px solid #FFD700;
             border-radius: 10px;
             font-size: 1.3rem;
             font-weight: 900;
             text-align: center;
-            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
-            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.2);
+            margin-bottom: 30px;
+        }
+
+        /* 5. 버튼 & 입력창 스타일 덮어쓰기 */
+        .stButton > button {
+            background: linear-gradient(to right, #B8860B, #FFDF00) !important;
+            color: #000 !important;
+            font-weight: 900 !important;
+            font-size: 1.2rem !important;
+            border-radius: 8px !important;
+            border: none !important;
+        }
+        .stTextInput > div > div > input {
+            background-color: #111 !important;
+            color: #FFD700 !important;
+            border: 2px solid #D4AF37 !important;
+            text-align: center;
         }
         </style>
         """,
@@ -299,62 +312,19 @@ def show_login_page():
                 st.error("학번은 숫자로만 입력해주세요.")
 
 def show_main_page():
-    # 1. 자동 새로고침 및 유저 데이터 갱신
+    # 1. 자동 새로고침 및 데이터 갱신
     st_autorefresh(interval=600000, limit=None, key="auto_refresh")
 
     users_data = ws.get_all_records()
-    updated_info = next((item for item in users_data if str(item['학번']) == st.session_state.current_user), None)
+    updated_info = next((item for item in users_data if str(item.get('학번', '')).strip().replace('.0', '') == st.session_state.current_user), None)
     if updated_info:
         st.session_state.current_user_data = updated_info
 
     user = st.session_state.current_user_data
     
-    # 2. 뾰족한 말풍선 타이틀 & 사선 부제목 CSS 및 렌더링
+    # 2. 상단 말풍선 타이틀 & 사선 부제목
     st.markdown(
         """
-        <style>
-        .header-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-top: 10px;
-            margin-bottom: 25px;
-        }
-        /* 뾰족한 말풍선 본제목 */
-        .speech-bubble {
-            position: relative;
-            background: linear-gradient(135deg, #e52d27 0%, #b31217 100%);
-            color: #ffffff;
-            padding: 10px 25px;
-            border-radius: 12px;
-            font-size: 1.6rem;
-            font-weight: 900;
-            box-shadow: 0 4px 15px rgba(255, 42, 42, 0.6);
-            border: 2px solid #ffd700;
-            z-index: 2;
-        }
-        /* 말풍선 오른쪽 꼬리 */
-        .speech-bubble::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            right: -14px;
-            margin-top: -10px;
-            border-left: 14px solid #b31217;
-            border-top: 10px solid transparent;
-            border-bottom: 10px solid transparent;
-        }
-        /* 사선 부제목 */
-        .diagonal-text {
-            transform: rotate(-10deg);
-            color: #ffd700;
-            font-size: 1.1rem;
-            font-weight: 900;
-            margin-left: 20px;
-            text-shadow: 2px 2px 5px rgba(0,0,0,0.9);
-            z-index: 1;
-        }
-        </style>
         <div class="header-container">
             <div class="speech-bubble">NEWS CASINO</div>
             <div class="diagonal-text">오늘의 잭팟은?</div>
@@ -362,6 +332,61 @@ def show_main_page():
         """,
         unsafe_allow_html=True
     )
+
+    # 3. VIP 유저 정보 (블랙 & 골드 박스)
+    st.markdown(
+        f"""
+        <div class="vip-info-box">
+            🎰 [VIP] {user.get('아이디', '알 수 없음')} | 💰 {user.get('코인', 0)} COIN | 🔥 {user.get('연승', 0)} WINS
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    # 4. 와이드 배너 이미지 리스트 (은행, 랭킹을 0번, 1번에 배치)
+    img_urls = [
+        "https://images.unsplash.com/photo-1601597111158-2fceff292cdc?w=800", # 0. 은행
+        "https://images.unsplash.com/photo-1579547621113-e4bb34dc4bb6?w=800", # 1. 랭킹
+        "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800", # 2. 게임 1
+        "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800", # 3. 게임 2
+        "https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=800", # 4. 게임 3
+        "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800", # 5. 게임 4
+        "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800", # 6. 게임 5
+        "https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=800"  # 7. 교환소
+    ]
+    
+    # 5. 세로형 와이드 배너 생성 (flex-direction: column 적용으로 모바일 깨짐 방지)
+    clicked_menu = clickable_images(
+        img_urls,
+        titles=["🏦 은행", "🏆 랭킹", "게임 1", "게임 2", "게임 3", "게임 4", "게임 5", "🛒 교환소"],
+        div_style={
+            "display": "flex", 
+            "flex-direction": "column", 
+            "gap": "15px",
+            "justify-content": "center",
+            "padding-bottom": "30px"
+        },
+        img_style={
+            "width": "100%",            
+            "height": "110px",          
+            "object-fit": "cover",      
+            "border-radius": "10px", 
+            "border": "2px solid #FFD700", 
+            "box-shadow": "0 4px 10px rgba(255, 215, 0, 0.2)",
+            "cursor": "pointer"
+        },
+        key="main_menu_banners"
+    )
+
+    # 6. 클릭 라우팅
+    if clicked_menu == 0: change_page('bank')
+    elif clicked_menu == 1: change_page('ranking')
+    elif clicked_menu == 2: change_page('game_1')
+    elif clicked_menu == 3: change_page('game_2')
+    elif clicked_menu == 4: change_page('game_3')
+    elif clicked_menu == 5: change_page('game_4')
+    elif clicked_menu == 6: change_page('game_5')
+    elif clicked_menu == 7: change_page('exchange')
 
     # 3. 모바일 친화적인 상단 VIP 유저 정보
     st.markdown(
