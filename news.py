@@ -410,7 +410,7 @@ def show_main_page():
     
     img_urls = [
         "https://github.com/user-attachments/assets/331b7b2e-c4f5-4087-9f6b-9e672afb9568", 
-        "https://picsum.photos/id/20/800/110", 
+        "https://github.com/user-attachments/assets/24bc9c42-e6c0-4f6f-a3a1-e1cce8fd66f3", 
         "https://picsum.photos/id/30/800/110", 
         "https://picsum.photos/id/40/800/110", 
         "https://picsum.photos/id/50/800/110", 
