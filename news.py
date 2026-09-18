@@ -367,15 +367,15 @@ def show_main_page():
     
     # 4. 사용할 와이드 배너 이미지 URL 목록
     img_urls = [
-        "https://images.unsplash.com/photo-1601597111158-2fceff292cdc?w=800", # 0. 은행
-        "https://images.unsplash.com/photo-1579547621113-e4bb34dc4bb6?w=800", # 1. 랭킹
-        "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800", # 2. 게임 1
-        "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800", # 3. 게임 2
-        "https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=800", # 4. 게임 3
-        "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800", # 5. 게임 4
-        "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800", # 6. 게임 5
-        "https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=800"  # 7. 교환소
-    ]
+    "https://picsum.photos/id/10/800/110", # 0. 은행
+    "https://picsum.photos/id/20/800/110", # 1. 랭킹
+    "https://picsum.photos/id/30/800/110", # 2. 게임 1
+    "https://picsum.photos/id/40/800/110", # 3. 게임 2
+    "https://picsum.photos/id/50/800/110", # 4. 게임 3
+    "https://picsum.photos/id/60/800/110", # 5. 게임 4
+    "https://picsum.photos/id/70/800/110", # 6. 게임 5
+    "https://picsum.photos/id/80/800/110"  # 7. 교환소
+]
     
     # 5. 세로형 와이드 배너 단일 렌더링
     clicked_menu = clickable_images(
