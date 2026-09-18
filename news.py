@@ -149,76 +149,98 @@ def show_bank(): show_placeholder_page("🏦 은행")
 # ------------------------------------------
 # 레이아웃
 # ------------------------------------------
-def inject_streaming_theme():
-    # 1. 다크 테마 및 빨간색 포인트 CSS
+def inject_casino_theme():
     st.markdown(
         """
         <style>
-        /* 전체 배경 (어두운 회색/검정) */
+        /* 1. 깔끔한 블랙 배경 */
         .stApp {
-            background-color: #141414 !important; 
+            background-color: #0a0a0a !important; /* 깊은 검은색 */
+            background-image: none !important; /* 기존 붉은 이미지 제거 */
             color: #ffffff;
         }
-        /* 사이드바 배경 */
-        [data-testid="stSidebar"] {
-            background-color: #000000 !important;
-            border-right: 1px solid #333;
+
+        /* 2. 로그인 타이틀 등 (골드 네온) */
+        h1, h2, h3 {
+            color: #FFD700 !important;
+            text-shadow: 0 0 10px #FFD700, 0 0 20px #B8860B !important;
+            text-align: center;
         }
-        /* 상단 로고 스타일 (HOOHOO 느낌의 레드) */
-        .logo-text {
-            color: #E50914 !important;
-            font-size: 1.8rem;
-            font-weight: 900;
-            letter-spacing: 2px;
-            margin-bottom: 20px;
-        }
-        /* VIP 상단 바 */
-        .top-bar {
-            background-color: #1c1c1c;
-            padding: 10px 20px;
-            border-radius: 5px;
+
+        /* 3. 메인 상단 말풍선 (금색 그라데이션) */
+        .header-container {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            font-size: 0.9rem;
-            color: #ccc;
+            justify-content: center;
+            margin-top: 10px;
+            margin-bottom: 25px;
         }
-        /* 스트림릿 기본 버튼 스타일 덮어쓰기 (사이드바 메뉴용) */
+        .speech-bubble {
+            position: relative;
+            background: linear-gradient(135deg, #FFDF00 0%, #D4AF37 100%);
+            color: #000000;
+            padding: 10px 25px;
+            border-radius: 12px;
+            font-size: 1.6rem;
+            font-weight: 900;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.5);
+            border: 2px solid #FFF8DC;
+            z-index: 2;
+        }
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: -14px;
+            margin-top: -10px;
+            border-left: 14px solid #D4AF37;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+        }
+        .diagonal-text {
+            transform: rotate(-10deg);
+            color: #FFD700;
+            font-size: 1.1rem;
+            font-weight: 900;
+            margin-left: 20px;
+            text-shadow: 2px 2px 5px rgba(0,0,0,0.9);
+            z-index: 1;
+        }
+
+        /* 4. VIP 코인 정보창 (블랙 & 골드 테두리) */
+        .vip-info-box {
+            background: linear-gradient(135deg, #1a1a1a, #000000);
+            color: #FFD700;
+            padding: 15px;
+            border: 1px solid #FFD700;
+            border-radius: 10px;
+            font-size: 1.3rem;
+            font-weight: 900;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.2);
+            margin-bottom: 30px;
+        }
+
+        /* 5. 버튼 & 입력창 스타일 덮어쓰기 */
         .stButton > button {
-            background-color: transparent !important;
-            color: #b3b3b3 !important;
+            background: linear-gradient(to right, #B8860B, #FFDF00) !important;
+            color: #000 !important;
+            font-weight: 900 !important;
+            font-size: 1.2rem !important;
+            border-radius: 8px !important;
             border: none !important;
-            text-align: left !important;
-            justify-content: flex-start !important;
-            font-weight: bold;
         }
-        .stButton > button:hover {
-            color: #ffffff !important;
-            background-color: #333333 !important;
+        .stTextInput > div > div > input {
+            background-color: #111 !important;
+            color: #FFD700 !important;
+            border: 2px solid #D4AF37 !important;
+            text-align: center;
         }
         </style>
         """,
         unsafe_allow_html=True
     )
 
-def render_sidebar():
-    # 2. 좌측 사이드바 메뉴 렌더링
-    with st.sidebar:
-        st.markdown("<div class='logo-text'>≡ NEWS CASINO</div>", unsafe_allow_html=True)
-        st.write("---")
-        
-        # 메뉴 버튼들 (클릭 시 페이지 이동)
-        if st.button("🏠 홈", use_container_width=True): change_page('main')
-        if st.button("🏆 실시간 랭킹", use_container_width=True): change_page('ranking')
-        if st.button("🏦 내 금고 (은행)", use_container_width=True): change_page('bank')
-        if st.button("🛒 코인 교환소", use_container_width=True): change_page('exchange')
-        
-        st.write("---")
-        st.markdown("<p style='color: #666; font-size: 0.8rem;'>카테고리</p>", unsafe_allow_html=True)
-        if st.button("🎮 게임 1", use_container_width=True): change_page('game_1')
-        if st.button("🎮 게임 2", use_container_width=True): change_page('game_2')
-            
 # ------------------------------------------
 # 메인 화면 정의
 # ------------------------------------------
@@ -306,66 +328,125 @@ def show_login_page():
                 st.error("학번은 숫자로만 입력해주세요.")
 
 def show_main_page():
-    # 1. 사이드바 호출
-    render_sidebar()
-
+    # 1. 자동 새로고침 및 데이터 갱신
     st_autorefresh(interval=600000, limit=None, key="auto_refresh")
 
-    # (유저 정보 갱신 로직 생략 - 기존과 동일하게 유지)
+    users_data = ws.get_all_records()
+    updated_info = next((item for item in users_data if str(item.get('학번', '')).strip().replace('.0', '') == st.session_state.current_user), None)
+    
+    if updated_info:
+        st.session_state.current_user_data = updated_info
+
     user = st.session_state.current_user_data
+    
+    # 🚨 안전장치: 유저 데이터가 유실되었을 경우 로그인 화면으로 강제 복귀
     if not user:
         change_page('login')
         return
+    
+    # 2. 상단 말풍선 타이틀 & 사선 부제목
+    st.markdown(
+        """
+        <div class="header-container">
+            <div class="speech-bubble">NEWS CASINO</div>
+            <div class="diagonal-text">오늘의 잭팟은?</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-    # 2. 상단 바 (검색창/로그인 버튼이 있던 자리에 VIP 정보 배치)
+    # 3. VIP 유저 정보 (안전한 .get() 메서드 사용)
     st.markdown(
         f"""
-        <div class="top-bar">
-            <span>추천 콘텐츠 및 공지사항 안내 ></span>
-            <span>🎰 [VIP] {user.get('아이디', '알 수 없음')} | 💰 {user.get('코인', 0)} COIN</span>
+        <div class="vip-info-box" style="margin-bottom: 30px;">
+            🎰 [VIP] {user.get('아이디', '알 수 없음')} | 💰 {user.get('코인', 0)} COIN | 🔥 {user.get('연승', 0)} WINS
         </div>
         """, 
         unsafe_allow_html=True
     )
     
-    st.markdown("### 최신 게임을 모두 감상해보세요")
-
-    # 3. 썸네일 그리드용 이미지 리스트 (테스트용)
+    # 4. 사용할 와이드 배너 이미지 URL 목록
     img_urls = [
-        "https://picsum.photos/id/10/400/225", # 가로 비율에 맞는 해상도(16:9)
-        "https://picsum.photos/id/20/400/225",
-        "https://picsum.photos/id/30/400/225",
-        "https://picsum.photos/id/40/400/225",
-        "https://picsum.photos/id/50/400/225",
-        "https://picsum.photos/id/60/400/225",
-    ]
+    "https://picsum.photos/id/10/800/110", # 0. 은행
+    "https://picsum.photos/id/20/800/110", # 1. 랭킹
+    "https://picsum.photos/id/30/800/110", # 2. 게임 1
+    "https://picsum.photos/id/40/800/110", # 3. 게임 2
+    "https://picsum.photos/id/50/800/110", # 4. 게임 3
+    "https://picsum.photos/id/60/800/110", # 5. 게임 4
+    "https://picsum.photos/id/70/800/110", # 6. 게임 5
+    "https://picsum.photos/id/80/800/110"  # 7. 교환소
+]
     
-    # 4. 바둑판(Grid) 레이아웃 적용: flex-wrap과 폭(width) 조절
+    # 5. 세로형 와이드 배너 단일 렌더링
     clicked_menu = clickable_images(
         img_urls,
-        titles=["게임 1", "게임 2", "게임 3", "게임 4", "게임 5", "게임 6"],
+        titles=["🏦 은행", "🏆 랭킹", "게임 1", "게임 2", "게임 3", "게임 4", "게임 5", "🛒 교환소"],
         div_style={
             "display": "flex", 
-            "flex-wrap": "wrap",       # 핵심: 창 크기에 맞춰 밑으로 자동 줄바꿈
-            "gap": "10px",             # 이미지 사이 간격
-            "justify-content": "flex-start",
+            "flex-direction": "column", 
+            "gap": "15px",
+            "justify-content": "center",
             "padding-bottom": "30px"
         },
         img_style={
-            "width": "30%",            # 핵심: 한 줄에 3개씩 배치되도록 너비 설정 (모바일 환경 고려 시 변경 가능)
-            "min-width": "150px",      # 너무 작아지는 것 방지
+            "width": "100%",            
+            "height": "110px",          
             "object-fit": "cover",      
-            "border-radius": "4px",    # 넷플릭스 스타일의 약간 둥근 모서리
-            "cursor": "pointer",
-            "transition": "transform 0.2s" # 마우스 오버 시 애니메이션 대비
+            "border-radius": "10px", 
+            "border": "2px solid #FFD700", 
+            "box-shadow": "0 4px 10px rgba(255, 215, 0, 0.2)",
+            "cursor": "pointer"
         },
-        key="main_menu_grid"
+        key="main_menu_banners"
     )
-
 
     # 6. 배너 클릭 라우팅
     if clicked_menu == 0: change_page('bank')
     elif clicked_menu == 1: change_page('ranking')
+    elif clicked_menu == 2: change_page('game_1')
+    elif clicked_menu == 3: change_page('game_2')
+    elif clicked_menu == 4: change_page('game_3')
+    elif clicked_menu == 5: change_page('game_4')
+    elif clicked_menu == 6: change_page('game_5')
+    elif clicked_menu == 7: change_page('exchange')
+    
+    # 4. 사용할 와이드 배너 이미지 URL 목록 (은행, 랭킹을 최상단으로 배치)
+    img_urls = [
+        "https://images.unsplash.com/photo-1601597111158-2fceff292cdc?w=800", # 0. 은행 (금고/돈 사진)
+        "https://images.unsplash.com/photo-1579547621113-e4bb34dc4bb6?w=800", # 1. 랭킹 (트로피/왕관 사진)
+        "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800", # 2. 게임 1
+        "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800", # 3. 게임 2
+        "https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=800", # 4. 게임 3
+        "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800", # 5. 게임 4
+        "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800", # 6. 게임 5
+        "https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=800"  # 7. 교환소
+    ]
+    
+    # 5. 세로형 와이드 배너 생성
+    clicked_menu = clickable_images(
+        img_urls,
+        titles=["🏦 은행", "🏆 랭킹", "게임 1", "게임 2", "게임 3", "게임 4", "게임 5", "🛒 교환소"],
+        div_style={
+            "display": "flex", 
+            "flex-direction": "column", 
+            "gap": "15px",
+            "justify-content": "center"
+        },
+        img_style={
+            "width": "100%",            # 모바일 꽉 차게
+            "height": "110px",          # 가로로 긴 형태 유지
+            "object-fit": "cover",      
+            "border-radius": "10px", 
+            "border": "2px solid #ffd700", 
+            "box-shadow": "0 4px 10px rgba(255, 42, 42, 0.3)",
+            "cursor": "pointer"
+        },
+        key="main_menu_banners_2"
+    )
+
+    # 6. 배너 클릭 시 페이지 이동 (라우팅)
+    if clicked_menu == 0: change_page('bank')     # 은행 연결 추가됨
+    elif clicked_menu == 1: change_page('ranking') # 랭킹 연결 추가됨
     elif clicked_menu == 2: change_page('game_1')
     elif clicked_menu == 3: change_page('game_2')
     elif clicked_menu == 4: change_page('game_3')
@@ -388,10 +469,8 @@ def show_ranking():
 # ==========================================
 # 5. 페이지 라우터
 # ==========================================
-# 바뀐 스트리밍 테마 함수 호출
-inject_streaming_theme()
-
-# 메인 페이지가 아닐 때도 사이드바를 띄우고 싶다면 각 페이지 상단에 render_sidebar()를 추가해 주면 됩니다.
+# 🚨 테마 적용 함수 호출: 이 한 줄을 추가하면 모든 페이지에 카지노 레이아웃이 씌워집니다.
+inject_casino_theme()
 
 if st.session_state.page == 'login':
     show_login_page()
