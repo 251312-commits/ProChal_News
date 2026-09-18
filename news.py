@@ -243,14 +243,25 @@ def show_login_page():
         student_id = st.text_input("학번 입력 (5자리)", max_chars=5, placeholder="예: 12345")
         
         if student_id:
-            if student_id.isdigit():
+            # 양쪽 공백을 제거한 후 숫자인지 확인
+            clean_id = student_id.strip()
+            
+            if clean_id.isdigit():
                 users_data = ws.get_all_records() 
-                user_info = next((item for item in users_data if str(item['학번']) == student_id), None)
+                
+                # 🚨 핵심 수정 부분: 시트의 학번 데이터를 문자열로 바꾸고 공백 및 '.0'(소수점) 제거하여 완벽하게 비교
+                user_info = None
+                for item in users_data:
+                    # gspread로 가져온 데이터가 12345.0 처럼 실수형일 경우를 대비해 replace('.0', '') 적용
+                    sheet_id = str(item.get('학번', '')).strip().replace('.0', '')
+                    if sheet_id == clean_id:
+                        user_info = item
+                        break
                 
                 if user_info:
-                    st.success(f"🎟️ VIP 확인 완료: {user_info['아이디']}님")
-                    if st.button("입장하기 (Log In)"):
-                        st.session_state.current_user = student_id
+                    st.success(f"🎟️ VIP 확인 완료: {user_info.get('아이디', '알 수 없음')}님")
+                    if st.button("입장하기 (Log In)", use_container_width=True):
+                        st.session_state.current_user = clean_id
                         st.session_state.current_user_data = user_info
                         change_page('main')
                 else:
@@ -258,35 +269,34 @@ def show_login_page():
                     username = st.text_input("닉네임 (미입력 시 '익명' 처리)", placeholder="도박사_01")
                     referral = st.text_input("추천인 학번 (선택사항)")
                     
-                    if st.button("가입 및 입장"):
-                        final_username = username if username else f"익명_{student_id}"
+                    if st.button("가입 및 입장", use_container_width=True):
+                        final_username = username if username else f"익명_{clean_id}"
                         initial_coins = 5000
                         
-                        # (기존 추천인 처리 로직 동일하게 유지)
+                        # 추천인 처리에도 동일한 엄격한 비교 룰 적용
                         if referral:
-                            referral_info = next((item for item in users_data if str(item['학번']) == referral), None)
+                            clean_referral = referral.strip()
+                            referral_info = next((item for item in users_data if str(item.get('학번', '')).strip().replace('.0', '') == clean_referral), None)
+                            
                             if referral_info:
                                 row_idx = users_data.index(referral_info) + 2 
-                                new_coins = int(referral_info['코인']) + 3000
+                                new_coins = int(referral_info.get('코인', 0)) + 3000
                                 ws.update_cell(row_idx, 3, new_coins)
                                 initial_coins += 1000
-                                st.toast(f"🎉 추천인 보상!")
+                                st.toast(f"🎉 추천인 보상! 본인 +1000 코인, {clean_referral}님 +3000 코인 지급!")
                             else:
-                                st.toast("해당 학번이 없어 보상이 지급되지 않았습니다.")
+                                st.toast("해당 학번이 없어 추천인 보상이 지급되지 않았습니다.")
                         
-                        new_row = [student_id, final_username, initial_coins, 0, referral]
+                        new_row = [clean_id, final_username, initial_coins, 0, referral.strip()]
                         ws.append_row(new_row)
                         
-                        st.session_state.current_user = student_id
+                        st.session_state.current_user = clean_id
                         st.session_state.current_user_data = {
-                            "학번": student_id, "아이디": final_username, "코인": initial_coins, "연승": 0
+                            "학번": clean_id, "아이디": final_username, "코인": initial_coins, "연승": 0
                         }
                         change_page('main')
             else:
                 st.error("학번은 숫자로만 입력해주세요.")
-
-        else:
-            st.error("학번은 5자리 숫자로 입력해주세요.")
 
 def show_main_page():
     # 1. 자동 새로고침 및 유저 데이터 갱신
