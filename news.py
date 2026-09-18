@@ -288,10 +288,7 @@ def show_login_page():
             st.error("학번은 5자리 숫자로 입력해주세요.")
 
 def show_main_page():
-    # 카지노 테마 CSS 주입
-    inject_casino_theme()
-
-    # 자동 새로고침 (1분마다 갱신)
+    # 1. 자동 새로고침 및 유저 데이터 갱신
     st_autorefresh(interval=600000, limit=None, key="auto_refresh")
 
     users_data = ws.get_all_records()
@@ -301,7 +298,7 @@ def show_main_page():
 
     user = st.session_state.current_user_data
     
-    # 1. 상단 바: 화려한 VIP 정보창 적용
+    # 2. 모바일 친화적인 상단 UI (컬럼 제거)
     st.markdown(
         f"""
         <div class="vip-info-box">
@@ -311,146 +308,58 @@ def show_main_page():
         unsafe_allow_html=True
     )
     
-    top_col1, top_col2, top_col3 = st.columns([2, 5, 1])
-    
-    with top_col1:
-        st.markdown(f"**{user['아이디']}** | 💰 {user['코인']} | 🔥 {user['연승']}")
-        
-    with top_col2:
-        st.markdown("<h2 style='text-align: center; margin-top: -15px;'>Title</h2>", unsafe_allow_html=True)
-        
-    with top_col3:
-        if st.button("Log out", use_container_width=True):
-            st.session_state.current_user = None
-            st.session_state.current_user_data = None
-            change_page('login')
+    if st.button("🚪 로그아웃", use_container_width=True):
+        st.session_state.current_user = None
+        st.session_state.current_user_data = None
+        change_page('login')
 
     st.write("") # 간격 조절
     
-    # 사용할 이미지 URL 또는 로컬 경로 리스트 (예시 이미지 주소)
-    game1_img = "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=300"
-    game2_img = "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=300"
-    game3_img = "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=300"
-    game4_img = "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=300"
-    game5_img = "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=300"
-    rank_img = "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=300"
-    exchange_img = "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=300"
+    # 사용할 이미지 URL 리스트 (가로로 긴 와이드 해상도 이미지를 쓰면 더 좋습니다)
+    img_urls = [
+        "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800", # 게임 1
+        "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800", # 게임 2
+        "https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=800", # 게임 3
+        "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800", # 게임 4
+        "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=800", # 게임 5
+        "https://images.unsplash.com/photo-1596838132731-3301c3fd4317?w=800"  # 교환소
+    ]
     
-    # 2. 중단 그리드: 4개의 열로 분할
-    mid_col1, mid_col2, mid_col3, mid_col4 = st.columns([3, 3, 1.5, 1.5])
-    
-    with mid_col1:
-        clicked_game1 = clickable_images(
-            [game1_img],
-            titles=["게임 1"],
-            div_style={"display": "flex", "justify-content": "center"},
-            img_style={
-                "width": "100%",           # 컬럼 너비에 꽉 차게
-                "aspect-ratio": "3/3",     # 원하는 비율 지정 (예: 16/9, 1/1, 4/3)
-                "object-fit": "cover",     # 지정된 비율에 맞춰 이미지를 자름 (찌그러짐 방지)
-                "border-radius": "10px", 
-                "cursor": "pointer", 
-                "margin-bottom": "3px"
-            },
-            key="game1_btn"
-        )
+    # 3. 세로형 와이드 배너 리스트 생성 (핵심 변경점)
+    clicked_menu = clickable_images(
+        img_urls,
+        titles=["게임 1", "게임 2", "게임 3", "게임 4", "게임 5", "🛒 교환소"],
+        div_style={
+            "display": "flex", 
+            "flex-direction": "column", # 요소를 아래로 한 줄씩 쌓음
+            "gap": "15px",              # 배너 사이의 간격
+            "justify-content": "center"
+        },
+        img_style={
+            "width": "100%",            # 모바일 화면 너비에 꽉 차게
+            "height": "120px",          # 가로로 긴 배너 느낌을 주는 고정 높이
+            "object-fit": "cover",      # 비율이 달라도 이미지가 예쁘게 잘림
+            "border-radius": "10px", 
+            "border": "2px solid #ffd700", # 카지노 테마에 맞는 황금색 테두리
+            "box-shadow": "0 4px 10px rgba(255, 42, 42, 0.3)",
+            "cursor": "pointer"
+        },
+        key="main_menu_banners"
+    )
 
-        if clicked_game1 > -1: # 이미지가 클릭되었다면 (-1 초과)
-            change_page('game_1')
+    # 4. 단일 클릭 이벤트 처리 (라우팅)
+    if clicked_menu == 0: change_page('game_1')
+    elif clicked_menu == 1: change_page('game_2')
+    elif clicked_menu == 2: change_page('game_3')
+    elif clicked_menu == 3: change_page('game_4')
+    elif clicked_menu == 4: change_page('game_5')
+    elif clicked_menu == 5: change_page('exchange')
 
-        # 2번째 이미지 버튼
-        clicked_game2 = clickable_images(
-            [game2_img],
-            titles=["게임 2"],
-            div_style={"display": "flex", "justify-content": "center"},
-            img_style={
-                "width": "100%",           # 컬럼 너비에 꽉 차게
-                "aspect-ratio": "3/1",     # 원하는 비율 지정 (예: 16/9, 1/1, 4/3)
-                "object-fit": "cover",     # 지정된 비율에 맞춰 이미지를 자름 (찌그러짐 방지)
-                "border-radius": "10px", 
-                "cursor": "pointer", 
-                "margin-bottom": "10px"
-            },
-            key="game2_btn"
-        )
-        if clicked_game2 > -1:
-            change_page('game_2')
-            
-    with mid_col2:
-        clicked_game3 = clickable_images(
-            [game3_img],
-            titles=["게임 3"],
-            div_style={"display": "flex", "justify-content": "center"},
-            img_style={
-                "width": "100%",           # 컬럼 너비에 꽉 차게
-                "aspect-ratio": "3/1.5",     # 원하는 비율 지정 (예: 16/9, 1/1, 4/3)
-                "object-fit": "cover",     # 지정된 비율에 맞춰 이미지를 자름 (찌그러짐 방지)
-                "border-radius": "10px", 
-                "cursor": "pointer", 
-                "margin-bottom": "3px"
-            },
-            key="game3_btn"
-        )
-        if clicked_game3 > -1:
-            change_page('game_3')
-        
-        clicked_game4 = clickable_images(
-            [game4_img],
-            titles=["게임 4"],
-            div_style={"display": "flex", "justify-content": "center"},
-            img_style={
-                "width": "100%",           # 컬럼 너비에 꽉 차게
-                "aspect-ratio": "3/2.5",     # 원하는 비율 지정 (예: 16/9, 1/1, 4/3)
-                "object-fit": "cover",     # 지정된 비율에 맞춰 이미지를 자름 (찌그러짐 방지)
-                "border-radius": "10px", 
-                "cursor": "pointer", 
-                "margin-bottom": "10px"
-            },
-            key="game4_btn"
-        )
-        if clicked_game2 > -1:
-            change_page('game_2')
-            
-    with mid_col3:
-        clicked_game5 = clickable_images(
-            [game5_img],
-            titles=["게임 5"],
-            div_style={"display": "flex", "justify-content": "center"},
-            img_style={
-                "width": "100%",           # 컬럼 너비에 꽉 차게
-                "aspect-ratio": "1.5/4.65",     # 원하는 비율 지정 (예: 16/9, 1/1, 4/3)
-                "object-fit": "cover",     # 지정된 비율에 맞춰 이미지를 자름 (찌그러짐 방지)
-                "border-radius": "10px", 
-                "cursor": "pointer", 
-                "margin-bottom": "10px"
-            },
-            key="game5_btn"
-        )
-        if clicked_game5 > -1:
-            change_page('game_5')
-            
-    with mid_col4:
-        clicked_exchange = clickable_images(
-            [exchange_img],
-            titles=["교환소"],
-            div_style={"display": "flex", "justify-content": "center"},
-            img_style={
-                "width": "100%",           # 컬럼 너비에 꽉 차게
-                "aspect-ratio": "1.5/4.65",     # 원하는 비율 지정 (예: 16/9, 1/1, 4/3)
-                "object-fit": "cover",     # 지정된 비율에 맞춰 이미지를 자름 (찌그러짐 방지)
-                "border-radius": "10px", 
-                "cursor": "pointer", 
-                "margin-bottom": "10px"
-            },
-            key="exchange_btn"
-        )
-        if clicked_exchange > -1:
-            change_page('exchange')
+    st.write("")
 
-    # 3. 하단 바: 랭킹 (전체 너비 사용)
-    if st.button("Ranking", use_container_width=True): 
+    # 5. 하단 랭킹 버튼
+    if st.button("🏆 실시간 랭킹 보기", use_container_width=True): 
         change_page('ranking')
-
 def show_ranking():
     st.title("🏆 실시간 랭킹")
     st.markdown("보유 코인 기준 순위입니다.")
