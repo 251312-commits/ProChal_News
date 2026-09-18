@@ -394,7 +394,7 @@ def show_main_page():
                 <div class="neon-numbers">
                     VIP <span>{user.get('아이디', '알 수 없음')}</span><br>
                     보유 <span>{user.get('코인', 0)}</span> C<br>
-                    <span>{user.get('연승', 0)}</span> 연승중🔥🔥🔥
+                    🔥<span>{user.get('연승', 0)}</span> 연승중🔥
                 </div>
             </div>
             <div class="neon-right-box">
