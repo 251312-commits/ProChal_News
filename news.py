@@ -146,6 +146,72 @@ def show_game_5(): show_placeholder_page("게임 5")
 def show_exchange(): show_placeholder_page("🛒 교환소")
 
 # ------------------------------------------
+# 레이아웃
+# ------------------------------------------
+def inject_casino_theme():
+    st.markdown(
+        """
+        <style>
+        /* 1. 전체 배경 어둡게 (다크 앤 골드 톤) */
+        .stApp {
+            background-color: #0b0b0f;
+            color: #ffffff;
+            font-family: 'Pretendard', sans-serif;
+        }
+
+        /* 2. 네온 사인 타이틀 효과 */
+        h1, h2, h3 {
+            color: #fff;
+            text-shadow:
+                0 0 5px #fff,
+                0 0 10px #fff,
+                0 0 20px #ffd700,
+                0 0 40px #ffd700,
+                0 0 80px #ff8c00;
+            text-align: center;
+        }
+
+        /* 3. 코인/연승 정보 표시 영역 (VIP 골드 카드 느낌) */
+        .vip-info-box {
+            background: linear-gradient(135deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
+            color: #000;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: 900;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+            margin-bottom: 20px;
+        }
+
+        /* 4. 화려한 버튼 스타일 (베팅 버튼 느낌) */
+        .stButton > button {
+            background: linear-gradient(to right, #ff416c, #ff4b2b) !important;
+            border: 2px solid #ff4b2b !important;
+            color: white !important;
+            font-weight: 900 !important;
+            font-size: 1.1rem !important;
+            border-radius: 8px !important;
+            box-shadow: 0 4px 15px 0 rgba(255, 65, 108, 0.75) !important;
+            transition: all 0.3s ease-in-out !important;
+        }
+        .stButton > button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px 0 rgba(255, 65, 108, 0.9) !important;
+        }
+
+        /* 5. 텍스트 입력창 어둡게 */
+        .stTextInput > div > div > input {
+            background-color: #1a1a24;
+            color: #ffd700;
+            border: 1px solid #ffd700;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+# ------------------------------------------
 # 메인 화면 정의
 # ------------------------------------------
 def show_login_page():
@@ -207,6 +273,9 @@ def show_login_page():
             st.error("학번은 5자리 숫자로 입력해주세요.")
 
 def show_main_page():
+    # 카지노 테마 CSS 주입
+    inject_casino_theme()
+
     # 자동 새로고침 (1분마다 갱신)
     st_autorefresh(interval=600000, limit=None, key="auto_refresh")
 
@@ -217,7 +286,16 @@ def show_main_page():
 
     user = st.session_state.current_user_data
     
-    # 1. 상단 바: 유저 정보 | 타이틀 | 로그아웃 (비율 3:4:1)
+    # 1. 상단 바: 화려한 VIP 정보창 적용
+    st.markdown(
+        f"""
+        <div class="vip-info-box">
+            🎰 [VIP] {user['아이디']} | 💰 {user['코인']} COIN | 🔥 {user['연승']} WINS
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
     top_col1, top_col2, top_col3 = st.columns([2, 5, 1])
     
     with top_col1:
