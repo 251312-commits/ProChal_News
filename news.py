@@ -249,24 +249,28 @@ def show_login_page():
     st.markdown("<h1>🎰 NEWS CASINO VIP 🎰</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; font-size: 1.2rem; color: #ffd700; margin-bottom: 30px;'>선수 입장. 학번을 입력하여 게임에 참여하세요.</p>", unsafe_allow_html=True)
 
-    # 가운데 정렬을 위해 컬럼 분할 (양옆 여백)
     col1, col2, col3 = st.columns([1, 2, 1])
     
     with col2:
         student_id = st.text_input("학번 입력 (5자리)", max_chars=5, placeholder="예: 12345")
         
         if student_id:
-            # 양쪽 공백을 제거한 후 숫자인지 확인
             clean_id = student_id.strip()
             
             if clean_id.isdigit():
                 users_data = ws.get_all_records() 
                 
-                # 🚨 핵심 수정 부분: 시트의 학번 데이터를 문자열로 바꾸고 공백 및 '.0'(소수점) 제거하여 완벽하게 비교
+                # 🚨 무조건 문자열로 변환 후 찌꺼기를 잘라내고 비교하는 로직
                 user_info = None
                 for item in users_data:
-                    # gspread로 가져온 데이터가 12345.0 처럼 실수형일 경우를 대비해 replace('.0', '') 적용
-                    sheet_id = str(item.get('학번', '')).strip().replace('.0', '')
+                    raw_sheet_id = str(item.get('학번', ''))
+                    
+                    # '12345.0' 등 소수점이 섞여 들어오면 '.'을 기준으로 쪼개서 앞자리(12345)만 취함
+                    if '.' in raw_sheet_id:
+                        sheet_id = raw_sheet_id.split('.')[0]
+                    else:
+                        sheet_id = raw_sheet_id.strip()
+                        
                     if sheet_id == clean_id:
                         user_info = item
                         break
@@ -286,10 +290,21 @@ def show_login_page():
                         final_username = username if username else f"익명_{clean_id}"
                         initial_coins = 5000
                         
-                        # 추천인 처리에도 동일한 엄격한 비교 룰 적용
+                        # 추천인 학번 확인에도 동일한 방식 적용
                         if referral:
                             clean_referral = referral.strip()
-                            referral_info = next((item for item in users_data if str(item.get('학번', '')).strip().replace('.0', '') == clean_referral), None)
+                            referral_info = None
+                            
+                            for item in users_data:
+                                raw_ref_id = str(item.get('학번', ''))
+                                if '.' in raw_ref_id:
+                                    ref_id = raw_ref_id.split('.')[0]
+                                else:
+                                    ref_id = raw_ref_id.strip()
+                                    
+                                if ref_id == clean_referral:
+                                    referral_info = item
+                                    break
                             
                             if referral_info:
                                 row_idx = users_data.index(referral_info) + 2 
@@ -300,6 +315,7 @@ def show_login_page():
                             else:
                                 st.toast("해당 학번이 없어 추천인 보상이 지급되지 않았습니다.")
                         
+                        # 시트에 새로 저장할 때 문자열 그대로 넘겨서 데이터 타입 충돌 방지
                         new_row = [clean_id, final_username, initial_coins, 0, referral.strip()]
                         ws.append_row(new_row)
                         
@@ -429,7 +445,7 @@ def show_main_page():
             "box-shadow": "0 4px 10px rgba(255, 42, 42, 0.3)",
             "cursor": "pointer"
         },
-        key="main_menu_banners"
+        key="main_menu_banners_2"
     )
 
     # 6. 배너 클릭 시 페이지 이동 (라우팅)
