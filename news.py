@@ -412,7 +412,7 @@ def show_main_page():
         "https://github.com/user-attachments/assets/331b7b2e-c4f5-4087-9f6b-9e672afb9568", 
         "https://github.com/user-attachments/assets/24bc9c42-e6c0-4f6f-a3a1-e1cce8fd66f3", 
         "https://github.com/user-attachments/assets/caf0511f-54f9-4d1e-8d6d-318e6886f2b4", 
-        "https://picsum.photos/id/40/800/110", 
+        "https://github.com/user-attachments/assets/2893591d-30c2-485a-adcc-f8bd2ed94aa", 
         "https://picsum.photos/id/50/800/110", 
         "https://picsum.photos/id/60/800/110", 
         "https://picsum.photos/id/70/800/110", 
