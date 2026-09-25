@@ -168,12 +168,15 @@ import time
 
 import streamlit.components.v1 as components  # 상단 import 목록에 추가
 
+import streamlit as st
+import streamlit.components.v1 as components
+
 # ==========================================
-# [공통 UI] 흰색 픽셀 브라우저 + 슬롯머신 연출 + 작동하는 타이머
+# [공통 UI] 흰색 픽셀 브라우저 + 슬롯 연출(시간 연장 & SFX) + 픽셀 타이머
 # ==========================================
 def get_game_news_selection(game_id: str):
     """
-    1단계: 슬롯머신 연출과 함께 3개 뉴스 선택 (흰색 가상 브라우저 창)
+    1단계: 극적인 슬롯머신 연출(3초) & 효과음과 함께 3개 뉴스 선택
     2단계: 선택한 뉴스 제목 + 본문 읽기 (픽셀 30초 타이머 & 타임아웃 자동 이동)
     3단계: 읽기 완료 후 (title, text, url) 반환
     """
@@ -187,7 +190,7 @@ def get_game_news_selection(game_id: str):
         return chosen['title'], chosen['text'], chosen['url']
 
     # ----------------------------------------------------
-    # 👾 흰색 브라우저 창 + 슬롯머신 CSS 애니메이션 스타일링
+    # 👾 흰색 브라우저 창 + 극적 슬롯머신 CSS 애니메이션
     # ----------------------------------------------------
     st.markdown(
         """
@@ -242,36 +245,39 @@ def get_game_news_selection(game_id: str):
             line-height: 1;
         }
 
-        /* 🎰 슬롯머신 연출 상단 전광판 */
+        /* 🎰 슬롯머신 전광판 */
         .slot-machine-banner {
             background: #110620;
-            border: 2px solid #2d1842;
+            border: 2.5px solid #2d1842;
             border-radius: 4px;
-            padding: 8px 12px;
+            padding: 10px 12px;
             text-align: center;
             color: #00ffcc;
             font-family: 'Press Start 2P', monospace;
             font-size: 10px;
-            box-shadow: inset 0 0 8px rgba(0, 255, 204, 0.3);
+            box-shadow: inset 0 0 10px rgba(0, 255, 204, 0.4);
             margin-bottom: 16px;
+            letter-spacing: 1px;
         }
 
-        /* 🎰 슬롯머신 릴 애니메이션 (1, 2, 3번 버튼 시차 출현 연출) */
-        @keyframes slotDrop {
-            0% { transform: translateY(-50px); opacity: 0; filter: blur(5px); }
-            60% { transform: translateY(8px); opacity: 0.9; filter: blur(0px); }
-            80% { transform: translateY(-3px); opacity: 1; }
+        /* 🎰 [수정] 슬롯머신 릴 회전 연출 키프레임 (회전 효과 & 바운스) */
+        @keyframes slotSpinReel {
+            0% { transform: translateY(-180px) scaleY(1.3); opacity: 0; filter: blur(6px); }
+            50% { transform: translateY(20px) scaleY(0.95); opacity: 0.8; filter: blur(2px); }
+            70% { transform: translateY(-10px); opacity: 1; filter: blur(0px); }
+            85% { transform: translateY(5px); }
             100% { transform: translateY(0px); opacity: 1; }
         }
 
+        /* 1, 2, 3번 버튼이 차례대로 회전하다 멈춤 (총 3초간 진행) */
         div[data-testid="stButton"]:nth-of-type(1) {
-            animation: slotDrop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.1s both;
+            animation: slotSpinReel 1.2s cubic-bezier(0.25, 1, 0.5, 1) 0.2s both;
         }
         div[data-testid="stButton"]:nth-of-type(2) {
-            animation: slotDrop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.4s both;
+            animation: slotSpinReel 1.2s cubic-bezier(0.25, 1, 0.5, 1) 0.9s both;
         }
         div[data-testid="stButton"]:nth-of-type(3) {
-            animation: slotDrop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.7s both;
+            animation: slotSpinReel 1.2s cubic-bezier(0.25, 1, 0.5, 1) 1.6s both;
         }
 
         /* 3. 사각형 전체 버튼 */
@@ -392,6 +398,50 @@ def get_game_news_selection(game_id: str):
 
         candidates = st.session_state[candidates_key]
 
+        # 🔊 8-Bit 슬롯머신 효과음(SFX) 재생 (Web Audio API)
+        components.html(
+            """
+            <script>
+            (function() {
+                try {
+                    var AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (!AudioContext) return;
+                    var ctx = new AudioContext();
+                    
+                    function playRetroBeep(freq, startTime, duration) {
+                        var osc = ctx.createOscillator();
+                        var gain = ctx.createGain();
+                        osc.type = 'square';
+                        osc.frequency.setValueAtTime(freq, startTime);
+                        gain.gain.setValueAtTime(0.1, startTime);
+                        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(startTime);
+                        osc.stop(startTime + duration);
+                    }
+
+                    var now = ctx.currentTime;
+                    // 슬롯 돌아가는 소리 & 3번 멈추는 소리
+                    playRetroBeep(300, now + 0.1, 0.1);
+                    playRetroBeep(450, now + 0.2, 0.1);
+                    playRetroBeep(600, now + 0.3, 0.1);
+                    
+                    // 1번 릴 스톱 (0.9s)
+                    playRetroBeep(523.25, now + 0.9, 0.15); // C5
+                    // 2번 릴 스톱 (1.6s)
+                    playRetroBeep(659.25, now + 1.6, 0.15); // E5
+                    // 3번 릴 스톱 (2.3s) - 당첨음
+                    playRetroBeep(783.99, now + 2.3, 0.25); // G5
+                    playRetroBeep(1046.50, now + 2.45, 0.3); // C6
+                } catch(e) {}
+            })();
+            </script>
+            """,
+            height=0,
+            width=0
+        )
+
         # 📦 흰색 배경 가상 브라우저 창
         with st.container(border=True):
             st.markdown(
@@ -411,7 +461,7 @@ def get_game_news_selection(game_id: str):
                 unsafe_allow_html=True
             )
 
-            # 슬롯 릴 애니메이션과 함께 1, 2, 3번 버튼 순차적 등장
+            # 슬롯 릴 애니메이션과 함께 버튼 출현
             for idx, item in enumerate(candidates):
                 if st.button(f"📰 {item['title']}", key=f"btn_{game_id}_{idx}", use_container_width=True):
                     new_count = item['count'] + 1
@@ -473,7 +523,7 @@ def get_game_news_selection(game_id: str):
 
         next_clicked = st.button("▶ 다 읽었으면 다음", key=f"next_btn_{game_id}", use_container_width=True)
 
-        # ⏱️ components.html을 이용해 실시간 30초 카운트다운 및 자동 다음 처리
+        # ⏱️ components.html을 이용한 30초 카운트다운 & 0초 자동 다음 클릭
         components.html(
             f"""
             <script>
@@ -508,6 +558,7 @@ def get_game_news_selection(game_id: str):
             st.rerun()
 
     return None, None, None
+
 
 # ==========================================
 # 4. Streamlit 앱 라우팅 및 상태 관리
