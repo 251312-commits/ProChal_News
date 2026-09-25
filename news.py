@@ -165,41 +165,113 @@ def pick_3_lowest_count_news(news_list):
     return selected
 
 # ==========================================
-# [공통 UI] 모든 게임에서 사용할 뉴스 선택 함수
+# [공통 UI] 픽셀 브라우저 스타일 뉴스 선택 함수
 # ==========================================
 def get_game_news_selection(game_id: str):
-    """
-    반환값: (selected_title, selected_text, selected_url)
-    선택되지 않았을 때는 (None, None, None)을 반환하여 게임 진행을 대기시킵니다.
-    """
     news_key = f"selected_news_{game_id}"
     candidates_key = f"candidates_{game_id}"
 
-    # 1. 이미 뉴스를 선택한 경우 -> 선택한 뉴스 정보 반환
+    # 1. 이미 뉴스를 선택한 경우 -> 다시 선택 버튼 없이 바로 선택된 기사 데이터 반환
     if news_key in st.session_state and st.session_state[news_key]:
         chosen = st.session_state[news_key]
-        
-        col_t, col_b = st.columns([4, 1])
-        with col_t:
-            st.info(f"📰 **선택된 기사:** {chosen['title']}")
-        with col_b:
-            if st.button("🔄 다른 기사 선택", key=f"reset_{game_id}"):
-                del st.session_state[news_key]
-                if candidates_key in st.session_state:
-                    del st.session_state[candidates_key]
-                st.rerun()
-                
         return chosen['title'], chosen['text'], chosen['url']
 
-    # 2. 뉴스를 아직 안 뽑은 경우 -> 3개 무작위 후보 세팅
-    st.markdown("### 🎲 게임에 사용할 뉴스를 선택하세요")
-    st.caption("선택 횟수가 적은 기사가 우선 추천됩니다.")
+    # 2. 픽셀 브라우저 스타일 CSS 적용
+    st.markdown(
+        """
+        <style>
+        /* 👾 레트로 픽셀 창 스타일 */
+        .pixel-window-container {
+            background-color: #f7f2fc;
+            border: 3px solid #331f47;
+            border-radius: 8px;
+            box-shadow: 6px 6px 0px #331f47;
+            margin: 10px 0 25px 0;
+            overflow: hidden;
+            font-family: 'Courier New', monospace, sans-serif;
+        }
+        .pixel-window-header {
+            background: linear-gradient(90deg, #a382de 0%, #d8b4f8 100%);
+            color: #331f47;
+            padding: 8px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #331f47;
+            font-weight: 900;
+            font-size: 0.95rem;
+            letter-spacing: 1px;
+        }
+        .pixel-window-controls {
+            display: flex;
+            gap: 5px;
+        }
+        .pixel-control-btn {
+            width: 18px;
+            height: 18px;
+            background: #ffffff;
+            color: #331f47;
+            border: 2px solid #331f47;
+            border-radius: 2px;
+            font-size: 11px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+        .pixel-window-body {
+            padding: 20px 16px 10px 16px;
+        }
+        .pixel-window-title {
+            color: #4a2875;
+            font-size: 1.05rem;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 18px;
+            letter-spacing: -0.5px;
+        }
 
+        /* 🔲 기사 제목 사각형 전체가 버튼이 되도록 스타일링 */
+        div[data-testid="stButton"] > button {
+            background-color: #ffffff !important;
+            color: #2b173e !important;
+            border: 2.5px solid #331f47 !important;
+            border-radius: 6px !important;
+            box-shadow: 4px 4px 0px #331f47 !important;
+            padding: 16px 20px !important;
+            font-size: 1rem !important;
+            font-weight: 800 !important;
+            text-align: left !important;
+            line-height: 1.4 !important;
+            white-space: normal !important;
+            word-break: keep-all !important;
+            height: auto !important;
+            min-height: 60px !important;
+            margin-bottom: 12px !important;
+            transition: all 0.12s ease-in-out !important;
+        }
+        div[data-testid="stButton"] > button:hover {
+            background-color: #ebdcfc !important;
+            color: #5c23a0 !important;
+            transform: translate(-2px, -2px) !important;
+            box-shadow: 6px 6px 0px #331f47 !important;
+        }
+        div[data-testid="stButton"] > button:active {
+            transform: translate(2px, 2px) !important;
+            box-shadow: 2px 2px 0px #331f47 !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # 3. 뉴스 후보 3개 데이터 추출
     if candidates_key not in st.session_state:
         raw_records = ws_news.get_all_records()
         news_data = []
 
-        with st.spinner("뉴스 목록을 가져오는 중..."):
+        with st.spinner("기사 목록 구성 중..."):
             for idx, row in enumerate(raw_records):
                 url = str(row.get('URL', '')).strip()
                 if not url:
@@ -212,16 +284,15 @@ def get_game_news_selection(game_id: str):
                     
                 title = str(row.get('Title', '')).strip()
                 
-                # 제목이 시트에 비어있으면 URL에서 직접 추출 후 시트에 업데이트
                 if not title or title == "None":
                     try:
                         title, _ = bring_article(url)
-                        ws_news.update_cell(idx + 2, 3, title) # C열(Title) 기록
+                        ws_news.update_cell(idx + 2, 3, title)
                     except:
                         title = f"뉴스 기사 #{idx+1}"
 
                 news_data.append({
-                    'row_idx': idx + 2, # 시트 행 번호
+                    'row_idx': idx + 2,
                     'url': url,
                     'count': count,
                     'title': title
@@ -231,40 +302,53 @@ def get_game_news_selection(game_id: str):
             st.warning("구글 시트 'News' 탭에 등록된 뉴스 URL이 없습니다.")
             return None, None, None
 
-        # 조건에 맞는 3개 후보 추출하여 세션에 저장
         st.session_state[candidates_key] = pick_3_lowest_count_news(news_data)
 
     candidates = st.session_state[candidates_key]
 
-    # 3. 화면에 3개 뉴스 선택 카드 표시
+    # 4. 레트로 픽셀 브라우저 창 오픈
+    st.markdown(
+        """
+        <div class="pixel-window-container">
+            <div class="pixel-window-header">
+                <span>👾 SELECT_ARTICLE.EXE</span>
+                <div class="pixel-window-controls">
+                    <div class="pixel-control-btn">-</div>
+                    <div class="pixel-control-btn">□</div>
+                    <div class="pixel-control-btn">×</div>
+                </div>
+            </div>
+            <div class="pixel-window-body">
+                <div class="pixel-window-title">CHOOSE A NEWS ARTICLE TO START :)</div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # 5. 세로형 사각형 기사 버튼 3개 생성 (선택 횟수 노출 제거, 제목 전체 버튼화)
     for idx, item in enumerate(candidates):
-        with st.container(border=True):
-            col_info, col_btn = st.columns([3.5, 1])
-            with col_info:
-                st.markdown(f"**{idx+1}. {item['title']}**")
-                st.caption(f"📊 이전 선택 횟수: {item['count']}회")
-            with col_btn:
-                if st.button("선택하기", key=f"btn_{game_id}_{idx}", use_container_width=True):
-                    # ① 구글 시트의 선택 횟수 +1 증가
-                    new_count = item['count'] + 1
-                    ws_news.update_cell(item['row_idx'], 2, new_count)
+        if st.button(f"📰 {item['title']}", key=f"btn_{game_id}_{idx}", use_container_width=True):
+            # 선택 횟수 +1
+            new_count = item['count'] + 1
+            ws_news.update_cell(item['row_idx'], 2, new_count)
 
-                    # ② 기사 본문 크롤링
-                    with st.spinner("기사 내용을 본문에 적용 중..."):
-                        try:
-                            title, clean_text = bring_article(item['url'])
-                        except:
-                            title = item['title']
-                            clean_text = "본문 내용을 가져오는 데 실패했습니다."
+            # 기사 크롤링
+            with st.spinner("선택한 기사 읽어오는 중..."):
+                try:
+                    title, clean_text = bring_article(item['url'])
+                except:
+                    title = item['title']
+                    clean_text = "본문 내용을 가져오는 데 실패했습니다."
 
-                    # ③ 세션 저장 및 리런
-                    st.session_state[news_key] = {
-                        'title': title,
-                        'text': clean_text,
-                        'url': item['url']
-                    }
-                    del st.session_state[candidates_key]
-                    st.rerun()
+            # 저장 및 즉시 리런
+            st.session_state[news_key] = {
+                'title': title,
+                'text': clean_text,
+                'url': item['url']
+            }
+            del st.session_state[candidates_key]
+            st.rerun()
+
+    st.markdown("</div></div>", unsafe_allow_html=True)
 
     return None, None, None
 
