@@ -166,8 +166,10 @@ def pick_3_lowest_count_news(news_list):
 
 import time
 
+import streamlit.components.v1 as components  # 상단 import 목록에 추가
+
 # ==========================================
-# [공통 UI] 흰색 픽셀 브라우저 + 슬롯머신 연출 뉴스 선택 함수
+# [공통 UI] 흰색 픽셀 브라우저 + 슬롯머신 연출 + 작동하는 타이머
 # ==========================================
 def get_game_news_selection(game_id: str):
     """
@@ -272,7 +274,7 @@ def get_game_news_selection(game_id: str):
             animation: slotDrop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.7s both;
         }
 
-        /* 3. 사각형 전체 버튼 (흰색 바탕에 명확히 보이는 보라/연보라 입체 버튼) */
+        /* 3. 사각형 전체 버튼 */
         div[data-testid="stButton"] > button {
             background-color: #fcfaff !important;
             color: #2d1842 !important;
@@ -339,6 +341,11 @@ def get_game_news_selection(game_id: str):
             white-space: pre-line;
             box-shadow: inset 2px 2px 5px rgba(0,0,0,0.06);
         }
+
+        /* JS 실행용 컴포넌트 프레임 여백 숨김 */
+        iframe[title="streamlit.components.v1.component_html"] {
+            display: none !important;
+        }
         </style>
         """,
         unsafe_allow_html=True
@@ -404,7 +411,7 @@ def get_game_news_selection(game_id: str):
                 unsafe_allow_html=True
             )
 
-            # 슬롯 릴 애니메이션과 함께 1, 2, 3번 버튼 순차적으로 딱- 딱- 딱- 등장
+            # 슬롯 릴 애니메이션과 함께 1, 2, 3번 버튼 순차적 등장
             for idx, item in enumerate(candidates):
                 if st.button(f"📰 {item['title']}", key=f"btn_{game_id}_{idx}", use_container_width=True):
                     new_count = item['count'] + 1
@@ -466,26 +473,23 @@ def get_game_news_selection(game_id: str):
 
         next_clicked = st.button("▶ 다 읽었으면 다음", key=f"next_btn_{game_id}", use_container_width=True)
 
-        # 30초 후 자동 다음 버튼 클릭 자바스크립트
-        st.markdown(
+        # ⏱️ components.html을 이용해 실시간 30초 카운트다운 및 자동 다음 처리
+        components.html(
             f"""
             <script>
             (function() {{
                 var sec = 30;
-                var timerElem = document.getElementById("pixel_timer_num");
+                var parentDoc = window.parent.document;
                 
-                if (window.pixelTimerInterval_{game_id}) {{
-                    clearInterval(window.pixelTimerInterval_{game_id});
-                }}
-                
-                window.pixelTimerInterval_{game_id} = setInterval(function() {{
+                var timerInterval = setInterval(function() {{
                     sec--;
+                    var timerElem = parentDoc.getElementById("pixel_timer_num");
                     if (timerElem) {{
                         timerElem.innerText = sec > 0 ? sec : 0;
                     }}
                     if (sec <= 0) {{
-                        clearInterval(window.pixelTimerInterval_{game_id});
-                        var btns = Array.from((window.parent || window).document.querySelectorAll('button'));
+                        clearInterval(timerInterval);
+                        var btns = Array.from(parentDoc.querySelectorAll('button'));
                         var targetBtn = btns.find(b => b.innerText.includes('다 읽었으면 다음'));
                         if (targetBtn) {{
                             targetBtn.click();
@@ -495,7 +499,8 @@ def get_game_news_selection(game_id: str):
             }})();
             </script>
             """,
-            unsafe_allow_html=True
+            height=0,
+            width=0
         )
 
         if next_clicked:
@@ -503,7 +508,6 @@ def get_game_news_selection(game_id: str):
             st.rerun()
 
     return None, None, None
-
 
 # ==========================================
 # 4. Streamlit 앱 라우팅 및 상태 관리
