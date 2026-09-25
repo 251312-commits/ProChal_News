@@ -477,18 +477,10 @@ def show_placeholder_page(title_name):
 
 def show_game_1():
     st.title("🎮 게임 1: 뉴스 예측 게임")
-    
     # 🚨 공통 뉴스 선택 UI 호출 (뉴스 선택 전에는 아래 게임 코드 실행 안됨)
     title, article_text, url = get_game_news_selection("game_1")
     if not title:
         return
-    
-    # ----------------------------------------
-    # 여기서부터 원래 게임 1의 로직 작성
-    # ----------------------------------------
-    st.divider()
-    st.subheader("뉴스 본문 내용")
-    st.write(article_text[:300] + "...") # 가져온 뉴스 본문 사용
 
 def show_game_2(): show_placeholder_page("게임 2")
 def show_game_3(): show_placeholder_page("게임 3")
