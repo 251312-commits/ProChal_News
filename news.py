@@ -120,6 +120,10 @@ ws = init_gspread()
 # ==========================================
 if 'page' not in st.session_state:
     st.session_state.page = 'login'
+if 'login_step' not in st.session_state:
+    st.session_state.login_step = 1  # 1: 학번 입력, 2_exist: 비밀번호 입력, 2_new: 회원가입
+if 'temp_student_id' not in st.session_state:
+    st.session_state.temp_student_id = None
 if 'current_user' not in st.session_state:
     st.session_state.current_user = None
 if 'current_user_data' not in st.session_state:
@@ -229,21 +233,66 @@ def inject_casino_theme():
             font-size: 1rem;
         }
 
-        /* 5. 로그인 페이지 전용 네온 폼 박스 (점선 제거) */
-        .neon-login-box {
-            background-color: #0d001a;
-            box-shadow: 0 0 20px rgba(138, 43, 226, 0.5), inset 0 0 15px rgba(255, 0, 255, 0.3);
-            padding: 30px;
-            border-radius: 10px;
-            margin-top: 20px;
-        }
-        .login-warning {
-            color: #FF00FF;
-            font-weight: 900;
-            font-size: 1.2rem;
+        /* 이미지 느낌의 중앙 반투명 로그인 카드 컨테이너 */
+        .login-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 35px 25px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
             text-align: center;
-            text-shadow: 0 0 10px #FF00FF;
             margin-bottom: 20px;
+        }
+
+        /* 로그인 카드 상단 유저 아이콘 */
+        .user-icon-circle {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #FFDF00, #D4AF37);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px auto;
+            font-size: 40px;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+        }
+
+        /* 입력 폼 스타일링 */
+        .stTextInput > div > div > input {
+            background-color: rgba(255, 255, 255, 0.9) !important;
+            color: #000000 !important;
+            border-radius: 10px !important;
+            border: none !important;
+            height: 48px;
+            font-size: 1rem;
+            text-align: center;
+        }
+
+        /* 버튼 스타일 */
+        .stButton > button {
+            background: linear-gradient(to right, #B8860B, #FFDF00) !important;
+            color: #000000 !important;
+            font-weight: bold !important;
+            font-size: 1.1rem !important;
+            border-radius: 10px !important;
+            height: 48px;
+            border: none !important;
+            margin-top: 10px;
+        }
+
+        /* 비밀번호 안내 주의사항 박스 */
+        .warning-note {
+            background-color: rgba(255, 77, 77, 0.15);
+            border-left: 4px solid #ff4d4d;
+            color: #ffcccc;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            text-align: left;
+            margin-top: 10px;
+            margin-bottom: 15px;
         }
 
         /* 기타 스트림릿 UI 덮어쓰기 */
@@ -275,96 +324,144 @@ def inject_casino_theme():
 # 메인 화면 정의
 # ------------------------------------------
 def show_login_page():
-    # 상단 텍스트를 배팅 사이트 홍보물 스타일로 화려하게 변경
-    st.markdown(
-        """
-        <div style="text-align: center; margin-bottom: 30px;">
-            <div style="color: white; font-weight: 900; font-size: 1.3rem; margin-bottom: -10px; text-shadow: 0 0 5px #fff;">★ 업계 1위 메이저 안전공원 ★</div>
-            <div class="neon-logo-text" style="font-size: 4rem;">NEWS PLAY</div>
-            <div style="color: #FF00FF; font-weight: bold; font-size: 1.1rem; margin-top: 15px; text-shadow: 0 0 10px #FF00FF;">
-                가입즉시 5,000C 지급 | 무한 매충 | 먹튀 이력 절대 ZERO
-            </div>
-        </div>
-        """, unsafe_allow_html=True
-    )
+    # 중앙 정렬을 위한 3컬럼 레이아웃
+    _, col_main, _ = st.columns([1, 2, 1])
 
-    col1, col2, col3 = st.columns([1, 2, 1])
-    
-    with col2:
-        # 로그인 폼을 감싸는 네온 점선 박스 시작
-        st.markdown('<div class="neon-login-box">', unsafe_allow_html=True)
-        st.markdown('<div class="login-warning">⚠️ 가입코드 1111 / 학번으로 즉시 안전입장 ⚠️</div>', unsafe_allow_html=True)
-        
-        student_id = st.text_input("고유 식별번호 (학번 5자리)", max_chars=5, placeholder="입력 후 반드시 Enter를 눌러주세요")
-        
-        if student_id:
-            clean_id = student_id.strip()
+    with col_main:
+        # 로그인 카드 박스 시작
+        st.markdown(
+            """
+            <div class="login-card">
+                <div class="user-icon-circle">👤</div>
+                <h2 style="margin-bottom: 5px; color: #FFD700;">NEWS CASINO</h2>
+                <p style="color: #bbb; font-size: 0.9rem; margin-bottom: 25px;">VIP 전용 프라이빗 라운지</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # ----------------------------------------------------
+        # STEP 1: 학번 확인
+        # ----------------------------------------------------
+        if st.session_state.login_step == 1:
+            student_id = st.text_input("학번", max_chars=5, placeholder="학번 5자리 입력", key="input_sid")
             
-            if clean_id.isdigit():
-                users_data = ws.get_all_records() 
-                
-                user_info = None
-                for item in users_data:
-                    raw_sheet_id = str(item.get('학번', ''))
+            if st.button("다음 (Next)", use_container_width=True):
+                clean_id = student_id.strip()
+                if clean_id.isdigit() and len(clean_id) == 5:
+                    users_data = ws.get_all_records()
                     
-                    if '.' in raw_sheet_id:
-                        sheet_id = raw_sheet_id.split('.')[0]
+                    # 시트 학번 매칭 검사
+                    user_info = None
+                    for item in users_data:
+                        raw_sheet_id = str(item.get('학번', ''))
+                        sheet_id = raw_sheet_id.split('.')[0] if '.' in raw_sheet_id else raw_sheet_id.strip()
+                        if sheet_id == clean_id:
+                            user_info = item
+                            break
+                    
+                    st.session_state.temp_student_id = clean_id
+                    
+                    if user_info:
+                        st.session_state.temp_user_data = user_info
+                        st.session_state.login_step = '2_exist'  # 기존 계정 -> 비밀번호 입력
                     else:
-                        sheet_id = raw_sheet_id.strip()
-                        
-                    if sheet_id == clean_id:
-                        user_info = item
-                        break
-                
-                if user_info:
-                    st.success(f"✔️ 안전 계좌 확인 완료: {user_info.get('아이디', '알 수 없음')}님 환영합니다.")
-                    if st.button("🚀 초고속 안전 입장 🚀", use_container_width=True):
-                        st.session_state.current_user = clean_id
-                        st.session_state.current_user_data = user_info
-                        change_page('main')
+                        st.session_state.login_step = '2_new'    # 신규 계정 -> 회원가입
+                    st.rerun()
                 else:
-                    st.info("🚨 [신규 가입 안내] 닉네임을 설정하고 꽁머니를 받으세요!")
-                    username = st.text_input("닉네임 (미입력 시 '익명' 처리)", placeholder="도박사_01")
-                    referral = st.text_input("지인 추천 코드 (선택사항)")
-                    
-                    if st.button("💰 가입 및 꽁머니 수령 💰", use_container_width=True):
-                        final_username = username if username else f"익명_{clean_id}"
+                    st.error("학번은 5자리 숫자로 입력해주세요.")
+
+        # ----------------------------------------------------
+        # STEP 2-1: 기존 유저 비밀번호 입력
+        # ----------------------------------------------------
+        elif st.session_state.login_step == '2_exist':
+            st.info(f"학번: {st.session_state.temp_student_id}")
+            password = st.text_input("비밀번호", type="password", placeholder="비밀번호 입력", key="input_pw_login")
+            
+            col_b1, col_b2 = st.columns(2)
+            with col_b1:
+                if st.button("이전", use_container_width=True):
+                    st.session_state.login_step = 1
+                    st.rerun()
+            with col_b2:
+                if st.button("로그인", use_container_width=True):
+                    saved_pw = str(st.session_state.temp_user_data.get('비밀번호', ''))
+                    if password == saved_pw:
+                        st.session_state.current_user = st.session_state.temp_student_id
+                        st.session_state.current_user_data = st.session_state.temp_user_data
+                        # 로그인 성공 후 세션 정리
+                        st.session_state.login_step = 1
+                        change_page('main')
+                    else:
+                        st.error("비밀번호가 일치하지 않습니다.")
+
+        # ----------------------------------------------------
+        # STEP 2-2: 신규 유저 회원가입
+        # ----------------------------------------------------
+        elif st.session_state.login_step == '2_new':
+            st.success(f"신규 가입 대상 학번: {st.session_state.temp_student_id}")
+            
+            username = st.text_input("아이디 (닉네임)", placeholder="사용할 닉네임", key="input_uname")
+            password = st.text_input("비밀번호", type="password", placeholder="비밀번호 설정", key="input_pw1")
+            password_confirm = st.text_input("비밀번호 확인", type="password", placeholder="비밀번호 재입력", key="input_pw2")
+            referral = st.text_input("추천인 학번 (선택)", placeholder="초대한 친구 학번", key="input_ref")
+
+            # 주의사항 노트
+            st.markdown(
+                """
+                <div class="warning-note">
+                    ⚠️ <b>주의사항:</b> 설정한 비밀번호는 보안상 추후 변경이 어려우니 반드시 기억해 두시기 바랍니다!
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+            col_b1, col_b2 = st.columns(2)
+            with col_b1:
+                if st.button("이전", use_container_width=True):
+                    st.session_state.login_step = 1
+                    st.rerun()
+            with col_b2:
+                if st.button("가입완료", use_container_width=True):
+                    if not username.strip():
+                        st.error("닉네임을 입력해 주세요.")
+                    elif not password:
+                        st.error("비밀번호를 입력해 주세요.")
+                    elif password != password_confirm:
+                        st.error("비밀번호 확인이 일치하지 않습니다.")
+                    else:
+                        clean_id = st.session_state.temp_student_id
+                        final_username = username.strip()
                         initial_coins = 5000
-                        
-                        if referral:
-                            clean_referral = referral.strip()
-                            referral_info = None
-                            
-                            for item in users_data:
-                                raw_ref_id = str(item.get('학번', ''))
-                                if '.' in raw_ref_id:
-                                    ref_id = raw_ref_id.split('.')[0]
-                                else:
-                                    ref_id = raw_ref_id.strip()
-                                    
-                                if ref_id == clean_referral:
-                                    referral_info = item
-                                    break
-                            
-                            if referral_info:
-                                row_idx = users_data.index(referral_info) + 2 
-                                new_coins = int(referral_info.get('코인', 0)) + 3000
+                        users_data = ws.get_all_records()
+
+                        # 추천인 보상 로직
+                        if referral.strip():
+                            clean_ref = referral.strip()
+                            ref_info = next((item for item in users_data if str(item.get('학번', '')).split('.')[0] == clean_ref), None)
+                            if ref_info:
+                                row_idx = users_data.index(ref_info) + 2
+                                new_coins = int(ref_info.get('코인', 0)) + 3000
                                 ws.update_cell(row_idx, 3, new_coins)
                                 initial_coins += 1000
-                                st.toast(f"🎉 지인 추천 이벤트 적용! 본인 +1000C, {clean_referral}님 +3000C 지급!")
-                            else:
-                                st.toast("해당 추천 코드가 존재하지 않습니다.")
-                        
-                        new_row = [clean_id, final_username, initial_coins, 0, referral.strip()]
+                                st.toast("🎉 추천인 보상 코인이 지급되었습니다!")
+
+                        # 구글 시트에 행 추가 (순서: 학번, 아이디, 코인, 연승, 추천인, 비밀번호)
+                        new_row = [clean_id, final_username, initial_coins, 0, referral.strip(), password]
                         ws.append_row(new_row)
-                        
+
+                        # 로그인 완료 처리
                         st.session_state.current_user = clean_id
                         st.session_state.current_user_data = {
-                            "학번": clean_id, "아이디": final_username, "코인": initial_coins, "연승": 0
+                            "학번": clean_id,
+                            "아이디": final_username,
+                            "코인": initial_coins,
+                            "연승": 0,
+                            "비밀번호": password
                         }
+                        st.session_state.login_step = 1
                         change_page('main')
-            else:
-                st.error("학번은 숫자로만 입력 가능합니다.")
+
         
         # 로그인 폼 네온 박스 종료
         st.markdown('</div>', unsafe_allow_html=True)
