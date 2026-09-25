@@ -165,9 +165,6 @@ def pick_3_lowest_count_news(news_list):
             
     return selected
 
-import streamlit as st
-import streamlit.components.v1 as components
-
 # ==========================================
 # [공통 UI] 4초 네온 화려한 슬롯머신 (0.5초 간격 순차 멈춤 + 흰색 버튼) + 픽셀 타이머
 # ==========================================
@@ -315,16 +312,16 @@ def get_game_news_selection(game_id: str):
                 100% { border-color: #ff00ff; box-shadow: 0 0 20px rgba(255,0,255,0.9); }
             }
 
-            /* 1단계 3개 슬롯 버튼 공통 흰색 스타일 */
+            /* 1단계 3개 슬롯 버튼 공통 흰색 스타일 (컨테이너 내 2, 3, 4번째 자식) */
+            div[data-testid="stElementContainer"]:nth-child(2) > div[data-testid="stButton"] > button,
             div[data-testid="stElementContainer"]:nth-child(3) > div[data-testid="stButton"] > button,
-            div[data-testid="stElementContainer"]:nth-child(4) > div[data-testid="stButton"] > button,
-            div[data-testid="stElementContainer"]:nth-child(5) > div[data-testid="stButton"] > button {
+            div[data-testid="stElementContainer"]:nth-child(4) > div[data-testid="stButton"] > button {
                 position: relative !important;
                 overflow: hidden !important;
                 min-height: 72px !important;
                 background-color: #ffffff !important; /* 흰색 버튼 배경 */
                 color: #2d1842 !important;
-                border: 3px solid #2d1842 !important;
+                border: 3.5px solid #2d1842 !important;
                 border-radius: 6px !important;
                 box-shadow: 4px 4px 0px #2d1842 !important;
                 padding: 14px 16px !important;
@@ -339,9 +336,9 @@ def get_game_news_selection(game_id: str):
             }
 
             /* 회전 중 네온 무지개 가림막 (공통) */
+            div[data-testid="stElementContainer"]:nth-child(2) > div[data-testid="stButton"] > button::before,
             div[data-testid="stElementContainer"]:nth-child(3) > div[data-testid="stButton"] > button::before,
-            div[data-testid="stElementContainer"]:nth-child(4) > div[data-testid="stButton"] > button::before,
-            div[data-testid="stElementContainer"]:nth-child(5) > div[data-testid="stButton"] > button::before {
+            div[data-testid="stElementContainer"]:nth-child(4) > div[data-testid="stButton"] > button::before {
                 content: "✨ 💎 ❓  SLOT SPINNING  ❓ 💎 ✨\\A🎰  🌟  💎  ❓  💎  🌟  🎰\\A✨ 💎 ❓  SLOT SPINNING  ❓ 💎 ✨";
                 white-space: pre-wrap;
                 position: absolute;
@@ -362,27 +359,27 @@ def get_game_news_selection(game_id: str):
                 border-radius: 3px;
             }
 
-            /* 1번 기사 버튼: 3.0초 후 멈춤 */
-            div[data-testid="stElementContainer"]:nth-child(3) > div[data-testid="stButton"] > button::before {
+            /* 1번 기사 버튼 (nth-child(2)): 3.0초 후 멈춤 */
+            div[data-testid="stElementContainer"]:nth-child(2) > div[data-testid="stButton"] > button::before {
                 animation: slotReelVertical 0.08s linear infinite, rainbowShift 1.2s ease infinite alternate, reelStop 0.01s linear 3.0s forwards;
             }
-            div[data-testid="stElementContainer"]:nth-child(3) > div[data-testid="stButton"] > button p {
+            div[data-testid="stElementContainer"]:nth-child(2) > div[data-testid="stButton"] > button p {
                 animation: titlePopReveal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) 3.0s both !important;
             }
 
-            /* 2번 기사 버튼: 3.5초 후 멈춤 (0.5초 간격) */
-            div[data-testid="stElementContainer"]:nth-child(4) > div[data-testid="stButton"] > button::before {
+            /* 2번 기사 버튼 (nth-child(3)): 3.5초 후 멈춤 (0.5초 간격) */
+            div[data-testid="stElementContainer"]:nth-child(3) > div[data-testid="stButton"] > button::before {
                 animation: slotReelVertical 0.08s linear infinite, rainbowShift 1.2s ease infinite alternate, reelStop 0.01s linear 3.5s forwards;
             }
-            div[data-testid="stElementContainer"]:nth-child(4) > div[data-testid="stButton"] > button p {
+            div[data-testid="stElementContainer"]:nth-child(3) > div[data-testid="stButton"] > button p {
                 animation: titlePopReveal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) 3.5s both !important;
             }
 
-            /* 3번 기사 버튼: 4.0초 후 멈춤 (0.5초 간격) */
-            div[data-testid="stElementContainer"]:nth-child(5) > div[data-testid="stButton"] > button::before {
+            /* 3번 기사 버튼 (nth-child(4)): 4.0초 후 멈춤 (0.5초 간격) */
+            div[data-testid="stElementContainer"]:nth-child(4) > div[data-testid="stButton"] > button::before {
                 animation: slotReelVertical 0.08s linear infinite, rainbowShift 1.2s ease infinite alternate, reelStop 0.01s linear 4.0s forwards;
             }
-            div[data-testid="stElementContainer"]:nth-child(5) > div[data-testid="stButton"] > button p {
+            div[data-testid="stElementContainer"]:nth-child(4) > div[data-testid="stButton"] > button p {
                 animation: titlePopReveal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) 4.0s both !important;
             }
 
