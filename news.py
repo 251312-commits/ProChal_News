@@ -1,20 +1,17 @@
-import random
-import re
-import time
-from urllib.parse import urlparse
-
-from bs4 import BeautifulSoup
+import streamlit as st
 import gspread
 from google.oauth2.service_account import Credentials
-from newspaper import Article
-import streamlit as st
-from streamlit_autorefresh import st_autorefresh
 from st_clickable_images import clickable_images
+from newspaper import Article
+import re
+from urllib.parse import urlparse
+from bs4 import BeautifulSoup
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from streamlit_autorefresh import st_autorefresh
 
 # ==========================================
-# 1. AI 모델 로드 (최초 1회만 캐싱)
+# 1. 효율성 극대화: AI 모델 캐싱 (최초 1회만 로드)
 # ==========================================
 @st.cache_resource
 def load_ai_model():
@@ -27,7 +24,7 @@ def load_ai_model():
 tokenizer, model = load_ai_model()
 
 # ==========================================
-# 2. 기사 전처리 및 AI 관련 함수들
+# 2. 제공해주신 기사 전처리 함수들
 # ==========================================
 UI_WORDS = {'광고', '본문', '전체재생', '동영상 고정', '동영상 고정 취소', '이미지 확대', '사진 확대', '기사본문'}
 
@@ -55,14 +52,10 @@ def get_clean_title(article_obj, domain: str) -> str:
 
 def is_ad_or_ui_line(line: str) -> bool:
     s = line.strip()
-    if not s: 
-        return True
-    if s in UI_WORDS or s in {'[광고]', '(광고)', 'AD', 'Advertisement'}: 
-        return True
-    if re.match(r'^(광고|AD)\s*[:\-\|\[\(]', s) or s.endswith('(광고)'): 
-        return True
-    if '광고' in s and len(s) <= 20 and not re.search(r'[다요함음]\s*[\.\!\?]?$', s): 
-        return True
+    if not s: return True
+    if s in UI_WORDS or s in {'[광고]', '(광고)', 'AD', 'Advertisement'}: return True
+    if re.match(r'^(광고|AD)\s*[:\-\|\[\(]', s) or s.endswith('(광고)'): return True
+    if '광고' in s and len(s) <= 20 and not re.search(r'[다요함음]\s*[\.\!\?]?$', s): return True
     return False
 
 def remove_duplicate_and_ui_lines(text: str) -> str:
@@ -114,6 +107,7 @@ def init_gspread():
     )
     gc = gspread.authorize(credentials)
     
+    # 🚨 본인 구글 시트 URL 입력 필요
     sheet_url = "https://docs.google.com/spreadsheets/d/1-Kx4qK9SOV3fXF9q9jIYGefPDPQl_gkZK6iHUabKwmE/edit?usp=drivesdk"
     doc = gc.open_by_url(sheet_url)
     worksheet = doc.worksheet("Users")
@@ -121,12 +115,17 @@ def init_gspread():
 
 ws = init_gspread()
 
+import random
+
+# ==========================================
+# 뉴스 전용 구글 시트 워크시트 연결
+# ==========================================
 @st.cache_resource
 def init_news_sheet():
     doc = ws.spreadsheet
     try:
         return doc.worksheet("News")
-    except Exception:
+    except:
         # News 탭이 없으면 자동으로 생성
         news_ws = doc.add_worksheet(title="News", rows="100", cols="3")
         news_ws.append_row(["URL", "Count", "Title"])
@@ -135,7 +134,7 @@ def init_news_sheet():
 ws_news = init_news_sheet()
 
 # ==========================================
-# 4. 뉴스 로직 및 게임 선택 알고리즘
+# 선택 횟수 기반 최저 뉴스 3개 무작위 추출 알고리즘
 # ==========================================
 def pick_3_lowest_count_news(news_list):
     """
@@ -145,16 +144,19 @@ def pick_3_lowest_count_news(news_list):
     if len(news_list) <= 3:
         return news_list
 
+    # Count 값들을 오름차순으로 정렬
     sorted_counts = sorted(list(set(item['count'] for item in news_list)))
     
     selected = []
     for count_val in sorted_counts:
+        # 현재 Count 값과 일치하는 뉴스 그룹
         tier_items = [item for item in news_list if item['count'] == count_val]
         needed = 3 - len(selected)
         
         if len(tier_items) <= needed:
             selected.extend(tier_items)
         else:
+            # 필요한 수만큼 해당 tier에서 무작위 추출
             selected.extend(random.sample(tier_items, needed))
             
         if len(selected) == 3:
@@ -162,6 +164,11 @@ def pick_3_lowest_count_news(news_list):
             
     return selected
 
+import time
+
+# ==========================================
+# [공통 UI] 흰색 픽셀 브라우저 + 슬롯머신 연출 뉴스 선택 함수
+# ==========================================
 def get_game_news_selection(game_id: str):
     """
     1단계: 슬롯머신 연출과 함께 3개 뉴스 선택 (흰색 가상 브라우저 창)
@@ -177,11 +184,15 @@ def get_game_news_selection(game_id: str):
         chosen = st.session_state[news_key]
         return chosen['title'], chosen['text'], chosen['url']
 
+    # ----------------------------------------------------
+    # 👾 흰색 브라우저 창 + 슬롯머신 CSS 애니메이션 스타일링
+    # ----------------------------------------------------
     st.markdown(
         """
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
+        /* 1. 가상 브라우저 창 (깔끔한 흰색 배경) */
         [data-testid="stVerticalBlockBorderWrapper"] {
             background-color: #ffffff !important;
             border: 3.5px solid #2d1842 !important;
@@ -197,6 +208,7 @@ def get_game_news_selection(game_id: str):
             padding: 0px 14px 10px 14px !important;
         }
 
+        /* 2. 픽셀 브라우저 헤더 */
         .pixel-window-header {
             background: linear-gradient(90deg, #a382de 0%, #d8b4f8 100%);
             color: #2d1842;
@@ -228,6 +240,7 @@ def get_game_news_selection(game_id: str):
             line-height: 1;
         }
 
+        /* 🎰 슬롯머신 연출 상단 전광판 */
         .slot-machine-banner {
             background: #110620;
             border: 2px solid #2d1842;
@@ -241,6 +254,7 @@ def get_game_news_selection(game_id: str):
             margin-bottom: 16px;
         }
 
+        /* 🎰 슬롯머신 릴 애니메이션 (1, 2, 3번 버튼 시차 출현 연출) */
         @keyframes slotDrop {
             0% { transform: translateY(-50px); opacity: 0; filter: blur(5px); }
             60% { transform: translateY(8px); opacity: 0.9; filter: blur(0px); }
@@ -258,6 +272,7 @@ def get_game_news_selection(game_id: str):
             animation: slotDrop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.7s both;
         }
 
+        /* 3. 사각형 전체 버튼 (흰색 바탕에 명확히 보이는 보라/연보라 입체 버튼) */
         div[data-testid="stButton"] > button {
             background-color: #fcfaff !important;
             color: #2d1842 !important;
@@ -286,6 +301,7 @@ def get_game_news_selection(game_id: str):
             box-shadow: 1px 1px 0px #2d1842 !important;
         }
 
+        /* 4. 픽셀 전광판 타이머 (2단계) */
         .pixel-timer-box {
             background-color: #000000;
             border: 2.5px solid #00ffcc;
@@ -299,6 +315,7 @@ def get_game_news_selection(game_id: str):
             border-radius: 4px;
         }
 
+        /* 5. 가상 창 내부 기사 제목 */
         .pixel-article-title {
             color: #2d1842;
             font-size: 1.05rem;
@@ -307,6 +324,7 @@ def get_game_news_selection(game_id: str):
             line-height: 1.4;
         }
 
+        /* 6. 기사 본문 스크롤 박스 (2단계) */
         .pixel-article-body {
             background-color: #fcfaff;
             border: 2.5px solid #2d1842;
@@ -326,7 +344,9 @@ def get_game_news_selection(game_id: str):
         unsafe_allow_html=True
     )
 
-    # 1단계: 3개 뉴스 선택
+    # ====================================================
+    # 1단계: 슬롯머신 연출과 함께 뉴스 기사 3개 선택
+    # ====================================================
     if news_key not in st.session_state or not st.session_state[news_key]:
         if candidates_key not in st.session_state:
             raw_records = ws_news.get_all_records()
@@ -339,7 +359,7 @@ def get_game_news_selection(game_id: str):
                         continue
                     try:
                         count = int(row.get('Count', 0))
-                    except (ValueError, TypeError):
+                    except:
                         count = 0
                     title = str(row.get('Title', '')).strip()
                     
@@ -347,7 +367,7 @@ def get_game_news_selection(game_id: str):
                         try:
                             title, _ = bring_article(url)
                             ws_news.update_cell(idx + 2, 3, title)
-                        except Exception:
+                        except:
                             title = f"뉴스 기사 #{idx+1}"
 
                     news_data.append({
@@ -365,6 +385,7 @@ def get_game_news_selection(game_id: str):
 
         candidates = st.session_state[candidates_key]
 
+        # 📦 흰색 배경 가상 브라우저 창
         with st.container(border=True):
             st.markdown(
                 """
@@ -383,6 +404,7 @@ def get_game_news_selection(game_id: str):
                 unsafe_allow_html=True
             )
 
+            # 슬롯 릴 애니메이션과 함께 1, 2, 3번 버튼 순차적으로 딱- 딱- 딱- 등장
             for idx, item in enumerate(candidates):
                 if st.button(f"📰 {item['title']}", key=f"btn_{game_id}_{idx}", use_container_width=True):
                     new_count = item['count'] + 1
@@ -391,7 +413,7 @@ def get_game_news_selection(game_id: str):
                     with st.spinner("선택 기사 읽어오는 중..."):
                         try:
                             title, clean_text = bring_article(item['url'])
-                        except Exception:
+                        except:
                             title = item['title']
                             clean_text = "본문 내용을 가져오는 데 실패했습니다."
 
@@ -405,7 +427,9 @@ def get_game_news_selection(game_id: str):
 
         return None, None, None
 
-    # 2단계: 기사 읽기
+    # ====================================================
+    # 2단계: 기사 본문 읽기 (30초 픽셀 전광판 타이머 & 자동 이동)
+    # ====================================================
     chosen = st.session_state[news_key]
 
     with st.container(border=True):
@@ -442,6 +466,7 @@ def get_game_news_selection(game_id: str):
 
         next_clicked = st.button("▶ 다 읽었으면 다음", key=f"next_btn_{game_id}", use_container_width=True)
 
+        # 30초 후 자동 다음 버튼 클릭 자바스크립트
         st.markdown(
             f"""
             <script>
@@ -479,13 +504,14 @@ def get_game_news_selection(game_id: str):
 
     return None, None, None
 
+
 # ==========================================
-# 5. 세션 상태 관리 및 라우팅 보조 함수
+# 4. Streamlit 앱 라우팅 및 상태 관리
 # ==========================================
 if 'page' not in st.session_state:
     st.session_state.page = 'login'
 if 'login_step' not in st.session_state:
-    st.session_state.login_step = 1
+    st.session_state.login_step = 1  # 1: 학번 입력, 2_exist: 비밀번호 입력, 2_new: 회원가입
 if 'temp_student_id' not in st.session_state:
     st.session_state.temp_student_id = None
 if 'current_user' not in st.session_state:
@@ -497,6 +523,9 @@ def change_page(page_name):
     st.session_state.page = page_name
     st.rerun()
 
+# ------------------------------------------
+# 미구현 기능 플레이스홀더 (에러 방지용)
+# ------------------------------------------
 def show_placeholder_page(title_name):
     st.title(title_name)
     st.info("🎮 해당 콘텐츠는 현재 준비 중입니다.")
@@ -505,6 +534,7 @@ def show_placeholder_page(title_name):
 
 def show_game_1():
     st.title("🎮 게임 1: 뉴스 예측 게임")
+    # 🚨 공통 뉴스 선택 UI 호출 (뉴스 선택 전에는 아래 게임 코드 실행 안됨)
     title, article_text, url = get_game_news_selection("game_1")
     if not title:
         return
@@ -516,14 +546,16 @@ def show_game_5(): show_placeholder_page("게임 5")
 def show_exchange(): show_placeholder_page("🛒 교환소")
 def show_bank(): show_placeholder_page("🏦 은행")
 
-# ==========================================
-# 6. 테마 및 레이아웃
-# ==========================================
+# ------------------------------------------
+# 레이아웃
+# ------------------------------------------
 def inject_casino_theme():
     if st.session_state.get('page') == 'login':
+        # 🔵 [로그인 전용] 밝은 회색 배경 & 전문적인 블루 테마
         st.markdown(
             """
             <style>
+            /* 1. 로그인 페이지: 상단 여백 최적화 및 밝은 회색 배경 */
             .block-container {
                 padding-top: 2rem !important;
             }
@@ -533,6 +565,7 @@ def inject_casino_theme():
                 color: #1e293b !important;
             }
 
+            /* 2. 카드 형태 */
             [data-testid="stVerticalBlockBorderWrapper"] {
                 background: #ffffff !important;
                 border-radius: 18px !important;
@@ -541,6 +574,7 @@ def inject_casino_theme():
                 box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
             }
 
+            /* 3. 타이틀 및 헤더 */
             h1, h2, h3 {
                 color: #1e3a8a !important;
                 text-shadow: none !important;
@@ -548,6 +582,7 @@ def inject_casino_theme():
                 font-weight: 800 !important;
             }
 
+            /* 4. 아이콘 원형 */
             .user-icon-circle {
                 width: 75px;
                 height: 75px;
@@ -562,6 +597,7 @@ def inject_casino_theme():
                 color: #2563eb;
             }
 
+            /* 5. 입력창 스타일 */
             .stTextInput > div > div > input {
                 background-color: #f8fafc !important;
                 color: #0f172a !important;
@@ -581,6 +617,7 @@ def inject_casino_theme():
                 font-weight: 600 !important;
             }
 
+            /* 6. 버튼 스타일 */
             .stButton > button {
                 background: #2563eb !important;
                 color: #ffffff !important;
@@ -592,6 +629,7 @@ def inject_casino_theme():
                 box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.25) !important;
             }
 
+            /* 7. 주의사항 안내 박스 */
             .warning-note {
                 background-color: #fef2f2;
                 border-left: 4px solid #ef4444;
@@ -608,9 +646,11 @@ def inject_casino_theme():
             unsafe_allow_html=True
         )
     else:
+        # ⬛ [메인 화면 전용] 상단 여백 축소 + 기존 블랙 카지노 테마
         st.markdown(
             """
             <style>
+            /* 🚨 핵심: 메인 화면 상단 공백/여백 대폭 제거 */
             .block-container {
                 padding-top: 1.2rem !important;
                 padding-bottom: 1rem !important;
@@ -704,15 +744,18 @@ def inject_casino_theme():
             """,
             unsafe_allow_html=True
         )
-
-# ==========================================
-# 7. 주요 화면 정의
-# ==========================================
+    
+# ------------------------------------------
+# 메인 화면 정의
+# ------------------------------------------
 def show_login_page():
+    # 가운데 정렬 레이아웃
     _, col_main, _ = st.columns([1, 2.5, 1])
 
     with col_main:
+        # 📦 입력 요소 전체를 보증하는 카드 컨테이너
         with st.container(border=True):
+            # 로그인 카드 헤더
             st.markdown(
                 """
                 <div style="text-align: center; margin-bottom: 20px;">
@@ -724,7 +767,9 @@ def show_login_page():
                 unsafe_allow_html=True
             )
 
+            # ----------------------------------------------------
             # STEP 1: 학번 확인
+            # ----------------------------------------------------
             if st.session_state.login_step == 1:
                 student_id = st.text_input("학번", max_chars=5, placeholder="학번 5자리 입력", key="input_sid")
                 
@@ -745,14 +790,16 @@ def show_login_page():
                         
                         if user_info:
                             st.session_state.temp_user_data = user_info
-                            st.session_state.login_step = '2_exist'
+                            st.session_state.login_step = '2_exist'  # 기존 계정 -> 비밀번호
                         else:
-                            st.session_state.login_step = '2_new'
+                            st.session_state.login_step = '2_new'    # 신규 계정 -> 회원가입
                         st.rerun()
                     else:
                         st.error("학번은 5자리 숫자로 입력해주세요.")
 
+            # ----------------------------------------------------
             # STEP 2-1: 기존 유저 비밀번호 입력
+            # ----------------------------------------------------
             elif st.session_state.login_step == '2_exist':
                 st.info(f"현재 {st.session_state.temp_student_id}으로 로그인 중입니다.")
                 password = st.text_input("비밀번호", type="password", placeholder="비밀번호 입력", key="input_pw_login")
@@ -773,7 +820,9 @@ def show_login_page():
                         else:
                             st.error("비밀번호가 일치하지 않습니다.")
 
+            # ----------------------------------------------------
             # STEP 2-2: 신규 유저 회원가입
+            # ----------------------------------------------------
             elif st.session_state.login_step == '2_new':
                 st.success(f"신규 가입 대상 학번: {st.session_state.temp_student_id}")
                 
@@ -833,7 +882,10 @@ def show_login_page():
                             }
                             st.session_state.login_step = 1
                             change_page('main')
-
+        
+        # 로그인 폼 네온 박스 종료
+        st.markdown('</div>', unsafe_allow_html=True)
+        
 def show_main_page():
     st_autorefresh(interval=600000, limit=None, key="auto_refresh")
 
@@ -849,6 +901,7 @@ def show_main_page():
         change_page('login')
         return
     
+    # 🚨 이미지 스타일의 좌우 분할 네온 배너 HTML
     st.markdown(
         f"""
         <div style="color: white; font-weight: bold; font-size: 0.9rem; margin-bottom: -5px;">안전의대명사 뉴스에이전놀이터</div>
@@ -929,27 +982,20 @@ def show_ranking():
     if st.button("⬅️ 메인으로 돌아가기"): change_page('main')
 
 # ==========================================
-# 8. 페이지 라우터 (Main Routing)
+# 5. 페이지 라우터
 # ==========================================
+# 🚨 테마 적용 함수 호출: 이 한 줄을 추가하면 모든 페이지에 카지노 레이아웃이 씌워집니다.
 inject_casino_theme()
 
 if st.session_state.page == 'login':
     show_login_page()
 elif st.session_state.page == 'main':
     show_main_page()
-elif st.session_state.page == 'bank':
-    show_bank()
-elif st.session_state.page == 'game_1':
-    show_game_1()
-elif st.session_state.page == 'game_2':
-    show_game_2()
-elif st.session_state.page == 'game_3':
-    show_game_3()
-elif st.session_state.page == 'game_4':
-    show_game_4()
-elif st.session_state.page == 'game_5':
-    show_game_5()
-elif st.session_state.page == 'exchange':
-    show_exchange()
-elif st.session_state.page == 'ranking':
-    show_ranking()
+elif st.session_state.page == 'game_1': show_game_1()
+elif st.session_state.page == 'game_2': show_game_2()
+elif st.session_state.page == 'game_3': show_game_3()
+elif st.session_state.page == 'game_4': show_game_4()
+elif st.session_state.page == 'game_5': show_game_5()
+elif st.session_state.page == 'exchange': show_exchange()
+elif st.session_state.page == 'ranking': show_ranking()
+elif st.session_state.page == 'ranking': show_ranking()
