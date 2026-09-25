@@ -115,6 +115,160 @@ def init_gspread():
 
 ws = init_gspread()
 
+import random
+
+# ==========================================
+# 뉴스 전용 구글 시트 워크시트 연결
+# ==========================================
+@st.cache_resource
+def init_news_sheet():
+    doc = ws.spreadsheet
+    try:
+        return doc.worksheet("News")
+    except:
+        # News 탭이 없으면 자동으로 생성
+        news_ws = doc.add_worksheet(title="News", rows="100", cols="3")
+        news_ws.append_row(["URL", "Count", "Title"])
+        return news_ws
+
+ws_news = init_news_sheet()
+
+# ==========================================
+# 선택 횟수 기반 최저 뉴스 3개 무작위 추출 알고리즘
+# ==========================================
+def pick_3_lowest_count_news(news_list):
+    """
+    1. Count(선택 횟수)가 가장 낮은 그룹부터 채웁니다.
+    2. 가장 작은 값을 가진 뉴스가 3개 미만이면 다음으로 작은 값의 그룹에서 무작위로 채웁니다.
+    """
+    if len(news_list) <= 3:
+        return news_list
+
+    # Count 값들을 오름차순으로 정렬
+    sorted_counts = sorted(list(set(item['count'] for item in news_list)))
+    
+    selected = []
+    for count_val in sorted_counts:
+        # 현재 Count 값과 일치하는 뉴스 그룹
+        tier_items = [item for item in news_list if item['count'] == count_val]
+        needed = 3 - len(selected)
+        
+        if len(tier_items) <= needed:
+            selected.extend(tier_items)
+        else:
+            # 필요한 수만큼 해당 tier에서 무작위 추출
+            selected.extend(random.sample(tier_items, needed))
+            
+        if len(selected) == 3:
+            break
+            
+    return selected
+
+# ==========================================
+# [공통 UI] 모든 게임에서 사용할 뉴스 선택 함수
+# ==========================================
+def get_game_news_selection(game_id: str):
+    """
+    반환값: (selected_title, selected_text, selected_url)
+    선택되지 않았을 때는 (None, None, None)을 반환하여 게임 진행을 대기시킵니다.
+    """
+    news_key = f"selected_news_{game_id}"
+    candidates_key = f"candidates_{game_id}"
+
+    # 1. 이미 뉴스를 선택한 경우 -> 선택한 뉴스 정보 반환
+    if news_key in st.session_state and st.session_state[news_key]:
+        chosen = st.session_state[news_key]
+        
+        col_t, col_b = st.columns([4, 1])
+        with col_t:
+            st.info(f"📰 **선택된 기사:** {chosen['title']}")
+        with col_b:
+            if st.button("🔄 다른 기사 선택", key=f"reset_{game_id}"):
+                del st.session_state[news_key]
+                if candidates_key in st.session_state:
+                    del st.session_state[candidates_key]
+                st.rerun()
+                
+        return chosen['title'], chosen['text'], chosen['url']
+
+    # 2. 뉴스를 아직 안 뽑은 경우 -> 3개 무작위 후보 세팅
+    st.markdown("### 🎲 게임에 사용할 뉴스를 선택하세요")
+    st.caption("선택 횟수가 적은 기사가 우선 추천됩니다.")
+
+    if candidates_key not in st.session_state:
+        raw_records = ws_news.get_all_records()
+        news_data = []
+
+        with st.spinner("뉴스 목록을 가져오는 중..."):
+            for idx, row in enumerate(raw_records):
+                url = str(row.get('URL', '')).strip()
+                if not url:
+                    continue
+                
+                try:
+                    count = int(row.get('Count', 0))
+                except:
+                    count = 0
+                    
+                title = str(row.get('Title', '')).strip()
+                
+                # 제목이 시트에 비어있으면 URL에서 직접 추출 후 시트에 업데이트
+                if not title or title == "None":
+                    try:
+                        title, _ = bring_article(url)
+                        ws_news.update_cell(idx + 2, 3, title) # C열(Title) 기록
+                    except:
+                        title = f"뉴스 기사 #{idx+1}"
+
+                news_data.append({
+                    'row_idx': idx + 2, # 시트 행 번호
+                    'url': url,
+                    'count': count,
+                    'title': title
+                })
+
+        if not news_data:
+            st.warning("구글 시트 'News' 탭에 등록된 뉴스 URL이 없습니다.")
+            return None, None, None
+
+        # 조건에 맞는 3개 후보 추출하여 세션에 저장
+        st.session_state[candidates_key] = pick_3_lowest_count_news(news_data)
+
+    candidates = st.session_state[candidates_key]
+
+    # 3. 화면에 3개 뉴스 선택 카드 표시
+    for idx, item in enumerate(candidates):
+        with st.container(border=True):
+            col_info, col_btn = st.columns([3.5, 1])
+            with col_info:
+                st.markdown(f"**{idx+1}. {item['title']}**")
+                st.caption(f"📊 이전 선택 횟수: {item['count']}회")
+            with col_btn:
+                if st.button("선택하기", key=f"btn_{game_id}_{idx}", use_container_width=True):
+                    # ① 구글 시트의 선택 횟수 +1 증가
+                    new_count = item['count'] + 1
+                    ws_news.update_cell(item['row_idx'], 2, new_count)
+
+                    # ② 기사 본문 크롤링
+                    with st.spinner("기사 내용을 본문에 적용 중..."):
+                        try:
+                            title, clean_text = bring_article(item['url'])
+                        except:
+                            title = item['title']
+                            clean_text = "본문 내용을 가져오는 데 실패했습니다."
+
+                    # ③ 세션 저장 및 리런
+                    st.session_state[news_key] = {
+                        'title': title,
+                        'text': clean_text,
+                        'url': item['url']
+                    }
+                    del st.session_state[candidates_key]
+                    st.rerun()
+
+    return None, None, None
+
+
 # ==========================================
 # 4. Streamlit 앱 라우팅 및 상태 관리
 # ==========================================
@@ -142,7 +296,21 @@ def show_placeholder_page(title_name):
     if st.button("⬅️ 메인으로 돌아가기"):
         change_page('main')
 
-def show_game_1(): show_placeholder_page("게임 1")
+def show_game_1():
+    st.title("🎮 게임 1: 뉴스 예측 게임")
+    
+    # 🚨 공통 뉴스 선택 UI 호출 (뉴스 선택 전에는 아래 게임 코드 실행 안됨)
+    title, article_text, url = get_game_news_selection("game_1")
+    if not title:
+        return
+    
+    # ----------------------------------------
+    # 여기서부터 원래 게임 1의 로직 작성
+    # ----------------------------------------
+    st.divider()
+    st.subheader("뉴스 본문 내용")
+    st.write(article_text[:300] + "...") # 가져온 뉴스 본문 사용
+
 def show_game_2(): show_placeholder_page("게임 2")
 def show_game_3(): show_placeholder_page("게임 3")
 def show_game_4(): show_placeholder_page("게임 4")
