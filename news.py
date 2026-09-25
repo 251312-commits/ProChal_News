@@ -164,129 +164,152 @@ def pick_3_lowest_count_news(news_list):
             
     return selected
 
+import time
+
 # ==========================================
-# [공통 UI] 픽셀 브라우저 스타일 뉴스 선택 & 읽기 통합 함수
+# [공통 UI] 레트로 픽셀 브라우저 뉴스 선택 & 자동 타이머 읽기 함수
 # ==========================================
 def get_game_news_selection(game_id: str):
     """
-    1단계: 3개 뉴스 중 선택 (브라우저 창 내부)
-    2단계: 선택한 뉴스 제목 + 본문 읽기 (우측 상단 30초 타이머 + 하단 다음 버튼)
+    1단계: 3개 뉴스 중 선택 (가상 픽셀 창 내부)
+    2단계: 선택한 뉴스 제목 + 본문 읽기 (픽셀 전광판 30초 타이머 & 타임아웃 시 자동 이동)
     3단계: 읽기 완료 후 (title, text, url) 반환하여 게임 진행
     """
     news_key = f"selected_news_{game_id}"
     candidates_key = f"candidates_{game_id}"
     read_done_key = f"read_done_{game_id}"
 
-    # 3단계: 뉴스 선택 및 읽기까지 모두 완료된 경우 -> 게임에 뉴스 데이터 전달
+    # 3단계: 뉴스 선택 및 읽기까지 완료된 경우 -> 게임 본문으로 전달
     if st.session_state.get(read_done_key, False):
         chosen = st.session_state[news_key]
         return chosen['title'], chosen['text'], chosen['url']
 
     # ----------------------------------------------------
-    # 픽셀 브라우저 전용 CSS 스타일 정의
+    # 👾 레트로 픽셀 브라우저 전용 CSS 스타일 정의
     # ----------------------------------------------------
     st.markdown(
         """
         <style>
-        /* 👾 st.container(border=True)를 픽셀 창 내부 박스로 완전 스타일링 */
+        /* 픽셀 폰트 로드 */
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        /* 1. 메인 가상 창 (컨테이너 테두리 자체를 픽셀 창으로 변환) */
         [data-testid="stVerticalBlockBorderWrapper"] {
-            background-color: #f7f2fc !important;
-            border: 3px solid #331f47 !important;
-            border-radius: 8px !important;
-            box-shadow: 6px 6px 0px #331f47 !important;
-            padding: 0px 0px 15px 0px !important;
+            background-color: #231138 !important;
+            border: 4px solid #10061e !important;
+            border-radius: 4px !important;
+            box-shadow: 6px 6px 0px #0a0314 !important;
+            padding: 0px 0px 12px 0px !important;
             margin-top: 10px !important;
             margin-bottom: 25px !important;
             overflow: hidden !important;
         }
 
-        /* 픽셀 브라우저 헤더 */
+        /* 2. 창 내부 컨텐츠 패딩 조절 (모든 버튼이 창 안으로 들어옴) */
+        [data-testid="stVerticalBlockBorderWrapper"] > div {
+            padding: 0px 14px 10px 14px !important;
+        }
+
+        /* 3. 픽셀 창 헤더 바 */
         .pixel-window-header {
-            background: linear-gradient(90deg, #a382de 0%, #d8b4f8 100%);
-            color: #331f47;
-            padding: 8px 14px;
+            background: linear-gradient(90deg, #8b5cf6 0%, #c084fc 100%);
+            color: #10061e;
+            padding: 8px 12px;
+            margin: 0 -14px 15px -14px !important;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 3px solid #331f47;
-            font-weight: 900;
-            font-size: 0.95rem;
-            letter-spacing: 1px;
-            margin-bottom: 15px;
+            border-bottom: 3px solid #10061e;
+            font-family: 'Press Start 2P', cursive, monospace;
+            font-size: 10px;
+            font-weight: bold;
         }
         .pixel-window-controls {
             display: flex;
-            gap: 5px;
+            gap: 4px;
         }
         .pixel-control-btn {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             background: #ffffff;
-            color: #331f47;
-            border: 2px solid #331f47;
-            border-radius: 2px;
-            font-size: 11px;
+            color: #10061e;
+            border: 2px solid #10061e;
+            font-size: 9px;
             font-weight: bold;
             display: flex;
             align-items: center;
             justify-content: center;
             line-height: 1;
         }
-        .pixel-window-title {
-            color: #4a2875;
-            font-size: 1.05rem;
-            font-weight: 900;
+
+        /* 4. 픽셀 전광판 타이머 */
+        .pixel-timer-box {
+            background-color: #000000;
+            border: 3px solid #00ffcc;
+            box-shadow: 3px 3px 0px #10061e;
+            color: #00ffcc;
+            padding: 8px 12px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 11px;
             text-align: center;
-            margin-bottom: 18px;
-            letter-spacing: -0.5px;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+            border-radius: 2px;
         }
 
-        /* 기사 본문 스크롤 영역 */
+        /* 5. 가상 창 내부 기사 제목 */
+        .pixel-article-title {
+            color: #f3e8ff;
+            font-size: 1.05rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        /* 6. 기사 본문 스크롤 박스 */
         .pixel-article-body {
-            background-color: #ffffff;
-            border: 2px solid #331f47;
-            border-radius: 6px;
-            padding: 16px;
-            color: #1e1b2e;
-            font-size: 0.95rem;
+            background-color: #130924;
+            border: 2.5px solid #6b21a8;
+            border-radius: 4px;
+            padding: 14px;
+            color: #e9d5ff;
+            font-size: 0.92rem;
             line-height: 1.6;
-            max-height: 320px;
+            max-height: 280px;
             overflow-y: auto;
-            margin: 10px 15px 15px 15px;
+            margin-bottom: 15px;
             white-space: pre-line;
-            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.05);
+            box-shadow: inset 2px 2px 6px rgba(0,0,0,0.5);
         }
 
-        /* 브라우저 내부 클릭 버튼 스타일 */
-        div[data-testid="stButton"] {
-            padding: 0 15px;
-        }
+        /* 7. 창 내부 입체 버튼 스타일 (사각형 버튼 전체 클릭) */
         div[data-testid="stButton"] > button {
-            background-color: #ffffff !important;
-            color: #2b173e !important;
-            border: 2.5px solid #331f47 !important;
-            border-radius: 6px !important;
-            box-shadow: 4px 4px 0px #331f47 !important;
-            padding: 14px 18px !important;
-            font-size: 0.98rem !important;
-            font-weight: 800 !important;
+            background-color: #3b1d63 !important;
+            color: #ffffff !important;
+            border: 2.5px solid #a855f7 !important;
+            border-radius: 4px !important;
+            box-shadow: 4px 4px 0px #10061e !important;
+            padding: 14px 16px !important;
+            font-size: 0.95rem !important;
+            font-weight: 700 !important;
             text-align: left !important;
             line-height: 1.4 !important;
             white-space: normal !important;
             word-break: keep-all !important;
             height: auto !important;
-            margin-bottom: 10px !important;
-            transition: all 0.12s ease-in-out !important;
+            margin-bottom: 8px !important;
+            transition: all 0.1s ease !important;
         }
         div[data-testid="stButton"] > button:hover {
-            background-color: #ebdcfc !important;
-            color: #5c23a0 !important;
+            background-color: #581c87 !important;
+            border-color: #c084fc !important;
+            color: #00ffcc !important;
             transform: translate(-2px, -2px) !important;
-            box-shadow: 6px 6px 0px #331f47 !important;
+            box-shadow: 6px 6px 0px #10061e !important;
         }
         div[data-testid="stButton"] > button:active {
             transform: translate(2px, 2px) !important;
-            box-shadow: 2px 2px 0px #331f47 !important;
+            box-shadow: 1px 1px 0px #10061e !important;
         }
         </style>
         """,
@@ -297,7 +320,6 @@ def get_game_news_selection(game_id: str):
     # 1단계: 뉴스 기사 3개 중 하나 선택하기
     # ====================================================
     if news_key not in st.session_state or not st.session_state[news_key]:
-        # 후보 기사 3개 불러오기
         if candidates_key not in st.session_state:
             raw_records = ws_news.get_all_records()
             news_data = []
@@ -307,12 +329,10 @@ def get_game_news_selection(game_id: str):
                     url = str(row.get('URL', '')).strip()
                     if not url:
                         continue
-                    
                     try:
                         count = int(row.get('Count', 0))
                     except:
                         count = 0
-                        
                     title = str(row.get('Title', '')).strip()
                     
                     if not title or title == "None":
@@ -337,7 +357,7 @@ def get_game_news_selection(game_id: str):
 
         candidates = st.session_state[candidates_key]
 
-        # 📦 픽셀 브라우저 창 내부 (st.container 사용으로 모든 버튼이 완벽히 내부 위치)
+        # 📦 가상 픽셀 창 컨테이너
         with st.container(border=True):
             st.markdown(
                 """
@@ -349,27 +369,26 @@ def get_game_news_selection(game_id: str):
                         <div class="pixel-control-btn">×</div>
                     </div>
                 </div>
-                <div class="pixel-window-title">CHOOSE A NEWS ARTICLE TO START :)</div>
+                <div style="color:#c084fc; font-family:'Press Start 2P', monospace; font-size:10px; text-align:center; margin-bottom:15px;">
+                    CHOOSE A NEWS TO START :)
+                </div>
                 """,
                 unsafe_allow_html=True
             )
 
-            # 세로 배열 3개 제목 버튼
+            # 세로 배열 3개 뉴스 버튼 (창 내부에 안전하게 안착)
             for idx, item in enumerate(candidates):
                 if st.button(f"📰 {item['title']}", key=f"btn_{game_id}_{idx}", use_container_width=True):
-                    # ① 시트 선택 횟수 +1
                     new_count = item['count'] + 1
                     ws_news.update_cell(item['row_idx'], 2, new_count)
 
-                    # ② 뉴스 본문 크롤링
-                    with st.spinner("선택한 기사 읽어오는 중..."):
+                    with st.spinner("기사 읽어오는 중..."):
                         try:
                             title, clean_text = bring_article(item['url'])
                         except:
                             title = item['title']
                             clean_text = "본문 내용을 가져오는 데 실패했습니다."
 
-                    # ③ 세션 저장 후 2단계(읽기 화면)로 이동
                     st.session_state[news_key] = {
                         'title': title,
                         'text': clean_text,
@@ -379,6 +398,88 @@ def get_game_news_selection(game_id: str):
                     st.rerun()
 
         return None, None, None
+
+    # ====================================================
+    # 2단계: 선택된 기사 제목 + 본문 읽기 (픽셀 타이머 & 타임아웃 자동 이동)
+    # ====================================================
+    chosen = st.session_state[news_key]
+
+    with st.container(border=True):
+        st.markdown(
+            """
+            <div class="pixel-window-header">
+                <span>👾 READ_ARTICLE.EXE</span>
+                <div class="pixel-window-controls">
+                    <div class="pixel-control-btn">-</div>
+                    <div class="pixel-control-btn">□</div>
+                    <div class="pixel-control-btn">×</div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        col_info, col_timer = st.columns([2.5, 1.5])
+        
+        with col_info:
+            st.markdown(f"<div class='pixel-article-title'>📰 {chosen['title']}</div>", unsafe_allow_html=True)
+            
+        with col_timer:
+            # 👾 픽셀 전광판 타이머 HTML
+            st.markdown(
+                """
+                <div class="pixel-timer-box">
+                    TIME: <span id="pixel_timer_num">30</span>S
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        # 본문 영역
+        st.markdown(f"<div class='pixel-article-body'>{chosen['text']}</div>", unsafe_allow_html=True)
+
+        # 하단 버튼 (이 버튼이 클릭되거나 30초 카운트다운 완료 시 자동으로 클릭 처리됨)
+        next_clicked = st.button("▶ 다 읽었으면 다음", key=f"next_btn_{game_id}", use_container_width=True)
+
+        # ⏱️ 30초 후 자동으로 버튼을 클릭시켜 넘어가게 하는 실시간 자바스크립트
+        st.markdown(
+            f"""
+            <script>
+            (function() {{
+                var sec = 30;
+                var timerElem = document.getElementById("pixel_timer_num");
+                
+                if (window.pixelTimerInterval_{game_id}) {{
+                    clearInterval(window.pixelTimerInterval_{game_id});
+                }}
+                
+                window.pixelTimerInterval_{game_id} = setInterval(function() {{
+                    sec--;
+                    if (timerElem) {{
+                        timerElem.innerText = sec > 0 ? sec : 0;
+                    }}
+                    if (sec <= 0) {{
+                        clearInterval(window.pixelTimerInterval_{game_id});
+                        // 30초 만료 시 '다 읽었으면 다음' 버튼 자동 클릭
+                        var btns = Array.from((window.parent || window).document.querySelectorAll('button'));
+                        var targetBtn = btns.find(b => b.innerText.includes('다 읽었으면 다음'));
+                        if (targetBtn) {{
+                            targetBtn.click();
+                        }}
+                    }}
+                }}, 1000);
+            }})();
+            </script>
+            """,
+            unsafe_allow_html=True
+        )
+
+        if next_clicked:
+            st.session_state[read_done_key] = True
+            st.rerun()
+
+    return None, None, None
+
 
     # ====================================================
     # 2단계: 선택된 기사 제목 + 본문 읽기 (타이머 & 다음 버튼)
