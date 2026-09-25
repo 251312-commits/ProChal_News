@@ -165,14 +165,17 @@ def pick_3_lowest_count_news(news_list):
             
     return selected
 
+import streamlit as st
+import streamlit.components.v1 as components
+
 # ==========================================
-# [공통 UI] 4초 네온 화려한 슬롯머신 (0.5초 간격 탁! 멈춤 + 흰색 버튼 + SFX) + 픽셀 타이머
+# [공통 UI] 4초 네온 화려한 슬롯머신 (0.5초 간격 순차 멈춤 + 흰색 버튼) + 픽셀 타이머
 # ==========================================
 def get_game_news_selection(game_id: str):
     """
-    1단계: 4초간 무지개 빛 네온 릴이 빙글빙글 돌다가 
-           3.0초, 3.5초, 4.0초에 0.5초 간격으로 '탁!' 소리와 함께 순차 공개
-    2단계: 선택한 뉴스 제목 + 본문 읽기 (픽셀 30초 타이머 & 타임아웃 자동 이동)
+    1단계: 4초간 무지개 빛 네온 릴이 위아래로 도다가 
+           3.0초, 3.5초, 4.0초에 위에서부터 0.5초 간격으로 '탁!' 소리와 함께 순차 공개
+    2단계: 선택한 뉴스 제목 + 본문 읽기 (30초 타이머 & 다음 버튼 정상화)
     3단계: 읽기 완료 후 (title, text, url) 반환
     """
     news_key = f"selected_news_{game_id}"
@@ -185,14 +188,14 @@ def get_game_news_selection(game_id: str):
         return chosen['title'], chosen['text'], chosen['url']
 
     # ----------------------------------------------------
-    # 👾 흰색 브라우저 창 + 4초 네온 슬롯머신 CSS 연출
+    # 👾 [공통 CSS] 가상 브라우저 창 및 기본 타이머/본문 스타일
     # ----------------------------------------------------
     st.markdown(
         """
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-        /* 1. 가상 브라우저 창 (깔끔한 흰색 배경) */
+        /* 가상 브라우저 창 (깔끔한 흰색 배경) */
         [data-testid="stVerticalBlockBorderWrapper"] {
             background-color: #ffffff !important;
             border: 3.5px solid #2d1842 !important;
@@ -208,7 +211,7 @@ def get_game_news_selection(game_id: str):
             padding: 0px 14px 10px 14px !important;
         }
 
-        /* 2. 픽셀 브라우저 헤더 */
+        /* 픽셀 브라우저 헤더 */
         .pixel-window-header {
             background: linear-gradient(90deg, #a382de 0%, #d8b4f8 100%);
             color: #2d1842;
@@ -240,139 +243,7 @@ def get_game_news_selection(game_id: str):
             line-height: 1;
         }
 
-        /* 🎰 화려한 반짝이는 전광판 (네온 그라데이션) */
-        .slot-machine-banner {
-            background: linear-gradient(135deg, #110620 0%, #32004a 50%, #0d001a 100%);
-            border: 3px solid #00ffcc;
-            border-radius: 6px;
-            padding: 10px 12px;
-            text-align: center;
-            color: #fffb00;
-            font-family: 'Press Start 2P', monospace;
-            font-size: 10px;
-            text-shadow: 0 0 8px #ff00ff, 0 0 12px #00ffff;
-            box-shadow: 0 0 15px rgba(0, 255, 204, 0.6), inset 0 0 10px rgba(255, 0, 255, 0.4);
-            margin-bottom: 16px;
-            letter-spacing: 1px;
-            animation: bannerGlow 1s ease-in-out infinite alternate;
-        }
-
-        @keyframes bannerGlow {
-            0% { border-color: #00ffcc; box-shadow: 0 0 12px rgba(0,255,204,0.6); }
-            100% { border-color: #ff00ff; box-shadow: 0 0 20px rgba(255,0,255,0.9); }
-        }
-
-        /* ========================================================= */
-        /* 🎰 [흰색 버튼 + 네온 릴 회전 + 0.5초 간격 탁! 팝업] */
-        /* ========================================================= */
-
-        /* 기본 기사 버튼 (깔끔한 흰색 배경) */
-        div[data-testid="stButton"] > button {
-            position: relative !important;
-            overflow: hidden !important;
-            min-height: 72px !important;
-            background-color: #ffffff !important; /* [수정] 흰색 배경 */
-            color: #2d1842 !important;
-            border: 3px solid #2d1842 !important;
-            border-radius: 6px !important;
-            box-shadow: 4px 4px 0px #2d1842 !important;
-            padding: 14px 16px !important;
-            font-size: 0.95rem !important;
-            font-weight: 800 !important;
-            text-align: left !important;
-            line-height: 1.4 !important;
-            white-space: normal !important;
-            word-break: keep-all !important;
-            margin-bottom: 12px !important;
-            transition: all 0.12s ease !important;
-        }
-
-        /* 멈출 때 글자가 커졌다 작아지며 화려하게 등장 (3.0s, 3.5s, 4.0s) */
-        div[data-testid="stButton"]:nth-of-type(1) > button p {
-            animation: titlePopReveal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) 3.0s both !important;
-        }
-        div[data-testid="stButton"]:nth-of-type(2) > button p {
-            animation: titlePopReveal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) 3.5s both !important;
-        }
-        div[data-testid="stButton"]:nth-of-type(3) > button p {
-            animation: titlePopReveal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) 4.0s both !important;
-        }
-
-        @keyframes titlePopReveal {
-            0% { transform: scale(0.1); opacity: 0; filter: brightness(2); }
-            65% { transform: scale(1.25); opacity: 1; filter: brightness(1.2); }
-            85% { transform: scale(0.95); opacity: 1; }
-            100% { transform: scale(1.0); opacity: 1; filter: brightness(1); }
-        }
-
-        /* 🎰 회전 중 알록달록 네온 가림막 (::before) */
-        div[data-testid="stButton"] > button::before {
-            content: "✨ 💎 ❓  SLOT SPINNING  ❓ 💎 ✨\\A🎰  🌟  💎  ❓  💎  🌟  🎰\\A✨ 💎 ❓  SLOT SPINNING  ❓ 💎 ✨";
-            white-space: pre-wrap;
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Press Start 2P', monospace;
-            font-size: 11px;
-            color: #fffb00;
-            background: linear-gradient(120deg, #2b004f, #61007d, #9c0062, #005f73);
-            background-size: 300% 300%;
-            text-shadow: 0 0 6px #00ffff, 0 0 10px #ff00ff;
-            z-index: 5;
-            pointer-events: none;
-            line-height: 1.8;
-            text-align: center;
-            border-radius: 4px;
-        }
-
-        /* 1번 버튼: 0초 ~ 3.0초 동안 릴 회전 */
-        div[data-testid="stButton"]:nth-of-type(1) > button::before {
-            animation: slotReelVertical 0.09s linear infinite, rainbowShift 1.5s ease infinite alternate, reelStop 0.01s linear 3.0s forwards;
-        }
-
-        /* 2번 버튼: 0초 ~ 3.5초 동안 릴 회전 (0.5초 차이) */
-        div[data-testid="stButton"]:nth-of-type(2) > button::before {
-            animation: slotReelVertical 0.09s linear infinite, rainbowShift 1.5s ease infinite alternate, reelStop 0.01s linear 3.5s forwards;
-        }
-
-        /* 3번 버튼: 0초 ~ 4.0초 동안 릴 회전 (0.5초 차이) */
-        div[data-testid="stButton"]:nth-of-type(3) > button::before {
-            animation: slotReelVertical 0.09s linear infinite, rainbowShift 1.5s ease infinite alternate, reelStop 0.01s linear 4.0s forwards;
-        }
-
-        /* 위아래 폭풍 롤링 키프레임 */
-        @keyframes slotReelVertical {
-            0% { transform: translateY(-38px); filter: blur(3px); }
-            50% { transform: translateY(0px); filter: blur(1px); }
-            100% { transform: translateY(38px); filter: blur(3px); }
-        }
-
-        /* 화려한 색상 이동 배경 */
-        @keyframes rainbowShift {
-            0% { background-position: 0% 50%; }
-            100% { background-position: 100% 50%; }
-        }
-
-        /* 릴 멈출 때 네온 가림막 제거 */
-        @keyframes reelStop {
-            to { opacity: 0; visibility: hidden; }
-        }
-
-        /* 버튼 Hover 스타일 */
-        div[data-testid="stButton"] > button:hover {
-            background-color: #f3e8ff !important;
-            color: #7e22ce !important;
-            transform: translate(-2px, -2px) !important;
-            box-shadow: 6px 6px 0px #2d1842 !important;
-        }
-        div[data-testid="stButton"] > button:active {
-            transform: translate(2px, 2px) !important;
-            box-shadow: 1px 1px 0px #2d1842 !important;
-        }
-
-        /* 타이머 & 기사 읽기 스타일 */
+        /* 픽셀 타이머 & 기사 본문 (2단계) */
         .pixel-timer-box {
             background-color: #000000;
             border: 2.5px solid #00ffcc;
@@ -419,6 +290,126 @@ def get_game_news_selection(game_id: str):
     # 1단계: 4초 슬롯머신 연출과 함께 뉴스 기사 3개 선택
     # ====================================================
     if news_key not in st.session_state or not st.session_state[news_key]:
+        # 🎰 1단계 전용 CSS (슬롯 릴 회전 + 0.5초 간격 순차 멈춤 + 흰색 버튼)
+        st.markdown(
+            """
+            <style>
+            /* 화려한 반짝이는 전광판 */
+            .slot-machine-banner {
+                background: linear-gradient(135deg, #110620 0%, #32004a 50%, #0d001a 100%);
+                border: 3px solid #00ffcc;
+                border-radius: 6px;
+                padding: 10px 12px;
+                text-align: center;
+                color: #fffb00;
+                font-family: 'Press Start 2P', monospace;
+                font-size: 10px;
+                text-shadow: 0 0 8px #ff00ff, 0 0 12px #00ffff;
+                box-shadow: 0 0 15px rgba(0, 255, 204, 0.6), inset 0 0 10px rgba(255, 0, 255, 0.4);
+                margin-bottom: 16px;
+                letter-spacing: 1px;
+                animation: bannerGlow 1s ease-in-out infinite alternate;
+            }
+            @keyframes bannerGlow {
+                0% { border-color: #00ffcc; box-shadow: 0 0 12px rgba(0,255,204,0.6); }
+                100% { border-color: #ff00ff; box-shadow: 0 0 20px rgba(255,0,255,0.9); }
+            }
+
+            /* 1단계 3개 슬롯 버튼 공통 흰색 스타일 */
+            div[data-testid="stElementContainer"]:nth-child(3) > div[data-testid="stButton"] > button,
+            div[data-testid="stElementContainer"]:nth-child(4) > div[data-testid="stButton"] > button,
+            div[data-testid="stElementContainer"]:nth-child(5) > div[data-testid="stButton"] > button {
+                position: relative !important;
+                overflow: hidden !important;
+                min-height: 72px !important;
+                background-color: #ffffff !important; /* 흰색 버튼 배경 */
+                color: #2d1842 !important;
+                border: 3px solid #2d1842 !important;
+                border-radius: 6px !important;
+                box-shadow: 4px 4px 0px #2d1842 !important;
+                padding: 14px 16px !important;
+                font-size: 0.95rem !important;
+                font-weight: 800 !important;
+                text-align: left !important;
+                line-height: 1.4 !important;
+                white-space: normal !important;
+                word-break: keep-all !important;
+                margin-bottom: 12px !important;
+                transition: all 0.12s ease !important;
+            }
+
+            /* 회전 중 네온 무지개 가림막 (공통) */
+            div[data-testid="stElementContainer"]:nth-child(3) > div[data-testid="stButton"] > button::before,
+            div[data-testid="stElementContainer"]:nth-child(4) > div[data-testid="stButton"] > button::before,
+            div[data-testid="stElementContainer"]:nth-child(5) > div[data-testid="stButton"] > button::before {
+                content: "✨ 💎 ❓  SLOT SPINNING  ❓ 💎 ✨\\A🎰  🌟  💎  ❓  💎  🌟  🎰\\A✨ 💎 ❓  SLOT SPINNING  ❓ 💎 ✨";
+                white-space: pre-wrap;
+                position: absolute;
+                top: 0; left: 0; right: 0; bottom: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: 'Press Start 2P', monospace;
+                font-size: 11px;
+                color: #fffb00;
+                background: linear-gradient(120deg, #2b004f, #61007d, #9c0062, #005f73);
+                background-size: 300% 300%;
+                text-shadow: 0 0 6px #00ffff, 0 0 10px #ff00ff;
+                z-index: 5;
+                pointer-events: none;
+                line-height: 1.8;
+                text-align: center;
+                border-radius: 3px;
+            }
+
+            /* 1번 기사 버튼: 3.0초 후 멈춤 */
+            div[data-testid="stElementContainer"]:nth-child(3) > div[data-testid="stButton"] > button::before {
+                animation: slotReelVertical 0.08s linear infinite, rainbowShift 1.2s ease infinite alternate, reelStop 0.01s linear 3.0s forwards;
+            }
+            div[data-testid="stElementContainer"]:nth-child(3) > div[data-testid="stButton"] > button p {
+                animation: titlePopReveal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) 3.0s both !important;
+            }
+
+            /* 2번 기사 버튼: 3.5초 후 멈춤 (0.5초 간격) */
+            div[data-testid="stElementContainer"]:nth-child(4) > div[data-testid="stButton"] > button::before {
+                animation: slotReelVertical 0.08s linear infinite, rainbowShift 1.2s ease infinite alternate, reelStop 0.01s linear 3.5s forwards;
+            }
+            div[data-testid="stElementContainer"]:nth-child(4) > div[data-testid="stButton"] > button p {
+                animation: titlePopReveal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) 3.5s both !important;
+            }
+
+            /* 3번 기사 버튼: 4.0초 후 멈춤 (0.5초 간격) */
+            div[data-testid="stElementContainer"]:nth-child(5) > div[data-testid="stButton"] > button::before {
+                animation: slotReelVertical 0.08s linear infinite, rainbowShift 1.2s ease infinite alternate, reelStop 0.01s linear 4.0s forwards;
+            }
+            div[data-testid="stElementContainer"]:nth-child(5) > div[data-testid="stButton"] > button p {
+                animation: titlePopReveal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) 4.0s both !important;
+            }
+
+            /* 애니메이션 키프레임 */
+            @keyframes slotReelVertical {
+                0% { transform: translateY(-38px); filter: blur(3px); }
+                50% { transform: translateY(0px); filter: blur(1px); }
+                100% { transform: translateY(38px); filter: blur(3px); }
+            }
+            @keyframes rainbowShift {
+                0% { background-position: 0% 50%; }
+                100% { background-position: 100% 50%; }
+            }
+            @keyframes reelStop {
+                to { opacity: 0; visibility: hidden; }
+            }
+            @keyframes titlePopReveal {
+                0% { transform: scale(0.1); opacity: 0; }
+                65% { transform: scale(1.25); opacity: 1; }
+                85% { transform: scale(0.95); opacity: 1; }
+                100% { transform: scale(1.0); opacity: 1; }
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+
         if candidates_key not in st.session_state:
             raw_records = ws_news.get_all_records()
             news_data = []
@@ -456,7 +447,7 @@ def get_game_news_selection(game_id: str):
 
         candidates = st.session_state[candidates_key]
 
-        # 🔊 3.0초, 3.5초, 4.0초 '탁!' 타격음 싱크 (Web Audio API)
+        # 🔊 3.0초, 3.5초, 4.0초 타격음 싱크 (Web Audio API)
         components.html(
             """
             <script>
@@ -467,7 +458,7 @@ def get_game_news_selection(game_id: str):
                     var ctx = new AudioContext();
                     var now = ctx.currentTime;
 
-                    // 1. 0초 ~ 3.9초 지속 릴 회전음 (빠른 틱-틱-틱-틱)
+                    // 릴 빠른 회전음 (0초 ~ 3.9초)
                     for (var t = 0; t < 3.9; t += 0.07) {
                         var osc = ctx.createOscillator();
                         var gain = ctx.createGain();
@@ -496,14 +487,9 @@ def get_game_news_selection(game_id: str):
                         osc.stop(time + 0.15);
                     }
 
-                    // 1번 릴 스톱 (3.0초) -> 탁!
-                    playTakImpact(now + 3.0, 500);
-
-                    // 2번 릴 스톱 (3.5초) -> 탁!
-                    playTakImpact(now + 3.5, 680);
-
-                    // 3번 릴 스톱 (4.0초) -> 탁!
-                    playTakImpact(now + 4.0, 880);
+                    playTakImpact(now + 3.0, 500); // 1번 릴 (3.0s)
+                    playTakImpact(now + 3.5, 680); // 2번 릴 (3.5s)
+                    playTakImpact(now + 4.0, 880); // 3번 릴 (4.0s)
 
                     // 4.1초 잭팟 실로폰 팡파르
                     function playFanfareNote(freq, time, dur) {
@@ -518,10 +504,10 @@ def get_game_news_selection(game_id: str):
                         o.start(time);
                         o.stop(time + dur);
                     }
-                    playFanfareNote(523.25, now + 4.1, 0.12); // C5
-                    playFanfareNote(659.25, now + 4.22, 0.12); // E5
-                    playFanfareNote(783.99, now + 4.34, 0.12); // G5
-                    playFanfareNote(1046.50, now + 4.46, 0.35); // C6
+                    playFanfareNote(523.25, now + 4.1, 0.12);
+                    playFanfareNote(659.25, now + 4.22, 0.12);
+                    playFanfareNote(783.99, now + 4.34, 0.12);
+                    playFanfareNote(1046.50, now + 4.46, 0.35);
                 } catch(e) {}
             })();
             </script>
@@ -530,7 +516,7 @@ def get_game_news_selection(game_id: str):
             width=0
         )
 
-        # 📦 흰색 배경 가상 브라우저 창
+        # 📦 가상 브라우저 창
         with st.container(border=True):
             st.markdown(
                 """
@@ -549,7 +535,7 @@ def get_game_news_selection(game_id: str):
                 unsafe_allow_html=True
             )
 
-            # 슬롯 릴 애니메이션 버튼 출력
+            # 슬롯 릴 애니메이션 버튼 출력 (위에서부터 1, 2, 3)
             for idx, item in enumerate(candidates):
                 if st.button(f"📰 {item['title']}", key=f"btn_{game_id}_{idx}", use_container_width=True):
                     new_count = item['count'] + 1
@@ -573,9 +559,36 @@ def get_game_news_selection(game_id: str):
         return None, None, None
 
     # ====================================================
-    # 2단계: 기사 본문 읽기 (30초 픽셀 전광판 타이머 & 자동 이동)
+    # 2단계: 기사 본문 읽기 (슬롯 스타일 차단 & 깔끔한 다음 버튼)
     # ====================================================
     chosen = st.session_state[news_key]
+
+    # 2단계 전용 깨끗한 다음 버튼 CSS
+    st.markdown(
+        """
+        <style>
+        div[data-testid="stButton"] > button {
+            background-color: #ffffff !important;
+            color: #2d1842 !important;
+            border: 2.5px solid #2d1842 !important;
+            border-radius: 6px !important;
+            box-shadow: 4px 4px 0px #2d1842 !important;
+            padding: 12px 16px !important;
+            font-size: 0.95rem !important;
+            font-weight: 800 !important;
+            margin-top: 10px !important;
+            transition: all 0.12s ease !important;
+        }
+        div[data-testid="stButton"] > button:hover {
+            background-color: #f3e8ff !important;
+            color: #7e22ce !important;
+            transform: translate(-2px, -2px) !important;
+            box-shadow: 6px 6px 0px #2d1842 !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
     with st.container(border=True):
         st.markdown(
@@ -609,9 +622,10 @@ def get_game_news_selection(game_id: str):
 
         st.markdown(f"<div class='pixel-article-body'>{chosen['text']}</div>", unsafe_allow_html=True)
 
+        # 깨끗하게 출력되는 다음 버튼
         next_clicked = st.button("▶ 다 읽었으면 다음", key=f"next_btn_{game_id}", use_container_width=True)
 
-        # ⏱️ components.html 30초 카운트다운 & 0초 자동 다음 클릭
+        # 30초 카운트다운 & 0초 자동 이동
         components.html(
             f"""
             <script>
@@ -646,9 +660,7 @@ def get_game_news_selection(game_id: str):
             st.rerun()
 
     return None, None, None
-
-
-
+    
 # ==========================================
 # 4. Streamlit 앱 라우팅 및 상태 관리
 # ==========================================
