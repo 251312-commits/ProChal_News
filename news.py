@@ -159,14 +159,17 @@ def inject_casino_theme():
         st.markdown(
             """
             <style>
-            /* 1. 로그인 페이지: 밝은 회색 배경 */
+            /* 1. 로그인 페이지: 상단 여백 최적화 및 밝은 회색 배경 */
+            .block-container {
+                padding-top: 2rem !important;
+            }
             .stApp {
                 background-color: #f4f6f9 !important;
                 background-image: none !important;
                 color: #1e293b !important;
             }
 
-            /* 2. 카드 형태 (모든 요소가 테두리 안에 안전하게 들어가도록 설정) */
+            /* 2. 카드 형태 */
             [data-testid="stVerticalBlockBorderWrapper"] {
                 background: #ffffff !important;
                 border-radius: 18px !important;
@@ -198,7 +201,7 @@ def inject_casino_theme():
                 color: #2563eb;
             }
 
-            /* 5. 입력창 스타일 (테두리 내부 완벽 안착) */
+            /* 5. 입력창 스타일 */
             .stTextInput > div > div > input {
                 background-color: #f8fafc !important;
                 color: #0f172a !important;
@@ -218,7 +221,7 @@ def inject_casino_theme():
                 font-weight: 600 !important;
             }
 
-            /* 6. 전문적인 파란색 버튼 */
+            /* 6. 버튼 스타일 */
             .stButton > button {
                 background: #2563eb !important;
                 color: #ffffff !important;
@@ -228,10 +231,6 @@ def inject_casino_theme():
                 height: 48px !important;
                 border: none !important;
                 box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.25) !important;
-                transition: background-color 0.2s;
-            }
-            .stButton > button:hover {
-                background: #1d4ed8 !important;
             }
 
             /* 7. 주의사항 안내 박스 */
@@ -251,10 +250,19 @@ def inject_casino_theme():
             unsafe_allow_html=True
         )
     else:
-        # ⬛ [메인/게임을 위한 기존 블랙 카지노 테마 유지]
+        # ⬛ [메인 화면 전용] 상단 여백 축소 + 기존 블랙 카지노 테마
         st.markdown(
             """
             <style>
+            /* 🚨 핵심: 메인 화면 상단 공백/여백 대폭 제거 */
+            .block-container {
+                padding-top: 1.2rem !important;
+                padding-bottom: 1rem !important;
+            }
+            header[data-testid="stHeader"] {
+                background-color: transparent !important;
+            }
+
             .stApp {
                 background-color: #05000a !important; 
                 background-image: none !important; 
@@ -266,8 +274,8 @@ def inject_casino_theme():
                 background-color: #110022;
                 border: 2px solid #8A2BE2;
                 box-shadow: 0 0 15px #8A2BE2, inset 0 0 10px #8A2BE2;
-                margin-top: 10px;
-                margin-bottom: 30px;
+                margin-top: 5px;
+                margin-bottom: 25px;
                 padding: 10px;
                 border-radius: 5px;
                 align-items: stretch;
@@ -397,7 +405,7 @@ def show_login_page():
             # STEP 2-1: 기존 유저 비밀번호 입력
             # ----------------------------------------------------
             elif st.session_state.login_step == '2_exist':
-                st.info(f"학번: {st.session_state.temp_student_id}")
+                st.info(f"현재 {st.session_state.temp_student_id}으로 로그인 중입니다.")
                 password = st.text_input("비밀번호", type="password", placeholder="비밀번호 입력", key="input_pw_login")
                 
                 col_b1, col_b2 = st.columns(2)
