@@ -154,317 +154,334 @@ def show_bank(): show_placeholder_page("🏦 은행")
 # 레이아웃
 # ------------------------------------------
 def inject_casino_theme():
-    st.markdown(
-        """
-        <style>
-        /* 1. 깔끔한 블랙 배경 */
-        .stApp {
-            background-color: #05000a !important; 
-            background-image: none !important; 
-            color: #ffffff;
-        }
+    if st.session_state.get('page') == 'login':
+        # 🔵 [로그인 전용] 밝은 회색 배경 & 전문적인 블루 테마
+        st.markdown(
+            """
+            <style>
+            /* 1. 로그인 페이지: 밝은 회색 배경 */
+            .stApp {
+                background-color: #f4f6f9 !important;
+                background-image: none !important;
+                color: #1e293b !important;
+            }
 
-        /* 2. 사설 배너 스타일 컨테이너 (메인 페이지용) */
-        .neon-promo-banner {
-            display: flex;
-            flex-direction: row;
-            background-color: #110022;
-            border: 2px solid #8A2BE2;
-            box-shadow: 0 0 15px #8A2BE2, inset 0 0 10px #8A2BE2;
-            margin-top: 10px;
-            margin-bottom: 30px;
-            padding: 10px;
-            border-radius: 5px;
-            align-items: stretch;
-        }
+            /* 2. 카드 형태 (모든 요소가 테두리 안에 안전하게 들어가도록 설정) */
+            [data-testid="stVerticalBlockBorderWrapper"] {
+                background: #ffffff !important;
+                border-radius: 18px !important;
+                padding: 25px 20px !important;
+                border: 1px solid #e2e8f0 !important;
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
+            }
 
-        /* 3. 배너 왼쪽 (점선 제거, 은은한 네온 효과만 유지) */
-        .neon-left-box {
-            flex: 1.2;
-            box-shadow: 0 0 15px rgba(255, 0, 255, 0.5), inset 0 0 10px rgba(255, 0, 255, 0.3);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 10px;
-            background: rgba(255, 0, 255, 0.05);
-            border-radius: 5px;
-        }
-        .neon-numbers {
-            color: #FFFFFF;
-            font-size: 1.8rem;
-            font-weight: 900;
-            text-shadow: 2px 2px 0px #FF00FF, 0 0 15px #FF00FF;
-            text-align: center;
-            line-height: 1.2;
-        }
-        .neon-numbers span {
-            color: #FF00FF;
-        }
+            /* 3. 타이틀 및 헤더 */
+            h1, h2, h3 {
+                color: #1e3a8a !important;
+                text-shadow: none !important;
+                text-align: center !important;
+                font-weight: 800 !important;
+            }
 
-        /* 4. 배너 오른쪽 (로고 및 VIP 텍스트) */
-        .neon-right-box {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding-left: 15px;
-            text-align: center;
-        }
-        .neon-logo-text {
-            color: #ffffff; /* 흰색으로 변경 */
-            font-size: 3.5rem;
-            font-weight: 900;
-            text-shadow: 0 0 20px #8A2BE2, 0 0 40px #FF00FF; /* 보라/핑크 후광 유지 */
-            margin-bottom: -10px;
-            letter-spacing: -3px;
-        }
-        .neon-sub-text {
-            color: #FFD700;
-            font-weight: 900;
-            font-size: 1.1rem;
-            text-shadow: 1px 1px 2px #000;
-            margin-top: 5px;
-        }
-        .neon-sub-text-2 {
-            color: #FF6347;
-            font-weight: 900;
-            font-size: 1rem;
-        }
+            /* 4. 아이콘 원형 */
+            .user-icon-circle {
+                width: 75px;
+                height: 75px;
+                background: #eff6ff;
+                border: 2px solid #3b82f6;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 auto 15px auto;
+                font-size: 36px;
+                color: #2563eb;
+            }
 
-        /* 이미지 느낌의 중앙 반투명 로그인 카드 컨테이너 */
-        .login-card {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            padding: 35px 25px;
-            border: 1px solid rgba(255, 215, 0, 0.3);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(10px);
-            text-align: center;
-            margin-bottom: 20px;
-        }
+            /* 5. 입력창 스타일 (테두리 내부 완벽 안착) */
+            .stTextInput > div > div > input {
+                background-color: #f8fafc !important;
+                color: #0f172a !important;
+                font-weight: 600 !important;
+                border: 1.5px solid #cbd5e1 !important;
+                border-radius: 10px !important;
+                height: 48px !important;
+                text-align: center !important;
+            }
+            .stTextInput > div > div > input:focus {
+                border-color: #2563eb !important;
+                box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+                background-color: #ffffff !important;
+            }
+            .stTextInput label {
+                color: #334155 !important;
+                font-weight: 600 !important;
+            }
 
-        /* 로그인 카드 상단 유저 아이콘 */
-        .user-icon-circle {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #FFDF00, #D4AF37);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px auto;
-            font-size: 40px;
-            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
-        }
+            /* 6. 전문적인 파란색 버튼 */
+            .stButton > button {
+                background: #2563eb !important;
+                color: #ffffff !important;
+                font-weight: 700 !important;
+                font-size: 1rem !important;
+                border-radius: 10px !important;
+                height: 48px !important;
+                border: none !important;
+                box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.25) !important;
+                transition: background-color 0.2s;
+            }
+            .stButton > button:hover {
+                background: #1d4ed8 !important;
+            }
 
-        /* 입력 폼 스타일링 */
-        .stTextInput > div > div > input {
-            background-color: rgba(255, 255, 255, 0.9) !important;
-            color: #000000 !important;
-            border-radius: 10px !important;
-            border: none !important;
-            height: 48px;
-            font-size: 1rem;
-            text-align: center;
-        }
-
-        /* 버튼 스타일 */
-        .stButton > button {
-            background: linear-gradient(to right, #B8860B, #FFDF00) !important;
-            color: #000000 !important;
-            font-weight: bold !important;
-            font-size: 1.1rem !important;
-            border-radius: 10px !important;
-            height: 48px;
-            border: none !important;
-            margin-top: 10px;
-        }
-
-        /* 비밀번호 안내 주의사항 박스 */
-        .warning-note {
-            background-color: rgba(255, 77, 77, 0.15);
-            border-left: 4px solid #ff4d4d;
-            color: #ffcccc;
-            padding: 10px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            text-align: left;
-            margin-top: 10px;
-            margin-bottom: 15px;
-        }
-
-        /* 기타 스트림릿 UI 덮어쓰기 */
-        h1, h2, h3 {
-            color: #ffffff !important;
-            text-shadow: 0 0 10px #8A2BE2, 0 0 20px #FF00FF !important;
-            text-align: center;
-        }
-        .stButton > button {
-            background: linear-gradient(to right, #4B0082, #8A2BE2) !important;
-            color: #ffffff !important;
-            font-weight: 900 !important;
-            border: none !important;
-            box-shadow: 0 0 10px #FF00FF;
-        }
-        .stTextInput > div > div > input {
-            background-color: #000000 !important;
-            color: #FF00FF !important;
-            font-weight: bold;
-            border: 2px solid #8A2BE2 !important;
-            text-align: center;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+            /* 7. 주의사항 안내 박스 */
+            .warning-note {
+                background-color: #fef2f2;
+                border-left: 4px solid #ef4444;
+                color: #991b1b;
+                padding: 12px;
+                border-radius: 8px;
+                font-size: 0.85rem;
+                text-align: left;
+                margin-top: 15px;
+                margin-bottom: 15px;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+    else:
+        # ⬛ [메인/게임을 위한 기존 블랙 카지노 테마 유지]
+        st.markdown(
+            """
+            <style>
+            .stApp {
+                background-color: #05000a !important; 
+                background-image: none !important; 
+                color: #ffffff;
+            }
+            .neon-promo-banner {
+                display: flex;
+                flex-direction: row;
+                background-color: #110022;
+                border: 2px solid #8A2BE2;
+                box-shadow: 0 0 15px #8A2BE2, inset 0 0 10px #8A2BE2;
+                margin-top: 10px;
+                margin-bottom: 30px;
+                padding: 10px;
+                border-radius: 5px;
+                align-items: stretch;
+            }
+            .neon-left-box {
+                flex: 1.2;
+                box-shadow: 0 0 15px rgba(255, 0, 255, 0.5), inset 0 0 10px rgba(255, 0, 255, 0.3);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                padding: 10px;
+                background: rgba(255, 0, 255, 0.05);
+                border-radius: 5px;
+            }
+            .neon-numbers {
+                color: #FFFFFF;
+                font-size: 1.8rem;
+                font-weight: 900;
+                text-shadow: 2px 2px 0px #FF00FF, 0 0 15px #FF00FF;
+                text-align: center;
+                line-height: 1.2;
+            }
+            .neon-numbers span { color: #FF00FF; }
+            .neon-right-box {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                padding-left: 15px;
+                text-align: center;
+            }
+            .neon-logo-text {
+                color: #ffffff;
+                font-size: 3.5rem;
+                font-weight: 900;
+                text-shadow: 0 0 20px #8A2BE2, 0 0 40px #FF00FF;
+                margin-bottom: -10px;
+                letter-spacing: -3px;
+            }
+            .neon-sub-text {
+                color: #FFD700;
+                font-weight: 900;
+                font-size: 1.1rem;
+                text-shadow: 1px 1px 2px #000;
+                margin-top: 5px;
+            }
+            .neon-sub-text-2 { color: #FF6347; font-weight: 900; font-size: 1rem; }
+            h1, h2, h3 {
+                color: #ffffff !important;
+                text-shadow: 0 0 10px #8A2BE2, 0 0 20px #FF00FF !important;
+                text-align: center;
+            }
+            .stButton > button {
+                background: linear-gradient(to right, #4B0082, #8A2BE2) !important;
+                color: #ffffff !important;
+                font-weight: 900 !important;
+                border: none !important;
+                box-shadow: 0 0 10px #FF00FF;
+            }
+            .stTextInput > div > div > input {
+                background-color: #000000 !important;
+                color: #FF00FF !important;
+                font-weight: bold;
+                border: 2px solid #8A2BE2 !important;
+                text-align: center;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
     
 # ------------------------------------------
 # 메인 화면 정의
 # ------------------------------------------
 def show_login_page():
-    # 중앙 정렬을 위한 3컬럼 레이아웃
-    _, col_main, _ = st.columns([1, 2, 1])
+    # 가운데 정렬 레이아웃
+    _, col_main, _ = st.columns([1, 2.5, 1])
 
     with col_main:
-        # 로그인 카드 박스 시작
-        st.markdown(
-            """
-            <div class="login-card">
-                <div class="user-icon-circle">👤</div>
-                <h2 style="margin-bottom: 5px; color: #FFD700;">NEWS CASINO</h2>
-                <p style="color: #bbb; font-size: 0.9rem; margin-bottom: 25px;">VIP 전용 프라이빗 라운지</p>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-        # ----------------------------------------------------
-        # STEP 1: 학번 확인
-        # ----------------------------------------------------
-        if st.session_state.login_step == 1:
-            student_id = st.text_input("학번", max_chars=5, placeholder="학번 5자리 입력", key="input_sid")
-            
-            if st.button("다음 (Next)", use_container_width=True):
-                clean_id = student_id.strip()
-                if clean_id.isdigit() and len(clean_id) == 5:
-                    users_data = ws.get_all_records()
-                    
-                    # 시트 학번 매칭 검사
-                    user_info = None
-                    for item in users_data:
-                        raw_sheet_id = str(item.get('학번', ''))
-                        sheet_id = raw_sheet_id.split('.')[0] if '.' in raw_sheet_id else raw_sheet_id.strip()
-                        if sheet_id == clean_id:
-                            user_info = item
-                            break
-                    
-                    st.session_state.temp_student_id = clean_id
-                    
-                    if user_info:
-                        st.session_state.temp_user_data = user_info
-                        st.session_state.login_step = '2_exist'  # 기존 계정 -> 비밀번호 입력
-                    else:
-                        st.session_state.login_step = '2_new'    # 신규 계정 -> 회원가입
-                    st.rerun()
-                else:
-                    st.error("학번은 5자리 숫자로 입력해주세요.")
-
-        # ----------------------------------------------------
-        # STEP 2-1: 기존 유저 비밀번호 입력
-        # ----------------------------------------------------
-        elif st.session_state.login_step == '2_exist':
-            st.info(f"학번: {st.session_state.temp_student_id}")
-            password = st.text_input("비밀번호", type="password", placeholder="비밀번호 입력", key="input_pw_login")
-            
-            col_b1, col_b2 = st.columns(2)
-            with col_b1:
-                if st.button("이전", use_container_width=True):
-                    st.session_state.login_step = 1
-                    st.rerun()
-            with col_b2:
-                if st.button("로그인", use_container_width=True):
-                    saved_pw = str(st.session_state.temp_user_data.get('비밀번호', ''))
-                    if password == saved_pw:
-                        st.session_state.current_user = st.session_state.temp_student_id
-                        st.session_state.current_user_data = st.session_state.temp_user_data
-                        # 로그인 성공 후 세션 정리
-                        st.session_state.login_step = 1
-                        change_page('main')
-                    else:
-                        st.error("비밀번호가 일치하지 않습니다.")
-
-        # ----------------------------------------------------
-        # STEP 2-2: 신규 유저 회원가입
-        # ----------------------------------------------------
-        elif st.session_state.login_step == '2_new':
-            st.success(f"신규 가입 대상 학번: {st.session_state.temp_student_id}")
-            
-            username = st.text_input("아이디 (닉네임)", placeholder="사용할 닉네임", key="input_uname")
-            password = st.text_input("비밀번호", type="password", placeholder="비밀번호 설정", key="input_pw1")
-            password_confirm = st.text_input("비밀번호 확인", type="password", placeholder="비밀번호 재입력", key="input_pw2")
-            referral = st.text_input("추천인 학번 (선택)", placeholder="초대한 친구 학번", key="input_ref")
-
-            # 주의사항 노트
+        # 📦 입력 요소 전체를 보증하는 카드 컨테이너
+        with st.container(border=True):
+            # 로그인 카드 헤더
             st.markdown(
                 """
-                <div class="warning-note">
-                    ⚠️ <b>주의사항:</b> 설정한 비밀번호는 보안상 추후 변경이 어려우니 반드시 기억해 두시기 바랍니다!
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div class="user-icon-circle">👤</div>
+                    <h2 style="margin-bottom: 6px; margin-top: 0;">Title</h2>
+                    <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 0;">학번을 입력하여 로그인해주세요.</p>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
 
-            col_b1, col_b2 = st.columns(2)
-            with col_b1:
-                if st.button("이전", use_container_width=True):
-                    st.session_state.login_step = 1
-                    st.rerun()
-            with col_b2:
-                if st.button("가입완료", use_container_width=True):
-                    if not username.strip():
-                        st.error("닉네임을 입력해 주세요.")
-                    elif not password:
-                        st.error("비밀번호를 입력해 주세요.")
-                    elif password != password_confirm:
-                        st.error("비밀번호 확인이 일치하지 않습니다.")
-                    else:
-                        clean_id = st.session_state.temp_student_id
-                        final_username = username.strip()
-                        initial_coins = 5000
+            # ----------------------------------------------------
+            # STEP 1: 학번 확인
+            # ----------------------------------------------------
+            if st.session_state.login_step == 1:
+                student_id = st.text_input("학번", max_chars=5, placeholder="학번 5자리 입력", key="input_sid")
+                
+                if st.button("다음 (Next)", use_container_width=True):
+                    clean_id = student_id.strip()
+                    if clean_id.isdigit() and len(clean_id) == 5:
                         users_data = ws.get_all_records()
+                        
+                        user_info = None
+                        for item in users_data:
+                            raw_sheet_id = str(item.get('학번', ''))
+                            sheet_id = raw_sheet_id.split('.')[0] if '.' in raw_sheet_id else raw_sheet_id.strip()
+                            if sheet_id == clean_id:
+                                user_info = item
+                                break
+                        
+                        st.session_state.temp_student_id = clean_id
+                        
+                        if user_info:
+                            st.session_state.temp_user_data = user_info
+                            st.session_state.login_step = '2_exist'  # 기존 계정 -> 비밀번호
+                        else:
+                            st.session_state.login_step = '2_new'    # 신규 계정 -> 회원가입
+                        st.rerun()
+                    else:
+                        st.error("학번은 5자리 숫자로 입력해주세요.")
 
-                        # 추천인 보상 로직
-                        if referral.strip():
-                            clean_ref = referral.strip()
-                            ref_info = next((item for item in users_data if str(item.get('학번', '')).split('.')[0] == clean_ref), None)
-                            if ref_info:
-                                row_idx = users_data.index(ref_info) + 2
-                                new_coins = int(ref_info.get('코인', 0)) + 3000
-                                ws.update_cell(row_idx, 3, new_coins)
-                                initial_coins += 1000
-                                st.toast("🎉 추천인 보상 코인이 지급되었습니다!")
-
-                        # 구글 시트에 행 추가 (순서: 학번, 아이디, 코인, 연승, 추천인, 비밀번호)
-                        new_row = [clean_id, final_username, initial_coins, 0, referral.strip(), password]
-                        ws.append_row(new_row)
-
-                        # 로그인 완료 처리
-                        st.session_state.current_user = clean_id
-                        st.session_state.current_user_data = {
-                            "학번": clean_id,
-                            "아이디": final_username,
-                            "코인": initial_coins,
-                            "연승": 0,
-                            "비밀번호": password
-                        }
+            # ----------------------------------------------------
+            # STEP 2-1: 기존 유저 비밀번호 입력
+            # ----------------------------------------------------
+            elif st.session_state.login_step == '2_exist':
+                st.info(f"학번: {st.session_state.temp_student_id}")
+                password = st.text_input("비밀번호", type="password", placeholder="비밀번호 입력", key="input_pw_login")
+                
+                col_b1, col_b2 = st.columns(2)
+                with col_b1:
+                    if st.button("이전", use_container_width=True):
                         st.session_state.login_step = 1
-                        change_page('main')
+                        st.rerun()
+                with col_b2:
+                    if st.button("로그인", use_container_width=True):
+                        saved_pw = str(st.session_state.temp_user_data.get('비밀번호', ''))
+                        if password == saved_pw:
+                            st.session_state.current_user = st.session_state.temp_student_id
+                            st.session_state.current_user_data = st.session_state.temp_user_data
+                            st.session_state.login_step = 1
+                            change_page('main')
+                        else:
+                            st.error("비밀번호가 일치하지 않습니다.")
 
+            # ----------------------------------------------------
+            # STEP 2-2: 신규 유저 회원가입
+            # ----------------------------------------------------
+            elif st.session_state.login_step == '2_new':
+                st.success(f"신규 가입 대상 학번: {st.session_state.temp_student_id}")
+                
+                username = st.text_input("아이디 (닉네임)", placeholder="사용할 닉네임", key="input_uname")
+                password = st.text_input("비밀번호", type="password", placeholder="비밀번호 설정", key="input_pw1")
+                password_confirm = st.text_input("비밀번호 확인", type="password", placeholder="비밀번호 재입력", key="input_pw2")
+                referral = st.text_input("추천인 학번 (선택)", placeholder="초대한 친구 학번", key="input_ref")
+
+                st.markdown(
+                    """
+                    <div class="warning-note">
+                        ⚠️ <b>주의사항:</b> 설정한 비밀번호는 보안상 추후 변경이 어려우니 반드시 기억해 두시기 바랍니다!
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+                col_b1, col_b2 = st.columns(2)
+                with col_b1:
+                    if st.button("이전", use_container_width=True):
+                        st.session_state.login_step = 1
+                        st.rerun()
+                with col_b2:
+                    if st.button("가입완료", use_container_width=True):
+                        if not username.strip():
+                            st.error("닉네임을 입력해 주세요.")
+                        elif not password:
+                            st.error("비밀번호를 입력해 주세요.")
+                        elif password != password_confirm:
+                            st.error("비밀번호 확인이 일치하지 않습니다.")
+                        else:
+                            clean_id = st.session_state.temp_student_id
+                            final_username = username.strip()
+                            initial_coins = 5000
+                            users_data = ws.get_all_records()
+
+                            if referral.strip():
+                                clean_ref = referral.strip()
+                                ref_info = next((item for item in users_data if str(item.get('학번', '')).split('.')[0] == clean_ref), None)
+                                if ref_info:
+                                    row_idx = users_data.index(ref_info) + 2
+                                    new_coins = int(ref_info.get('코인', 0)) + 3000
+                                    ws.update_cell(row_idx, 3, new_coins)
+                                    initial_coins += 1000
+                                    st.toast("🎉 추천인 보상 코인이 지급되었습니다!")
+
+                            new_row = [clean_id, final_username, initial_coins, 0, referral.strip(), password]
+                            ws.append_row(new_row)
+
+                            st.session_state.current_user = clean_id
+                            st.session_state.current_user_data = {
+                                "학번": clean_id,
+                                "아이디": final_username,
+                                "코인": initial_coins,
+                                "연승": 0,
+                                "비밀번호": password
+                            }
+                            st.session_state.login_step = 1
+                            change_page('main')
         
         # 로그인 폼 네온 박스 종료
         st.markdown('</div>', unsafe_allow_html=True)
+        
 def show_main_page():
     st_autorefresh(interval=600000, limit=None, key="auto_refresh")
 
