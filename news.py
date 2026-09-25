@@ -166,12 +166,12 @@ def pick_3_lowest_count_news(news_list):
     return selected
 
 # ==========================================
-# [공통 UI] 5초 리얼 슬롯머신 연출(위아래 롤링 + ??? + POP 연출 + SFX) + 픽셀 타이머
+# [공통 UI] 4초 네온 화려한 슬롯머신 (0.5초 간격 탁! 멈춤 + 흰색 버튼 + SFX) + 픽셀 타이머
 # ==========================================
 def get_game_news_selection(game_id: str):
     """
-    1단계: 5초간 위아래로 빙글빙글 도는 슬롯머신(???) 연출 후, 
-           1, 2, 3번 릴이 '탁!' 소리와 함께 커졌다 작아지며 기사 제목 공개
+    1단계: 4초간 무지개 빛 네온 릴이 빙글빙글 돌다가 
+           3.0초, 3.5초, 4.0초에 0.5초 간격으로 '탁!' 소리와 함께 순차 공개
     2단계: 선택한 뉴스 제목 + 본문 읽기 (픽셀 30초 타이머 & 타임아웃 자동 이동)
     3단계: 읽기 완료 후 (title, text, url) 반환
     """
@@ -185,7 +185,7 @@ def get_game_news_selection(game_id: str):
         return chosen['title'], chosen['text'], chosen['url']
 
     # ----------------------------------------------------
-    # 👾 흰색 브라우저 창 + 5초 리얼 슬롯머신 CSS 연출
+    # 👾 흰색 브라우저 창 + 4초 네온 슬롯머신 CSS 연출
     # ----------------------------------------------------
     st.markdown(
         """
@@ -240,33 +240,40 @@ def get_game_news_selection(game_id: str):
             line-height: 1;
         }
 
-        /* 🎰 슬롯머신 전광판 */
+        /* 🎰 화려한 반짝이는 전광판 (네온 그라데이션) */
         .slot-machine-banner {
-            background: #110620;
-            border: 2.5px solid #2d1842;
-            border-radius: 4px;
+            background: linear-gradient(135deg, #110620 0%, #32004a 50%, #0d001a 100%);
+            border: 3px solid #00ffcc;
+            border-radius: 6px;
             padding: 10px 12px;
             text-align: center;
-            color: #00ffcc;
+            color: #fffb00;
             font-family: 'Press Start 2P', monospace;
             font-size: 10px;
-            box-shadow: inset 0 0 10px rgba(0, 255, 204, 0.4);
+            text-shadow: 0 0 8px #ff00ff, 0 0 12px #00ffff;
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.6), inset 0 0 10px rgba(255, 0, 255, 0.4);
             margin-bottom: 16px;
             letter-spacing: 1px;
+            animation: bannerGlow 1s ease-in-out infinite alternate;
+        }
+
+        @keyframes bannerGlow {
+            0% { border-color: #00ffcc; box-shadow: 0 0 12px rgba(0,255,204,0.6); }
+            100% { border-color: #ff00ff; box-shadow: 0 0 20px rgba(255,0,255,0.9); }
         }
 
         /* ========================================================= */
-        /* 🎰 리얼 슬롯머신 위아래 롤링 + ??? + 탁! 커지는 POP 연출 */
+        /* 🎰 [흰색 버튼 + 네온 릴 회전 + 0.5초 간격 탁! 팝업] */
         /* ========================================================= */
 
-        /* 슬롯 버튼 기본 사양 */
+        /* 기본 기사 버튼 (깔끔한 흰색 배경) */
         div[data-testid="stButton"] > button {
             position: relative !important;
             overflow: hidden !important;
             min-height: 72px !important;
-            background-color: #fcfaff !important;
+            background-color: #ffffff !important; /* [수정] 흰색 배경 */
             color: #2d1842 !important;
-            border: 2.5px solid #2d1842 !important;
+            border: 3px solid #2d1842 !important;
             border-radius: 6px !important;
             box-shadow: 4px 4px 0px #2d1842 !important;
             padding: 14px 16px !important;
@@ -280,28 +287,27 @@ def get_game_news_selection(game_id: str):
             transition: all 0.12s ease !important;
         }
 
-        /* 버튼 내부 실제 기사 제목 문구 (초기 숨김 -> 멈출 때 탁! 등장) */
+        /* 멈출 때 글자가 커졌다 작아지며 화려하게 등장 (3.0s, 3.5s, 4.0s) */
         div[data-testid="stButton"]:nth-of-type(1) > button p {
-            animation: titlePopReveal 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) 3.0s both !important;
+            animation: titlePopReveal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) 3.0s both !important;
         }
         div[data-testid="stButton"]:nth-of-type(2) > button p {
-            animation: titlePopReveal 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) 4.0s both !important;
+            animation: titlePopReveal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) 3.5s both !important;
         }
         div[data-testid="stButton"]:nth-of-type(3) > button p {
-            animation: titlePopReveal 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) 5.0s both !important;
+            animation: titlePopReveal 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) 4.0s both !important;
         }
 
-        /* 탁! 하며 커졌다 작아지는 팝업 애니메이션 */
         @keyframes titlePopReveal {
-            0% { transform: scale(0.1); opacity: 0; }
-            65% { transform: scale(1.25); opacity: 1; }
+            0% { transform: scale(0.1); opacity: 0; filter: brightness(2); }
+            65% { transform: scale(1.25); opacity: 1; filter: brightness(1.2); }
             85% { transform: scale(0.95); opacity: 1; }
-            100% { transform: scale(1.0); opacity: 1; }
+            100% { transform: scale(1.0); opacity: 1; filter: brightness(1); }
         }
 
-        /* 회전 중 ??? 가상 릴 가림막 (::before) */
+        /* 🎰 회전 중 알록달록 네온 가림막 (::before) */
         div[data-testid="stButton"] > button::before {
-            content: "❓ ❓ ❓   SPINNING   ❓ ❓ ❓\\A🎰  ❓ ❓ ❓  🎰\\A❓ ❓ ❓   SPINNING   ❓ ❓ ❓";
+            content: "✨ 💎 ❓  SLOT SPINNING  ❓ 💎 ✨\\A🎰  🌟  💎  ❓  💎  🌟  🎰\\A✨ 💎 ❓  SLOT SPINNING  ❓ 💎 ✨";
             white-space: pre-wrap;
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -309,43 +315,52 @@ def get_game_news_selection(game_id: str):
             align-items: center;
             justify-content: center;
             font-family: 'Press Start 2P', monospace;
-            font-size: 12px;
-            color: #7e22ce;
-            background-color: #f3e8ff;
+            font-size: 11px;
+            color: #fffb00;
+            background: linear-gradient(120deg, #2b004f, #61007d, #9c0062, #005f73);
+            background-size: 300% 300%;
+            text-shadow: 0 0 6px #00ffff, 0 0 10px #ff00ff;
             z-index: 5;
             pointer-events: none;
             line-height: 1.8;
             text-align: center;
+            border-radius: 4px;
         }
 
-        /* 1번 버튼: 0초 ~ 3.0초 동안 위아래 빙글빙글 */
+        /* 1번 버튼: 0초 ~ 3.0초 동안 릴 회전 */
         div[data-testid="stButton"]:nth-of-type(1) > button::before {
-            animation: slotReelVertical 0.12s linear infinite, reelStop 0.01s linear 3.0s forwards;
+            animation: slotReelVertical 0.09s linear infinite, rainbowShift 1.5s ease infinite alternate, reelStop 0.01s linear 3.0s forwards;
         }
 
-        /* 2번 버튼: 0초 ~ 4.0초 동안 위아래 빙글빙글 */
+        /* 2번 버튼: 0초 ~ 3.5초 동안 릴 회전 (0.5초 차이) */
         div[data-testid="stButton"]:nth-of-type(2) > button::before {
-            animation: slotReelVertical 0.12s linear infinite, reelStop 0.01s linear 4.0s forwards;
+            animation: slotReelVertical 0.09s linear infinite, rainbowShift 1.5s ease infinite alternate, reelStop 0.01s linear 3.5s forwards;
         }
 
-        /* 3번 버튼: 0초 ~ 5.0초 동안 위아래 빙글빙글 */
+        /* 3번 버튼: 0초 ~ 4.0초 동안 릴 회전 (0.5초 차이) */
         div[data-testid="stButton"]:nth-of-type(3) > button::before {
-            animation: slotReelVertical 0.12s linear infinite, reelStop 0.01s linear 5.0s forwards;
+            animation: slotReelVertical 0.09s linear infinite, rainbowShift 1.5s ease infinite alternate, reelStop 0.01s linear 4.0s forwards;
         }
 
-        /* 위아래 폭풍 회전 키프레임 (블러 효과 포함) */
+        /* 위아래 폭풍 롤링 키프레임 */
         @keyframes slotReelVertical {
-            0% { transform: translateY(-35px); filter: blur(3px); }
+            0% { transform: translateY(-38px); filter: blur(3px); }
             50% { transform: translateY(0px); filter: blur(1px); }
-            100% { transform: translateY(35px); filter: blur(3px); }
+            100% { transform: translateY(38px); filter: blur(3px); }
         }
 
-        /* 릴 멈출 때 ??? 가림막 제거 */
+        /* 화려한 색상 이동 배경 */
+        @keyframes rainbowShift {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+
+        /* 릴 멈출 때 네온 가림막 제거 */
         @keyframes reelStop {
             to { opacity: 0; visibility: hidden; }
         }
 
-        /* Hover & Active 스타일 */
+        /* 버튼 Hover 스타일 */
         div[data-testid="stButton"] > button:hover {
             background-color: #f3e8ff !important;
             color: #7e22ce !important;
@@ -401,7 +416,7 @@ def get_game_news_selection(game_id: str):
     )
 
     # ====================================================
-    # 1단계: 5초 슬롯머신 연출과 함께 뉴스 기사 3개 선택
+    # 1단계: 4초 슬롯머신 연출과 함께 뉴스 기사 3개 선택
     # ====================================================
     if news_key not in st.session_state or not st.session_state[news_key]:
         if candidates_key not in st.session_state:
@@ -441,7 +456,7 @@ def get_game_news_selection(game_id: str):
 
         candidates = st.session_state[candidates_key]
 
-        # 🔊 5초간 슬롯 회전음 + 3초, 4초, 5초 순차적 '탁!' 타격음 싱크 (Web Audio API)
+        # 🔊 3.0초, 3.5초, 4.0초 '탁!' 타격음 싱크 (Web Audio API)
         components.html(
             """
             <script>
@@ -452,12 +467,12 @@ def get_game_news_selection(game_id: str):
                     var ctx = new AudioContext();
                     var now = ctx.currentTime;
 
-                    // 1. 0초 ~ 4.9초 동안 빠른 릴 회전음 (틱-틱-틱-틱)
-                    for (var t = 0; t < 4.9; t += 0.08) {
+                    // 1. 0초 ~ 3.9초 지속 릴 회전음 (빠른 틱-틱-틱-틱)
+                    for (var t = 0; t < 3.9; t += 0.07) {
                         var osc = ctx.createOscillator();
                         var gain = ctx.createGain();
                         osc.type = 'triangle';
-                        osc.frequency.setValueAtTime(160 + Math.random() * 180, now + t);
+                        osc.frequency.setValueAtTime(180 + Math.random() * 220, now + t);
                         gain.gain.setValueAtTime(0.04, now + t);
                         gain.gain.exponentialRampToValueAtTime(0.001, now + t + 0.05);
                         osc.connect(gain);
@@ -466,7 +481,7 @@ def get_game_news_selection(game_id: str):
                         osc.stop(now + t + 0.05);
                     }
 
-                    // '탁!' 멈춤 둔탁한 타격음 함수
+                    // '탁!' 멈춤 둔탁한 타격음
                     function playTakImpact(time, pitch) {
                         var osc = ctx.createOscillator();
                         var gain = ctx.createGain();
@@ -484,29 +499,29 @@ def get_game_news_selection(game_id: str):
                     // 1번 릴 스톱 (3.0초) -> 탁!
                     playTakImpact(now + 3.0, 500);
 
-                    // 2번 릴 스톱 (4.0초) -> 탁!
-                    playTakImpact(now + 4.0, 650);
+                    // 2번 릴 스톱 (3.5초) -> 탁!
+                    playTakImpact(now + 3.5, 680);
 
-                    // 3번 릴 스톱 (5.0초) -> 탁! + 잭팟 경품음
-                    playTakImpact(now + 5.0, 850);
+                    // 3번 릴 스톱 (4.0초) -> 탁!
+                    playTakImpact(now + 4.0, 880);
 
-                    // 5.1초 잭팟 팡파르
+                    // 4.1초 잭팟 실로폰 팡파르
                     function playFanfareNote(freq, time, dur) {
                         var o = ctx.createOscillator();
                         var g = ctx.createGain();
                         o.type = 'sine';
                         o.frequency.setValueAtTime(freq, time);
-                        g.gain.setValueAtTime(0.15, time);
+                        g.gain.setValueAtTime(0.18, time);
                         g.gain.exponentialRampToValueAtTime(0.001, time + dur);
                         o.connect(g);
                         g.connect(ctx.destination);
                         o.start(time);
                         o.stop(time + dur);
                     }
-                    playFanfareNote(523.25, now + 5.1, 0.12); // C5
-                    playFanfareNote(659.25, now + 5.25, 0.12); // E5
-                    playFanfareNote(783.99, now + 5.4, 0.12); // G5
-                    playFanfareNote(1046.50, now + 5.55, 0.35); // C6
+                    playFanfareNote(523.25, now + 4.1, 0.12); // C5
+                    playFanfareNote(659.25, now + 4.22, 0.12); // E5
+                    playFanfareNote(783.99, now + 4.34, 0.12); // G5
+                    playFanfareNote(1046.50, now + 4.46, 0.35); // C6
                 } catch(e) {}
             })();
             </script>
@@ -528,7 +543,7 @@ def get_game_news_selection(game_id: str):
                     </div>
                 </div>
                 <div class="slot-machine-banner">
-                    🎰 SPINNING... 3 ARTICLES WILL BE REVEALED IN 5 SECONDS!
+                    ✨🎰 4 SECONDS NEON SLOT: REVEALING ARTICLES! 🎰✨
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -631,6 +646,7 @@ def get_game_news_selection(game_id: str):
             st.rerun()
 
     return None, None, None
+
 
 
 # ==========================================
