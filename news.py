@@ -523,7 +523,7 @@ def show_main_page():
                 <div class="neon-logo-text">NEWS</div>
                 <div style="background: #FF00FF; color: white; padding: 2px 10px; border-radius: 10px; font-weight: bold; margin-top: 5px;">유익하다!</div>
                 <div class="neon-sub-text">친구 초대 시 3000코인 지급</div>
-                <div class="neon-sub-text-2">당신도 가능하다 일획천금</div>
+                <div class="neon-sub-text-2">당신도 가능하다 인생역전</div>
             </div>
         </div>
         """,
