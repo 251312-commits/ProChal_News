@@ -1037,7 +1037,7 @@ def show_main_page():
     elif clicked_menu == 7: change_page('exchange')
 
 # ==========================================
-# 🏆 모바일 게임 스타일 랭킹 화면
+# 🏆 네온 화려함 & 애니메이션 랭킹 화면
 # ==========================================
 def show_ranking():
     users_data = ws.get_all_records()
@@ -1076,7 +1076,7 @@ def show_ranking():
     st.markdown(
         """
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Gowun+Dodum&family=Noto+Sans+KR:wght@700;900&display=swap');
 
         .ranking-container, .ranking-container * {
             box-sizing: border-box !important;
@@ -1084,39 +1084,60 @@ def show_ranking():
 
         .ranking-container {
             font-family: 'Gowun Dodum', 'Noto Sans KR', sans-serif;
-            background-color: #1a0933;
-            padding: 16px;
-            border-radius: 16px;
+            background: linear-gradient(135deg, #110022 0%, #1a0933 50%, #0d001a 100%);
+            padding: 18px 14px;
+            border-radius: 20px;
             color: #ffffff;
-            border: 2px solid #8A2BE2;
-            box-shadow: 0 0 15px rgba(138, 43, 226, 0.5);
+            border: 2px solid #00ffcc;
+            animation: pulseGlow 3s infinite alternate;
             margin-bottom: 20px;
             width: 100%;
         }
 
+        @keyframes pulseGlow {
+            0% { border-color: #00ffcc; box-shadow: 0 0 15px rgba(0, 255, 204, 0.4); }
+            50% { border-color: #ff00ff; box-shadow: 0 0 25px rgba(255, 0, 255, 0.6); }
+            100% { border-color: #00ffcc; box-shadow: 0 0 15px rgba(0, 255, 204, 0.4); }
+        }
+
+        .ranking-header-title {
+            text-align: center;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 13px;
+            color: #fffb00;
+            text-shadow: 0 0 8px #ff00ff, 0 0 15px #00ffff;
+            margin-bottom: 16px;
+            letter-spacing: 1px;
+        }
+
         .my-rank-card {
-            background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
-            border: 3px solid #fbbf24;
+            background: linear-gradient(120deg, #1f113a 0%, #2e1052 50%, #1a0833 100%);
+            border: 2px solid #ffd700;
             border-radius: 14px;
             padding: 12px 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+            margin-bottom: 22px;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4), inset 0 0 8px rgba(255, 215, 0, 0.2);
             width: 100%;
+            transition: transform 0.2s ease;
+        }
+        .my-rank-card:hover {
+            transform: scale(1.02);
         }
         .my-rank-badge {
             font-size: 1.1rem;
             font-weight: 900;
-            color: #d97706;
+            color: #ffd700;
+            text-shadow: 0 0 8px rgba(255, 215, 0, 0.8);
             margin-right: 8px;
             white-space: nowrap;
         }
         .my-nickname {
             font-size: 1rem;
             font-weight: 800;
-            color: #1f2937;
+            color: #ffffff;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -1127,65 +1148,85 @@ def show_ranking():
             justify-content: center;
             align-items: flex-end;
             gap: 8px;
-            margin-bottom: 22px;
+            margin-bottom: 24px;
             width: 100%;
         }
         .banner-box {
             flex: 1;
             min-width: 0;
-            border-radius: 12px 12px 16px 16px;
+            border-radius: 14px;
             padding: 12px 4px 14px 4px;
             text-align: center;
             color: #ffffff;
-            box-shadow: 0 6px 14px rgba(0,0,0,0.4);
             position: relative;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
         }
-        
+        .banner-box:hover {
+            transform: translateY(-8px) scale(1.05) !important;
+            z-index: 10;
+        }
+
         .banner-gold {
-            background: linear-gradient(180deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
-            border: 3.5px solid #fbbf24;
-            min-height: 120px;
-            box-shadow: 0 0 15px rgba(251, 191, 36, 0.6);
+            background: linear-gradient(180deg, #ffd700 0%, #b8860b 60%, #5c4000 100%);
+            border: 2.5px solid #fffb00;
+            min-height: 135px;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.7);
         }
         .banner-silver {
-            background: linear-gradient(180deg, #9ca3af 0%, #6b7280 50%, #4b5563 100%);
-            border: 3px solid #e5e7eb;
-            min-height: 105px;
+            background: linear-gradient(180deg, #e0e0e0 0%, #757575 60%, #303030 100%);
+            border: 2px solid #ffffff;
+            min-height: 115px;
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
         }
         .banner-bronze {
-            background: linear-gradient(180deg, #d97706 0%, #b45309 50%, #78350f 100%);
-            border: 3px solid #f59e0b;
-            min-height: 95px;
+            background: linear-gradient(180deg, #cd7f32 0%, #8b4513 60%, #3e1e07 100%);
+            border: 2px solid #ffaa66;
+            min-height: 102px;
+            box-shadow: 0 0 12px rgba(205, 127, 50, 0.5);
         }
 
         .crown-icon {
-            font-size: 1.5rem;
+            font-size: 1.8rem;
             line-height: 1;
             margin-bottom: 4px;
+            filter: drop-shadow(0 0 6px rgba(255,255,255,0.8));
         }
+        .crown-gold {
+            animation: crownFloat 2s ease-in-out infinite;
+            font-size: 2.2rem;
+        }
+
+        @keyframes crownFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-6px) rotate(-6deg); }
+        }
+
         .banner-nickname {
-            font-size: 0.85rem;
+            font-size: 0.88rem;
             font-weight: 900;
             margin: 4px 0;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+            text-shadow: 1px 1px 4px rgba(0,0,0,0.9);
             width: 100%;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
         .banner-coin-tag {
-            background: rgba(0, 0, 0, 0.35);
+            background: rgba(0, 0, 0, 0.5);
             border-radius: 20px;
-            padding: 2px 6px;
+            padding: 3px 8px;
             font-size: 0.75rem;
             font-weight: 800;
             display: inline-block;
-            border: 1px solid rgba(255,255,255,0.3);
+            border: 1px solid rgba(255,255,255,0.4);
             white-space: nowrap;
+            color: #00ffcc;
+            text-shadow: 0 0 5px #00ffcc;
         }
 
         .rank-list {
@@ -1195,32 +1236,41 @@ def show_ranking():
             width: 100%;
         }
         .rank-item {
-            background: #ffffff;
+            background: rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(5px);
             border-radius: 12px;
             padding: 10px 14px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            border: 2px solid transparent;
-            color: #1f2937;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #ffffff;
             width: 100%;
+            transition: all 0.2s ease;
+            animation: rankSlideIn 0.4s ease-out forwards;
+        }
+        .rank-item:hover {
+            background: rgba(255, 255, 255, 0.18);
+            transform: translateX(4px);
+            border-color: #00ffcc;
         }
         .rank-item.is-me {
-            background: #fef3c7;
-            border: 2.5px solid #f59e0b;
+            background: linear-gradient(90deg, rgba(255,0,255,0.25) 0%, rgba(138,43,226,0.3) 100%);
+            border: 2px solid #ff00ff;
+            box-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
         }
         .rank-number {
             font-size: 1rem;
             font-weight: 900;
-            color: #4b5563;
+            color: #00ffcc;
+            text-shadow: 0 0 6px #00ffcc;
             width: 30px;
             flex-shrink: 0;
         }
         .rank-nickname {
             font-size: 0.9rem;
             font-weight: 800;
-            color: #1f2937;
+            color: #ffffff;
             flex: 1;
             padding: 0 8px;
             overflow: hidden;
@@ -1228,26 +1278,33 @@ def show_ranking():
             white-space: nowrap;
         }
         .coin-box {
-            background: #fffbeb;
-            border: 1.5px solid #f59e0b;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1.5px solid #ffd700;
             border-radius: 20px;
-            padding: 3px 8px;
+            padding: 3px 9px;
             font-size: 0.8rem;
             font-weight: 900;
-            color: #d97706;
+            color: #ffd700;
             display: flex;
             align-items: center;
-            gap: 3px;
+            gap: 4px;
             flex-shrink: 0;
             white-space: nowrap;
+            box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
         }
         .ellipsis-divider {
             text-align: center;
-            color: #a78bfa;
+            color: #ff00ff;
             font-size: 1.1rem;
             font-weight: bold;
             margin: 4px 0;
             letter-spacing: 4px;
+            text-shadow: 0 0 8px #ff00ff;
+        }
+
+        @keyframes rankSlideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         </style>
         """,
@@ -1260,9 +1317,8 @@ def show_ranking():
     top2 = next((u for u in sorted_users if u['rank'] == 2), None)
     top3 = next((u for u in sorted_users if u['rank'] == 3), None)
 
-    # HTML 렌더링 시 파서 오류를 방지하기 위해 단일 문장으로 조합
     top2_html = f'<div class="banner-box banner-silver"><div class="crown-icon">🥈</div><div class="banner-nickname">{top2["nickname"]}</div><div class="banner-coin-tag">🪙 {top2["coins"]:,}</div></div>' if top2 else '<div class="banner-box banner-silver" style="opacity:0.3;"><div class="crown-icon">🥈</div>-</div>'
-    top1_html = f'<div class="banner-box banner-gold"><div class="crown-icon">👑</div><div class="banner-nickname">{top1["nickname"]}</div><div class="banner-coin-tag">🪙 {top1["coins"]:,}</div></div>' if top1 else '<div class="banner-box banner-gold" style="opacity:0.3;"><div class="crown-icon">👑</div>-</div>'
+    top1_html = f'<div class="banner-box banner-gold"><div class="crown-icon crown-gold">👑</div><div class="banner-nickname">{top1["nickname"]}</div><div class="banner-coin-tag">🪙 {top1["coins"]:,}</div></div>' if top1 else '<div class="banner-box banner-gold" style="opacity:0.3;"><div class="crown-icon crown-gold">👑</div>-</div>'
     top3_html = f'<div class="banner-box banner-bronze"><div class="crown-icon">🥉</div><div class="banner-nickname">{top3["nickname"]}</div><div class="banner-coin-tag">🪙 {top3["coins"]:,}</div></div>' if top3 else '<div class="banner-box banner-bronze" style="opacity:0.3;"><div class="crown-icon">🥉</div>-</div>'
 
     list_items_html = ""
@@ -1291,6 +1347,7 @@ def show_ranking():
 
     full_ranking_html = f'''
     <div class="ranking-container">
+        <div class="ranking-header-title">🏆 HALL OF FAME 🏆</div>
         <div class="my-rank-card">
             <div style="display:flex; align-items:center; overflow:hidden;">
                 <span class="my-rank-badge">{rank_str}</span>
