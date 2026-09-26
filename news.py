@@ -613,61 +613,76 @@ def get_game_news_selection(game_id: str):
     return None, None, None
     
 # ==========================================
-# 🎵 BGM 시스템 (Intro ➔ Loop 자동 전환 & 끊김 방지)
+# 🎵 BGM 시스템 (로그인 제외 & 끊김 없는 재생)
 # ==========================================
-def init_seamless_bgm(intro_url: str, loop_url: str):
-    components.html(
-        f"""
-        <script>
-        (function() {{
-            var parentDoc = window.parent.document;
-            
-            // 이미 플레이어가 실행 중이라면 중복 생성하지 않음 (새로고침 시 끊김 방지)
-            if (parentDoc.getElementById('global_bgm_player')) return;
+def manage_bgm(current_page: str, intro_url: str, loop_url: str):
+    if current_page == 'login':
+        # 로그인 화면 진입 시: 기존 BGM 정지 및 제거
+        components.html(
+            """
+            <script>
+            (function() {
+                var parentDoc = window.parent.document;
+                var player = parentDoc.getElementById('global_bgm_player');
+                if (player) {
+                    if (player.introAudio) { player.introAudio.pause(); }
+                    if (player.loopAudio) { player.loopAudio.pause(); }
+                    player.remove();
+                }
+            })();
+            </script>
+            """,
+            height=0, width=0
+        )
+    else:
+        # 메인/게임 화면 진입 시: BGM 미재생 상태일 때만 자동 실행
+        components.html(
+            f"""
+            <script>
+            (function() {{
+                var parentDoc = window.parent.document;
+                if (parentDoc.getElementById('global_bgm_player')) return;
 
-            var bgmContainer = parentDoc.createElement('div');
-            bgmContainer.id = 'global_bgm_player';
-            bgmContainer.style.display = 'none';
+                var bgmContainer = parentDoc.createElement('div');
+                bgmContainer.id = 'global_bgm_player';
+                bgmContainer.style.display = 'none';
 
-            var introAudio = new Audio('{intro_url}');
-            var loopAudio = new Audio('{loop_url}');
-            
-            introAudio.volume = 0.4;
-            loopAudio.volume = 0.4;
-            loopAudio.loop = true;
+                var introAudio = new Audio('{intro_url}');
+                var loopAudio = new Audio('{loop_url}');
+                
+                introAudio.volume = 0.4;
+                loopAudio.volume = 0.4;
+                loopAudio.loop = true;
 
-            // 인트로가 끝나면 루프 음원 연속 재생
-            introAudio.addEventListener('ended', function() {{
-                loopAudio.play().catch(function(e) {{
-                    console.log("Loop playback failed:", e);
+                bgmContainer.introAudio = introAudio;
+                bgmContainer.loopAudio = loopAudio;
+
+                introAudio.addEventListener('ended', function() {{
+                    loopAudio.play().catch(function(e) {{}});
                 }});
-            }});
 
-            // 브라우저 자동재생 정책(Autoplay Policy) 대응
-            function startBgm() {{
-                var promise = introAudio.play();
-                if (promise !== undefined) {{
-                    promise.catch(function(error) {{
-                        // 첫 클릭/키 입력 시 BGM 자동 재생 시작
-                        var enableAudio = function() {{
-                            introAudio.play();
-                            parentDoc.removeEventListener('click', enableAudio);
-                            parentDoc.removeEventListener('keydown', enableAudio);
-                        }};
-                        parentDoc.addEventListener('click', enableAudio);
-                        parentDoc.addEventListener('keydown', enableAudio);
-                    }});
+                function startBgm() {{
+                    var promise = introAudio.play();
+                    if (promise !== undefined) {{
+                        promise.catch(function() {{
+                            var enableAudio = function() {{
+                                introAudio.play();
+                                parentDoc.removeEventListener('click', enableAudio);
+                                parentDoc.removeEventListener('keydown', enableAudio);
+                            }};
+                            parentDoc.addEventListener('click', enableAudio);
+                            parentDoc.addEventListener('keydown', enableAudio);
+                        }});
+                    }}
                 }}
-            }}
 
-            startBgm();
-            parentDoc.body.appendChild(bgmContainer);
-        }})();
-        </script>
-        """,
-        height=0,
-        width=0
-    )
+                startBgm();
+                parentDoc.body.appendChild(bgmContainer);
+            }})();
+            </script>
+            """,
+            height=0, width=0
+        )
 
 
 # ==========================================
@@ -707,8 +722,6 @@ def show_game_5(): show_placeholder_page("게임 5")
 def show_exchange(): show_placeholder_page("🛒 교환소")
 def show_bank(): show_placeholder_page("🏦 은행")
 
-INTRO_BGM_URL = "https://raw.githubusercontent.com/251312-commits/ProChal_News/main/intro.mp3"
-LOOP_BGM_URL = "https://raw.githubusercontent.com/251312-commits/ProChal_News/main/loop.mp3"
 
 def inject_casino_theme():
     if st.session_state.get('page') == 'login':
@@ -1431,6 +1444,11 @@ def show_ranking():
 # 5. 페이지 라우터
 # ==========================================
 inject_casino_theme()
+
+INTRO_BGM_URL = "https://raw.githubusercontent.com/251312-commits/ProChal_News/main/intro.mp3"
+LOOP_BGM_URL = "https://raw.githubusercontent.com/251312-commits/ProChal_News/main/loop.mp3"
+
+manage_bgm(st.session_state.page, INTRO_BGM_URL, LOOP_BGM_URL)
 
 if st.session_state.page == 'login':
     show_login_page()
