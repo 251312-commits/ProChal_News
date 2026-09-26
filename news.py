@@ -611,6 +611,64 @@ def get_game_news_selection(game_id: str):
             st.rerun()
 
     return None, None, None
+    
+# ==========================================
+# 🎵 BGM 시스템 (Intro ➔ Loop 자동 전환 & 끊김 방지)
+# ==========================================
+def init_seamless_bgm(intro_url: str, loop_url: str):
+    components.html(
+        f"""
+        <script>
+        (function() {{
+            var parentDoc = window.parent.document;
+            
+            // 이미 플레이어가 실행 중이라면 중복 생성하지 않음 (새로고침 시 끊김 방지)
+            if (parentDoc.getElementById('global_bgm_player')) return;
+
+            var bgmContainer = parentDoc.createElement('div');
+            bgmContainer.id = 'global_bgm_player';
+            bgmContainer.style.display = 'none';
+
+            var introAudio = new Audio('{intro_url}');
+            var loopAudio = new Audio('{loop_url}');
+            
+            introAudio.volume = 0.4;
+            loopAudio.volume = 0.4;
+            loopAudio.loop = true;
+
+            // 인트로가 끝나면 루프 음원 연속 재생
+            introAudio.addEventListener('ended', function() {{
+                loopAudio.play().catch(function(e) {{
+                    console.log("Loop playback failed:", e);
+                }});
+            }});
+
+            // 브라우저 자동재생 정책(Autoplay Policy) 대응
+            function startBgm() {{
+                var promise = introAudio.play();
+                if (promise !== undefined) {{
+                    promise.catch(function(error) {{
+                        // 첫 클릭/키 입력 시 BGM 자동 재생 시작
+                        var enableAudio = function() {{
+                            introAudio.play();
+                            parentDoc.removeEventListener('click', enableAudio);
+                            parentDoc.removeEventListener('keydown', enableAudio);
+                        }};
+                        parentDoc.addEventListener('click', enableAudio);
+                        parentDoc.addEventListener('keydown', enableAudio);
+                    }});
+                }}
+            }}
+
+            startBgm();
+            parentDoc.body.appendChild(bgmContainer);
+        }})();
+        </script>
+        """,
+        height=0,
+        width=0
+    )
+
 
 # ==========================================
 # 4. Streamlit 앱 라우팅 및 상태 관리
@@ -648,6 +706,13 @@ def show_game_4(): show_placeholder_page("게임 4")
 def show_game_5(): show_placeholder_page("게임 5")
 def show_exchange(): show_placeholder_page("🛒 교환소")
 def show_bank(): show_placeholder_page("🏦 은행")
+    
+# GitHub Raw URL 형식 예시
+INTRO_BGM_URL = "https://raw.githubusercontent.com/사용자계정/리포지토리명/main/intro.mp3"
+LOOP_BGM_URL = "https://raw.githubusercontent.com/사용자계정/리포지토리명/main/loop.mp3"
+
+# BGM 실행
+init_seamless_bgm(INTRO_BGM_URL, LOOP_BGM_URL)
 
 def inject_casino_theme():
     if st.session_state.get('page') == 'login':
