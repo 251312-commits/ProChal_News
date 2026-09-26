@@ -1016,7 +1016,6 @@ def show_login_page():
         st.markdown('</div>', unsafe_allow_html=True)
         
 def show_main_page():
-    init_seamless_bgm(INTRO_BGM_URL, LOOP_BGM_URL)
     st_autorefresh(interval=600000, limit=None, key="auto_refresh")
 
     users_data = ws.get_all_records()
@@ -1436,6 +1435,7 @@ inject_casino_theme()
 if st.session_state.page == 'login':
     show_login_page()
 elif st.session_state.page == 'main':
+    init_seamless_bgm(INTRO_BGM_URL, LOOP_BGM_URL)
     show_main_page()
 elif st.session_state.page == 'game_1': show_game_1()
 elif st.session_state.page == 'game_2': show_game_2()
