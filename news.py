@@ -613,77 +613,82 @@ def get_game_news_selection(game_id: str):
     return None, None, None
     
 # ==========================================
-# 🎵 BGM 시스템 (로그인 제외 & 끊김 없는 재생)
+# 🎵 BGM 시스템 (로그인 후 메인 진입 시 재생 & 로그인 창 정지)
 # ==========================================
-def manage_bgm(current_page: str, intro_url: str, loop_url: str):
-    if current_page == 'login':
-        # 로그인 화면 진입 시: 기존 BGM 정지 및 제거
-        components.html(
-            """
-            <script>
-            (function() {
-                var parentDoc = window.parent.document;
-                var player = parentDoc.getElementById('global_bgm_player');
-                if (player) {
-                    if (player.introAudio) { player.introAudio.pause(); }
-                    if (player.loopAudio) { player.loopAudio.pause(); }
-                    player.remove();
-                }
-            })();
-            </script>
-            """,
-            height=0, width=0
-        )
-    else:
-        # 메인/게임 화면 진입 시: BGM 미재생 상태일 때만 자동 실행
-        components.html(
-            f"""
-            <script>
-            (function() {{
-                var parentDoc = window.parent.document;
-                if (parentDoc.getElementById('global_bgm_player')) return;
+def init_seamless_bgm(intro_url: str, loop_url: str):
+    components.html(
+        f"""
+        <script>
+        (function() {{
+            var parentDoc = window.parent.document;
+            
+            // 이미 BGM 플레이어가 실행 중이라면 중복 생성하지 않음 (페이지 이동 시 끊김 방지)
+            if (parentDoc.getElementById('global_bgm_player')) return;
 
-                var bgmContainer = parentDoc.createElement('div');
-                bgmContainer.id = 'global_bgm_player';
-                bgmContainer.style.display = 'none';
+            var bgmContainer = parentDoc.createElement('div');
+            bgmContainer.id = 'global_bgm_player';
+            bgmContainer.style.display = 'none';
 
-                var introAudio = new Audio('{intro_url}');
-                var loopAudio = new Audio('{loop_url}');
-                
-                introAudio.volume = 0.4;
-                loopAudio.volume = 0.4;
-                loopAudio.loop = true;
+            var introAudio = new Audio('{intro_url}');
+            var loopAudio = new Audio('{loop_url}');
+            
+            introAudio.volume = 0.4;
+            loopAudio.volume = 0.4;
+            loopAudio.loop = true;
 
-                bgmContainer.introAudio = introAudio;
-                bgmContainer.loopAudio = loopAudio;
+            // 정지 제어를 위해 전역 변수에 저장
+            parentDoc._bgmIntro = introAudio;
+            parentDoc._bgmLoop = loopAudio;
 
-                introAudio.addEventListener('ended', function() {{
-                    loopAudio.play().catch(function(e) {{}});
-                }});
+            // 인트로 끝난 후 루프 음원 재생
+            introAudio.addEventListener('ended', function() {{
+                loopAudio.play().catch(function(e) {{}});
+            }});
 
-                function startBgm() {{
-                    var promise = introAudio.play();
-                    if (promise !== undefined) {{
-                        promise.catch(function() {{
-                            var enableAudio = function() {{
-                                introAudio.play();
-                                parentDoc.removeEventListener('click', enableAudio);
-                                parentDoc.removeEventListener('keydown', enableAudio);
-                            }};
-                            parentDoc.addEventListener('click', enableAudio);
-                            parentDoc.addEventListener('keydown', enableAudio);
-                        }});
-                    }}
+            // 메인 진입 즉시 재생 시도 (로그인 버튼 클릭 직후라 자동재생 승인율이 높음)
+            function playBgm() {{
+                var promise = introAudio.play();
+                if (promise !== undefined) {{
+                    promise.catch(function(error) {{
+                        // 브라우저 정책으로 즉시 재생이 차단될 경우, 화면을 클릭/터치하는 순간 바로 재생
+                        var enableAudio = function() {{
+                            introAudio.play();
+                            parentDoc.removeEventListener('click', enableAudio);
+                            parentDoc.removeEventListener('touchstart', enableAudio);
+                            parentDoc.removeEventListener('keydown', enableAudio);
+                        }};
+                        parentDoc.addEventListener('click', enableAudio);
+                        parentDoc.addEventListener('touchstart', enableAudio);
+                        parentDoc.addEventListener('keydown', enableAudio);
+                    }});
                 }}
+            }}
 
-                startBgm();
-                parentDoc.body.appendChild(bgmContainer);
-            }})();
-            </script>
-            """,
-            height=0, width=0
-        )
+            playBgm();
+            parentDoc.body.appendChild(bgmContainer);
+        }})();
+        </script>
+        """,
+        height=0,
+        width=0
+    )
 
+def stop_bgm():
+    components.html(
+        """
+        <script>
+        (function() {
+            var parentDoc = window.parent.document;
+            if (parentDoc._bgmIntro) { parentDoc._bgmIntro.pause(); parentDoc._bgmIntro = null; }
+            if (parentDoc._bgmLoop) { parentDoc._bgmLoop.pause(); parentDoc._bgmLoop = null; }
+            var player = parentDoc.getElementById('global_bgm_player');
+            if (player) { player.remove(); }
+        })();
+        </script>
+        """,
+        height=0,
+        width=0
+    )
 
 # ==========================================
 # 4. Streamlit 앱 라우팅 및 상태 관리
