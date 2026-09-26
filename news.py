@@ -1446,23 +1446,26 @@ def show_ranking():
         change_page('main')
 
 # ==========================================
-# 5. 페이지 라우터
+# 5. 페이지 라우터 및 BGM 조건부 제어
 # ==========================================
 inject_casino_theme()
 
-INTRO_BGM_URL = "https://raw.githubusercontent.com/251312-commits/ProChal_News/main/intro.mp3"
-LOOP_BGM_URL = "https://raw.githubusercontent.com/251312-commits/ProChal_News/main/loop.mp3"
+# BGM GitHub Raw URL
+INTRO_BGM_URL = "https://raw.githubusercontent.com/사용자명/리포지토리명/main/intro.mp3"
+LOOP_BGM_URL = "https://raw.githubusercontent.com/사용자명/리포지토리명/main/loop.mp3"
 
-manage_bgm(st.session_state.page, INTRO_BGM_URL, LOOP_BGM_URL)
-
+# 로그인 창에 있을 때는 BGM 정지, 메인 및 게임/랭킹 페이지 진입 시 BGM 실행
 if st.session_state.page == 'login':
+    stop_bgm()
     show_login_page()
-elif st.session_state.page == 'main':
-    show_main_page()
-elif st.session_state.page == 'game_1': show_game_1()
-elif st.session_state.page == 'game_2': show_game_2()
-elif st.session_state.page == 'game_3': show_game_3()
-elif st.session_state.page == 'game_4': show_game_4()
-elif st.session_state.page == 'game_5': show_game_5()
-elif st.session_state.page == 'exchange': show_exchange()
-elif st.session_state.page == 'ranking': show_ranking()
+else:
+    init_seamless_bgm(INTRO_BGM_URL, LOOP_BGM_URL)
+    
+    if st.session_state.page == 'main': show_main_page()
+    elif st.session_state.page == 'game_1': show_game_1()
+    elif st.session_state.page == 'game_2': show_game_2()
+    elif st.session_state.page == 'game_3': show_game_3()
+    elif st.session_state.page == 'game_4': show_game_4()
+    elif st.session_state.page == 'game_5': show_game_5()
+    elif st.session_state.page == 'exchange': show_exchange()
+    elif st.session_state.page == 'ranking': show_ranking()
