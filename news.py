@@ -708,8 +708,8 @@ def show_exchange(): show_placeholder_page("🛒 교환소")
 def show_bank(): show_placeholder_page("🏦 은행")
     
 # GitHub Raw URL 형식 예시
-INTRO_BGM_URL = "https://raw.githubusercontent.com/사용자계정/리포지토리명/main/intro.mp3"
-LOOP_BGM_URL = "https://raw.githubusercontent.com/사용자계정/리포지토리명/main/loop.mp3"
+INTRO_BGM_URL = "https://raw.githubusercontent.com/251312/ProChal_News/main/intro.mp3"
+LOOP_BGM_URL = "https://raw.githubusercontent.com/251312/ProChal_News/main/loop.mp3"
 
 # BGM 실행
 init_seamless_bgm(INTRO_BGM_URL, LOOP_BGM_URL)
