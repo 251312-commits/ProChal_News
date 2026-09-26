@@ -704,10 +704,95 @@ def show_placeholder_page(title_name):
         change_page('main')
 
 def show_game_1():
-    st.title("🎮 게임 1: 뉴스 예측 게임")
+    st.title("🎮 게임 1: 뉴스 핵심 요약 & AI 유사도 측정")
+
+    # 1. 기사 선택 및 읽기 (9264.txt의 공통 모듈 활용)
     title, article_text, url = get_game_news_selection("game_1")
     if not title:
         return
+
+    st.markdown("---")
+    st.subheader("✍️ 기사 요약 입력하기")
+    st.caption("위 기사를 읽고 한 줄로 요약해보세요. AI가 제목과의 관련성 점수를 측정합니다!")
+
+    # 세션 상태 초기화
+    if "game_1_submitted" not in st.session_state:
+        st.session_state.game_1_submitted = False
+
+    user_summary = st.text_input("내가 작성한 요약문", placeholder="기사의 핵심 내용을 한 문장으로 작성하세요.")
+    bet_coin = st.number_input("배팅할 코인 (최대 1,000 C)", min_value=100, max_value=1000, step=100, value=500)
+
+    current_coins = int(st.session_state.current_user_data.get('코인', 0))
+
+    if st.button("🎯 AI 점수 측정 및 배팅 제출", use_container_width=True):
+        if not user_summary.strip():
+            st.warning("요약문을 입력해 주세요!")
+            return
+        if bet_coin > current_coins:
+            st.error("보유 코인이 부족합니다!")
+            return
+
+        with st.spinner("🤖 AI가 요약문의 정확도를 계산 중입니다..."):
+            # 2. 9264.txt에 작성된 similarity_check 함수 호출
+            score = similarity_check(user_summary, title)
+
+        st.session_state.game_1_submitted = True
+        st.session_state.game_1_score = score
+
+        # 3. 구글 시트 유저 데이터(코인, 연승) 업데이트 로직
+        users_data = ws.get_all_records()
+        current_sid = st.session_state.current_user
+        
+        # 해당 유저의 행 인덱스 찾기
+        user_row_idx = None
+        user_info = None
+        for idx, u in enumerate(users_data):
+            sid = str(u.get('학번', '')).strip().replace('.0', '')
+            if sid == current_sid:
+                user_row_idx = idx + 2  # 헤더 제외 +1, 1-based index +1
+                user_info = u
+                break
+
+        current_streak = int(user_info.get('연승', 0)) if user_info else 0
+
+        # 성공 기준: 점수 70점 이상 시 성공
+        if score >= 70:
+            reward = int(bet_coin * 1.5)
+            new_coins = current_coins + reward
+            new_streak = current_streak + 1
+            st.balloons()
+            st.success(f"🎉 성공! 점수: {score}점 | 보상: +{reward:,} C (연승: {new_streak}연승)")
+        else:
+            new_coins = current_coins - bet_coin
+            new_streak = 0
+            st.error(f"💥 실패! 점수: {score}점 (70점 미만) | 차감: -{bet_coin:,} C (연승 초기화)")
+
+        # 시트 반영 (3열: 코인, 4열: 연승)
+        if user_row_idx:
+            ws.update_cell(user_row_idx, 3, new_coins)
+            ws.update_cell(user_row_idx, 4, new_streak)
+            
+            # 세션 데이터 동기화
+            st.session_state.current_user_data['코인'] = new_coins
+            st.session_state.current_user_data['연승'] = new_streak
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("🔄 다른 기사 도전하기", use_container_width=True):
+            # 상태 초기화 후 다시 읽기
+            for key in ["selected_news_game_1", "candidates_game_1", "read_done_game_1", "game_1_submitted"]:
+                if key in st.session_state:
+                    del st.session_state[key]
+            st.rerun()
+
+    with col2:
+        if st.button("⬅️ 메인으로 돌아가기", use_container_width=True):
+            # 게임 1 관련 세션 정리
+            for key in ["selected_news_game_1", "candidates_game_1", "read_done_game_1", "game_1_submitted"]:
+                if key in st.session_state:
+                    del st.session_state[key]
+            change_page('main')
+
 
 def show_game_2(): show_placeholder_page("게임 2")
 def show_game_3(): show_placeholder_page("게임 3")
