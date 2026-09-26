@@ -1078,6 +1078,10 @@ def show_ranking():
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@700;900&display=swap');
 
+        .ranking-container, .ranking-container * {
+            box-sizing: border-box !important;
+        }
+
         .ranking-container {
             font-family: 'Gowun Dodum', 'Noto Sans KR', sans-serif;
             background-color: #1a0933;
@@ -1087,136 +1091,162 @@ def show_ranking():
             border: 2px solid #8A2BE2;
             box-shadow: 0 0 15px rgba(138, 43, 226, 0.5);
             margin-bottom: 20px;
+            width: 100%;
         }
 
         .my-rank-card {
             background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
             border: 3px solid #fbbf24;
             border-radius: 14px;
-            padding: 12px 18px;
+            padding: 12px 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             margin-bottom: 20px;
             box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+            width: 100%;
         }
         .my-rank-badge {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 900;
             color: #d97706;
-            margin-right: 10px;
+            margin-right: 8px;
+            white-space: nowrap;
         }
         .my-nickname {
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 800;
             color: #1f2937;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .top3-container {
             display: flex;
             justify-content: center;
             align-items: flex-end;
-            gap: 10px;
+            gap: 8px;
             margin-bottom: 22px;
+            width: 100%;
         }
         .banner-box {
             flex: 1;
-            border-radius: 12px 12px 18px 18px;
-            padding: 14px 6px 18px 6px;
+            min-width: 0;
+            border-radius: 12px 12px 16px 16px;
+            padding: 12px 4px 14px 4px;
             text-align: center;
             color: #ffffff;
             box-shadow: 0 6px 14px rgba(0,0,0,0.4);
             position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
         
         .banner-gold {
             background: linear-gradient(180deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
             border: 3.5px solid #fbbf24;
-            transform: translateY(-10px);
+            min-height: 120px;
             box-shadow: 0 0 15px rgba(251, 191, 36, 0.6);
         }
         .banner-silver {
             background: linear-gradient(180deg, #9ca3af 0%, #6b7280 50%, #4b5563 100%);
             border: 3px solid #e5e7eb;
+            min-height: 105px;
         }
         .banner-bronze {
             background: linear-gradient(180deg, #d97706 0%, #b45309 50%, #78350f 100%);
             border: 3px solid #f59e0b;
+            min-height: 95px;
         }
 
         .crown-icon {
-            font-size: 1.7rem;
+            font-size: 1.5rem;
             line-height: 1;
             margin-bottom: 4px;
         }
         .banner-nickname {
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             font-weight: 900;
-            margin: 6px 0;
+            margin: 4px 0;
             text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
-            word-break: break-all;
+            width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         .banner-coin-tag {
             background: rgba(0, 0, 0, 0.35);
             border-radius: 20px;
-            padding: 3px 8px;
-            font-size: 0.8rem;
+            padding: 2px 6px;
+            font-size: 0.75rem;
             font-weight: 800;
             display: inline-block;
             border: 1px solid rgba(255,255,255,0.3);
+            white-space: nowrap;
         }
 
         .rank-list {
             display: flex;
             flex-direction: column;
             gap: 8px;
+            width: 100%;
         }
         .rank-item {
             background: #ffffff;
             border-radius: 12px;
-            padding: 10px 16px;
+            padding: 10px 14px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             border: 2px solid transparent;
             color: #1f2937;
+            width: 100%;
         }
         .rank-item.is-me {
             background: #fef3c7;
             border: 2.5px solid #f59e0b;
         }
         .rank-number {
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 900;
             color: #4b5563;
-            width: 36px;
+            width: 30px;
+            flex-shrink: 0;
         }
         .rank-nickname {
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             font-weight: 800;
             color: #1f2937;
             flex: 1;
-            padding: 0 10px;
+            padding: 0 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         .coin-box {
             background: #fffbeb;
             border: 1.5px solid #f59e0b;
             border-radius: 20px;
-            padding: 4px 10px;
-            font-size: 0.85rem;
+            padding: 3px 8px;
+            font-size: 0.8rem;
             font-weight: 900;
             color: #d97706;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
+            flex-shrink: 0;
+            white-space: nowrap;
         }
         .ellipsis-divider {
             text-align: center;
             color: #a78bfa;
-            font-size: 1.3rem;
+            font-size: 1.1rem;
             font-weight: bold;
-            margin: 6px 0;
+            margin: 4px 0;
             letter-spacing: 4px;
         }
         </style>
@@ -1224,99 +1254,60 @@ def show_ranking():
         unsafe_allow_html=True
     )
 
-    html_out = ['<div class="ranking-container">']
-
     rank_str = f"{my_rank}위" if my_rank > 0 else "순위 밖"
-    html_out.append(f"""
-    <div class="my-rank-card">
-        <div style="display:flex; align-items:center;">
-            <span class="my-rank-badge">{rank_str}</span>
-            <span class="my-nickname">👤 {my_nickname} (나)</span>
-        </div>
-        <div class="coin-box">🪙 {my_coins:,} C</div>
-    </div>
-    """)
-
+    
     top1 = next((u for u in sorted_users if u['rank'] == 1), None)
     top2 = next((u for u in sorted_users if u['rank'] == 2), None)
     top3 = next((u for u in sorted_users if u['rank'] == 3), None)
 
-    html_out.append('<div class="top3-container">')
+    # HTML 렌더링 시 파서 오류를 방지하기 위해 단일 문장으로 조합
+    top2_html = f'<div class="banner-box banner-silver"><div class="crown-icon">🥈</div><div class="banner-nickname">{top2["nickname"]}</div><div class="banner-coin-tag">🪙 {top2["coins"]:,}</div></div>' if top2 else '<div class="banner-box banner-silver" style="opacity:0.3;"><div class="crown-icon">🥈</div>-</div>'
+    top1_html = f'<div class="banner-box banner-gold"><div class="crown-icon">👑</div><div class="banner-nickname">{top1["nickname"]}</div><div class="banner-coin-tag">🪙 {top1["coins"]:,}</div></div>' if top1 else '<div class="banner-box banner-gold" style="opacity:0.3;"><div class="crown-icon">👑</div>-</div>'
+    top3_html = f'<div class="banner-box banner-bronze"><div class="crown-icon">🥉</div><div class="banner-nickname">{top3["nickname"]}</div><div class="banner-coin-tag">🪙 {top3["coins"]:,}</div></div>' if top3 else '<div class="banner-box banner-bronze" style="opacity:0.3;"><div class="crown-icon">🥉</div>-</div>'
 
-    if top2:
-        html_out.append(f"""
-        <div class="banner-box banner-silver">
-            <div class="crown-icon">🥈</div>
-            <div class="banner-nickname">{top2['nickname']}</div>
-            <div class="banner-coin-tag">🪙 {top2['coins']:,}</div>
-        </div>
-        """)
-    else:
-        html_out.append('<div class="banner-box banner-silver" style="opacity:0.3;"><div class="crown-icon">🥈</div>-</div>')
-
-    if top1:
-        html_out.append(f"""
-        <div class="banner-box banner-gold">
-            <div class="crown-icon">👑</div>
-            <div class="banner-nickname">{top1['nickname']}</div>
-            <div class="banner-coin-tag">🪙 {top1['coins']:,}</div>
-        </div>
-        """)
-    else:
-        html_out.append('<div class="banner-box banner-gold" style="opacity:0.3;"><div class="crown-icon">👑</div>-</div>')
-
-    if top3:
-        html_out.append(f"""
-        <div class="banner-box banner-bronze">
-            <div class="crown-icon">🥉</div>
-            <div class="banner-nickname">{top3['nickname']}</div>
-            <div class="banner-coin-tag">🪙 {top3['coins']:,}</div>
-        </div>
-        """)
-    else:
-        html_out.append('<div class="banner-box banner-bronze" style="opacity:0.3;"><div class="crown-icon">🥉</div>-</div>')
-
-    html_out.append('</div>')
-
+    list_items_html = ""
     display_ranks = set()
-
     for r in [4, 5]:
         if r <= len(sorted_users):
             display_ranks.add(r)
-
     if my_rank > 0:
         for r in range(my_rank - 1, my_rank + 2):
             if 4 <= r <= len(sorted_users):
                 display_ranks.add(r)
 
     sorted_ranks = sorted(list(display_ranks))
-
     if sorted_ranks:
-        html_out.append('<div class="rank-list">')
         prev_r = 3
         for r in sorted_ranks:
             if r > prev_r + 1:
-                html_out.append('<div class="ellipsis-divider">• • •</div>')
-
+                list_items_html += '<div class="ellipsis-divider">• • •</div>'
             row = next((u for u in sorted_users if u['rank'] == r), None)
             if row:
                 is_me = (my_info and row['id'] == my_info['id'])
                 is_me_class = "is-me" if is_me else ""
                 me_label = " (나)" if is_me else ""
-
-                html_out.append(f"""
-                <div class="rank-item {is_me_class}">
-                    <div class="rank-number">{r}</div>
-                    <div class="rank-nickname">{row['nickname']}{me_label}</div>
-                    <div class="coin-box">🪙 {row['coins']:,}</div>
-                </div>
-                """)
+                list_items_html += f'<div class="rank-item {is_me_class}"><div class="rank-number">{r}</div><div class="rank-nickname">{row["nickname"]}{me_label}</div><div class="coin-box">🪙 {row["coins"]:,}</div></div>'
             prev_r = r
-        html_out.append('</div>')
 
-    html_out.append('</div>')
+    full_ranking_html = f'''
+    <div class="ranking-container">
+        <div class="my-rank-card">
+            <div style="display:flex; align-items:center; overflow:hidden;">
+                <span class="my-rank-badge">{rank_str}</span>
+                <span class="my-nickname">👤 {my_nickname} (나)</span>
+            </div>
+            <div class="coin-box">🪙 {my_coins:,} C</div>
+        </div>
+        <div class="top3-container">
+            {top2_html}
+            {top1_html}
+            {top3_html}
+        </div>
+        {'<div class="rank-list">' + list_items_html + '</div>' if list_items_html else ''}
+    </div>
+    '''
 
-    st.markdown("".join(html_out), unsafe_allow_html=True)
+    st.markdown(full_ranking_html, unsafe_allow_html=True)
 
     if st.button("⬅️ 메인으로 돌아가기", use_container_width=True):
         change_page('main')
