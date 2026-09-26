@@ -1451,8 +1451,8 @@ def show_ranking():
 inject_casino_theme()
 
 # BGM GitHub Raw URL
-INTRO_BGM_URL = "https://raw.githubusercontent.com/사용자명/리포지토리명/main/intro.mp3"
-LOOP_BGM_URL = "https://raw.githubusercontent.com/사용자명/리포지토리명/main/loop.mp3"
+INTRO_BGM_URL = "https://raw.githubusercontent.com/251312-commits/ProChal_News/main/intro.mp3"
+LOOP_BGM_URL = "https://raw.githubusercontent.com/251312-commits/ProChal_News/main/loop.mp3"
 
 # 로그인 창에 있을 때는 BGM 정지, 메인 및 게임/랭킹 페이지 진입 시 BGM 실행
 if st.session_state.page == 'login':
