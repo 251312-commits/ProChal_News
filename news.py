@@ -1037,7 +1037,7 @@ def show_main_page():
     elif clicked_menu == 7: change_page('exchange')
 
 # ==========================================
-# 🏆 [수정] 모바일 게임 스타일 랭킹 화면
+# 🏆 모바일 게임 스타일 랭킹 화면
 # ==========================================
 def show_ranking():
     users_data = ws.get_all_records()
@@ -1046,7 +1046,6 @@ def show_ranking():
         if st.button("⬅️ 메인으로 돌아가기"): change_page('main')
         return
 
-    # 유저 코인 정보 정제
     processed_users = []
     for u in users_data:
         try:
@@ -1059,12 +1058,10 @@ def show_ranking():
             'coins': coin_val
         })
     
-    # 코인 수 기준 내림차순 정렬 및 순위 부여
     sorted_users = sorted(processed_users, key=lambda x: x['coins'], reverse=True)
     for idx, u in enumerate(sorted_users):
         u['rank'] = idx + 1
 
-    # 현재 로그인된 내 정보 찾기
     current_sid = st.session_state.get('current_user', '')
     my_info = next((u for u in sorted_users if u['id'] == current_sid), None)
     
@@ -1076,7 +1073,6 @@ def show_ranking():
     my_nickname = my_info['nickname'] if my_info else (st.session_state.current_user_data.get('아이디', '나') if st.session_state.get('current_user_data') else '나')
     my_coins = my_info['coins'] if my_info else 0
 
-    # 🎨 [모바일 게임 스타일 CSS]
     st.markdown(
         """
         <style>
@@ -1093,7 +1089,6 @@ def show_ranking():
             margin-bottom: 20px;
         }
 
-        /* 1. 최상단 내 순위 요약 카드 */
         .my-rank-card {
             background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
             border: 3px solid #fbbf24;
@@ -1117,7 +1112,6 @@ def show_ranking():
             color: #1f2937;
         }
 
-        /* 2. TOP 3 현수막 (Banners) */
         .top3-container {
             display: flex;
             justify-content: center;
@@ -1135,19 +1129,16 @@ def show_ranking():
             position: relative;
         }
         
-        /* 1위 금색 현수막 */
         .banner-gold {
             background: linear-gradient(180deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
             border: 3.5px solid #fbbf24;
             transform: translateY(-10px);
             box-shadow: 0 0 15px rgba(251, 191, 36, 0.6);
         }
-        /* 2위 은색 현수막 */
         .banner-silver {
             background: linear-gradient(180deg, #9ca3af 0%, #6b7280 50%, #4b5563 100%);
             border: 3px solid #e5e7eb;
         }
-        /* 3위 동색 현수막 */
         .banner-bronze {
             background: linear-gradient(180deg, #d97706 0%, #b45309 50%, #78350f 100%);
             border: 3px solid #f59e0b;
@@ -1175,7 +1166,6 @@ def show_ranking():
             border: 1px solid rgba(255,255,255,0.3);
         }
 
-        /* 3. 일반 순위 리스트 (4위 이하) */
         .rank-list {
             display: flex;
             flex-direction: column;
@@ -1236,7 +1226,6 @@ def show_ranking():
 
     html_out = ['<div class="ranking-container">']
 
-    # [1] 최상단: 내 순위 카드
     rank_str = f"{my_rank}위" if my_rank > 0 else "순위 밖"
     html_out.append(f"""
     <div class="my-rank-card">
@@ -1248,14 +1237,12 @@ def show_ranking():
     </div>
     """)
 
-    # [2] TOP 3 현수막 포디움 (2위 - 1위 - 3위 배치)
     top1 = next((u for u in sorted_users if u['rank'] == 1), None)
     top2 = next((u for u in sorted_users if u['rank'] == 2), None)
     top3 = next((u for u in sorted_users if u['rank'] == 3), None)
 
     html_out.append('<div class="top3-container">')
 
-    # 2위 은색 현수막
     if top2:
         html_out.append(f"""
         <div class="banner-box banner-silver">
@@ -1267,7 +1254,6 @@ def show_ranking():
     else:
         html_out.append('<div class="banner-box banner-silver" style="opacity:0.3;"><div class="crown-icon">🥈</div>-</div>')
 
-    # 1위 금색 현수막
     if top1:
         html_out.append(f"""
         <div class="banner-box banner-gold">
@@ -1279,7 +1265,6 @@ def show_ranking():
     else:
         html_out.append('<div class="banner-box banner-gold" style="opacity:0.3;"><div class="crown-icon">👑</div>-</div>')
 
-    # 3위 동색 현수막
     if top3:
         html_out.append(f"""
         <div class="banner-box banner-bronze">
@@ -1293,10 +1278,6 @@ def show_ranking():
 
     html_out.append('</div>')
 
-    # [3] 하단 리스트 로직
-    # - 4위, 5위 기본 표시
-    # - 중간 생략 (...)
-    # - 내 순위 주변 (my_rank - 1, my_rank, my_rank + 1)
     display_ranks = set()
 
     for r in [4, 5]:
