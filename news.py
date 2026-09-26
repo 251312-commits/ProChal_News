@@ -1435,8 +1435,8 @@ inject_casino_theme()
 if st.session_state.page == 'login':
     show_login_page()
 elif st.session_state.page == 'main':
-    init_seamless_bgm(INTRO_BGM_URL, LOOP_BGM_URL)
     show_main_page()
+    init_seamless_bgm(INTRO_BGM_URL, LOOP_BGM_URL)
 elif st.session_state.page == 'game_1': show_game_1()
 elif st.session_state.page == 'game_2': show_game_2()
 elif st.session_state.page == 'game_3': show_game_3()
