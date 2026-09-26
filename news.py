@@ -1037,7 +1037,7 @@ def show_main_page():
     elif clicked_menu == 7: change_page('exchange')
 
 # ==========================================
-# 🏆 네온 화려함 & 애니메이션 랭킹 화면
+# 🏆 네온 화려함 & 디폴트 애니메이션 랭킹 화면
 # ==========================================
 def show_ranking():
     users_data = ws.get_all_records()
@@ -1121,10 +1121,6 @@ def show_ranking():
             margin-bottom: 22px;
             box-shadow: 0 0 15px rgba(255, 215, 0, 0.4), inset 0 0 8px rgba(255, 215, 0, 0.2);
             width: 100%;
-            transition: transform 0.2s ease;
-        }
-        .my-rank-card:hover {
-            transform: scale(1.02);
         }
         .my-rank-badge {
             font-size: 1.1rem;
@@ -1151,6 +1147,8 @@ def show_ranking():
             margin-bottom: 24px;
             width: 100%;
         }
+        
+        /* 공통 현수막 스타일 (클릭 호버 확대 제거) */
         .banner-box {
             flex: 1;
             min-width: 0;
@@ -1163,31 +1161,42 @@ def show_ranking():
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            cursor: pointer;
-        }
-        .banner-box:hover {
-            transform: translateY(-8px) scale(1.05) !important;
-            z-index: 10;
         }
 
+        /* 디폴트 커졌다 작아지는 애니메이션 적용 */
         .banner-gold {
             background: linear-gradient(180deg, #ffd700 0%, #b8860b 60%, #5c4000 100%);
             border: 2.5px solid #fffb00;
             min-height: 135px;
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.7);
+            animation: goldPulse 2s ease-in-out infinite alternate;
         }
         .banner-silver {
             background: linear-gradient(180deg, #e0e0e0 0%, #757575 60%, #303030 100%);
             border: 2px solid #ffffff;
             min-height: 115px;
             box-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
+            animation: silverPulse 2.4s ease-in-out infinite alternate 0.3s;
         }
         .banner-bronze {
             background: linear-gradient(180deg, #cd7f32 0%, #8b4513 60%, #3e1e07 100%);
             border: 2px solid #ffaa66;
             min-height: 102px;
             box-shadow: 0 0 12px rgba(205, 127, 50, 0.5);
+            animation: bronzePulse 2.8s ease-in-out infinite alternate 0.6s;
+        }
+
+        @keyframes goldPulse {
+            0% { transform: translateY(-5px) scale(0.96); }
+            100% { transform: translateY(-5px) scale(1.05); }
+        }
+        @keyframes silverPulse {
+            0% { transform: scale(0.96); }
+            100% { transform: scale(1.04); }
+        }
+        @keyframes bronzePulse {
+            0% { transform: scale(0.96); }
+            100% { transform: scale(1.04); }
         }
 
         .crown-icon {
@@ -1246,13 +1255,6 @@ def show_ranking():
             border: 1px solid rgba(255, 255, 255, 0.15);
             color: #ffffff;
             width: 100%;
-            transition: all 0.2s ease;
-            animation: rankSlideIn 0.4s ease-out forwards;
-        }
-        .rank-item:hover {
-            background: rgba(255, 255, 255, 0.18);
-            transform: translateX(4px);
-            border-color: #00ffcc;
         }
         .rank-item.is-me {
             background: linear-gradient(90deg, rgba(255,0,255,0.25) 0%, rgba(138,43,226,0.3) 100%);
@@ -1300,11 +1302,6 @@ def show_ranking():
             margin: 4px 0;
             letter-spacing: 4px;
             text-shadow: 0 0 8px #ff00ff;
-        }
-
-        @keyframes rankSlideIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
         }
         </style>
         """,
