@@ -613,7 +613,7 @@ def get_game_news_selection(game_id: str):
     return None, None, None
     
 # ==========================================
-# 🎵 BGM 시스템 (전역 자동 재생 & 끊김 방지)
+# 🎵 BGM 시스템 (메인 진입 시 재생 & 끊김 방지)
 # ==========================================
 def init_seamless_bgm(intro_url: str, loop_url: str):
     components.html(
@@ -621,11 +621,9 @@ def init_seamless_bgm(intro_url: str, loop_url: str):
         <script>
         (function() {{
             var pWin = window.parent;
-            var pDoc = window.parent.document;
             
-            // 이미 BGM 시스템이 등록되어 있다면 중복 실행 방지
-            if (pWin.__bgm_initialized) return;
-            pWin.__bgm_initialized = true;
+            // 이미 메인 진입 후 음악이 켜져있다면 중복 실행 방지 (페이지 이동 시 음악 유지)
+            if (pWin.__bgm_playing) return;
 
             var introAudio = new Audio('{intro_url}');
             var loopAudio = new Audio('{loop_url}');
@@ -634,36 +632,29 @@ def init_seamless_bgm(intro_url: str, loop_url: str):
             loopAudio.volume = 0.3;
             loopAudio.loop = true;
 
-            // 인트로 종료 시 루프 음원으로 자연스럽게 전환
+            pWin.__bgm_intro = introAudio;
+            pWin.__bgm_loop = loopAudio;
+
+            // 인트로 종료 시 루프 음원으로 자동 전환
             introAudio.addEventListener('ended', function() {{
                 loopAudio.play().catch(function(e) {{ console.log("Loop play error:", e); }});
             }});
 
-            // 브라우저 권한 획득 및 재생 함수
-            function tryPlayBgm() {{
-                if (pWin.__bgm_playing) return;
-                
-                var promise = introAudio.play();
-                if (promise !== undefined) {{
-                    promise.then(function() {{
+            // 로그인 버튼 클릭 직후 메인으로 넘어왔으므로 즉시 재생 시도
+            introAudio.play().then(function() {{
+                pWin.__bgm_playing = true;
+            }}).catch(function(error) {{
+                // 브라우저 세션 상태에 따라 차단될 경우 첫 터치/클릭 시 재생
+                var playOnTouch = function() {{
+                    introAudio.play().then(function() {{
                         pWin.__bgm_playing = true;
-                        // 재생 성공 시 이벤트 리스너 제거
-                        pDoc.removeEventListener('click', tryPlayBgm, true);
-                        pDoc.removeEventListener('keydown', tryPlayBgm, true);
-                        pDoc.removeEventListener('pointerdown', tryPlayBgm, true);
-                    }}).catch(function(error) {{
-                        console.log("Autoplay blocked, waiting for user interaction...");
                     }});
-                }}
-            }}
-
-            // 첫 페이지 로드 시 즉시 시도
-            tryPlayBgm();
-
-            // 차단될 경우를 대비해 로그인 화면 등 첫 모든 클릭/키 입력을 감지하여 즉시 재생
-            pDoc.addEventListener('click', tryPlayBgm, true);
-            pDoc.addEventListener('keydown', tryPlayBgm, true);
-            pDoc.addEventListener('pointerdown', tryPlayBgm, true);
+                    pWin.document.removeEventListener('click', playOnTouch);
+                    pWin.document.removeEventListener('touchstart', playOnTouch);
+                }};
+                pWin.document.addEventListener('click', playOnTouch);
+                pWin.document.addEventListener('touchstart', playOnTouch);
+            }});
         }})();
         </script>
         """,
@@ -671,6 +662,22 @@ def init_seamless_bgm(intro_url: str, loop_url: str):
         width=0
     )
 
+def stop_bgm():
+    """로그인 화면으로 돌아갈 경우 BGM 끄기"""
+    components.html(
+        """
+        <script>
+        (function() {
+            var pWin = window.parent;
+            if (pWin.__bgm_intro) { pWin.__bgm_intro.pause(); pWin.__bgm_intro.currentTime = 0; }
+            if (pWin.__bgm_loop) { pWin.__bgm_loop.pause(); pWin.__bgm_loop.currentTime = 0; }
+            pWin.__bgm_playing = false;
+        })();
+        </script>
+        """,
+        height=0,
+        width=0
+    )
 
 # ==========================================
 # 4. Streamlit 앱 라우팅 및 상태 관리
@@ -1428,20 +1435,23 @@ def show_ranking():
         change_page('main')
         
 # ==========================================
-# 5. 페이지 라우터 및 BGM 전역 실행
+# 페이지 라우터 구역
 # ==========================================
 inject_casino_theme()
 
-# 🎵 GitHub Raw 음원 링크
 INTRO_BGM_URL = "https://raw.githubusercontent.com/251312-commits/ProChal_News/main/intro.mp3"
 LOOP_BGM_URL = "https://raw.githubusercontent.com/251312-commits/ProChal_News/main/loop.mp3"
 
-# 페이지 전환 조건문 밖(최상단)에서 실행하여 로그인 화면부터 오디오 권한을 얻습니다.
-init_seamless_bgm(INTRO_BGM_URL, LOOP_BGM_URL)
-
 if st.session_state.page == 'login':
+    stop_bgm()  # 로그인 화면에서는 BGM 정지
     show_login_page()
-elif st.session_state.page == 'main':
-    show_main_page()
-elif st.session_state.page == 'game_1': show_game_1()
-...
+else:
+    # 로그인 완료 후 메인/랭킹/게임 화면 진입 시 BGM 실행 (중복 재생 없음)
+    init_seamless_bgm(INTRO_BGM_URL, LOOP_BGM_URL)
+    
+    if st.session_state.page == 'main':
+        show_main_page()
+    elif st.session_state.page == 'ranking':
+        show_ranking()
+    elif st.session_state.page == 'game_1':
+        show_game_1()
