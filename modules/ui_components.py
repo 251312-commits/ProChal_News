@@ -1,7 +1,18 @@
+# modules/ui_components.py
+
 import streamlit as st
-import streamlit.components.v1 as components
-from modules.db_handler import get_news_worksheet, update_news_count, update_news_title
-from modules.news_ai import bring_article, pick_3_lowest_count_news
+
+# DB 핸들러 및 AI 모듈에서 각각 올바른 함수 불러오기
+try:
+    from modules.db_handler import pick_3_lowest_count_news
+except ImportError:
+    from modules.news_ai import pick_3_lowest_count_news
+
+try:
+    from modules.news_ai import bring_article
+except ImportError:
+    from modules.db_handler import bring_article
+
 
 # ==========================================
 # 1. 글로벌 테마 및 스타일 주입
