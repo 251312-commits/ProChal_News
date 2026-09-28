@@ -1,18 +1,8 @@
-# modules/ui_components.py
+# modules/db_handler.py 파일에 아래 함수를 추가/확인해주세요.
 
+import random
+import pandas as pd
 import streamlit as st
-
-# DB 핸들러 및 AI 모듈에서 각각 올바른 함수 불러오기
-try:
-    from modules.db_handler import pick_3_lowest_count_news
-except ImportError:
-    from modules.news_ai import pick_3_lowest_count_news
-
-try:
-    from modules.news_ai import bring_article
-except ImportError:
-    from modules.db_handler import bring_article
-
 
 # ==========================================
 # 1. 글로벌 테마 및 스타일 주입
@@ -723,3 +713,30 @@ def get_game_news_selection(game_id: str):
             st.rerun()
 
     return None, None, None
+    
+def pick_3_lowest_count_news():
+    """뉴스 워크시트에서 조회수(count)가 가장 적은 기사 중 3개를 무작위 선택합니다."""
+    try:
+        # get_news_sheet()는 db_handler 내의 워크시트 로드 함수
+        sheet = get_news_sheet() 
+        data = sheet.get_all_records()
+        df = pd.DataFrame(data)
+        
+        if df.empty:
+            return []
+
+        # 'count' 컬럼을 숫자 형변환 후 오름차순 정렬
+        df['count'] = pd.to_numeric(df['count'], errors='coerce').fillna(0)
+        min_count = df['count'].min()
+        
+        # 최소 조회수를 가진 상위 그룹 중 3개 추출
+        lowest_df = df[df['count'] == min_count]
+        if len(lowest_df) < 3:
+            lowest_df = df.sort_values(by='count').head(10)
+            
+        sample_size = min(3, len(lowest_df))
+        selected = lowest_df.sample(n=sample_size).to_dict(orient='records')
+        return selected
+    except Exception as e:
+        st.error(f"뉴스 목록 로드 중 오류 발생: {e}")
+        return []
