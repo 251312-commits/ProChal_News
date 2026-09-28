@@ -3,7 +3,7 @@ import streamlit as st
 
 # 분리된 모듈들 임포트 (파일명에 맞게 수정)
 from modules.ui_components import inject_casino_theme, init_seamless_bgm, stop_bgm
-from views.login_view import show_login_page
+
 from views.main_view import show_main_page
 from views.ranking_view import show_ranking
 from views.game1_view import show_game_1
