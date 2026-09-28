@@ -1,8 +1,11 @@
-# modules/db_handler.py 파일에 아래 함수를 추가/확인해주세요.
+
 
 import random
-import pandas as pd
 import streamlit as st
+# db_handler와 news_ai에서 명확히 분리하여 import
+from modules.db_handler import pick_3_lowest_count_news
+from modules.news_ai import bring_article
+
 
 # ==========================================
 # 1. 글로벌 테마 및 스타일 주입
