@@ -3,8 +3,7 @@
 import random
 import streamlit as st
 # db_handler와 news_ai에서 명확히 분리하여 import
-from modules.db_handler import pick_3_lowest_count_news
-from modules.news_ai import bring_article
+from modules.news_ai import bring_article, pick_3_lowest_count_news
 
 
 # ==========================================
