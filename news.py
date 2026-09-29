@@ -746,73 +746,77 @@ def show_game_1():
         st.markdown("### 🎯 4단계: AI 유사도 점수 예측")
         st.caption("AI가 제목과 본문을 분석해 산출할 유사도 점수(00~99점)를 예측해 보세요!")
 
-        if "tens_val" not in st.session_state:
-            st.session_state.tens_val = 5
-        if "ones_val" not in st.session_state:
-            st.session_state.ones_val = 0
+        # 부분 실행을 위한 프래그먼트 함수 정의
+        @st.fragment
+        def render_neon_digit_picker():
+            if "tens_val" not in st.session_state:
+                st.session_state.tens_val = 5
+            if "ones_val" not in st.session_state:
+                st.session_state.ones_val = 0
 
-        # 대형 2자리 숫자 네온 스타일 CSS
-        st.markdown(
-            """
-            <style>
-            .digit-display-container {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                margin: 15px 0;
-            }
-            .large-digit {
-                font-family: 'Press Start 2P', monospace, sans-serif;
-                font-size: 4.2rem;
-                font-weight: 900;
-                color: #00ffcc;
-                text-shadow: 0 0 15px #00ffcc, 0 0 25px #ff00ff;
-                background: #110022;
-                border: 3.5px solid #8A2BE2;
-                border-radius: 12px;
-                padding: 10px 20px;
-                min-width: 85px;
-                text-align: center;
-                box-shadow: 0 0 15px rgba(138, 43, 226, 0.6);
-            }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
+            st.markdown(
+                """
+                <style>
+                .digit-display-container {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    margin: 15px 0;
+                }
+                .large-digit {
+                    font-family: 'Press Start 2P', monospace, sans-serif;
+                    font-size: 4.2rem;
+                    font-weight: 900;
+                    color: #00ffcc;
+                    text-shadow: 0 0 15px #00ffcc, 0 0 25px #ff00ff;
+                    background: #110022;
+                    border: 3.5px solid #8A2BE2;
+                    border-radius: 12px;
+                    padding: 10px 20px;
+                    min-width: 85px;
+                    text-align: center;
+                    box-shadow: 0 0 15px rgba(138, 43, 226, 0.6);
+                }
+                </style>
+                """,
+                unsafe_allow_html=True
+            )
 
-        # 화살표 조작 레이아웃
-        _, col_tens, col_ones, _ = st.columns([1, 1.2, 1.2, 1])
+            _, col_tens, col_ones, _ = st.columns([1, 1.2, 1.2, 1])
 
-        with col_tens:
-            st.markdown("<p style='text-align:center; font-weight:bold; color:#a382de; margin-bottom:5px;'>십의 자리</p>", unsafe_allow_html=True)
-            if st.button("▲", key="btn_tens_up", use_container_width=True):
-                st.session_state.tens_val = (st.session_state.tens_val + 1) % 10
+            with col_tens:
+                st.markdown("<p style='text-align:center; font-weight:bold; color:#a382de; margin-bottom:5px;'>십의 자리</p>", unsafe_allow_html=True)
+                if st.button("▲", key="btn_tens_up", use_container_width=True):
+                    st.session_state.tens_val = (st.session_state.tens_val + 1) % 10
+                    st.rerun(scope="fragment") # 전체가 아닌 이 프래그먼트 영역만 즉시 갱신
+                
+                st.markdown(f"<div class='digit-display-container'><div class='large-digit'>{st.session_state.tens_val}</div></div>", unsafe_allow_html=True)
+                
+                if st.button("▼", key="btn_tens_down", use_container_width=True):
+                    st.session_state.tens_val = (st.session_state.tens_val - 1) % 10
+                    st.rerun(scope="fragment")
+
+            with col_ones:
+                st.markdown("<p style='text-align:center; font-weight:bold; color:#a382de; margin-bottom:5px;'>일의 자리</p>", unsafe_allow_html=True)
+                if st.button("▲", key="btn_ones_up", use_container_width=True):
+                    st.session_state.ones_val = (st.session_state.ones_val + 1) % 10
+                    st.rerun(scope="fragment")
+                
+                st.markdown(f"<div class='digit-display-container'><div class='large-digit'>{st.session_state.ones_val}</div></div>", unsafe_allow_html=True)
+                
+                if st.button("▼", key="btn_ones_down", use_container_width=True):
+                    st.session_state.ones_val = (st.session_state.ones_val - 1) % 10
+                    st.rerun(scope="fragment")
+
+            pred_score = st.session_state.tens_val * 10 + st.session_state.ones_val
+            st.markdown(f"<h3 style='text-align:center; color:#fffb00; margin-top:15px;'>내 예측 점수: {pred_score:02d}점</h3>", unsafe_allow_html=True)
+
+            if st.button("✅ 선택 완료 (예측 점수 제출)", use_container_width=True):
+                st.session_state.game_1_predicted_score = pred_score
                 st.rerun()
-            
-            st.markdown(f"<div class='digit-display-container'><div class='large-digit'>{st.session_state.tens_val}</div></div>", unsafe_allow_html=True)
-            
-            if st.button("▼", key="btn_tens_down", use_container_width=True):
-                st.session_state.tens_val = (st.session_state.tens_val - 1) % 10
-                st.rerun()
 
-        with col_ones:
-            st.markdown("<p style='text-align:center; font-weight:bold; color:#a382de; margin-bottom:5px;'>일의 자리</p>", unsafe_allow_html=True)
-            if st.button("▲", key="btn_ones_up", use_container_width=True):
-                st.session_state.ones_val = (st.session_state.ones_val + 1) % 10
-                st.rerun()
-            
-            st.markdown(f"<div class='digit-display-container'><div class='large-digit'>{st.session_state.ones_val}</div></div>", unsafe_allow_html=True)
-            
-            if st.button("▼", key="btn_ones_down", use_container_width=True):
-                st.session_state.ones_val = (st.session_state.ones_val - 1) % 10
-                st.rerun()
-
-        pred_score = st.session_state.tens_val * 10 + st.session_state.ones_val
-        st.markdown(f"<h3 style='text-align:center; color:#fffb00; margin-top:15px;'>내 예측 점수: {pred_score:02d}점</h3>", unsafe_allow_html=True)
-
-        if st.button("✅ 선택 완료 (예측 점수 제출)", use_container_width=True):
-            st.session_state.game_1_predicted_score = pred_score
-            st.rerun()
+        # 함수 호출
+        render_neon_digit_picker()
         return
 
     # ----------------------------------------------------
