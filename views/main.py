@@ -1,3 +1,13 @@
+import streamlit as st
+from streamlit_autorefresh import st_autorefresh
+from st_clickable_images import clickable_images
+from modules.db_handler import init_gspread
+from modules.ui_components import change_page
+
+ws = init_gspread()
+
+# 정의된 함수: show_main_page
+
 def show_main_page():
     st_autorefresh(interval=600000, limit=None, key="auto_refresh")
 
