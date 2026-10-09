@@ -11,29 +11,170 @@ ws_news = init_news_sheet()
 
 def show_game_1():
     st.title("🎮 게임 1: 뉴스 유사도 예측 게임")
+    
+# [1단계] 베팅 금액 선택
+if "game_1_bet" not in st.session_state:
+    current_coins = int(st.session_state.current_user_data.get('코인', 0))
 
-    # [1단계] 베팅 금액 선택
-    if "game_1_bet" not in st.session_state:
-        current_coins = int(st.session_state.current_user_data.get('코인', 0))
-        st.markdown("### 💰 1단계: 베팅 금액 선택")
-        st.write(f"현재 보유 코인: **{current_coins:,} C**")
-        
-        bet_val = st.number_input(
-            "베팅할 코인을 입력하세요", 
-            min_value=100, 
-            max_value=max(100, current_coins), 
+    # 🔥 반짝이는 화려한 UI 스타일 및 애니메이션 정의
+    st.markdown(
+        """
+        <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Gowun+Dodum&family=Noto+Sans+KR:wght@700;900&display=swap');
+
+        .bet-card-container {
+            font-family: 'Gowun Dodum', 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #110022 0%, #1a0933 50%, #0d001a 100%);
+            border: 2px solid #00ffcc;
+            border-radius: 20px;
+            padding: 22px 18px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.35);
+            animation: neonPulse 3s infinite alternate;
+            margin-bottom: 20px;
+        }
+
+        @keyframes neonPulse {
+            0% { border-color: #00ffcc; box-shadow: 0 0 15px rgba(0, 255, 204, 0.4); }
+            50% { border-color: #ff00ff; box-shadow: 0 0 25px rgba(255, 0, 255, 0.6); }
+            100% { border-color: #00ffcc; box-shadow: 0 0 15px rgba(0, 255, 204, 0.4); }
+        }
+
+        .bet-header-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 1.1rem;
+            color: #fffb00;
+            text-shadow: 0 0 10px #ff00ff, 0 0 20px #00ffff;
+            margin-bottom: 14px;
+            letter-spacing: 1px;
+        }
+
+        .coin-balance-badge {
+            background: rgba(255, 255, 255, 0.07);
+            border: 1.5px solid rgba(0, 255, 204, 0.5);
+            border-radius: 30px;
+            padding: 8px 18px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .payout-preview-box {
+            background: linear-gradient(135deg, rgba(255,215,0,0.15) 0%, rgba(255,0,255,0.15) 100%);
+            border: 2px dashed #ffd700;
+            border-radius: 16px;
+            padding: 15px;
+            margin: 18px 0 10px 0;
+            animation: payoutFloat 2.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes payoutFloat {
+            0% { transform: scale(0.98); box-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
+            100% { transform: scale(1.02); box-shadow: 0 0 22px rgba(255, 215, 0, 0.7); }
+        }
+
+        .payout-title {
+            font-size: 0.88rem;
+            color: #e2e8f0;
+            margin-bottom: 4px;
+            font-weight: bold;
+        }
+
+        .payout-value {
+            font-size: 1.9rem;
+            font-weight: 900;
+            color: #ffd700;
+            text-shadow: 0 0 10px #ffd700, 0 0 20px #ff00ff;
+            letter-spacing: 0.5px;
+        }
+
+        .jackpot-tag {
+            background: linear-gradient(90deg, #ff00ff, #8a2be2);
+            color: #ffffff;
+            font-size: 0.75rem;
+            font-weight: 900;
+            padding: 3px 8px;
+            border-radius: 12px;
+            margin-left: 8px;
+            vertical-align: middle;
+            box-shadow: 0 0 8px #ff00ff;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # 1. 상단 화려한 타이틀 및 현재 잔액
+    st.markdown(
+        f"""
+        <div class="bet-card-container">
+            <div class="bet-header-title">🎰 STEP 1: BETTING PLACE 🎰</div>
+            <div class="coin-balance-badge">
+                <span style="color:#ffffff; font-weight:bold;">보유 코인:</span>
+                <span style="color:#00ffcc; font-weight:900; font-size:1.2rem; text-shadow:0 0 8px #00ffcc;">
+                    🪙 {current_coins:,} C
+                </span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # 2. 베팅 금액 선택 (슬라이더 + 정밀 입력)
+    min_bet = 100
+    max_bet = max(100, current_coins)
+    default_bet = min(500, max_bet)
+
+    col_bet1, col_bet2 = st.columns([2.2, 1])
+
+    with col_bet1:
+        bet_val = st.slider(
+            "🎚️ 베팅 금액 조절", 
+            min_value=min_bet, 
+            max_value=max_bet, 
             step=100, 
-            value=min(500, max(100, current_coins))
+            value=default_bet,
+            key="game1_bet_slider"
         )
-        
-        if st.button("🎲 베팅 금액 확정", use_container_width=True):
-            if current_coins < 100:
-                st.error("코인이 부족합니다! (최소 100 C 필요)")
-                return
-            st.session_state.game_1_bet = bet_val
-            st.rerun()
-        return
 
+    with col_bet2:
+        bet_val = st.number_input(
+            "✏️ 수치 직접 입력", 
+            min_value=min_bet, 
+            max_value=max_bet, 
+            step=100, 
+            value=bet_val,
+            key="game1_bet_num"
+        )
+
+    # 3. 실시간 보상(100배 대박 금액) 계산
+    potential_jackpot = bet_val * 100
+
+    # 4. 반짝이는 실시간 예상 획득 금액 표시 카드
+    st.markdown(
+        f"""
+        <div class="payout-preview-box">
+            <div class="payout-title">✨ 대박 성공 시 획득 가능 금액 (오차 0점 완벽 예측) ✨</div>
+            <div class="payout-value">
+                +{potential_jackpot:,} C <span class="jackpot-tag">100x JACKPOT</span>
+            </div>
+        </div>
+        <br>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # 5. 베팅 확정 버튼
+    if st.button("🔥 베팅 완료 & 게임 시작하기 🔥", use_container_width=True):
+        if current_coins < 100:
+            st.error("코인이 부족합니다! (최소 100 C 필요)")
+            return
+        st.session_state.game_1_bet = bet_val
+        st.rerun()
+    return
+
+    
     # [2단계 & 3단계] 기사 선택
     title, article_text, url = get_game_news_selection("game_1")
     if not title:
