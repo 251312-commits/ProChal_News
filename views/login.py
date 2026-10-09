@@ -1,3 +1,11 @@
+import streamlit as st
+from modules.db_handler import init_gspread
+from modules.ui_components import change_page
+
+ws = init_gspread()
+
+# 정의된 함수: show_login_page
+
 def show_login_page():
     _, col_main, _ = st.columns([1, 2.5, 1])
 
