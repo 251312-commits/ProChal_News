@@ -1,8 +1,8 @@
 import streamlit as st
 from modules.news_ai import summary, similarity_check
 from modules.db_handler import init_gspread, init_news_sheet
+from modules.ui_components import change_page
 from games.common import get_game_news_selection
-from news import change_page
 
 ws = init_gspread()
 ws_news = init_news_sheet()
