@@ -1,3 +1,5 @@
+# 구간 제시 후 뉴스 정하기 게임 (상) 확률: ⅕ (5배)
+
 import streamlit as st
 from modules.ui_components import show_placeholder_page
 
