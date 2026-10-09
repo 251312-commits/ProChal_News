@@ -1,72 +1,72 @@
-import streamlit as st
-from modules.db_handler import init_gspread
-
-def change_page(page_name: str):
-    """페이지 이동 핸들러"""
-    st.session_state.page = page_name
-    st.rerun()
-
 def show_main_page():
-    """메인 대시보드 화면 뷰"""
-    # 사용자 데이터 로드
-    user_data = st.session_state.get('current_user_data', {})
-    student_id = st.session_state.get('current_user', '미인증')
-    username = user_data.get('아이디', '사용자')
-    coins = user_data.get('코인', 0)
-    streak = user_data.get('연승', 0)
+    st_autorefresh(interval=600000, limit=None, key="auto_refresh")
 
-    # --------------------------------------------------
-    # [1] 상단 프로필 대시보드
-    # --------------------------------------------------
-    st.title("🏠 메인 로비")
+    users_data = ws.get_all_records()
+    updated_info = next((item for item in users_data if str(item.get('학번', '')).strip().replace('.0', '') == st.session_state.current_user), None)
     
-    col_user, col_coin, col_streak = st.columns(3)
-    with col_user:
-        st.metric(label="👤 사용자 (학번)", value=f"{username} ({student_id})")
-    with col_coin:
-        st.metric(label="💰 보유 코인", value=f"{coins:,} C")
-    with col_streak:
-        st.metric(label="🔥 현재 연승", value=f"{streak} 연승")
+    if updated_info:
+        st.session_state.current_user_data = updated_info
 
-    st.divider()
-
-    # --------------------------------------------------
-    # [2] 주요 메뉴 카드리스트
-    # --------------------------------------------------
-    st.subheader("🎮 메뉴 선택")
+    user = st.session_state.current_user_data
     
-    m_col1, m_col2, m_col3 = st.columns(3)
-
-    with m_col1:
-        with st.container(border=True):
-            st.markdown("### 📰 뉴스 예측")
-            st.write("오늘의 뉴스를 읽고 결과를 예측해 코인을 획득해보세요.")
-            if st.button("뉴스 예측하러 가기", key="btn_go_news", use_container_width=True):
-                change_page('news')
-
-    with m_col2:
-        with st.container(border=True):
-            st.markdown("### 🎲 카지노 / 미니게임")
-            st.write("스릴 넘치는 미니게임으로 코인을 불려보세요.")
-            if st.button("게임장 입장", key="btn_go_casino", use_container_width=True):
-                change_page('casino')
-
-    with m_col3:
-        with st.container(border=True):
-            st.markdown("### 🏆 순위 및 정보")
-            st.write("전체 사용자 랭킹을 확인하고 개인 정보를 관리합니다.")
-            if st.button("랭킹 및 정보 확인", key="btn_go_ranking", use_container_width=True):
-                change_page('ranking')
-
-    st.divider()
-
-    # --------------------------------------------------
-    # [3] 하단 세션 및 계정 관리 버튼
-    # --------------------------------------------------
-    col_sub1, col_sub2 = st.columns([3, 1])
-    with col_sub2:
-        if st.button("🚪 로그아웃", use_container_width=True):
-            st.session_state.current_user = None
-            st.session_state.current_user_data = None
-            st.session_state.login_step = 1
-            change_page('login')
+    if not user:
+        change_page('login')
+        return
+    
+    st.markdown(
+        f"""
+        <div style="color: white; font-weight: bold; font-size: 0.9rem; margin-bottom: -5px;">안전의대명사 뉴스에이전놀이터</div>
+        <div style="color: #FF00FF; font-weight: bold; font-size: 0.8rem; margin-bottom: 5px;">실시간 뉴스 미니게임</div>
+        
+        <div class="neon-promo-banner">
+            <div class="neon-left-box">
+                <div class="neon-numbers">
+                    VIP <span>{user.get('아이디', '알 수 없음')}</span><br>
+                    보유 <span>{user.get('코인', 0)}</span> C<br>
+                    🔥<span>{user.get('연승', 0)}</span> 연승중🔥
+                </div>
+            </div>
+            <div class="neon-right-box">
+                <div class="neon-logo-text">NEWS</div>
+                <div style="background: #FF00FF; color: white; padding: 2px 10px; border-radius: 10px; font-weight: bold; margin-top: 5px;">유익하다!</div>
+                <div class="neon-sub-text">친구 초대 시 3000코인 지급</div>
+                <div class="neon-sub-text-2">당신도 가능하다 인생역전</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    img_urls = [
+        "https://github.com/user-attachments/assets/331b7b2e-c4f5-4087-9f6b-9e672afb9568", 
+        "https://github.com/user-attachments/assets/24bc9c42-e6c0-4f6f-a3a1-e1cce8fd66f3", 
+        "https://github.com/user-attachments/assets/caf0511f-54f9-4d1e-8d6d-318e6886f2b4", 
+        "https://github.com/user-attachments/assets/2893591d-30c2-485a-adcc-f8bd2ed94aa6", 
+        "https://picsum.photos/id/50/800/110", 
+        "https://picsum.photos/id/60/800/110", 
+        "https://picsum.photos/id/70/800/110", 
+        "https://picsum.photos/id/80/800/110"  
+    ]
+    
+    clicked_menu = clickable_images(
+        img_urls,
+        titles=["🏦 은행", "🏆 랭킹", "게임 1", "게임 2", "게임 3", "게임 4", "게임 5", "🛒 교환소"],
+        div_style={
+            "display": "flex", 
+            "flex-direction": "column", 
+            "gap": "15px",
+            "justify-content": "center",
+            "padding-bottom": "30px",
+            "background-color": "#05000a" 
+        },
+        img_style={
+            "width": "100%",            
+            "height": "110px",          
+            "object-fit": "cover",      
+            "border-radius": "5px", 
+            "border": "2px solid #8A2BE2", 
+            "box-shadow": "0 0 10px rgba(138, 43, 226, 0.8)",
+            "cursor": "pointer"
+        },
+        key="main_menu_banners"
+    )
