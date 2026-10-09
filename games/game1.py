@@ -12,8 +12,7 @@ ws_news = init_news_sheet()
 def show_game_1():
     st.title("🎮 게임 1: 뉴스 유사도 예측 게임")
     
-# [1단계] 베팅 금액 선택
-if "game_1_bet" not in st.session_state:
+    if "game_1_bet" not in st.session_state:
     current_coins = int(st.session_state.current_user_data.get('코인', 0))
 
     # 🔥 반짝이는 화려한 UI 스타일 및 애니메이션 정의
