@@ -1,4 +1,5 @@
- 
+import streamlit as st
+
 def show_game_1():
     st.title("🎮 게임 1: 뉴스 유사도 예측 게임")
 
