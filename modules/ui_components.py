@@ -1,3 +1,7 @@
+import streamlit as st
+
+# 정의된 함수: change_page, show_placeholder_page, inject_casino_theme
+
 def change_page(page_name):
     st.session_state.page = page_name
     st.rerun()
