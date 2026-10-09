@@ -1,3 +1,5 @@
+# 업다운 (하) ½ (2배)
+
 import streamlit as st
 from modules.ui_components import show_placeholder_page
 
