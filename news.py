@@ -35,15 +35,6 @@ if 'current_user' not in st.session_state:
 if 'current_user_data' not in st.session_state:
     st.session_state.current_user_data = None
 
-def change_page(page_name):
-    st.session_state.page = page_name
-    st.rerun()
-
-def show_placeholder_page(title_name):
-    st.title(title_name)
-    st.info("🎮 해당 콘텐츠는 현재 준비 중입니다.")
-    if st.button("⬅️ 메인으로 돌아가기"):
-        change_page('main')
 
     if clicked_menu == 0: change_page('bank')
     elif clicked_menu == 1: change_page('ranking')
