@@ -1,6 +1,7 @@
 import streamlit as st
 from newspaper import Article
 import re
+import random
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 import torch
