@@ -11,154 +11,155 @@ ws_news = init_news_sheet()
 
 def show_game_1():
     st.title("🎮 게임 1: 뉴스 유사도 예측 게임")
+
     # [1단계] 베팅 금액 선택 (화려한 네온 UI 및 dynamic 코인 스택 적용)
-if "game_1_bet" not in st.session_state:
-    current_coins = int(st.session_state.current_user_data.get('코인', 0))
-    min_bet = 1000
-    
-    # 코인이 최소 베팅 금액보다 적을 경우 예외 처리
-    if current_coins < min_bet:
-        st.error(f"⚠️ 베팅을 위한 코인이 부족합니다! (최소 베팅금: {min_bet:,} C / 보유: {current_coins:,} C)")
-        if st.button("⬅️ 메인으로 돌아가기", use_container_width=True):
-            change_page('main')
+    if "game_1_bet" not in st.session_state:
+        current_coins = int(st.session_state.current_user_data.get('코인', 0))
+        min_bet = 1000
+        
+        # 코인이 최소 베팅 금액보다 적을 경우 예외 처리
+        if current_coins < min_bet:
+            st.error(f"⚠️ 베팅을 위한 코인이 부족합니다! (최소 베팅금: {min_bet:,} C / 보유: {current_coins:,} C)")
+            if st.button("⬅️ 메인으로 돌아가기", use_container_width=True):
+                change_page('main')
+            return
+
+        # 베팅 화면 전용 카지노 네온 CSS 스타일링
+        st.markdown(
+            """
+            <style>
+            .bet-card-container {
+                background: linear-gradient(135deg, #110022 0%, #1a0933 50%, #0d001a 100%);
+                border: 2px solid #00ffcc;
+                border-radius: 20px;
+                padding: 20px;
+                text-align: center;
+                box-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
+                margin-bottom: 15px;
+                animation: pulseGlow 3s infinite alternate;
+            }
+            @keyframes pulseGlow {
+                0% { border-color: #00ffcc; box-shadow: 0 0 15px rgba(0, 255, 204, 0.4); }
+                50% { border-color: #ff00ff; box-shadow: 0 0 25px rgba(255, 0, 255, 0.6); }
+                100% { border-color: #00ffcc; box-shadow: 0 0 15px rgba(0, 255, 204, 0.4); }
+            }
+            .bet-header-title {
+                font-family: 'Press Start 2P', monospace;
+                font-size: 1.1rem;
+                color: #fffb00;
+                text-shadow: 0 0 8px #ff00ff, 0 0 15px #00ffff;
+                margin-bottom: 8px;
+            }
+            .coin-stack-box {
+                min-height: 110px;
+                display: flex;
+                flex-direction: column-reverse;
+                align-items: center;
+                justify-content: center;
+                margin: 15px 0;
+                padding: 12px;
+                background: rgba(0, 0, 0, 0.45);
+                border-radius: 16px;
+                border: 1.5px dashed rgba(255, 215, 0, 0.5);
+            }
+            .coin-row {
+                font-size: 1.8rem;
+                letter-spacing: 3px;
+                animation: popIn 0.25s ease-out;
+                filter: drop-shadow(0 0 8px #ffd700);
+            }
+            @keyframes popIn {
+                0% { transform: scale(0.6); opacity: 0.5; }
+                100% { transform: scale(1); opacity: 1; }
+            }
+            .payout-card {
+                background: linear-gradient(90deg, rgba(255,0,255,0.2) 0%, rgba(0,255,204,0.2) 100%);
+                border: 2px solid #ff00ff;
+                border-radius: 14px;
+                padding: 12px;
+                margin: 15px 0;
+                text-align: center;
+                box-shadow: 0 0 15px rgba(255, 0, 255, 0.4);
+            }
+            .payout-amount {
+                font-size: 1.7rem;
+                font-weight: 900;
+                color: #00ffcc;
+                text-shadow: 0 0 12px #00ffcc;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # 상단 헤더 카드
+        st.markdown(
+            f"""
+            <div class="bet-card-container">
+                <div class="bet-header-title">🎰 STEP 1: BETTING PLACE</div>
+                <div style="font-size: 1rem; color: #ffffff; font-weight: bold;">
+                    현재 보유 코인: <span style="color:#ffd700;">🪙 {current_coins:,} C</span>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # 슬라이더로 베팅 금액 선택 (최소 1,000 C ~ 최대 올인)
+        step_val = 1000 if (current_coins - min_bet) >= 1000 else 100
+        bet_val = st.slider(
+            "💰 베팅할 금액을 선택하세요",
+            min_value=min_bet,
+            max_value=current_coins,
+            step=step_val,
+            value=min(5000, current_coins)
+        )
+
+        # 베팅 비율에 따라 동적으로 코인 아이콘 개수 산출 (1개 ~ 최대 10개 탑 쌓기 연출)
+        bet_ratio = (bet_val - min_bet) / max(1, (current_coins - min_bet)) if current_coins > min_bet else 1.0
+        coin_count = int(1 + bet_ratio * 9)
+
+        # 코인 탑 Visual 생성 (5개 단위 줄바꿈)
+        coins_html = ""
+        for i in range(0, coin_count, 5):
+            chunk = min(5, coin_count - i)
+            coins_html = f"<div class='coin-row'>{'🪙' * chunk}</div>" + coins_html
+
+        # 정답(오차 0점) 달성 시 획득 가능한 최고 금액 (100배)
+        max_reward = bet_val * 100
+
+        # 동적 코인 탑 & 예상 최고 수령액 카드 출력
+        st.markdown(
+            f"""
+            <div class="coin-stack-box">
+                {coins_html}
+                <div style="color:#ffd700; font-size:0.9rem; margin-top:8px; font-weight:800;">
+                    현재 선택 칩: {bet_val:,} C
+                </div>
+            </div>
+
+            <div class="payout-card">
+                <div style="font-size:0.85rem; color:#ffffff; font-weight:bold;">✨ 정답(오차 0점) 적중 시 최대 획득 금액 (100배)</div>
+                <div class="payout-amount">+{max_reward:,} C</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # 하단 버튼부 (올인 버튼 & 확정 버튼)
+        col_b1, col_b2 = st.columns([1, 2])
+        with col_b1:
+            if st.button("💥 ALL-IN (올인)", use_container_width=True):
+                st.session_state.game_1_bet = current_coins
+                st.rerun()
+
+        with col_b2:
+            if st.button("🎲 베팅 확정 & 게임 시작", use_container_width=True):
+                st.session_state.game_1_bet = bet_val
+                st.rerun()
+
         return
 
-    # 베팅 화면 전용 카지노 네온 CSS 스타일링
-    st.markdown(
-        """
-        <style>
-        .bet-card-container {
-            background: linear-gradient(135deg, #110022 0%, #1a0933 50%, #0d001a 100%);
-            border: 2px solid #00ffcc;
-            border-radius: 20px;
-            padding: 20px;
-            text-align: center;
-            box-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
-            margin-bottom: 15px;
-            animation: pulseGlow 3s infinite alternate;
-        }
-        @keyframes pulseGlow {
-            0% { border-color: #00ffcc; box-shadow: 0 0 15px rgba(0, 255, 204, 0.4); }
-            50% { border-color: #ff00ff; box-shadow: 0 0 25px rgba(255, 0, 255, 0.6); }
-            100% { border-color: #00ffcc; box-shadow: 0 0 15px rgba(0, 255, 204, 0.4); }
-        }
-        .bet-header-title {
-            font-family: 'Press Start 2P', monospace;
-            font-size: 1.1rem;
-            color: #fffb00;
-            text-shadow: 0 0 8px #ff00ff, 0 0 15px #00ffff;
-            margin-bottom: 8px;
-        }
-        .coin-stack-box {
-            min-height: 110px;
-            display: flex;
-            flex-direction: column-reverse;
-            align-items: center;
-            justify-content: center;
-            margin: 15px 0;
-            padding: 12px;
-            background: rgba(0, 0, 0, 0.45);
-            border-radius: 16px;
-            border: 1.5px dashed rgba(255, 215, 0, 0.5);
-        }
-        .coin-row {
-            font-size: 1.8rem;
-            letter-spacing: 3px;
-            animation: popIn 0.25s ease-out;
-            filter: drop-shadow(0 0 8px #ffd700);
-        }
-        @keyframes popIn {
-            0% { transform: scale(0.6); opacity: 0.5; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        .payout-card {
-            background: linear-gradient(90deg, rgba(255,0,255,0.2) 0%, rgba(0,255,204,0.2) 100%);
-            border: 2px solid #ff00ff;
-            border-radius: 14px;
-            padding: 12px;
-            margin: 15px 0;
-            text-align: center;
-            box-shadow: 0 0 15px rgba(255, 0, 255, 0.4);
-        }
-        .payout-amount {
-            font-size: 1.7rem;
-            font-weight: 900;
-            color: #00ffcc;
-            text-shadow: 0 0 12px #00ffcc;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
-    # 상단 헤더 카드
-    st.markdown(
-        f"""
-        <div class="bet-card-container">
-            <div class="bet-header-title">🎰 STEP 1: BETTING PLACE</div>
-            <div style="font-size: 1rem; color: #ffffff; font-weight: bold;">
-                현재 보유 코인: <span style="color:#ffd700;">🪙 {current_coins:,} C</span>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    # 슬라이더로 베팅 금액 선택 (최소 1,000 C ~ 최대 올인)
-    step_val = 1000 if (current_coins - min_bet) >= 1000 else 100
-    bet_val = st.slider(
-        "💰 베팅할 금액을 선택하세요",
-        min_value=min_bet,
-        max_value=current_coins,
-        step=step_val,
-        value=min(5000, current_coins)
-    )
-
-    # 베팅 비율에 따라 동적으로 코인 아이콘 개수 산출 (1개 ~ 최대 10개 탑 쌓기 연출)
-    bet_ratio = (bet_val - min_bet) / max(1, (current_coins - min_bet)) if current_coins > min_bet else 1.0
-    coin_count = int(1 + bet_ratio * 9)
-
-    # 코인 탑 Visual 생성 (5개 단위 줄바꿈)
-    coins_html = ""
-    for i in range(0, coin_count, 5):
-        chunk = min(5, coin_count - i)
-        coins_html = f"<div class='coin-row'>{'🪙' * chunk}</div>" + coins_html
-
-    # 정답(오차 0점) 달성 시 획득 가능한 최고 금액 (100배)
-    max_reward = bet_val * 100
-
-    # 동적 코인 탑 & 예상 최고 수령액 카드 출력
-    st.markdown(
-        f"""
-        <div class="coin-stack-box">
-            {coins_html}
-            <div style="color:#ffd700; font-size:0.9rem; margin-top:8px; font-weight:800;">
-                현재 선택 칩: {bet_val:,} C
-            </div>
-        </div>
-
-        <div class="payout-card">
-            <div style="font-size:0.85rem; color:#ffffff; font-weight:bold;">✨ 정답(오차 0점) 적중 시 최대 획득 금액 (100배)</div>
-            <div class="payout-amount">+{max_reward:,} C</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    # 하단 버튼부 (올인 버튼 & 확정 버튼)
-    col_b1, col_b2 = st.columns([1, 2])
-    with col_b1:
-        if st.button("💥 ALL-IN (올인)", use_container_width=True):
-            st.session_state.game_1_bet = current_coins
-            st.rerun()
-
-    with col_b2:
-        if st.button("🎲 베팅 확정 & 게임 시작", use_container_width=True):
-            st.session_state.game_1_bet = bet_val
-            st.rerun()
-
-    return
-    
     # [2단계 & 3단계] 기사 선택
     title, article_text, url = get_game_news_selection("game_1")
     if not title:
