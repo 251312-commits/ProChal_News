@@ -1,19 +1,22 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-# DB 및 AI 모듈
-from db_handler import init_gspread, init_news_sheet
-from news_ai import load_ai_model, bring_article, pick_3_lowest_count_news
+from modules.db_handler import init_gspread, init_news_sheet
+from modules.news_ai import load_ai_model, bring_article, pick_3_lowest_count_news
+from modules.ui_components import change_page, inject_casino_theme
 
-# UI 컴포넌트 및 BGM 모듈
-from bgm import init_seamless_bgm, stop_bgm
-from ui_components import change_page, inject_casino_theme
+from sounds.bgm import init_seamless_bgm, stop_bgm
 
-# 각 페이지 함수 모듈
-from login import show_login_page
-from main import show_main_page
-from ranking import show_ranking
-from game1 import show_game_1
+from views.login import show_login_page
+from views.main import show_main_page
+from views.ranking import show_ranking
+from views.bank import show_bank
+
+from games.game1 import show_game_1
+from games.game2 import show_game_2
+from games.game3 import show_game_3
+from games.game4 import show_game_4
+from games.game5 import show_game_5
 
 ws = init_gspread()
 ws_news = init_news_sheet()
