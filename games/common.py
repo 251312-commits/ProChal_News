@@ -5,6 +5,8 @@ from modules.db_handler import init_news_sheet
 
 ws_news = init_news_sheet()
 
+# 정의된 함수: get_game_news_selection
+
 def get_game_news_selection(game_id: str):
     news_key = f"selected_news_{game_id}"
     candidates_key = f"candidates_{game_id}"
