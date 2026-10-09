@@ -34,16 +34,6 @@ if 'current_user' not in st.session_state:
     st.session_state.current_user = None
 if 'current_user_data' not in st.session_state:
     st.session_state.current_user_data = None
-
-
-    if clicked_menu == 0: change_page('bank')
-    elif clicked_menu == 1: change_page('ranking')
-    elif clicked_menu == 2: change_page('game_1')
-    elif clicked_menu == 3: change_page('game_2')
-    elif clicked_menu == 4: change_page('game_3')
-    elif clicked_menu == 5: change_page('game_4')
-    elif clicked_menu == 6: change_page('game_5')
-    elif clicked_menu == 7: change_page('exchange')
         
 # ==========================================
 # 페이지 라우터 구역
