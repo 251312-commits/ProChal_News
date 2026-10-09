@@ -21,8 +21,6 @@ def init_gspread():
     worksheet = doc.worksheet("Users")
     return worksheet
 
-ws = init_gspread()
-
 # ==========================================
 # 뉴스 전용 구글 시트 워크시트 연결
 # ==========================================
@@ -35,5 +33,3 @@ def init_news_sheet():
         news_ws = doc.add_worksheet(title="News", rows="100", cols="3")
         news_ws.append_row(["URL", "Count", "Title"])
         return news_ws
-
-ws_news = init_news_sheet()
