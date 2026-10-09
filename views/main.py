@@ -53,7 +53,7 @@ def show_main_page():
         "https://github.com/user-attachments/assets/caf0511f-54f9-4d1e-8d6d-318e6886f2b4", 
         "https://github.com/user-attachments/assets/2893591d-30c2-485a-adcc-f8bd2ed94aa6", 
         "https://github.com/user-attachments/assets/f8c3352c-adf5-4b8a-96da-974cc965c5d2", 
-        "https://picsum.photos/id/60/800/110", 
+        "https://github.com/user-attachments/assets/f8c3352c-adf5-4b8a-96da-974cc965c5d2", 
         "https://picsum.photos/id/70/800/110", 
         "https://picsum.photos/id/80/800/110"  
     ]
