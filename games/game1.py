@@ -1,11 +1,16 @@
 import streamlit as st
+from modules.db_handler import init_gspread, init_news_sheet
+from games.common import get_game_news_selection
+
+ws = init_gspread()
+ws_news = init_news_sheet()
+
+# 정의된 함수: show_game_1
 
 def show_game_1():
     st.title("🎮 게임 1: 뉴스 유사도 예측 게임")
 
-    # ----------------------------------------------------
-    # [1단계] 베팅 금액 선정
-    # ----------------------------------------------------
+
     if "game_1_bet" not in st.session_state:
         current_coins = int(st.session_state.current_user_data.get('코인', 0))
         st.markdown("### 💰 1단계: 베팅 금액 선택")
@@ -27,23 +32,17 @@ def show_game_1():
             st.rerun()
         return
 
-    # ----------------------------------------------------
-    # [2단계 & 3단계] 뉴스 목록 선택 및 본문 확인 (9264.txt 모듈 활용)
-    # ----------------------------------------------------
+
     title, article_text, url = get_game_news_selection("game_1")
     if not title:
-        # 뉴스 뽑기 슬롯머신 또는 30초 본문 읽기 타이머 진행 중
         return
 
-    # ----------------------------------------------------
-    # [4단계] 뉴스 유사도 예측 (중앙 대형 두 자리 숫자 + 화살표 UI)
-    # ----------------------------------------------------
+    
     if "game_1_predicted_score" not in st.session_state:
         st.markdown("---")
         st.markdown("### 🎯 4단계: AI 유사도 점수 예측")
         st.caption("AI가 제목과 본문을 분석해 산출할 유사도 점수(00~99점)를 예측해 보세요!")
 
-        # 부분 실행을 위한 프래그먼트 함수 정의
         @st.fragment
         def render_neon_digit_picker():
             if "tens_val" not in st.session_state:
@@ -85,7 +84,7 @@ def show_game_1():
                 st.markdown("<p style='text-align:center; font-weight:bold; color:#a382de; margin-bottom:5px;'>십의 자리</p>", unsafe_allow_html=True)
                 if st.button("▲", key="btn_tens_up", use_container_width=True):
                     st.session_state.tens_val = (st.session_state.tens_val + 1) % 10
-                    st.rerun(scope="fragment") # 전체가 아닌 이 프래그먼트 영역만 즉시 갱신
+                    st.rerun(scope="fragment")
                 
                 st.markdown(f"<div class='digit-display-container'><div class='large-digit'>{st.session_state.tens_val}</div></div>", unsafe_allow_html=True)
                 
@@ -112,40 +111,28 @@ def show_game_1():
                 st.session_state.game_1_predicted_score = pred_score
                 st.rerun()
 
-        # 함수 호출
         render_neon_digit_picker()
         return
 
-    # ----------------------------------------------------
-    # [5단계 & 6단계] 유사도 측정 및 결과 화면
-    # ----------------------------------------------------
+
     pred_score = st.session_state.game_1_predicted_score
     bet_coin = st.session_state.game_1_bet
 
     if "game_1_result" not in st.session_state:
         with st.spinner("🤖 AI가 유사도를 분석 중입니다..."):
-            # 추후 별도 요약문 함수 추출 로직 반영 지점
-            summary_text = summary(article_text)
-            
-            # 9264.txt similarity_check 함수 실행
-            actual_score = similarity_check(summary_text, title)
-            diff = abs(pred_score - actual_score)
 
-            # 승패 기준: 오차 5이내 2배, 10이내 1.5배, 초과시 배팅금 차감
-            if diff <= 5:
-                reward = int(bet_coin * 2.0)
+            summary_text = summary(article_text)
+            actual_score = similarity_check(summary_text, title)
+          
+            if abs(pred_score - actual_score) == 0:
+                reward = int(bet_coin * 100.0)
                 is_win = True
                 result_msg = f"🎉 대박 성공! (오차 {diff}점)"
-            elif diff <= 10:
-                reward = int(bet_coin * 1.5)
-                is_win = True
-                result_msg = f"✨ 성공! (오차 {diff}점)"
             else:
                 reward = -bet_coin
                 is_win = False
                 result_msg = f"💥 실패 (오차 {diff}점)"
 
-            # 구글 시트(ws) 연동 및 정산
             current_sid = st.session_state.current_user
             users_data = ws.get_all_records()
             user_row_idx = None
@@ -184,7 +171,6 @@ def show_game_1():
                 "new_streak": new_streak
             }
 
-    # 결과 화면 출력
     res = st.session_state.game_1_result
     st.markdown("---")
     st.markdown("### 🏆 6단계: 최종 결과")
