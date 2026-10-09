@@ -12,7 +12,7 @@ ws_news = init_news_sheet()
 def show_game_1():
     st.title("🎮 게임 1: 뉴스 유사도 예측 게임")
 
-    # [1단계] 베팅 금액 선택 (화려한 네온 UI 및 dynamic 코인 스택 적용)
+    # [1단계] 베팅 금액 선택 (네온 UI & 입체 골드 동전 더미 탑 연출)
     if "game_1_bet" not in st.session_state:
         current_coins = int(st.session_state.current_user_data.get('코인', 0))
         min_bet = 1000
@@ -24,7 +24,7 @@ def show_game_1():
                 change_page('main')
             return
 
-        # 베팅 화면 전용 카지노 네온 CSS 스타일링
+        # 베팅 화면 전용 카지노 네온 & 3D 입체 골드 동전 더미 CSS 스타일링
         st.markdown(
             """
             <style>
@@ -50,26 +50,41 @@ def show_game_1():
                 text-shadow: 0 0 8px #ff00ff, 0 0 15px #00ffff;
                 margin-bottom: 8px;
             }
-            .coin-stack-box {
-                min-height: 110px;
+            .coin-pile-wrapper {
+                display: flex;
+                justify-content: center;
+                align-items: flex-end;
+                gap: 14px;
+                min-height: 150px;
+                padding: 20px 10px 15px 10px;
+                background: radial-gradient(ellipse at bottom, rgba(255, 215, 0, 0.25) 0%, rgba(10, 0, 20, 0.85) 75%);
+                border-radius: 16px;
+                border: 1.5px dashed rgba(255, 215, 0, 0.5);
+                box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.9);
+                margin: 15px 0;
+            }
+            .coin-stack-col {
                 display: flex;
                 flex-direction: column-reverse;
                 align-items: center;
-                justify-content: center;
-                margin: 15px 0;
-                padding: 12px;
-                background: rgba(0, 0, 0, 0.45);
-                border-radius: 16px;
-                border: 1.5px dashed rgba(255, 215, 0, 0.5);
             }
-            .coin-row {
-                font-size: 1.8rem;
-                letter-spacing: 3px;
-                animation: popIn 0.25s ease-out;
-                filter: drop-shadow(0 0 8px #ffd700);
+            .gold-coin-item {
+                width: 48px;
+                height: 13px;
+                border-radius: 50%;
+                background: linear-gradient(180deg, #FFE57F 0%, #FFC107 40%, #FF8F00 70%, #A76D00 100%);
+                border: 1px solid #FFF59D;
+                box-shadow: 0 3px 0 #5D4037, inset 0 1px 2px rgba(255, 255, 255, 0.9), 0 4px 6px rgba(0,0,0,0.5);
+                margin-top: -6px;
+                animation: popIn 0.18s ease-out;
+            }
+            .gold-coin-item.top {
+                background: radial-gradient(ellipse at 35% 35%, #FFFFFF 0%, #FFEE58 40%, #FFA000 85%);
+                border: 1.5px solid #FFFFFF;
+                box-shadow: 0 3px 0 #5D4037, 0 0 12px rgba(255, 215, 0, 0.9);
             }
             @keyframes popIn {
-                0% { transform: scale(0.6); opacity: 0.5; }
+                0% { transform: scale(0.7); opacity: 0.5; }
                 100% { transform: scale(1); opacity: 1; }
             }
             .payout-card {
@@ -105,37 +120,43 @@ def show_game_1():
             unsafe_allow_html=True
         )
 
-        # 슬라이더로 베팅 금액 선택 (최소 1,000 C ~ 최대 올인)
-        step_val = 1000 if (current_coins - min_bet) >= 1000 else 100
+        # 슬라이더로 베팅 금액 선택 (단위: 50 C, 최소 1,000 C ~ 최대 올인)
         bet_val = st.slider(
             "💰 베팅할 금액을 선택하세요",
             min_value=min_bet,
             max_value=current_coins,
-            step=step_val,
+            step=50,
             value=min(5000, current_coins)
         )
 
-        # 베팅 비율에 따라 동적으로 코인 아이콘 개수 산출 (1개 ~ 최대 10개 탑 쌓기 연출)
+        # 베팅 비율에 따른 동적 골드 동전 기둥(Column) 및 층(Layer) 계산
         bet_ratio = (bet_val - min_bet) / max(1, (current_coins - min_bet)) if current_coins > min_bet else 1.0
-        coin_count = int(1 + bet_ratio * 9)
+        total_coins = int(3 + bet_ratio * 37)  # 베팅액에 따라 3개 ~ 최대 40개 동전 생성
+        num_cols = min(5, max(1, (total_coins + 7) // 8))  # 1줄 ~ 최대 5줄(기둥)로 정렬
+        coins_per_col = total_coins // num_cols
+        remainder = total_coins % num_cols
 
-        # 코인 탑 Visual 생성 (5개 단위 줄바꿈)
-        coins_html = ""
-        for i in range(0, coin_count, 5):
-            chunk = min(5, coin_count - i)
-            coins_html = f"<div class='coin-row'>{'🪙' * chunk}</div>" + coins_html
+        cols_html = ""
+        for c in range(num_cols):
+            col_height = coins_per_col + (1 if c < remainder else 0)
+            coins_in_col_html = ""
+            for h in range(col_height):
+                is_top = (h == col_height - 1)
+                coin_class = "gold-coin-item top" if is_top else "gold-coin-item"
+                coins_in_col_html += f'<div class="{coin_class}"></div>'
+            cols_html += f'<div class="coin-stack-col">{coins_in_col_html}</div>'
 
         # 정답(오차 0점) 달성 시 획득 가능한 최고 금액 (100배)
         max_reward = bet_val * 100
 
-        # 동적 코인 탑 & 예상 최고 수령액 카드 출력
+        # 동적 골드 동전 더미 & 예상 최고 수령액 카드 출력
         st.markdown(
             f"""
-            <div class="coin-stack-box">
-                {coins_html}
-                <div style="color:#ffd700; font-size:0.9rem; margin-top:8px; font-weight:800;">
-                    현재 선택 칩: {bet_val:,} C
-                </div>
+            <div class="coin-pile-wrapper">
+                {cols_html}
+            </div>
+            <div style="text-align:center; color:#ffd700; font-size:0.95rem; font-weight:800; margin-top:-5px; margin-bottom:10px;">
+                현재 선택 칩: {bet_val:,} C
             </div>
 
             <div class="payout-card">
