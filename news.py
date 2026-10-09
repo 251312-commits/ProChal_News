@@ -1,22 +1,19 @@
 import streamlit as st
-import gspread
-from google.oauth2.service_account import Credentials
-from st_clickable_images import clickable_images
-from newspaper import Article
-import re
-from urllib.parse import urlparse
-from bs4 import BeautifulSoup
-import torch
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
-from streamlit_autorefresh import st_autorefresh
-import time
 import streamlit.components.v1 as components
-import random
 
-# -------
-from modules.news_ai import load_ai_model, bring_article, pick_3_lowest_count_news
-from modules.db_handler import init_gspread, init_news_sheet
-# -------
+# DB 및 AI 모듈
+from db_handler import init_gspread, init_news_sheet
+from news_ai import load_ai_model, bring_article, pick_3_lowest_count_news
+
+# UI 컴포넌트 및 BGM 모듈
+from bgm import init_seamless_bgm, stop_bgm
+from ui_components import change_page, inject_casino_theme
+
+# 각 페이지 함수 모듈
+from login import show_login_page
+from main import show_main_page
+from ranking import show_ranking
+from game1 import show_game_1
 
 ws = init_gspread()
 ws_news = init_news_sheet()
