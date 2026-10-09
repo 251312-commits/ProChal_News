@@ -1,6 +1,11 @@
-# ==========================================
-# [공통 UI] 4초 네온 화려한 슬롯머신
-# ==========================================
+import streamlit as st
+import streamlit.components.v1 as components
+from modules.news_ai import bring_article, pick_3_lowest_count_news
+from modules.db_handler import init_gspread, init_news_sheet
+
+ws = init_gspread()
+ws_news = init_news_sheet()
+
 def get_game_news_selection(game_id: str):
     news_key = f"selected_news_{game_id}"
     candidates_key = f"candidates_{game_id}"
