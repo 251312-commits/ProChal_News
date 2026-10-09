@@ -1,3 +1,4 @@
+import base64
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 from st_clickable_images import clickable_images
@@ -8,6 +9,12 @@ ws = init_gspread()
 
 # 정의된 함수: show_main_page
 
+@st.cache_data
+def load_local_image_as_base64(file_path: str) -> str:
+    with open(file_path, "rb") as f:
+        encoded = base64.b64encode(f.read()).decode()
+    return f"data:image/png;base64,{encoded}"
+    
 def show_main_page():
     st_autorefresh(interval=600000, limit=None, key="auto_refresh")
 
@@ -47,20 +54,24 @@ def show_main_page():
         """,
         unsafe_allow_html=True
     )
-    
-    img_urls = [
-        "https://github.com/user-attachments/assets/331b7b2e-c4f5-4087-9f6b-9e672afb9568", 
-        "https://github.com/user-attachments/assets/24bc9c42-e6c0-4f6f-a3a1-e1cce8fd66f3", 
-        "https://github.com/user-attachments/assets/caf0511f-54f9-4d1e-8d6d-318e6886f2b4", 
-        "https://github.com/user-attachments/assets/2893591d-30c2-485a-adcc-f8bd2ed94aa6", 
-        "https://github.com/user-attachments/assets/f8c3352c-adf5-4b8a-96da-974cc965c5d2", 
-        "https://picsum.photos/id/70/800/110", 
-        "https://picsum.photos/id/70/800/110", 
+
+    # assets 폴더의 로컬 이미지를 Base64 데이터 스트링으로 로드
+    local_img_paths = [
+        "assets/banner1.png",
+        "assets/banner2.png",
+        "assets/banner3.png",
+        "assets/banner4.png",
+        "assets/banner5.png",
+        "assets/banner6.png",
+        "assets/banner7.png",
     ]
     
+    # 캐싱된 Base64 이미지 리스트 생성
+    img_urls = [load_local_image_as_base64(path) for path in local_img_paths]
+
     clicked_menu = clickable_images(
         img_urls,
-        titles=["🏦 은행", "🏆 랭킹", "게임 1", "게임 2", "게임 3", "게임 4", "게임 5", "🛒 교환소"],
+        titles=["🏦 은행", "🏆 랭킹", "게임 1", "게임 2", "게임 3", "게임 4", "게임 5"],
         div_style={
             "display": "flex", 
             "flex-direction": "column", 
