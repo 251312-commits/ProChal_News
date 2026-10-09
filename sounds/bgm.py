@@ -1,7 +1,7 @@
+import streamlit.components.v1 as components
 
-# ==========================================
-# 🎵 BGM 시스템 (메인 진입 시 재생 & 끊김 방지)
-# ==========================================
+# 정의된 함수: init_seamless_bgm
+
 def init_seamless_bgm(intro_url: str, loop_url: str):
     components.html(
         f"""
