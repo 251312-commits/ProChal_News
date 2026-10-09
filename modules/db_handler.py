@@ -1,3 +1,4 @@
+import streamlit as st
 import gspread
 from google.oauth2.service_account import Credentials
 
@@ -26,6 +27,7 @@ def init_gspread():
 # ==========================================
 @st.cache_resource
 def init_news_sheet():
+    ws = init_gspread()  # 2. ws 객체를 먼저 가져오도록 수정
     doc = ws.spreadsheet
     try:
         return doc.worksheet("News")
