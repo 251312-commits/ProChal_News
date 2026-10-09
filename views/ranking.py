@@ -1,6 +1,11 @@
-# ==========================================
-# 🏆 네온 화려함 & 디폴트 애니메이션 랭킹 화면
-# ==========================================
+import streamlit as st
+from modules.db_handler import init_gspread
+from modules.ui_components import change_page
+
+ws = init_gspread()
+
+# 정의된 함수: show_ranking
+
 def show_ranking():
     users_data = ws.get_all_records()
     if not users_data:
