@@ -1,16 +1,4 @@
-import streamlit as st
-from modules.db_handler import init_gspread
-
-# DB 워크시트 객체 로드 (Users 탭)
-ws = init_gspread()
-
-def change_page(page_name: str):
-    """페이지 이동 핸들러"""
-    st.session_state.page = page_name
-    st.rerun()
-
 def show_login_page():
-    """로그인 및 회원가입(1단계: 학번 검증 -> 2단계: 인증/가입) 뷰"""
     _, col_main, _ = st.columns([1, 2.5, 1])
 
     with col_main:
@@ -26,9 +14,6 @@ def show_login_page():
                 unsafe_allow_html=True
             )
 
-            # --------------------------------------------------
-            # [1단계] 학번 입력 및 존재 여부 조회
-            # --------------------------------------------------
             if st.session_state.login_step == 1:
                 student_id = st.text_input("학번", max_chars=5, placeholder="학번 5자리 입력", key="input_sid")
                 
@@ -56,9 +41,6 @@ def show_login_page():
                     else:
                         st.error("학번은 5자리 숫자로 입력해주세요.")
 
-            # --------------------------------------------------
-            # [2단계 - 기존 유저] 비밀번호 입력 및 로그인
-            # --------------------------------------------------
             elif st.session_state.login_step == '2_exist':
                 st.info(f"현재 {st.session_state.temp_student_id}으로 로그인 중입니다.")
                 password = st.text_input("비밀번호", type="password", placeholder="비밀번호 입력", key="input_pw_login")
@@ -79,9 +61,6 @@ def show_login_page():
                         else:
                             st.error("비밀번호가 일치하지 않습니다.")
 
-            # --------------------------------------------------
-            # [2단계 - 신규 유저] 회원가입 폼 및 DB 등록
-            # --------------------------------------------------
             elif st.session_state.login_step == '2_new':
                 st.success(f"신규 가입 대상 학번: {st.session_state.temp_student_id}")
                 
@@ -118,7 +97,6 @@ def show_login_page():
                             initial_coins = 5000
                             users_data = ws.get_all_records()
 
-                            # 추천인 보상 처리
                             if referral.strip():
                                 clean_ref = referral.strip()
                                 ref_info = next((item for item in users_data if str(item.get('학번', '')).split('.')[0] == clean_ref), None)
@@ -129,7 +107,6 @@ def show_login_page():
                                     initial_coins += 1000
                                     st.toast("🎉 추천인 보상 코인이 지급되었습니다!")
 
-                            # 신규 회원 추가
                             new_row = [clean_id, final_username, initial_coins, 0, referral.strip(), password]
                             ws.append_row(new_row)
 
@@ -143,20 +120,5 @@ def show_login_page():
                             }
                             st.session_state.login_step = 1
                             change_page('main')
-
----
-
-### 💡 메인 파일(`news.py`)에서의 호출 방법 예시
-
-`news.py` 메인 라우터 구역에서 아래와 같이 임포트하여 사용하시면 됩니다[span_1](start_span)[span_1](end_span).
-
-```python
-from views.login_view import show_login_page
-from modules.ui_components import stop_bgm, inject_casino_theme
-
-# 글로벌 테마 적용
-inject_casino_theme()
-
-if st.session_state.page == 'login':
-    stop_bgm()
-    show_login_page()
+        
+        st.markdown('</div>', unsafe_allow_html=True)
