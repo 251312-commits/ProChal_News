@@ -1,3 +1,13 @@
+def change_page(page_name):
+    st.session_state.page = page_name
+    st.rerun()
+
+def show_placeholder_page(title_name):
+    st.title(title_name)
+    st.info("🎮 해당 콘텐츠는 현재 준비 중입니다.")
+    if st.button("⬅️ 메인으로 돌아가기"):
+        change_page('main')
+        
 def inject_casino_theme():
     if st.session_state.get('page') == 'login':
         st.markdown(
