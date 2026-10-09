@@ -11,14 +11,15 @@ ws = init_gspread()
 def show_main_page():
     st_autorefresh(interval=600000, limit=None, key="auto_refresh")
 
-    users_data = ws.get_all_records()
-    updated_info = next((item for item in users_data if str(item.get('학번', '')).strip().replace('.0', '') == st.session_state.current_user), None)
-    
-    if updated_info:
-        st.session_state.current_user_data = updated_info
+    # 세션에 유저 정보가 없을 때만 구글 시트에서 데이터를 새로 불러옵니다.
+    if not st.session_state.get('current_user_data'):
+        users_data = ws.get_all_records()
+        updated_info = next((item for item in users_data if str(item.get('학번', '')).strip().replace('.0', '') == st.session_state.current_user), None)
+        if updated_info:
+            st.session_state.current_user_data = updated_info
 
-    user = st.session_state.current_user_data
-    
+    user = st.session_state.get('current_user_data')
+
     if not user:
         change_page('login')
         return
