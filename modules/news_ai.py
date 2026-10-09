@@ -1,21 +1,28 @@
+import streamlit as st
+from newspaper import Article
 import re
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
-from newspaper import Article
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
-import streamlit as st
 
-UI_WORDS = {'광고', '본문', '전체재생', '동영상 고정', '동영상 고정 취소', '이미지 확대', '사진 확대', '기사본문'}
-
+# ==========================================
+# 1. 효율성 극대화: AI 모델 캐싱 (최초 1회만 로드)
+# ==========================================
 @st.cache_resource
 def load_ai_model():
-    """AI 모델을 지연 로딩(Lazy Loading) 및 캐싱합니다."""
     model_name = "BAAI/bge-reranker-v2-m3"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForSequenceClassification.from_pretrained(model_name)
     model.eval()
     return tokenizer, model
+
+tokenizer, model = load_ai_model()
+
+# ==========================================
+# 2. 제공해주신 기사 전처리 함수들
+# ==========================================
+UI_WORDS = {'광고', '본문', '전체재생', '동영상 고정', '동영상 고정 취소', '이미지 확대', '사진 확대', '기사본문'}
 
 def get_clean_title(article_obj, domain: str) -> str:
     title = article_obj.title.strip()
@@ -41,12 +48,10 @@ def get_clean_title(article_obj, domain: str) -> str:
 
 def is_ad_or_ui_line(line: str) -> bool:
     s = line.strip()
-    if not s or s in UI_WORDS or s in {'[광고]', '(광고)', 'AD', 'Advertisement'}:
-        return True
-    if re.match(r'^(광고|AD)\s*[:\-\|\[\(]', s) or s.endswith('(광고)'):
-        return True
-    if '광고' in s and len(s) <= 20 and not re.search(r'[다요함음]\s*[\.\!\?]?$', s):
-        return True
+    if not s: return True
+    if s in UI_WORDS or s in {'[광고]', '(광고)', 'AD', 'Advertisement'}: return True
+    if re.match(r'^(광고|AD)\s*[:\-\|\[\(]', s) or s.endswith('(광고)'): return True
+    if '광고' in s and len(s) <= 20 and not re.search(r'[다요함음]\s*[\.\!\?]?$', s): return True
     return False
 
 def remove_duplicate_and_ui_lines(text: str) -> str:
@@ -70,12 +75,11 @@ def bring_article(url: str):
     title = get_clean_title(article_obj, domain)
     clean_article = clean_common_text(article_obj.text)
     return title, clean_article
-
+    
 def summary(article):
     return article if article else "요약본 예시 문장입니다."
 
 def similarity_check(summary_text, title):
-    tokenizer, model = load_ai_model()
     inputs = tokenizer(summary_text, title, padding=True, truncation=True, return_tensors="pt", max_length=512)
     with torch.no_grad():
         outputs = model(**inputs)
