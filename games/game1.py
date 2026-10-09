@@ -1,4 +1,5 @@
 import streamlit as st
+from modules.news_ai import summary, similarity_check
 from modules.db_handler import init_gspread, init_news_sheet
 from games.common import get_game_news_selection
 
