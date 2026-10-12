@@ -317,6 +317,7 @@ def show_game_1():
                 st.rerun()
 
         return
+        
 
     # [2단계 & 3단계] 기사 선택
     title, article_text, url = get_game_news_selection("game_1")
