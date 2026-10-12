@@ -12,7 +12,7 @@ ws_news = init_news_sheet()
 def show_game_1():
     st.title("🎮 게임 1: 뉴스 유사도 예측 게임")
 
-    # [1단계] 베팅 금액 선택 (네온 UI, 코인 더미, 실시간 랭킹 변동 시뮬레이션)
+    # [1단계] 베팅 금액 선택 (네온 UI, 올인 펄스 버튼, 축제 이펙트 적용)
     if "game_1_bet" not in st.session_state:
         current_coins = int(st.session_state.current_user_data.get('코인', 0))
         current_sid = str(st.session_state.get('current_user', '')).strip().replace('.0', '')
@@ -25,7 +25,7 @@ def show_game_1():
                 change_page('main')
             return
 
-        # [초고속 연산] 슬라이더 이동 시 반응속도를 위해 유저 리스트 메모리 캐싱
+        # [초고속 연산] 유저 랭킹 캐싱
         if "ranking_users_cache" not in st.session_state:
             try:
                 st.session_state.ranking_users_cache = ws.get_all_records()
@@ -34,7 +34,11 @@ def show_game_1():
 
         users_data = st.session_state.ranking_users_cache
 
-        # CSS 스타일 정의
+        # 기본 슬라이더 초기값 세팅 (기존 key값 지원)
+        if "bet_slider_key" not in st.session_state:
+            st.session_state["bet_slider_key"] = min(5000, current_coins)
+
+        # 베팅 화면 네온 & 올인 펄스 & 축제 CSS 스타일링
         st.markdown(
             """
             <style>
@@ -141,6 +145,50 @@ def show_game_1():
                 margin-top: 4px;
                 border-left: 3px solid #ff00ff;
             }
+
+            /* 올인 버튼 펄스 & 무지개 네온 애니메이션 */
+            div[data-testid="column"]:first-child button {
+                background: linear-gradient(45deg, #ff0055, #ff00ff, #ffcc00, #ff0055) !important;
+                background-size: 300% 300% !important;
+                animation: allInPulse 1.8s ease-in-out infinite !important;
+                border: 2px solid #ffff00 !important;
+                color: #ffffff !important;
+                font-weight: 900 !important;
+                font-size: 1.05rem !important;
+                text-shadow: 0 0 8px #ff0000, 0 0 12px #ffff00 !important;
+                box-shadow: 0 0 20px rgba(255, 0, 85, 0.8), 0 0 30px rgba(255, 255, 0, 0.6) !important;
+            }
+            @keyframes allInPulse {
+                0% { background-position: 0% 50%; transform: scale(1); box-shadow: 0 0 15px #ff0055; }
+                50% { background-position: 100% 50%; transform: scale(1.04); box-shadow: 0 0 30px #ffcc00, 0 0 45px #ff0055; }
+                100% { background-position: 0% 50%; transform: scale(1); box-shadow: 0 0 15px #ff0055; }
+            }
+
+            /* 올인 달성 시 축제 헤더 배너 스타일 */
+            .allin-festive-banner {
+                background: linear-gradient(90deg, #ff0055, #ffcc00, #ff00ff, #00ffcc, #ff0055);
+                background-size: 400% 400%;
+                animation: rainbowGlow 2s linear infinite, festiveShake 0.5s ease-in-out infinite alternate;
+                border: 3px solid #ffffff;
+                border-radius: 16px;
+                padding: 12px;
+                text-align: center;
+                color: #ffffff;
+                font-weight: 900;
+                font-size: 1.15rem;
+                text-shadow: 0 0 10px #000, 0 0 20px #ff0055;
+                box-shadow: 0 0 30px rgba(255, 215, 0, 0.9);
+                margin-bottom: 15px;
+            }
+            @keyframes rainbowGlow {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+            }
+            @keyframes festiveShake {
+                0% { transform: translateY(0px) rotate(-0.5deg); }
+                100% { transform: translateY(-3px) rotate(0.5deg); }
+            }
             </style>
             """,
             unsafe_allow_html=True
@@ -159,14 +207,37 @@ def show_game_1():
             unsafe_allow_html=True
         )
 
-        # 슬라이더로 베팅 금액 선택 (단위 50 C)
+        # 슬라이더 (key="bet_slider_key" 부여로 외부에서 제어 가능)
         bet_val = st.slider(
             "💰 베팅할 금액을 선택하세요",
             min_value=min_bet,
             max_value=current_coins,
             step=50,
-            value=min(5000, current_coins)
+            key="bet_slider_key"
         )
+
+        # 🔥 [축제 이펙트] 슬라이더를 당겨 전재산(올인) 베팅에 도달했을 경우
+        is_all_in = (bet_val == current_coins)
+        if is_all_in:
+            st.markdown(
+                """
+                <div class="allin-festive-banner">
+                    🚨 🔥 ALL-IN FESTIVAL! 인생역전 한방에 가즈아! 🔥 🚨
+                </div>
+                <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+                <script>
+                    if (typeof confetti === 'function') {
+                        confetti({
+                            particleCount: 80,
+                            spread: 100,
+                            origin: { y: 0.6 },
+                            colors: ['#ffd700', '#ff00ff', '#00ffcc', '#ffffff', '#ff0055']
+                        });
+                    }
+                </script>
+                """,
+                unsafe_allow_html=True
+            )
 
         # 동적 골드 동전 더미 비주얼 산출
         bet_ratio = (bet_val - min_bet) / max(1, (current_coins - min_bet)) if current_coins > min_bet else 1.0
@@ -189,7 +260,7 @@ def show_game_1():
         max_reward = bet_val * 100
         simulated_total_coins = current_coins + max_reward
 
-        # ==================== [실시간 랭킹 연산 시작 (0.001초 미만 소요)] ====================
+        # 실시간 랭킹 연산
         processed_users = []
         for u in users_data:
             try:
@@ -202,7 +273,6 @@ def show_game_1():
                 'coins': c_val
             })
 
-        # 1) 현재 순위 산출
         curr_sorted = sorted(processed_users, key=lambda x: x['coins'], reverse=True)
         curr_rank = None
         for idx, u in enumerate(curr_sorted):
@@ -212,7 +282,6 @@ def show_game_1():
         if not curr_rank:
             curr_rank = len(curr_sorted) + 1
 
-        # 2) 승리 시 예상 랭킹 산출
         sim_list = []
         for u in processed_users:
             is_me = (u['id'] == current_sid or u['nickname'] == st.session_state.current_user_data.get('아이디', ''))
@@ -233,10 +302,7 @@ def show_game_1():
                 sim_me_idx = idx
                 break
 
-        # 순위 상승 수 계산
         rank_climb = curr_rank - sim_rank if curr_rank else 0
-
-        # 바로 위 / 바로 아래 유저 정보 및 차이 계산
         above_user = sim_sorted[sim_me_idx - 1] if sim_me_idx > 0 else None
         below_user = sim_sorted[sim_me_idx + 1] if sim_me_idx < len(sim_sorted) - 1 else None
 
@@ -251,7 +317,6 @@ def show_game_1():
             below_str = f"🔻 <b>아래:</b> {below_user['nickname']} <span style='color:#00ffcc;'>({diff_below:,} C 제침)</span>"
         else:
             below_str = "🛡️ <b>최하위 라이벌 없음</b>"
-        # ==================== [실시간 랭킹 연산 끝] ====================
 
         # 코인 더미 시각화 출력
         st.markdown(
@@ -266,7 +331,7 @@ def show_game_1():
             unsafe_allow_html=True
         )
 
-        # 2컬럼 레이아웃: [당첨금 카드] | [랭킹 상승 시뮬레이션 카드]
+        # 당첨금 & 랭킹 카드
         col_card1, col_card2 = st.columns(2)
 
         with col_card1:
@@ -307,8 +372,9 @@ def show_game_1():
         # 하단 버튼부 (올인 버튼 & 확정 버튼)
         col_b1, col_b2 = st.columns([1, 2])
         with col_b1:
+            # 💥 ALL-IN 버튼 클릭 시: 다음 화면으로 안 넘어가고 슬라이더를 최댓값(전재산)으로 이동
             if st.button("💥 ALL-IN (올인)", use_container_width=True):
-                st.session_state.game_1_bet = current_coins
+                st.session_state["bet_slider_key"] = current_coins
                 st.rerun()
 
         with col_b2:
@@ -317,7 +383,6 @@ def show_game_1():
                 st.rerun()
 
         return
-        
 
     # [2단계 & 3단계] 기사 선택
     title, article_text, url = get_game_news_selection("game_1")
