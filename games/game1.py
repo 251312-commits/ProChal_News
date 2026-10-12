@@ -12,7 +12,7 @@ ws_news = init_news_sheet()
 def show_game_1():
     st.title("🎮 게임 1: 뉴스 유사도 예측 게임")
 
-    # [1단계] 베팅 금액 선택 (네온 UI, 올인 펄스 버튼, 축제 이펙트 적용)
+    # [1단계] 베팅 금액 선택 (네온 UI, 올인 심장소리 & 글로우 효과, 피라미드 코인 탑)
     if "game_1_bet" not in st.session_state:
         current_coins = int(st.session_state.current_user_data.get('코인', 0))
         current_sid = str(st.session_state.get('current_user', '')).strip().replace('.0', '')
@@ -34,11 +34,12 @@ def show_game_1():
 
         users_data = st.session_state.ranking_users_cache
 
-        # 기본 슬라이더 초기값 세팅 (기존 key값 지원)
+        # 처음 창에 들어왔을 때 기본 베팅 금액 = 보유 코인의 절반 (50 C 단위 내림)
+        default_bet = max(min_bet, ((current_coins // 2) // 50) * 50)
         if "bet_slider_key" not in st.session_state:
-            st.session_state["bet_slider_key"] = min(5000, current_coins)
+            st.session_state["bet_slider_key"] = default_bet
 
-        # 베팅 화면 네온 & 올인 펄스 & 축제 CSS 스타일링
+        # 베팅 화면 네온 & 올인 펄스 & 애니메이션 CSS
         st.markdown(
             """
             <style>
@@ -50,6 +51,7 @@ def show_game_1():
                 text-align: center;
                 box-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
                 margin-bottom: 15px;
+                transition: all 0.3s ease;
                 animation: pulseGlow 3s infinite alternate;
             }
             @keyframes pulseGlow {
@@ -68,14 +70,15 @@ def show_game_1():
                 display: flex;
                 justify-content: center;
                 align-items: flex-end;
-                gap: 14px;
-                min-height: 140px;
-                padding: 20px 10px 15px 10px;
+                gap: 12px;
+                min-height: 150px;
+                padding: 22px 10px 15px 10px;
                 background: radial-gradient(ellipse at bottom, rgba(255, 215, 0, 0.25) 0%, rgba(10, 0, 20, 0.85) 75%);
                 border-radius: 16px;
                 border: 1.5px dashed rgba(255, 215, 0, 0.5);
                 box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.9);
                 margin: 15px 0;
+                transition: all 0.3s ease;
             }
             .coin-stack-col {
                 display: flex;
@@ -112,6 +115,7 @@ def show_game_1():
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
+                transition: all 0.3s ease;
             }
             .payout-amount {
                 font-size: 1.6rem;
@@ -129,6 +133,7 @@ def show_game_1():
                 display: flex;
                 flex-direction: column;
                 justify-content: space-between;
+                transition: all 0.3s ease;
             }
             .rank-up-badge {
                 color: #00ffcc;
@@ -146,7 +151,7 @@ def show_game_1():
                 border-left: 3px solid #ff00ff;
             }
 
-            /* 올인 버튼 펄스 & 무지개 네온 애니메이션 */
+            /* 올인 버튼 펄스 & 무지개 네온 */
             div[data-testid="column"]:first-child button {
                 background: linear-gradient(45deg, #ff0055, #ff00ff, #ffcc00, #ff0055) !important;
                 background-size: 300% 300% !important;
@@ -164,40 +169,110 @@ def show_game_1():
                 100% { background-position: 0% 50%; transform: scale(1); box-shadow: 0 0 15px #ff0055; }
             }
 
-            /* 올인 달성 시 축제 헤더 배너 스타일 */
-            .allin-festive-banner {
-                background: linear-gradient(90deg, #ff0055, #ffcc00, #ff00ff, #00ffcc, #ff0055);
-                background-size: 400% 400%;
-                animation: rainbowGlow 2s linear infinite, festiveShake 0.5s ease-in-out infinite alternate;
-                border: 3px solid #ffffff;
-                border-radius: 16px;
-                padding: 12px;
-                text-align: center;
-                color: #ffffff;
-                font-weight: 900;
-                font-size: 1.15rem;
-                text-shadow: 0 0 10px #000, 0 0 20px #ff0055;
-                box-shadow: 0 0 30px rgba(255, 215, 0, 0.9);
-                margin-bottom: 15px;
+            /* 🔥 ALL-IN 상태일 때 넓어지는 글로우 & 다이내믹 빠른 색상 전환 */
+            .allin-rapid-glow {
+                animation: rapidGlowCycle 0.5s infinite alternate !important;
             }
-            @keyframes rainbowGlow {
-                0% { background-position: 0% 50%; }
-                50% { background-position: 100% 50%; }
-                100% { background-position: 0% 50%; }
+            @keyframes rapidGlowCycle {
+                0% {
+                    box-shadow: 0 0 35px #ff0055, 0 0 60px rgba(255, 0, 85, 0.85);
+                    border-color: #ff0055 !important;
+                }
+                50% {
+                    box-shadow: 0 0 50px #ffcc00, 0 0 80px rgba(255, 204, 0, 0.95);
+                    border-color: #ffcc00 !important;
+                }
+                100% {
+                    box-shadow: 0 0 40px #00ffcc, 0 0 70px rgba(0, 255, 204, 0.85);
+                    border-color: #00ffcc !important;
+                }
             }
-            @keyframes festiveShake {
-                0% { transform: translateY(0px) rotate(-0.5deg); }
-                100% { transform: translateY(-3px) rotate(0.5deg); }
+
+            /* 코인 창 심장박동(Heartbeat) 펄스 연출 */
+            .allin-coin-pulse {
+                animation: heartbeatWrapper 0.85s infinite ease-in-out !important;
+                border-color: #ff0055 !important;
+            }
+            @keyframes heartbeatWrapper {
+                0% { transform: scale(1); box-shadow: inset 0 0 30px rgba(255,0,85,0.7), 0 0 25px #ff0055; }
+                15% { transform: scale(1.03); box-shadow: inset 0 0 45px rgba(255,0,85,0.9), 0 0 40px #ff00ff; }
+                30% { transform: scale(1); box-shadow: inset 0 0 30px rgba(255,0,85,0.7), 0 0 25px #ff0055; }
+                45% { transform: scale(1.04); box-shadow: inset 0 0 50px rgba(255,215,0,1), 0 0 45px #ffcc00; }
+                70% { transform: scale(1); box-shadow: inset 0 0 30px rgba(255,0,85,0.7), 0 0 25px #ff0055; }
             }
             </style>
             """,
             unsafe_allow_html=True
         )
 
+        # 슬라이더 (기본값: 전재산의 반)
+        bet_val = st.slider(
+            "💰 베팅할 금액을 선택하세요",
+            min_value=min_bet,
+            max_value=current_coins,
+            step=50,
+            key="bet_slider_key"
+        )
+
+        is_all_in = (bet_val == current_coins)
+        card_glow_class = "allin-rapid-glow" if is_all_in else ""
+        coin_pulse_class = "allin-coin-pulse" if is_all_in else ""
+
+        # 🔥 ALL-IN 달성 시 배경 심장소리 효과음(Web Audio API) 재생
+        if is_all_in:
+            st.markdown(
+                """
+                <script>
+                (function() {
+                    if (window.heartbeatAudioCtx) return;
+                    try {
+                        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                        window.heartbeatAudioCtx = ctx;
+                        
+                        function playBeat() {
+                            if (ctx.state === 'suspended') ctx.resume();
+                            const now = ctx.currentTime;
+                            
+                            // 첫 번째 쿵 (Thump 1)
+                            const osc1 = ctx.createOscillator();
+                            const gain1 = ctx.createGain();
+                            osc1.type = 'sine';
+                            osc1.frequency.setValueAtTime(110, now);
+                            osc1.frequency.exponentialRampToValueAtTime(25, now + 0.16);
+                            gain1.gain.setValueAtTime(0.85, now);
+                            gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+                            osc1.connect(gain1);
+                            gain1.connect(ctx.destination);
+                            osc1.start(now);
+                            osc1.stop(now + 0.16);
+
+                            // 두 번째 쿵 (Thump 2)
+                            const osc2 = ctx.createOscillator();
+                            const gain2 = ctx.createGain();
+                            osc2.type = 'sine';
+                            osc2.frequency.setValueAtTime(85, now + 0.22);
+                            osc2.frequency.exponentialRampToValueAtTime(20, now + 0.40);
+                            gain2.gain.setValueAtTime(0.65, now + 0.22);
+                            gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.40);
+                            osc2.connect(gain2);
+                            gain2.connect(ctx.destination);
+                            osc2.start(now + 0.22);
+                            osc2.stop(now + 0.40);
+                        }
+                        
+                        window.heartbeatInterval = setInterval(playBeat, 850);
+                        playBeat();
+                    } catch(e) {}
+                })();
+                </script>
+                """,
+                unsafe_allow_html=True
+            )
+
         # 상단 헤더 카드
         st.markdown(
             f"""
-            <div class="bet-card-container">
+            <div class="bet-card-container {card_glow_class}">
                 <div class="bet-header-title">🎰 STEP 1: BETTING PLACE</div>
                 <div style="font-size: 1rem; color: #ffffff; font-weight: bold;">
                     현재 보유 코인: <span style="color:#ffd700;">🪙 {current_coins:,} C</span>
@@ -207,54 +282,58 @@ def show_game_1():
             unsafe_allow_html=True
         )
 
-        # 슬라이더 (key="bet_slider_key" 부여로 외부에서 제어 가능)
-        bet_val = st.slider(
-            "💰 베팅할 금액을 선택하세요",
-            min_value=min_bet,
-            max_value=current_coins,
-            step=50,
-            key="bet_slider_key"
-        )
-
-        # 🔥 [축제 이펙트] 슬라이더를 당겨 전재산(올인) 베팅에 도달했을 경우
-        is_all_in = (bet_val == current_coins)
-        if is_all_in:
-            st.markdown(
-                """
-                <div class="allin-festive-banner">
-                    🚨 🔥 ALL-IN FESTIVAL! 인생역전 한방에 가즈아! 🔥 🚨
-                </div>
-                <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-                <script>
-                    if (typeof confetti === 'function') {
-                        confetti({
-                            particleCount: 80,
-                            spread: 100,
-                            origin: { y: 0.6 },
-                            colors: ['#ffd700', '#ff00ff', '#00ffcc', '#ffffff', '#ff0055']
-                        });
-                    }
-                </script>
-                """,
-                unsafe_allow_html=True
-            )
-
-        # 동적 골드 동전 더미 비주얼 산출
+        # 동적 골드 동전 피라미드 (중앙이 제일 높고 양 끝으로 갈수록 낮아지는 산 الشكل 탑)
         bet_ratio = (bet_val - min_bet) / max(1, (current_coins - min_bet)) if current_coins > min_bet else 1.0
-        total_coins = int(3 + bet_ratio * 37)
+        total_coins = int(4 + bet_ratio * 36)
         num_cols = min(5, max(1, (total_coins + 7) // 8))
-        coins_per_col = total_coins // num_cols
-        remainder = total_coins % num_cols
+
+        # 기둥(Column) 개수에 맞춘 산 형태 가중치 배열
+        if num_cols == 1:
+            weights = [1.0]
+        elif num_cols == 2:
+            weights = [1.0, 1.0]
+        elif num_cols == 3:
+            weights = [1.0, 2.2, 1.0]
+        elif num_cols == 4:
+            weights = [1.0, 2.2, 2.2, 1.0]
+        else: # 5 cols
+            weights = [1.0, 2.0, 3.5, 2.0, 1.0]
+
+        sum_w = sum(weights)
+        raw_heights = [int(round(total_coins * (w / sum_w))) for w in weights]
+        diff = total_coins - sum(raw_heights)
+        
+        # 잔여 동전을 중앙 중심부터 분배하여 대칭 유지
+        center_idx = num_cols // 2
+        indices_order = sorted(range(num_cols), key=lambda x: abs(x - center_idx))
+        for i in range(abs(diff)):
+            idx = indices_order[i % num_cols]
+            if diff > 0:
+                raw_heights[idx] += 1
+            elif diff < 0 and raw_heights[idx] > 1:
+                raw_heights[idx] -= 1
 
         cols_html = ""
-        for c in range(num_cols):
-            col_height = coins_per_col + (1 if c < remainder else 0)
+        for c, col_h in enumerate(raw_heights):
             coins_in_col_html = ""
-            for h in range(col_height):
-                is_top = (h == col_height - 1)
+            for h in range(col_h):
+                is_top = (h == col_h - 1)
                 coin_class = "gold-coin-item top" if is_top else "gold-coin-item"
                 coins_in_col_html += f'<div class="{coin_class}"></div>'
             cols_html += f'<div class="coin-stack-col">{coins_in_col_html}</div>'
+
+        # 코인 탑 출력 (올인 시 펄스 연출)
+        st.markdown(
+            f"""
+            <div class="coin-pile-wrapper {coin_pulse_class}">
+                {cols_html}
+            </div>
+            <div style="text-align:center; color:#ffd700; font-size:0.95rem; font-weight:800; margin-top:-5px; margin-bottom:15px;">
+                현재 선택 칩: {bet_val:,} C {"(🚨 ALL-IN)" if is_all_in else ""}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
         # 정답(오차 0점) 달성 시 획득 최고 금액 (100배)
         max_reward = bet_val * 100
@@ -318,26 +397,13 @@ def show_game_1():
         else:
             below_str = "🛡️ <b>최하위 라이벌 없음</b>"
 
-        # 코인 더미 시각화 출력
-        st.markdown(
-            f"""
-            <div class="coin-pile-wrapper">
-                {cols_html}
-            </div>
-            <div style="text-align:center; color:#ffd700; font-size:0.95rem; font-weight:800; margin-top:-5px; margin-bottom:15px;">
-                현재 선택 칩: {bet_val:,} C
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-        # 당첨금 & 랭킹 카드
+        # 당첨금 & 랭킹 카드 (올인 시 넓은 글로우 + 빠른 색상전환)
         col_card1, col_card2 = st.columns(2)
 
         with col_card1:
             st.markdown(
                 f"""
-                <div class="payout-card">
+                <div class="payout-card {card_glow_class}">
                     <div style="font-size:0.8rem; color:#ffffff; font-weight:bold;">✨ 정답(오차 0점) 적중 시</div>
                     <div class="payout-amount">+{max_reward:,} C</div>
                     <div style="font-size:0.75rem; color:#ffd700; margin-top:4px;">(최대 100배 당첨)</div>
@@ -350,7 +416,7 @@ def show_game_1():
             rank_climb_text = f"▲ {rank_climb}등 상승!" if rank_climb > 0 else "순위 유지"
             st.markdown(
                 f"""
-                <div class="rank-sim-card">
+                <div class="rank-sim-card {card_glow_class}">
                     <div>
                         <div style="font-size:0.78rem; color:#aaa; font-weight:bold;">🏆 승리 시 예상 랭킹</div>
                         <div style="font-size:1.1rem; font-weight:900; color:#fff;">
@@ -372,7 +438,6 @@ def show_game_1():
         # 하단 버튼부 (올인 버튼 & 확정 버튼)
         col_b1, col_b2 = st.columns([1, 2])
         with col_b1:
-            # 💥 ALL-IN 버튼 클릭 시: 다음 화면으로 안 넘어가고 슬라이더를 최댓값(전재산)으로 이동
             if st.button("💥 ALL-IN (올인)", use_container_width=True):
                 st.session_state["bet_slider_key"] = current_coins
                 st.rerun()
@@ -383,6 +448,7 @@ def show_game_1():
                 st.rerun()
 
         return
+
 
     # [2단계 & 3단계] 기사 선택
     title, article_text, url = get_game_news_selection("game_1")
