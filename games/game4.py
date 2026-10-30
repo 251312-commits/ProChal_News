@@ -1,13 +1,10 @@
+import streamlit as st
+import streamlit.components.v1 as components
+
 # 구간 맞히기 (중) 확률: ⅓ (3배)
 
-import streamlit as st
-from modules.ui_components import show_placeholder_page
-
-# 정의된 함수: show_game4
-
-def show_game_4(): show_placeholder_page("게임 4")
-
-
+def show_game_4():
+    html_code = """
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -337,4 +334,5 @@ updateBalance();
 </script>
 </body>
 </html>
-
+"""
+    components.html(html_code, height=900, scrolling=True)
