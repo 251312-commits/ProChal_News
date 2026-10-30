@@ -78,6 +78,7 @@ def bring_article(url: str):
     clean_article = clean_common_text(article_obj.text)
     return title, clean_article
     
+def summary(article):
     return article if article else "요약본 예시 문장입니다."
 
 def similarity_check(summary_text, title):
