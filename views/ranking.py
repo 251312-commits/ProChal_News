@@ -7,6 +7,39 @@ ws = init_gspread()
 # 정의된 함수: show_ranking
 
 def show_ranking():
+    users_data = ws.get_all_records()
+    if not users_data:
+        st.warning("등록된 유저 데이터가 없습니다.")
+        if st.button("⬅️ 메인으로 돌아가기"): change_page('main')
+        return
+
+    processed_users = []
+    for u in users_data:
+        try:
+            coin_val = int(u.get('코인', 0))
+        except:
+            coin_val = 0
+        processed_users.append({
+            'id': str(u.get('학번', '')).strip().replace('.0', ''),
+            'nickname': str(u.get('아이디', '익명')).strip(),
+            'coins': coin_val
+        })
+    
+    sorted_users = sorted(processed_users, key=lambda x: x['coins'], reverse=True)
+    for idx, u in enumerate(sorted_users):
+        u['rank'] = idx + 1
+
+    current_sid = st.session_state.get('current_user', '')
+    my_info = next((u for u in sorted_users if u['id'] == current_sid), None)
+    
+    if not my_info and st.session_state.get('current_user_data'):
+        my_nick = st.session_state.current_user_data.get('아이디', '')
+        my_info = next((u for u in sorted_users if u['nickname'] == my_nick), None)
+
+    my_rank = my_info['rank'] if my_info else 0
+    my_nickname = my_info['nickname'] if my_info else (st.session_state.current_user_data.get('아이디', '나') if st.session_state.get('current_user_data') else '나')
+    my_coins = my_info['coins'] if my_info else 0
+
     st.markdown(
         """
         <style>
@@ -297,36 +330,5 @@ def show_ranking():
 
     st.markdown(full_ranking_html, unsafe_allow_html=True)
 
-
-    users_data = ws.get_all_records()
-    if not users_data:
-        st.warning("등록된 유저 데이터가 없습니다.")
-        if st.button("⬅️ 메인으로 돌아가기"): change_page('main')
-        return
-
-    processed_users = []
-    for u in users_data:
-        try:
-            coin_val = int(u.get('코인', 0))
-        except:
-            coin_val = 0
-        processed_users.append({
-            'id': str(u.get('학번', '')).strip().replace('.0', ''),
-            'nickname': str(u.get('아이디', '익명')).strip(),
-            'coins': coin_val
-        })
-    
-    sorted_users = sorted(processed_users, key=lambda x: x['coins'], reverse=True)
-    for idx, u in enumerate(sorted_users):
-        u['rank'] = idx + 1
-
-    current_sid = st.session_state.get('current_user', '')
-    my_info = next((u for u in sorted_users if u['id'] == current_sid), None)
-    
-    if not my_info and st.session_state.get('current_user_data'):
-        my_nick = st.session_state.current_user_data.get('아이디', '')
-        my_info = next((u for u in sorted_users if u['nickname'] == my_nick), None)
-
-    my_rank = my_info['rank'] if my_info else 0
-    my_nickname = my_info['nickname'] if my_info else (st.session_state.current_user_data.get('아이디', '나') if st.session_state.get('current_user_data') else '나')
-    my_coins = my_info['coins'] if my_info else 0
+    if st.button("⬅️ 메인으로 돌아가기", use_container_width=True):
+        change_page('main')
