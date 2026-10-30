@@ -242,6 +242,7 @@ def show_game_3():
     )
 
 
+
 # ======================================
 # STEP 4. AI 유사도 분석
 # ======================================
@@ -262,7 +263,7 @@ if "game_3_result" not in st.session_state:
 
                 try:
 
-                    # 1. 입력한 뉴스 본문 요약
+                    # 입력한 뉴스 본문 요약
                     summary_text = asyncio.run(
                         summary(news_content.strip())
                     )
@@ -270,31 +271,30 @@ if "game_3_result" not in st.session_state:
                     if not summary_text:
                         raise ValueError("뉴스 요약 결과가 비어 있습니다.")
 
-                    # 2. 기존 유사도 분석 함수 연결
-                    actual_score = similarity_check(
-                        summary_text,
-                        news_title.strip()
+                    # 입력한 뉴스 제목과 요약문 유사도 비교
+                    actual_score = float(
+                        similarity_check(
+                            summary_text,
+                            news_title.strip()
+                        )
                     )
-
-                    actual_score = float(actual_score)
 
                     if not math.isfinite(actual_score) or not 0 <= actual_score <= 100:
                         raise ValueError("유사도 점수가 올바르지 않습니다.")
 
-                    # 3. 정수 부분 홀짝 판정
+                    # 정수 부분만 사용
                     integer_score = int(actual_score)
 
-                    ai_result = (
-                        "짝" if integer_score % 2 == 0 else "홀"
-                    )
+                    # 홀짝 판정
+                    ai_result = "짝" if integer_score % 2 == 0 else "홀"
 
                     user_choice = st.session_state.game_3_choice
                     is_win = user_choice == ai_result
 
-                    # 4. 코인 정산
+                    # 코인 정산
                     reward = bet_coin if is_win else -(bet_coin // 2)
 
-                    # 5. 최신 사용자 정보 확인
+                    # 최신 사용자 정보 확인
                     users_data = ws.get_all_records()
 
                     user_row_idx = None
@@ -320,14 +320,14 @@ if "game_3_result" not in st.session_state:
                     new_balance = current_balance + reward
                     new_streak = current_streak + 1 if is_win else 0
 
-                    # 6. Google Sheets 업데이트
+                    # Google Sheets 업데이트
                     ws.update_cell(user_row_idx, 3, new_balance)
                     ws.update_cell(user_row_idx, 4, new_streak)
 
                     st.session_state.current_user_data["코인"] = new_balance
                     st.session_state.current_user_data["연승"] = new_streak
 
-                    # 7. 결과 저장
+                    # 결과 저장
                     st.session_state.game_3_result = {
                         "actual_score": actual_score,
                         "integer_score": integer_score,
