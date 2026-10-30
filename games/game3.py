@@ -243,6 +243,7 @@ def show_game_3():
 
     
 
+
 # ======================================
 # STEP 4. AI 유사도 분석
 # ======================================
@@ -266,7 +267,7 @@ if "game_3_result" not in st.session_state:
 
                 try:
 
-                    # 1. 뉴스 본문 요약
+                    # 1. 입력한 뉴스 본문 요약
                     try:
                         asyncio.get_running_loop()
 
@@ -283,7 +284,7 @@ if "game_3_result" not in st.session_state:
                     if not summary_text:
                         raise ValueError("뉴스 요약 결과가 비어 있습니다.")
 
-                    # 2. 기존 유사도 함수 연결
+                    # 2. 기존 AI 유사도 함수 연결
                     actual_score = similarity_check(
                         summary_text,
                         news_title.strip()
@@ -328,7 +329,7 @@ if "game_3_result" not in st.session_state:
                             break
 
                     if user_info is None:
-                        raise ValueError("사용자 정보를 찾을 수 없습니다.")
+                        raise ValueError("사용자 정보를 다시 찾을 수 없습니다.")
 
                     current_balance = int(user_info.get("코인", 0))
                     current_streak = int(user_info.get("연승", 0))
@@ -366,6 +367,7 @@ if "game_3_result" not in st.session_state:
 
                 except Exception as e:
                     st.error(f"게임 진행 중 오류가 발생했습니다: {e}")
+
 
                 # ==================================
                 # STEP 5. 코인 정산
