@@ -54,5 +54,15 @@ else:
         show_main_page()
     elif st.session_state.page == 'ranking':
         show_ranking()
+    elif st.session_state.page == 'bank':
+        show_bank()
     elif st.session_state.page == 'game_1':
         show_game_1()
+    elif st.session_state.page == 'game_2':
+        show_game_2()
+    elif st.session_state.page == 'game_3':
+        show_game_3()
+    elif st.session_state.page == 'game_4':
+        show_game_4()
+    elif st.session_state.page == 'game_5':
+        show_game_5()
