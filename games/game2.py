@@ -9,7 +9,7 @@ ws_news = init_news_sheet()
 
 # 정의된 함수: show_game_1
 
-def show_game_1():
+def show_game_2():
     st.title("🎮 게임 1: 뉴스 유사도 예측 게임")
 
     # [1단계] 베팅 금액 선택 (상금 카드 동시 펄스, 올인 멀티네온 글로우 & 심장소리 볼륨 증폭)
