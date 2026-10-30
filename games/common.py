@@ -1,7 +1,8 @@
 import streamlit as st
-import streamlit.components.v1 as components, change_page
+import streamlit.components.v1 as components
 from modules.news_ai import bring_article, pick_3_lowest_count_news
 from modules.db_handler import init_news_sheet
+from modules.ui_components import change_page
 
 ws_news = init_news_sheet()
 
