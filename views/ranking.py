@@ -1,4 +1,5 @@
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh  # 1. 모듈 import 추가
 from modules.db_handler import init_gspread
 from modules.ui_components import change_page
 
@@ -6,8 +7,6 @@ from modules.ui_components import change_page
 def fetch_ranking_data():
     ws = init_gspread()
     return ws.get_all_records()
-
-# 정의된 함수: show_ranking
 
 def show_ranking():
     st.markdown(
@@ -85,7 +84,6 @@ def show_ranking():
             width: 100%;
         }
         
-        /* 공통 현수막 스타일 (클릭 호버 확대 제거) */
         .banner-box {
             flex: 1;
             min-width: 0;
@@ -100,7 +98,6 @@ def show_ranking():
             justify-content: center;
         }
 
-        /* 디폴트 커졌다 작아지는 애니메이션 적용 */
         .banner-gold {
             background: linear-gradient(180deg, #ffd700 0%, #b8860b 60%, #5c4000 100%);
             border: 2.5px solid #fffb00;
@@ -248,7 +245,8 @@ def show_ranking():
     st.title("🏆 실시간 랭킹 전광판")
     st_autorefresh(interval=10000, limit=None, key="ranking_autorefresh")
 
-    users_data = ws.get_all_records()
+    # 2. ws.get_all_records() 대신 미리 정의된 fetch_ranking_data() 호출로 수정
+    users_data = fetch_ranking_data()
     if not users_data:
         st.warning("등록된 유저 데이터가 없습니다.")
         if st.button("⬅️ 메인으로 돌아가기"): change_page('main')
