@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from news_summarizer import summarize_news
 
 # ==========================================
 # 1. 효율성 극대화: AI 모델 캐싱 (최초 1회만 로드)
@@ -78,7 +79,13 @@ def bring_article(url: str):
     return title, clean_article
     
 def summary(article):
-    return article if article else "요약본 예시 문장입니다."
+    try:
+        summary = await summarize_news(article)
+        return summary
+
+    except Exception as e:
+        print(f"뉴스 이벤트 실행 실패: {e}")
+        return None
 
 def similarity_check(summary_text, title):
     inputs = tokenizer(summary_text, title, padding=True, truncation=True, return_tensors="pt", max_length=512)
