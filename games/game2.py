@@ -508,5 +508,3 @@ def show_game_2():
         if st.button("⬅️ 메인으로 돌아가기", use_container_width=True):
             reset_game_2_state()
             change_page('main')
-휴머노이드의 개발과 공장에의 투입에 관
-2. 새롭게 배운 과학 지식
