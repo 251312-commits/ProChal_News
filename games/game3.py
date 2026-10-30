@@ -241,52 +241,154 @@ def show_game_3():
         "※ 뉴스 제목과 본문을 모두 입력해야 분석할 수 있습니다."
     )
 
-    # ======================================
-    # STEP 4. AI 유사도 분석
-    # ======================================
+    
+# ======================================
+# STEP 4. AI 유사도 분석
+# ======================================
 
-    if "game_3_result" not in st.session_state:
+if "game_3_result" not in st.session_state:
 
-        with st.spinner("🤖 AI가 뉴스 유사도를 분석하고 있습니다..."):
+    if st.button(
+        "🤖 AI 유사도 분석 및 결과 확인",
+        use_container_width=True
+    ):
 
-            try:
+        if not news_title.strip():
+            st.warning("뉴스 제목을 입력해주세요.")
 
-                # 비동기 뉴스 요약 함수 실행
+        elif not news_content.strip():
+            st.warning("뉴스 본문을 입력해주세요.")
+
+        else:
+
+            with st.spinner("🤖 AI가 뉴스 유사도를 분석하고 있습니다..."):
+
                 try:
-                    asyncio.get_running_loop()
-                except RuntimeError:
-                    summary_text = asyncio.run(summary(article_text))
-                else:
-                    raise RuntimeError(
-                        "이미 실행 중인 이벤트 루프가 있습니다. "
-                        "뉴스 요약 실행 환경을 확인해주세요."
+
+                    # 1. 입력한 뉴스 본문 요약
+                    try:
+                        asyncio.get_running_loop()
+
+                    except RuntimeError:
+                        summary_text = asyncio.run(
+                            summary(news_content.strip())
+                        )
+
+                    else:
+                        raise RuntimeError(
+                            "이미 실행 중인 이벤트 루프가 있습니다."
+                        )
+
+                    if not summary_text:
+                        raise ValueError(
+                            "뉴스 요약 결과가 비어 있습니다."
+                        )
+
+                    # 2. 기존 뉴스 유사도 함수 실행
+                    actual_score = similarity_check(
+                        summary_text,
+                        news_title.strip()
                     )
 
-                if not summary_text:
-                    raise ValueError("뉴스 요약 결과가 비어 있습니다.")
+                    actual_score = float(actual_score)
 
-                actual_score = similarity_check(
-                    summary_text,
-                    title
-                )
+                    if (
+                        not math.isfinite(actual_score)
+                        or not 0 <= actual_score <= 100
+                    ):
+                        raise ValueError(
+                            "유사도 점수가 올바르지 않습니다."
+                        )
 
-                actual_score = float(actual_score)
+                    # 3. 정수 부분만 사용
+                    integer_score = int(actual_score)
 
-                if not math.isfinite(actual_score) or not 0 <= actual_score <= 100:
-                    raise ValueError("유사도 점수가 올바르지 않습니다.")
+                    ai_result = (
+                        "짝" if integer_score % 2 == 0 else "홀"
+                    )
 
-                # 정수 부분만 사용
-                integer_score = int(actual_score)
+                    user_choice = st.session_state.game_3_choice
 
-                # 홀짝 판정
-                ai_result = (
-                    "짝" if integer_score % 2 == 0 else "홀"
-                )
+                    is_win = user_choice == ai_result
 
-                # 사용자 선택과 비교
-                user_choice = st.session_state.game_3_choice
+                    # 4. 코인 정산
+                    if is_win:
+                        reward = bet_coin
+                    else:
+                        reward = -(bet_coin // 2)
 
-                is_win = user_choice == ai_result
+                    # 5. 최신 사용자 정보 확인
+                    users_data = ws.get_all_records()
+
+                    user_row_idx = None
+                    user_info = None
+
+                    for idx, user in enumerate(users_data):
+
+                        sid = str(
+                            user.get("학번", "")
+                        ).strip().replace(".0", "")
+
+                        if sid == current_sid:
+                            user_row_idx = idx + 2
+                            user_info = user
+                            break
+
+                    if user_info is None:
+                        raise ValueError(
+                            "사용자 정보를 다시 찾을 수 없습니다."
+                        )
+
+                    current_balance = int(
+                        user_info.get("코인", 0)
+                    )
+
+                    current_streak = int(
+                        user_info.get("연승", 0)
+                    )
+
+                    if current_balance < bet_coin:
+                        raise ValueError(
+                            "현재 보유 코인이 부족합니다."
+                        )
+
+                    new_balance = current_balance + reward
+
+                    new_streak = (
+                        current_streak + 1 if is_win else 0
+                    )
+
+                    # 6. Google Sheets 업데이트
+                    ws.update_cell(
+                        user_row_idx, 3, new_balance
+                    )
+
+                    ws.update_cell(
+                        user_row_idx, 4, new_streak
+                    )
+
+                    st.session_state.current_user_data["코인"] = new_balance
+                    st.session_state.current_user_data["연승"] = new_streak
+
+                    # 7. 결과 저장
+                    st.session_state.game_3_result = {
+                        "actual_score": actual_score,
+                        "integer_score": integer_score,
+                        "ai_result": ai_result,
+                        "user_choice": user_choice,
+                        "bet": bet_coin,
+                        "reward": reward,
+                        "is_win": is_win,
+                        "new_coins": new_balance,
+                        "new_streak": new_streak
+                    }
+
+                    st.rerun()
+
+                except Exception as e:
+                    st.error(
+                        f"게임 진행 중 오류가 발생했습니다: {e}"
+                    )
 
                 # ==================================
                 # STEP 5. 코인 정산
