@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
-from modules.news_summarizer import summarize_news
+from news_summarizer import summarize_news
 
 # ==========================================
 # 1. 효율성 극대화: AI 모델 캐싱 (최초 1회만 로드)
