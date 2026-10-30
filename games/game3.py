@@ -213,16 +213,33 @@ def show_game_3():
     bet_coin = st.session_state.game_3_bet
 
     # ======================================
-    # STEP 3. 뉴스 기사 선택
+    # STEP 3. 뉴스 제목 및 본문 입력
     # ======================================
 
     st.markdown("---")
-    st.markdown("### 📰 STEP 3. 뉴스 기사 선택")
+    st.markdown("### 📰 STEP 3. 뉴스 기사 입력")
 
-    title, article_text, url = get_game_news_selection("game_3")
+    st.info(
+        "뉴스 제목과 본문을 직접 입력해주세요. "
+        "AI가 두 내용의 유사도를 분석합니다."
+    )
 
-    if not title:
-        return
+    news_title = st.text_input(
+        "📝 뉴스 제목",
+        key="game_3_news_title",
+        placeholder="뉴스 제목을 입력하세요."
+    )
+
+    news_content = st.text_area(
+        "📄 뉴스 본문",
+        key="game_3_news_content",
+        height=300,
+        placeholder="뉴스 기사 본문을 입력하세요."
+    )
+
+    st.caption(
+        "※ 뉴스 제목과 본문을 모두 입력해야 분석할 수 있습니다."
+    )
 
     # ======================================
     # STEP 4. AI 유사도 분석
