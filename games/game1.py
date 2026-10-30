@@ -2,7 +2,7 @@ import streamlit as st
 from modules.news_ai import summary, similarity_check
 from modules.db_handler import init_gspread, init_news_sheet
 from modules.ui_components import change_page
-from games.common import get_game_news_selection
+from games.common import get_game_news_selection, check_user_coins_or_pop_bank
 
 ws = init_gspread()
 ws_news = init_news_sheet()
@@ -11,6 +11,9 @@ ws_news = init_news_sheet()
 
 def show_game_1():
     st.title("🎮 게임 1: 뉴스 유사도 예측 게임")
+    
+    if not check_user_coins_or_pop_bank(min_required=1000):
+        return
 
     # [1단계] 베팅 금액 선택 (상금 카드 동시 펄스, 올인 멀티네온 글로우 & 심장소리 볼륨 증폭)
     if "game_1_bet" not in st.session_state:
