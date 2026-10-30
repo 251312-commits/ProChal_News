@@ -80,7 +80,7 @@ def bring_article(url: str):
     
 def summary(article):
     try:
-        summary = await summarize_news(article)
+        summary = summarize_news(article)
         return summary
 
     except Exception as e:
