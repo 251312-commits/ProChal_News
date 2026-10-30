@@ -10,4 +10,3 @@ gspread
 google-auth
 st-clickable-images
 google-genai
-python-dotenv
