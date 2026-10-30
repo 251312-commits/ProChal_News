@@ -78,9 +78,9 @@ def bring_article(url: str):
     clean_article = clean_common_text(article_obj.text)
     return title, clean_article
     
-def summary(article):
+async def summary(article):
     try:
-        summary = summarize_news(article)
+        summary = await summarize_news(article)
         return summary
 
     except Exception as e:
