@@ -241,8 +241,6 @@ def show_game_3():
         "※ 뉴스 제목과 본문을 모두 입력해야 분석할 수 있습니다."
     )
 
-    
-
 
 # ======================================
 # STEP 4. AI 유사도 분석
@@ -250,10 +248,7 @@ def show_game_3():
 
 if "game_3_result" not in st.session_state:
 
-    if st.button(
-        "🤖 AI 유사도 분석 및 결과 확인",
-        use_container_width=True
-    ):
+    if st.button("🤖 AI 유사도 분석 및 결과 확인", use_container_width=True):
 
         if not news_title.strip():
             st.warning("뉴스 제목을 입력해주세요.")
@@ -268,23 +263,14 @@ if "game_3_result" not in st.session_state:
                 try:
 
                     # 1. 입력한 뉴스 본문 요약
-                    try:
-                        asyncio.get_running_loop()
-
-                    except RuntimeError:
-                        summary_text = asyncio.run(
-                            summary(news_content.strip())
-                        )
-
-                    else:
-                        raise RuntimeError(
-                            "이미 실행 중인 이벤트 루프가 있습니다."
-                        )
+                    summary_text = asyncio.run(
+                        summary(news_content.strip())
+                    )
 
                     if not summary_text:
                         raise ValueError("뉴스 요약 결과가 비어 있습니다.")
 
-                    # 2. 기존 AI 유사도 함수 연결
+                    # 2. 기존 유사도 분석 함수 연결
                     actual_score = similarity_check(
                         summary_text,
                         news_title.strip()
@@ -295,7 +281,7 @@ if "game_3_result" not in st.session_state:
                     if not math.isfinite(actual_score) or not 0 <= actual_score <= 100:
                         raise ValueError("유사도 점수가 올바르지 않습니다.")
 
-                    # 3. 정수 부분만 사용
+                    # 3. 정수 부분 홀짝 판정
                     integer_score = int(actual_score)
 
                     ai_result = (
@@ -306,10 +292,7 @@ if "game_3_result" not in st.session_state:
                     is_win = user_choice == ai_result
 
                     # 4. 코인 정산
-                    if is_win:
-                        reward = bet_coin
-                    else:
-                        reward = -(bet_coin // 2)
+                    reward = bet_coin if is_win else -(bet_coin // 2)
 
                     # 5. 최신 사용자 정보 확인
                     users_data = ws.get_all_records()
@@ -318,10 +301,7 @@ if "game_3_result" not in st.session_state:
                     user_info = None
 
                     for idx, user in enumerate(users_data):
-
-                        sid = str(
-                            user.get("학번", "")
-                        ).strip().replace(".0", "")
+                        sid = str(user.get("학번", "")).strip().replace(".0", "")
 
                         if sid == current_sid:
                             user_row_idx = idx + 2
@@ -329,7 +309,7 @@ if "game_3_result" not in st.session_state:
                             break
 
                     if user_info is None:
-                        raise ValueError("사용자 정보를 다시 찾을 수 없습니다.")
+                        raise ValueError("사용자 정보를 찾을 수 없습니다.")
 
                     current_balance = int(user_info.get("코인", 0))
                     current_streak = int(user_info.get("연승", 0))
@@ -338,10 +318,7 @@ if "game_3_result" not in st.session_state:
                         raise ValueError("보유 코인이 부족합니다.")
 
                     new_balance = current_balance + reward
-
-                    new_streak = (
-                        current_streak + 1 if is_win else 0
-                    )
+                    new_streak = current_streak + 1 if is_win else 0
 
                     # 6. Google Sheets 업데이트
                     ws.update_cell(user_row_idx, 3, new_balance)
@@ -367,6 +344,7 @@ if "game_3_result" not in st.session_state:
 
                 except Exception as e:
                     st.error(f"게임 진행 중 오류가 발생했습니다: {e}")
+
 
 
                 # ==================================
