@@ -1,14 +1,6 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-import os
-import sys
-
-print("현재 파일 위치:", __file__)
-print("현재 작업 경로:", os.getcwd())
-print("현재 폴더 파일:", os.listdir(os.path.dirname(os.path.abspath(__file__))))
-print("Python 검색 경로:", sys.path)
-
 from modules.db_handler import init_gspread, init_news_sheet
 from modules.news_ai import load_ai_model, bring_article, pick_3_lowest_count_news
 from modules.ui_components import change_page, inject_casino_theme
