@@ -206,11 +206,3 @@ def show_bank():
     # 하단 메인 이동 버튼
     if st.button("⬅️ 메인으로 돌아가기", use_container_width=True):
         change_page('main')
-
-  def process_turn_interest(user_data):
-    """턴이 끝날 때 대출금에 20% 이자를 누적시키는 함수"""
-    current_loan = int(user_data.get('대출금', 0))
-    if current_loan > 0:
-        interest = int(current_loan * 0.20)
-        user_data['대출금'] = current_loan + interest
-    return user_data
