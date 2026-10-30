@@ -1,6 +1,6 @@
 import streamlit as st
 import streamlit.components.v1 as components
-from modules.news_ai import bring_article, pick_3_lowest_count_news, change_page
+from modules.news_ai import bring_article, pick_3_lowest_count_news
 from modules.db_handler import init_news_sheet
 
 ws_news = init_news_sheet()
