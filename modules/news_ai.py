@@ -78,14 +78,7 @@ def bring_article(url: str):
     clean_article = clean_common_text(article_obj.text)
     return title, clean_article
     
-async def summary(article):
-    try:
-        summary = await summarize_news(article)
-        return summary
-
-    except Exception as e:
-        print(f"뉴스 이벤트 실행 실패: {e}")
-        return None
+    return article if article else "요약본 예시 문장입니다."
 
 def similarity_check(summary_text, title):
     inputs = tokenizer(summary_text, title, padding=True, truncation=True, return_tensors="pt", max_length=512)
