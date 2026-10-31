@@ -11,344 +11,259 @@ ws_news = init_news_sheet()
 
 def show_game_1():
     st.title("🎮 게임 1: 뉴스 유사도 예측 게임")
-    
-    if not check_user_coins_or_pop_bank(min_required=1000):
-        return
 
-    # [1단계] 베팅 금액 선택 (상금 카드 동시 펄스, 올인 멀티네온 글로우 & 심장소리 볼륨 증폭)
+    # [1단계] 베팅 금액 선택 (이미지 레퍼런스 UI 완전 동기화)
     if "game_1_bet" not in st.session_state:
-        current_coins = int(st.session_state.current_user_data.get('코인', 0))
+        current_coins = int(st.session_state.current_user_data.get('코인', 1250))
         current_sid = str(st.session_state.get('current_user', '')).strip().replace('.0', '')
-        min_bet = 1000
+        min_bet = 100
+        max_bet = max(min_bet, current_coins)
         
-        # 코인이 최소 베팅 금액보다 적을 경우 예외 처리
+        # 코인 부족 예외 처리
         if current_coins < min_bet:
             st.error(f"⚠️ 베팅을 위한 코인이 부족합니다! (최소 베팅금: {min_bet:,} C / 보유: {current_coins:,} C)")
             if st.button("⬅️ 메인으로 돌아가기", use_container_width=True):
                 change_page('main')
             return
 
-        # [초고속 연산] 유저 랭킹 캐싱
+        # 랭킹 데이터 캐싱
         if "ranking_users_cache" not in st.session_state:
             try:
                 st.session_state.ranking_users_cache = ws.get_all_records()
             except Exception:
                 st.session_state.ranking_users_cache = []
-
         users_data = st.session_state.ranking_users_cache
 
-        # 기본 베팅 금액 = 전재산의 절반 (50 C 단위)
-        default_bet = max(min_bet, ((current_coins // 2) // 50) * 50)
-        if "bet_slider_key" not in st.session_state:
-            st.session_state["bet_slider_key"] = default_bet
+        # 세션 슬라이더 기본값 세팅 (보유 코인의 절반)
+        if "bet_amount_state" not in st.session_state:
+            st.session_state.bet_amount_state = min(500, max_bet)
 
-        # 슬라이더로 베팅 금액 선택
-        bet_val = st.slider(
-            "💰 베팅할 금액을 선택하세요",
-            min_value=min_bet,
-            max_value=current_coins,
-            step=50,
-            key="bet_slider_key"
-        )
-
-        # 베팅 비율 (0.0 ~ 1.0) 및 올인 여부 산출
-        bet_ratio = (bet_val - min_bet) / max(1, (current_coins - min_bet)) if current_coins > min_bet else 1.0
-        is_all_in = (bet_val == current_coins)
-
-        # 펄스 주기 (1.2초 ~ 0.35초) & 심장소리 인터벌(ms) 완전 동기화
-        pulse_speed = max(0.35, round(1.2 - bet_ratio * 0.85, 2))
-        heartbeat_interval = int(pulse_speed * 1000)
-
-        # 전반적인 심장소리 음량 증폭 (기존 대비 약 2~3배 강화: 0.45 ~ 1.6)
-        sound_vol = round(0.45 + bet_ratio * 1.15, 2)
-
-        # 단계별 글로우 크기 및 색상
-        glow_size = int(14 + bet_ratio * 46)
-        glow_opacity = round(0.4 + bet_ratio * 0.6, 2)
-        
-        if bet_ratio < 0.4:
-            primary_color = "#00ffcc"
-            border_color = "#8a2be2"
-            card_bg_glow = f"rgba(0, 255, 204, {glow_opacity})"
-        elif bet_ratio < 0.8:
-            primary_color = "#ff00ff"
-            border_color = "#ff00aa"
-            card_bg_glow = f"rgba(255, 0, 255, {glow_opacity})"
-        else:
-            primary_color = "#ffd700"
-            border_color = "#ff0055"
-            card_bg_glow = f"rgba(255, 0, 85, {glow_opacity})"
-
-        # 올인 전용 다채로운 네온 글로우 스타일 클래스 설정
-        allin_class = "allin-multi-glow" if is_all_in else ""
-
-        # CSS 동적 연출 적용
+        # 이미지 디자인 반영 CSS (퍼플 글래스모피즘 & 3D 카지노 테마)
         st.markdown(
-            f"""
+            """
             <style>
-            .bet-card-container {{
-                background: linear-gradient(135deg, #110022 0%, #1a0933 50%, #0d001a 100%);
-                border: 2px solid {border_color};
-                border-radius: 20px;
-                padding: 20px;
-                text-align: center;
-                box-shadow: 0 0 {glow_size}px {card_bg_glow};
-                margin-bottom: 15px;
-                transition: all 0.2s ease;
-            }}
-            
-            /* 코인 박스 & 상금 카드 동시 펄스 */
-            .coin-pile-wrapper {{
+            .casino-app-frame {
+                background: radial-gradient(circle at 50% 20%, #2e0854 0%, #120224 55%, #06000d 100%);
+                border-radius: 28px;
+                padding: 20px 16px;
+                color: #ffffff;
+                box-shadow: 0 0 35px rgba(138, 43, 226, 0.4);
+                margin-bottom: 20px;
+            }
+            .top-nav-bar {
                 display: flex;
-                justify-content: center;
-                align-items: flex-end;
-                gap: 12px;
-                min-height: 150px;
-                padding: 22px 10px 15px 10px;
-                background: radial-gradient(ellipse at bottom, rgba(255, 215, 0, {0.12 + bet_ratio * 0.38}) 0%, rgba(10, 0, 20, 0.85) 75%);
-                border-radius: 16px;
-                border: 1.5px dashed {border_color};
-                box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.9), 0 0 {glow_size}px {card_bg_glow};
-                margin: 15px 0;
-                transition: all 0.2s ease;
-                animation: pulseScale {pulse_speed}s infinite ease-in-out;
-            }}
-            .payout-card {{
-                background: linear-gradient(90deg, rgba(255,0,255,0.2) 0%, rgba(0,255,204,0.2) 100%);
-                border: 2px solid {border_color};
-                border-radius: 14px;
-                padding: 12px;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+            }
+            .back-arrow {
+                font-size: 1.2rem;
+                color: #ffffff;
+                cursor: pointer;
+            }
+            .coin-pill {
+                background: rgba(15, 5, 30, 0.7);
+                border: 1.5px solid rgba(255, 215, 0, 0.6);
+                border-radius: 20px;
+                padding: 4px 12px;
+                font-weight: 900;
+                font-size: 0.95rem;
+                color: #ffffff;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+            }
+            .bet-tag {
+                color: #c084fc;
+                font-size: 0.75rem;
+                letter-spacing: 3px;
                 text-align: center;
-                box-shadow: 0 0 {glow_size}px {card_bg_glow};
-                height: 100%;
+                font-weight: 900;
+                margin-top: 4px;
+            }
+            .main-title {
+                text-align: center;
+                font-size: 1.65rem;
+                font-weight: 900;
+                color: #ffffff;
+                margin: 4px 0 2px 0;
+                text-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
+            }
+            .sub-title {
+                text-align: center;
+                font-size: 0.85rem;
+                color: #b39ddb;
+                margin-bottom: 15px;
+            }
+            
+            /* 중앙 3D 뉴스 카드 & 동전 단상 visual */
+            .stage-wrapper {
                 display: flex;
                 flex-direction: column;
-                justify-content: center;
-                transition: all 0.2s ease;
-                animation: pulseScale {pulse_speed}s infinite ease-in-out;
-            }}
-
-            @keyframes pulseScale {{
-                0% {{ transform: scale(1); }}
-                50% {{ transform: scale({1.0 + bet_ratio * 0.045:.3f}); }}
-                100% {{ transform: scale(1); }}
-            }}
-
-            /* 🔥 ALL-IN 시 여러 네온 색상으로 교차 회전하는 글로우 효과 */
-            .allin-multi-glow {{
-                animation: multiNeonCycle 0.6s infinite linear, pulseScale {pulse_speed}s infinite ease-in-out !important;
-            }}
-            @keyframes multiNeonCycle {{
-                0% {{ border-color: #ff0055; box-shadow: 0 0 40px #ff0055, inset 0 0 15px #ff0055; }}
-                25% {{ border-color: #00ffcc; box-shadow: 0 0 45px #00ffcc, inset 0 0 15px #00ffcc; }}
-                50% {{ border-color: #ffd700; box-shadow: 0 0 50px #ffd700, inset 0 0 20px #ffd700; }}
-                75% {{ border-color: #ff00ff; box-shadow: 0 0 45px #ff00ff, inset 0 0 15px #ff00ff; }}
-                100% {{ border-color: #ff0055; box-shadow: 0 0 40px #ff0055, inset 0 0 15px #ff0055; }}
-            }}
-
-            .bet-header-title {{
-                font-family: 'Press Start 2P', monospace;
-                font-size: 1.1rem;
-                color: #fffb00;
-                text-shadow: 0 0 8px #ff00ff, 0 0 15px #00ffff;
-                margin-bottom: 8px;
-            }}
-            .coin-stack-col {{
-                display: flex;
-                flex-direction: column-reverse;
                 align-items: center;
-            }}
-            .gold-coin-item {{
-                width: 46px;
-                height: 12px;
-                border-radius: 50%;
-                background: linear-gradient(180deg, #FFE57F 0%, #FFC107 40%, #FF8F00 70%, #A76D00 100%);
-                border: 1px solid #FFF59D;
-                box-shadow: 0 3px 0 #5D4037, inset 0 1px 2px rgba(255, 255, 255, 0.9);
-                margin-top: -6px;
-            }}
-            .gold-coin-item.top {{
-                background: radial-gradient(ellipse at 35% 35%, #FFFFFF 0%, #FFEE58 40%, #FFA000 85%);
-                border: 1.5px solid #FFFFFF;
-                box-shadow: 0 3px 0 #5D4037, 0 0 12px rgba(255, 215, 0, 0.9);
-            }}
-            .payout-amount {{
-                font-size: 1.6rem;
+                justify-content: center;
+                margin: 15px 0 20px 0;
+                position: relative;
+            }
+            .news-card-3d {
+                width: 220px;
+                height: 120px;
+                background: linear-gradient(135deg, rgba(168, 85, 247, 0.35) 0%, rgba(88, 28, 135, 0.5) 100%);
+                border: 2px solid #c084fc;
+                border-radius: 18px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 0 25px rgba(168, 85, 247, 0.5), inset 0 0 15px rgba(255, 255, 255, 0.2);
+                backdrop-filter: blur(8px);
+                transform: perspective(500px) rotateX(15deg);
+                margin-bottom: -25px;
+                z-index: 2;
+            }
+            .question-mark {
+                font-size: 3rem;
                 font-weight: 900;
-                color: {primary_color};
-                text-shadow: 0 0 12px {primary_color};
-            }}
-            .rank-sim-card {{
-                background: linear-gradient(135deg, rgba(20, 10, 40, 0.9) 0%, rgba(35, 15, 60, 0.9) 100%);
-                border: 2px solid {border_color};
-                border-radius: 14px;
+                color: #f5d0fe;
+                text-shadow: 0 0 20px #e879f9;
+            }
+            .pedestal-3d {
+                width: 200px;
+                height: 70px;
+                background: radial-gradient(ellipse at top, #7e22ce 0%, #3b0764 70%, #1e0338 100%);
+                border-radius: 50%;
+                border: 3px solid #a855f7;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 20px rgba(168, 85, 247, 0.6);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1;
+            }
+
+            /* 슬라이더 제어 박스 */
+            .slider-card-box {
+                background: rgba(18, 6, 36, 0.75);
+                border: 1.5px solid #a855f7;
+                border-radius: 22px;
+                padding: 14px 16px 8px 16px;
+                box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+                margin-bottom: 12px;
+            }
+            .bet-amount-title {
+                text-align: center;
+                font-size: 1.8rem;
+                font-weight: 900;
+                color: #ffffff;
+                margin-bottom: 6px;
+                text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+            }
+
+            /* 하단 통계 카드 2분할 */
+            .stat-card-item {
+                background: rgba(22, 8, 44, 0.75);
+                border: 1.5px solid #7e22ce;
+                border-radius: 18px;
                 padding: 12px 14px;
-                box-shadow: 0 0 {glow_size}px {card_bg_glow};
-                height: 100%;
+                min-height: 95px;
                 display: flex;
                 flex-direction: column;
                 justify-content: space-between;
-                transition: all 0.2s ease;
-            }}
-            .rank-up-badge {{
-                color: #00ffcc;
-                font-size: 1.05rem;
+                box-shadow: inset 0 0 12px rgba(168, 85, 247, 0.15);
+            }
+            .stat-card-title {
+                font-size: 0.75rem;
+                color: #c084fc;
+                font-weight: 700;
+            }
+            .stat-card-value {
+                font-size: 1.45rem;
                 font-weight: 900;
-                text-shadow: 0 0 8px #00ffcc;
-            }}
-            .rival-row {{
-                font-size: 0.82rem;
                 color: #ffffff;
-                background: rgba(0, 0, 0, 0.4);
-                padding: 4px 8px;
-                border-radius: 8px;
-                margin-top: 4px;
-                border-left: 3px solid #ff00ff;
-            }}
+            }
+            .multiplier-tag {
+                background: rgba(168, 85, 247, 0.25);
+                border: 1px solid #c084fc;
+                border-radius: 10px;
+                padding: 2px 8px;
+                font-size: 0.7rem;
+                color: #e9d5ff;
+                width: fit-content;
+            }
+            .rank-up-badge-green {
+                color: #4ade80;
+                font-weight: 900;
+                font-size: 0.88rem;
+                float: right;
+            }
             </style>
             """,
             unsafe_allow_html=True
         )
 
-        # 펄스 속도에 정밀 동기화된 묵직한 심장소리 (볼륨 대폭 증폭)
+        # 1. 상단 바 & 제목
         st.markdown(
             f"""
-            <script>
-            (function() {{
-                if (window.heartbeatInterval) clearInterval(window.heartbeatInterval);
-                try {{
-                    const ctx = window.heartbeatAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
-                    window.heartbeatAudioCtx = ctx;
-                    
-                    const intervalMs = {heartbeat_interval};
-                    const vol = {sound_vol};
-                    
-                    function playBeat() {{
-                        if (ctx.state === 'suspended') ctx.resume();
-                        const now = ctx.currentTime;
-                        
-                        // Thump 1 (저음 임팩트)
-                        const osc1 = ctx.createOscillator();
-                        const gain1 = ctx.createGain();
-                        osc1.type = 'sine';
-                        osc1.frequency.setValueAtTime(120, now);
-                        osc1.frequency.exponentialRampToValueAtTime(22, now + 0.18);
-                        gain1.gain.setValueAtTime(vol, now);
-                        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-                        osc1.connect(gain1);
-                        gain1.connect(ctx.destination);
-                        osc1.start(now);
-                        osc1.stop(now + 0.18);
-
-                        // Thump 2 (서브 서브베이스)
-                        const osc2 = ctx.createOscillator();
-                        const gain2 = ctx.createGain();
-                        osc2.type = 'sine';
-                        osc2.frequency.setValueAtTime(95, now + 0.22);
-                        osc2.frequency.exponentialRampToValueAtTime(18, now + 0.42);
-                        gain2.gain.setValueAtTime(vol * 0.8, now + 0.22);
-                        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.42);
-                        osc2.connect(gain2);
-                        gain2.connect(ctx.destination);
-                        osc2.start(now + 0.22);
-                        osc2.stop(now + 0.42);
-                    }}
-                    
-                    window.heartbeatInterval = setInterval(playBeat, intervalMs);
-                    playBeat();
-                }} catch(e) {{}}
-            }})();
-            </script>
-            """,
-            unsafe_allow_html=True
-        )
-
-        # 🎉 올인 달성 시 폭죽(Confetti) 연출
-        if is_all_in:
-            st.markdown(
-                """
-                <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-                <script>
-                    if (typeof confetti === 'function') {
-                        confetti({
-                            particleCount: 120,
-                            spread: 125,
-                            origin: { y: 0.6 },
-                            colors: ['#ffd700', '#ff00ff', '#00ffcc', '#ffffff', '#ff0055']
-                        });
-                    }
-                </script>
-                """,
-                unsafe_allow_html=True
-            )
-
-        # 상단 헤더 카드
-        st.markdown(
-            f"""
-            <div class="bet-card-container {allin_class}">
-                <div class="bet-header-title">🎰 STEP 1: BETTING PLACE</div>
-                <div style="font-size: 1rem; color: #ffffff; font-weight: bold;">
-                    현재 보유 코인: <span style="color:#ffd700;">🪙 {current_coins:,} C</span>
+            <div class="casino-app-frame">
+                <div class="top-nav-bar">
+                    <span class="back-arrow">❮</span>
+                    <div class="coin-pill">
+                        <span style="color:#ffd700;">🪙</span>
+                        <span>{current_coins:,}</span>
+                        <span style="color:#a855f7; margin-left:2px;">+</span>
+                    </div>
+                </div>
+                <div class="bet-tag">👑 BET</div>
+                <div class="main-title">얼마를 걸까요?</div>
+                <div class="sub-title">베팅하면 뉴스가 공개됩니다</div>
+                
+                <!-- 2. 중앙 3D 카드 & 동전 단상 무대 -->
+                <div class="stage-wrapper">
+                    <div class="news-card-3d">
+                        <div class="question-mark">?</div>
+                    </div>
+                    <div class="pedestal-3d">
+                        <div style="font-size: 2.2rem; filter: drop-shadow(0 0 10px #ffd700);">🪙🪙🪙</div>
+                    </div>
                 </div>
             </div>
             """,
             unsafe_allow_html=True
         )
 
-        # 피라미드 코인 탑 산출
-        total_coins = int(4 + bet_ratio * 36)
-        num_cols = min(5, max(1, (total_coins + 7) // 8))
+        # 3. 슬라이더 & (- / +) 버튼 구역
+        bet_val = st.session_state.bet_amount_state
 
-        if num_cols == 1:
-            weights = [1.0]
-        elif num_cols == 2:
-            weights = [1.0, 1.0]
-        elif num_cols == 3:
-            weights = [1.0, 2.2, 1.0]
-        elif num_cols == 4:
-            weights = [1.0, 2.2, 2.2, 1.0]
-        else:
-            weights = [1.0, 2.0, 3.5, 2.0, 1.0]
-
-        sum_w = sum(weights)
-        raw_heights = [int(round(total_coins * (w / sum_w))) for w in weights]
-        diff = total_coins - sum(raw_heights)
+        st.markdown(f'<div class="bet-amount-title">🪙 {bet_val:,}</div>', unsafe_allow_html=True)
         
-        center_idx = num_cols // 2
-        indices_order = sorted(range(num_cols), key=lambda x: abs(x - center_idx))
-        for i in range(abs(diff)):
-            idx = indices_order[i % num_cols]
-            if diff > 0:
-                raw_heights[idx] += 1
-            elif diff < 0 and raw_heights[idx] > 1:
-                raw_heights[idx] -= 1
+        col_m, col_s, col_p = st.columns([1, 4, 1])
+        with col_m:
+            if st.button("➖", use_container_width=True, key="btn_minus"):
+                st.session_state.bet_amount_state = max(min_bet, bet_val - 50)
+                st.rerun()
 
-        cols_html = ""
-        for c, col_h in enumerate(raw_heights):
-            coins_in_col_html = ""
-            for h in range(col_h):
-                is_top = (h == col_h - 1)
-                coin_class = "gold-coin-item top" if is_top else "gold-coin-item"
-                coins_in_col_html += f'<div class="{coin_class}"></div>'
-            cols_html += f'<div class="coin-stack-col">{coins_in_col_html}</div>'
+        with col_s:
+            st.session_state.bet_amount_state = st.slider(
+                "베팅 금액 선택",
+                min_value=min_bet,
+                max_value=max_bet,
+                step=50,
+                value=st.session_state.bet_amount_state,
+                label_visibility="collapsed",
+                key="main_bet_slider"
+            )
 
-        # 동적 피라미드 코인 탑 출력
-        st.markdown(
-            f"""
-            <div class="coin-pile-wrapper {allin_class}">
-                {cols_html}
-            </div>
-            <div style="text-align:center; color:#ffd700; font-size:0.95rem; font-weight:800; margin-top:-5px; margin-bottom:15px;">
-                현재 선택 칩: {bet_val:,} C {"(🔥 ALL-IN!)" if is_all_in else ""}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        with col_p:
+            if st.button("➕", use_container_width=True, key="btn_plus"):
+                st.session_state.bet_amount_state = min(max_bet, bet_val + 50)
+                st.rerun()
 
-        # 당첨금 계산 및 실시간 랭킹 연산
-        max_reward = bet_val * 100
-        simulated_total_coins = current_coins + max_reward
+        st.markdown("<div style='margin-bottom: 12px;'></div>", unsafe_allow_html=True)
 
+        # 4. 실시간 예상 당첨액 및 랭킹 계산
+        expected_payout = bet_val * 2  # 정답 오차 0점 기준 (2배~100배 가변 설정 가능)
+        simulated_total_coins = current_coins + expected_payout
+
+        # 랭킹 시뮬레이션 연산
         processed_users = []
         for u in users_data:
             try:
@@ -362,90 +277,51 @@ def show_game_1():
             })
 
         curr_sorted = sorted(processed_users, key=lambda x: x['coins'], reverse=True)
-        curr_rank = None
-        for idx, u in enumerate(curr_sorted):
-            if u['id'] == current_sid or u['nickname'] == st.session_state.current_user_data.get('아이디', ''):
-                curr_rank = idx + 1
-                break
-        if not curr_rank:
-            curr_rank = len(curr_sorted) + 1
+        curr_rank = next((i + 1 for i, u in enumerate(curr_sorted) if u['id'] == current_sid or u['nickname'] == st.session_state.current_user_data.get('아이디', '')), len(curr_sorted) + 1)
 
         sim_list = []
         for u in processed_users:
             is_me = (u['id'] == current_sid or u['nickname'] == st.session_state.current_user_data.get('아이디', ''))
             sim_list.append({
-                'id': u['id'],
-                'nickname': u['nickname'],
                 'coins': simulated_total_coins if is_me else u['coins'],
                 'is_me': is_me
             })
-
         sim_sorted = sorted(sim_list, key=lambda x: x['coins'], reverse=True)
-        
-        sim_rank = None
-        sim_me_idx = None
-        for idx, u in enumerate(sim_sorted):
-            if u['is_me']:
-                sim_rank = idx + 1
-                sim_me_idx = idx
-                break
+        sim_rank = next((i + 1 for i, u in enumerate(sim_sorted) if u['is_me']), curr_rank)
+        rank_climb = max(0, curr_rank - sim_rank)
 
-        rank_climb = curr_rank - sim_rank if curr_rank else 0
-        above_user = sim_sorted[sim_me_idx - 1] if sim_me_idx > 0 else None
-        below_user = sim_sorted[sim_me_idx + 1] if sim_me_idx < len(sim_sorted) - 1 else None
-
-        if above_user:
-            diff_above = above_user['coins'] - simulated_total_coins
-            above_str = f"🔺 <b>위:</b> {above_user['nickname']} <span style='color:#ff9999;'>({diff_above:,} C 부족)</span>"
-        else:
-            above_str = "👑 <b>예상 랭킹 1위 달성!</b> (최상위)"
-
-        if below_user:
-            diff_below = simulated_total_coins - below_user['coins']
-            below_str = f"🔻 <b>아래:</b> {below_user['nickname']} <span style='color:#00ffcc;'>({diff_below:,} C 제침)</span>"
-        else:
-            below_str = "🛡️ <b>최하위 라이벌 없음</b>"
-
-        # 당첨금 & 랭킹 카드 출력 (상금 카드에도 동시 펄스 적용)
-        col_card1, col_card2 = st.columns(2)
-
-        with col_card1:
+        # 5. 하단 2분할 통계 카드 출력
+        col_c1, col_c2 = st.columns(2)
+        with col_c1:
             st.markdown(
                 f"""
-                <div class="payout-card {allin_class}">
-                    <div style="font-size:0.8rem; color:#ffffff; font-weight:bold;">✨ 정답(오차 0점) 적중 시</div>
-                    <div class="payout-amount">+{max_reward:,} C</div>
-                    <div style="font-size:0.75rem; color:#ffd700; margin-top:4px;">(최대 100배 당첨)</div>
+                <div class="stat-card-item">
+                    <div class="stat-card-title">예상 당첨액 ⓘ</div>
+                    <div class="stat-card-value" style="color:#facc15;">+ {expected_payout:,}</div>
+                    <div class="multiplier-tag">배율 2.0x</div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
 
-        with col_card2:
-            rank_climb_text = f"▲ {rank_climb}등 상승!" if rank_climb > 0 else "순위 유지"
+        with col_c2:
+            rank_up_str = f"▲ {rank_climb}" if rank_climb > 0 else "-"
             st.markdown(
                 f"""
-                <div class="rank-sim-card {allin_class}">
-                    <div>
-                        <div style="font-size:0.78rem; color:#aaa; font-weight:bold;">🏆 승리 시 예상 랭킹</div>
-                        <div style="font-size:1.1rem; font-weight:900; color:#fff;">
-                            {curr_rank}위 ➔ <span style="color:#ffd700;">{sim_rank}위</span>
-                            <span class="rank-up-badge">({rank_climb_text})</span>
-                        </div>
-                    </div>
-                    <div style="margin-top:6px;">
-                        <div class="rival-row">{above_str}</div>
-                        <div class="rival-row">{below_str}</div>
+                <div class="stat-card-item">
+                    <div class="stat-card-title">예상 랭킹 변동 ⓘ <span class="rank-up-badge-green">{rank_up_str}</span></div>
+                    <div class="stat-card-value" style="font-size:1.15rem; margin-top:4px;">
+                        {curr_rank}위 ➔ <span style="color:#c084fc;">{sim_rank}위</span>
                     </div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
 
-        st.markdown("<div style='margin-bottom: 15px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-bottom: 16px;'></div>", unsafe_allow_html=True)
 
-        # 베팅 확정 버튼
-        if st.button("🎲 베팅 확정 & 게임 시작", use_container_width=True):
+        # 6. 최하단 번개 퍼플 글로우 베팅하기 버튼
+        if st.button(f"⚡ {bet_val:,} 베팅하기", use_container_width=True, type="primary"):
             st.session_state.game_1_bet = bet_val
             st.rerun()
 
