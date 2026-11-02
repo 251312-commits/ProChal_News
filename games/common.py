@@ -3,17 +3,11 @@ import base64
 import streamlit.components.v1 as components
 from modules.news_ai import bring_article, pick_3_lowest_count_news
 from modules.db_handler import init_news_sheet
-from modules.ui_components import change_page
+from modules.ui_components import change_page, load_local_image_as_base64
 
 ws_news = init_news_sheet()
 
-# 정의된 함수: load_local_image_as_base64, get_game_news_selection, check_user_coins_or_pop_bank(min_required=1000), render_betting_ui
-
-@st.cache_data
-def load_local_image_as_base64(file_path: str) -> str:
-    with open(file_path, "rb") as f:
-        encoded = base64.b64encode(f.read()).decode()
-    return f"data:image/png;base64,{encoded}"
+# 정의된 함수: get_game_news_selection, check_user_coins_or_pop_bank(min_required=1000), render_betting_ui
 
 def get_game_news_selection(game_id: str):
     news_key = f"selected_news_{game_id}"
