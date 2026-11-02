@@ -12,27 +12,27 @@ ws_news = init_news_sheet()
 def show_game_1():
     st.title("🎮 게임 1: 뉴스 유사도 예측 게임")
 
-    # [1단계] 베팅 금액 선택
     if "game_1_bet" not in st.session_state:
-        # 코인 부족 검사 (부족 시 자동으로 은행 안내 팝업 뜸)
+        # 코인 부족 검사 (부족 시 은행 팝업)
         if not check_user_coins_or_pop_bank(min_required=100):
             return
 
-        current_coins = int(st.session_state.current_user_data.get('코인', 0))
-        current_sid = str(st.session_state.get('current_user', '')).strip().replace('.0', '')
+        user_data = st.session_state.get('current_user_data', {})
+        current_coins = int(user_data.get('코인', 0))
+        current_sid = str(st.session_state.get('current_user', ''))
+        current_nickname = str(user_data.get('아이디', ''))
         users_data = st.session_state.get('ranking_users_cache', [])
 
-        # 💡 배경 이미지를 넣고 싶다면 bg_image_url 파라미터에 URL을 전달하면 됩니다!
-        # 예: bg_image_url="https://example.com/background.png"
+        # 📌 assets/bg.png 로컬 이미지 경로 전달
         confirmed_bet = render_betting_ui(
             current_coins=current_coins,
             users_data=users_data,
             current_sid=current_sid,
+            current_nickname=current_nickname,
             min_bet=100,
-            bg_image_url=None  # 필요한 경우 배경 이미지 주소 입력
+            bg_image_path="assets/bg.png"  # 👈 로컬 파일 경로 입력
         )
 
-        # 베팅 확정 버튼을 눌렀을 경우
         if confirmed_bet is not None:
             st.session_state.game_1_bet = confirmed_bet
             st.rerun()
