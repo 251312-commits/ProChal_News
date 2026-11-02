@@ -546,31 +546,30 @@ def _adjust_bet_amount(step, min_val, max_val):
     current_val = st.session_state.get("bet_slider_val", min_val)
     st.session_state["bet_slider_val"] = max(min_val, min(max_val, current_val + step))
 
+def _adjust_bet_amount(step, min_val, max_val):
+    """슬라이더 및 버튼 반응속도 최적화용 콜백 함수"""
+    current_val = st.session_state.get("bet_slider_val", min_val)
+    st.session_state["bet_slider_val"] = max(min_val, min(max_val, current_val + step))
 
-def render_betting_ui(current_coins, users_data=None, current_sid="", min_bet=100, bg_image_url=None):
+
+def render_betting_ui(current_coins, users_data=None, current_sid="", current_nickname="", min_bet=100, bg_image_path=None):
     """
-    공통 카지노 테마 베팅 UI 컴포넌트
-    
-    :param current_coins: 유저 보유 코인 (int)
-    :param users_data: 랭킹 시뮬레이션용 유저 리스트 (list)
-    :param current_sid: 현재 유저 학번/ID (str)
-    :param min_bet: 최소 베팅 금액 (기본값 100)
-    :param bg_image_url: (선택) 배경 이미지 URL 또는 이미지 경로 (str)
-    :return: 베팅 확정 시 베팅 금액(int) 반환, 확정 전에는 None 반환
+    게임 전용 공통 카지노 테마 베팅 UI 컴포넌트
     """
     max_bet = max(min_bet, current_coins)
 
-    # 슬라이더 세션 상태 초기화 및 범위 보정
+    # 슬라이더 세션 상태 유지 및 범위 보정
     if "bet_slider_val" not in st.session_state:
         st.session_state["bet_slider_val"] = min(500, max_bet)
     else:
         st.session_state["bet_slider_val"] = max(min_bet, min(max_bet, st.session_state["bet_slider_val"]))
 
-    # 배경 이미지 적용 처리 (URL 지정 시 은은한 어둠 overlay와 함께 적용)
-    if bg_image_url:
-        bg_style = f"background: linear-gradient(rgba(18, 2, 36, 0.75), rgba(6, 0, 13, 0.9)), url('{bg_image_url}'); background-size: cover; background-position: center;"
-    else:
-        bg_style = "background: radial-gradient(circle at 50% 20%, #2e0854 0%, #120224 55%, #06000d 100%);"
+    # 배경 이미지 처리 (load_local_image_as_base64 활용)
+    bg_style = "background: radial-gradient(circle at 50% 20%, #2e0854 0%, #120224 55%, #06000d 100%);"
+    if bg_image_path:
+        base64_img = load_local_image_as_base64(bg_image_path)
+        if base64_img:
+            bg_style = f"background: linear-gradient(rgba(18, 2, 36, 0.75), rgba(6, 0, 13, 0.9)), url('{base64_img}'); background-size: cover; background-position: center;"
 
     # UI 스타일링 CSS
     st.markdown(
@@ -716,7 +715,7 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", min_bet=10
         unsafe_allow_html=True
     )
 
-    # 1. 메인 헤더 & 무대 비주얼
+    # 1. 헤더 및 중앙 무대
     st.markdown(
         f"""
         <div class="casino-app-frame">
@@ -745,11 +744,11 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", min_bet=10
         unsafe_allow_html=True
     )
 
-    # 2. 베팅 금액 표시
+    # 2. 베팅 액수
     bet_val = st.session_state["bet_slider_val"]
     st.markdown(f'<div class="bet-amount-title">🪙 {bet_val:,}</div>', unsafe_allow_html=True)
 
-    # 3. 매끄러운 슬라이더 & (- / +) 콜백 버튼
+    # 3. 조절 버튼 & 슬라이더
     col_m, col_s, col_p = st.columns([1, 4, 1])
     with col_m:
         st.button("➖", use_container_width=True, key="btn_bet_minus", 
@@ -771,7 +770,7 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", min_bet=10
 
     st.markdown("<div style='margin-bottom: 12px;'></div>", unsafe_allow_html=True)
 
-    # 4. 실시간 예상 당첨액 및 랭킹 산출
+    # 4. 랭킹 시뮬레이션 계산
     expected_payout = bet_val * 2
     simulated_total_coins = current_coins + expected_payout
 
@@ -780,33 +779,43 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", min_bet=10
     sim_rank = 1
 
     if users_data:
+        clean_sid = str(current_sid).strip().replace('.0', '')
+        clean_nick = str(current_nickname).strip()
+
         processed_users = []
         for u in users_data:
             try:
                 c_val = int(u.get('코인', 0))
             except Exception:
                 c_val = 0
+
+            u_id = str(u.get('학번', u.get('id', ''))).strip().replace('.0', '')
+            u_nick = str(u.get('아이디', u.get('nickname', ''))).strip()
+
+            is_me = (clean_sid and u_id == clean_sid) or (clean_nick and u_nick == clean_nick)
+
             processed_users.append({
-                'id': str(u.get('학번', '')).strip().replace('.0', ''),
-                'nickname': str(u.get('아이디', '익명')).strip(),
-                'coins': c_val
+                'id': u_id,
+                'nickname': u_nick,
+                'coins': c_val,
+                'is_me': is_me
             })
 
         curr_sorted = sorted(processed_users, key=lambda x: x['coins'], reverse=True)
-        curr_rank = next((i + 1 for i, u in enumerate(curr_sorted) if u['id'] == current_sid), len(curr_sorted) + 1)
+        curr_rank = next((i + 1 for i, u in enumerate(curr_sorted) if u['is_me']), len(curr_sorted) + 1)
 
         sim_list = []
         for u in processed_users:
-            is_me = (u['id'] == current_sid)
             sim_list.append({
-                'coins': simulated_total_coins if is_me else u['coins'],
-                'is_me': is_me
+                'coins': simulated_total_coins if u['is_me'] else u['coins'],
+                'is_me': u['is_me']
             })
         sim_sorted = sorted(sim_list, key=lambda x: x['coins'], reverse=True)
         sim_rank = next((i + 1 for i, u in enumerate(sim_sorted) if u['is_me']), curr_rank)
+        
         rank_climb = max(0, curr_rank - sim_rank)
 
-    # 5. 통계 카드 출력
+    # 5. 통계 카드
     col_c1, col_c2 = st.columns(2)
     with col_c1:
         st.markdown(
@@ -836,7 +845,7 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", min_bet=10
 
     st.markdown("<div style='margin-bottom: 16px;'></div>", unsafe_allow_html=True)
 
-    # 6. 베팅 확정 버튼 클릭 시 확정된 금액 반환
+    # 6. 베팅 확정 버튼
     if st.button(f"⚡ {bet_val:,} 베팅하기", use_container_width=True, type="primary"):
         return bet_val
 
