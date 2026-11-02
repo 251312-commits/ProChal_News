@@ -1,7 +1,14 @@
 import streamlit as st
+import base64
 
-# 정의된 함수: change_page, show_placeholder_page, inject_casino_theme
+# 정의된 함수: load_local_image_as_base64, change_page, show_placeholder_page, inject_casino_theme
 
+@st.cache_data
+def load_local_image_as_base64(file_path: str) -> str:
+    with open(file_path, "rb") as f:
+        encoded = base64.b64encode(f.read()).decode()
+    return f"data:image/png;base64,{encoded}"
+    
 def change_page(page_name):
     st.session_state.page = page_name
     st.rerun()
