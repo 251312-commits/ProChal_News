@@ -8,12 +8,6 @@ from modules.ui_components import change_page
 ws = init_gspread()
 
 # 정의된 함수: show_main_page
-
-@st.cache_data
-def load_local_image_as_base64(file_path: str) -> str:
-    with open(file_path, "rb") as f:
-        encoded = base64.b64encode(f.read()).decode()
-    return f"data:image/png;base64,{encoded}"
     
 def show_main_page():
     st_autorefresh(interval=600000, limit=None, key="auto_refresh")
