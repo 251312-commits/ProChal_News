@@ -4,6 +4,7 @@ from streamlit_autorefresh import st_autorefresh
 from st_clickable_images import clickable_images
 from modules.db_handler import init_gspread
 from modules.ui_components import change_page
+from games.common import load_local_image_as_base64
 
 ws = init_gspread()
 
