@@ -565,6 +565,19 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
         st.session_state["bet_slider_val"] = max(min_bet, min(max_bet, st.session_state["bet_slider_val"]))
     bet_val = st.session_state["bet_slider_val"]
 
+    def _betting_asset(filename):
+        """새 이미지가 아직 업로드되지 않았으면 기존 CSS 그래픽을 사용한다."""
+        try:
+            return load_local_image_as_base64(f"assets/{filename}")
+        except (OSError, ValueError):
+            return None
+
+    crown_img = _betting_asset("bet_crown.png")
+    news_img = _betting_asset("bet_news_cards.png")
+    podium_img = _betting_asset("bet_podium.png")
+    coin_img = _betting_asset("bet_coin_stack.png")
+    backdrop_img = _betting_asset("bet_background.jpg")
+
     # 배경 이미지가 제공된 경우 기존 게임의 배경을 함께 사용한다.
     bg_style = "radial-gradient(ellipse at 50% 9%, rgba(107, 28, 178, .55), transparent 55%), linear-gradient(180deg, #10051e, #080411 80%)"
     if bg_image_path:
@@ -791,7 +804,59 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
         sim_rank = next((i + 1 for i, u in enumerate(simulated) if u['is_me']), curr_rank)
         rank_climb = max(0, curr_rank - sim_rank)
 
-    st.markdown(f"<style>.st-key-casino_betting_shell {{ background: {bg_style}; background-size:cover; background-position:center; }}</style>", unsafe_allow_html=True)
+    # 실물 이미지를 렌더링할 때에만 사용되는 레이어 (HTML 카드·금화 CSS는 폴백으로 유지).
+    st.markdown(
+        """
+        <style>
+        .st-key-casino_betting_shell .cb-bet-logo {
+            display:block; width:min(88%,390px); height:auto; margin:0 auto 10px;
+            filter:drop-shadow(0 0 18px rgba(184,61,255,.37));
+        }
+        .st-key-casino_betting_shell .cb-asset-news {
+            position:absolute; z-index:2; top:8px; left:50%;
+            transform:translateX(-50%); width:min(110%,620px); height:auto; max-width:none;
+            filter:drop-shadow(0 0 19px rgba(180,39,255,.43));
+        }
+        .st-key-casino_betting_shell .cb-asset-podium {
+            position:absolute; z-index:4; bottom:0; left:50%;
+            transform:translateX(-50%); width:min(99%,540px); height:auto;
+            filter:drop-shadow(0 11px 18px rgba(4,0,13,.62));
+        }
+        .st-key-casino_betting_shell .cb-scene:has(.cb-asset-news) {
+            height:clamp(270px, 66vw, 395px); max-width:600px; margin:3px auto 0;
+        }
+        .st-key-casino_betting_shell .cb-stat-coin {
+            display:inline-block; width:31px; height:27px; object-fit:contain;
+            vertical-align:middle; margin:-5px 3px -6px -4px;
+        }
+        .st-key-casino_betting_shell .cb-hero:has(.cb-bet-logo) {padding-top:2px;}
+        .st-key-casino_betting_shell .cb-hero:has(.cb-bet-logo) .cb-hero-title {margin-top:2px;}
+        @media(max-width:480px) {
+            .st-key-casino_betting_shell .cb-bet-logo {width:91%;max-width:290px;margin-bottom:5px;}
+            .st-key-casino_betting_shell .cb-scene:has(.cb-asset-news) {height:clamp(240px,74vw,280px);}
+            .st-key-casino_betting_shell .cb-asset-news {top:6px; width:112%;}
+            .st-key-casino_betting_shell .cb-asset-podium {width:105%;bottom:0;}
+        }
+        @media (prefers-reduced-motion: no-preference) {
+            .st-key-casino_betting_shell .cb-asset-news {animation:bet-card-float 4s ease-in-out infinite;}
+            @keyframes bet-card-float {0%,100% {translate:0 0;}50% {translate:0 -4px;}}
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    if backdrop_img:
+        st.markdown(
+            f'<style>.stApp:has(.st-key-casino_betting_shell) {{'
+            f'background-image:linear-gradient(180deg,rgba(9,2,22,.26),rgba(7,1,18,.55)),url("{backdrop_img}") !important;'
+            f'background-position:center top !important; background-size:cover !important;'
+            f'background-attachment:fixed !important; background-color:#080313 !important;'
+            f'}} .st-key-casino_betting_shell {{background:linear-gradient(180deg,rgba(22,6,43,.3),rgba(13,5,25,.55)) !important;}}</style>',
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(f"<style>.st-key-casino_betting_shell {{ background: {bg_style}; background-size:cover; background-position:center; }}</style>", unsafe_allow_html=True)
     with st.container(key="casino_betting_shell"):
         back_col, space_col, balance_col, bank_col = st.columns([.7, .9, 2.8, .75], gap="small")
         with back_col:
@@ -803,20 +868,34 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
             if st.button("+", key="bet_nav_bank", help="은행으로 이동"):
                 change_page("bank")
 
+        bet_logo_html = (
+            f'<img class="cb-bet-logo" src="{crown_img}" alt="왕관 BET 배지">'
+            if crown_img else
+            '<div class="cb-insignia"><span class="cb-crown">♛</span><span class="cb-bet-tag">BET</span></div>'
+        )
+        bet_cards_html = (
+            f'<img class="cb-asset-news" src="{news_img}" alt="">'
+            if news_img else
+            '<div class="cb-card cb-card-back-left"></div><div class="cb-card cb-card-back-right"></div>'
+            '<div class="cb-card cb-card-front"><div class="cb-news-paper"></div><div class="cb-question">?</div></div>'
+        )
+        bet_podium_html = (
+            f'<img class="cb-asset-podium" src="{podium_img}" alt="">'
+            if podium_img else
+            '<div class="cb-platform"></div><div class="cb-coins"><div class="cb-stack cb-stack-one"></div>'
+            '<div class="cb-stack cb-stack-two"></div><div class="cb-stack cb-stack-three"></div>'
+            '<div class="cb-stack cb-stack-four"></div><div class="cb-stack cb-stack-five"></div></div>'
+            '<div class="cb-medal">♛</div>'
+        )
         st.markdown(
-            """
+            f"""
             <section class="cb-hero" aria-label="베팅 화면">
-                <div class="cb-insignia"><span class="cb-crown">♛</span><span class="cb-bet-tag">BET</span></div>
+                {bet_logo_html}
                 <div class="cb-hero-title">얼마를 걸까요?</div>
                 <p class="cb-hero-subtitle">베팅하면 뉴스가 공개됩니다</p>
-                <div class="cb-scene" aria-hidden="true">
-                    <div class="cb-card cb-card-back-left"></div>
-                    <div class="cb-card cb-card-back-right"></div>
-                    <div class="cb-card cb-card-front"><div class="cb-news-paper"></div><div class="cb-question">?</div></div>
-                    <div class="cb-platform"></div>
-                    <div class="cb-coins"><div class="cb-stack cb-stack-one"></div><div class="cb-stack cb-stack-two"></div>
-                    <div class="cb-stack cb-stack-three"></div><div class="cb-stack cb-stack-four"></div><div class="cb-stack cb-stack-five"></div></div>
-                    <div class="cb-medal">♛</div>
+                <div class="cb-scene" aria-label="뉴스 카드와 금화 무대" role="img">
+                    {bet_cards_html}
+                    {bet_podium_html}
                 </div>
             </section>
             """,
@@ -838,11 +917,15 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
             st.markdown(f'<div class="cb-range-ends"><span>{min_bet:,}</span><span>{max_bet:,}</span></div>', unsafe_allow_html=True)
 
         rise_label = f"▲ {rank_climb}" if rank_climb else "—"
+        coin_decoration = (
+            f'<img class="cb-stat-coin" src="{coin_img}" alt="">'
+            if coin_img else '<span class="cb-stat-art">🪙</span>'
+        )
         st.markdown(
             f"""
             <div class="cb-prediction">
               <div class="cb-stat">
-                <div class="cb-stat-label"><span class="cb-stat-art">🪙</span>예상 당첨액 ⓘ</div>
+                <div class="cb-stat-label">{coin_decoration}예상 당첨액 ⓘ</div>
                 <div class="cb-stat-number is-gold">+ {expected_payout:,}</div>
                 <div class="cb-stat-pill">배율 2.0x</div>
               </div>
