@@ -542,14 +542,10 @@ def check_user_coins_or_pop_bank(min_required=1000):
     return True
 
 def _adjust_bet_amount(step, min_val, max_val):
-    """슬라이더 및 버튼 튀김 현상 방지용 콜백 함수"""
-    current_val = st.session_state.get("bet_slider_val", min_val)
-    st.session_state["bet_slider_val"] = max(min_val, min(max_val, current_val + step))
-
-def _adjust_bet_amount(step, min_val, max_val):
-    """슬라이더 및 버튼 반응속도 최적화용 콜백 함수"""
-    current_val = st.session_state.get("bet_slider_val", min_val)
-    st.session_state["bet_slider_val"] = max(min_val, min(max_val, current_val + step))
+    """50코인 단위에 맞추어 슬라이더 값을 안전하게 갱신한다."""
+    current = int(st.session_state.get("bet_slider_val", min_val))
+    aligned = min_val + ((current - min_val) // 50) * 50
+    st.session_state["bet_slider_val"] = max(min_val, min(max_val, aligned + step))
 
 
 def render_betting_ui(current_coins, users_data=None, current_sid="", current_nickname="", min_bet=100, bg_image_path=None):
@@ -558,11 +554,16 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
         st.error(f"최소 베팅 금액 {min_bet:,} C에 필요한 코인이 부족합니다.")
         return None
 
-    max_bet = max(min_bet, current_coins)
-    if "bet_slider_val" not in st.session_state:
-        st.session_state["bet_slider_val"] = max(min_bet, min(500, max_bet))
-    else:
-        st.session_state["bet_slider_val"] = max(min_bet, min(max_bet, st.session_state["bet_slider_val"]))
+    # 위젯의 실제 범위와 상태를 50코인 간격으로 정렬한다.
+    # 예: 보유 1,237 C인 사용자의 max_value=1,237 / step=50 충돌 방지.
+    min_bet = int(min_bet)
+    current_coins = int(current_coins)
+    bet_step = 50
+    max_bet = min_bet + ((current_coins - min_bet) // bet_step) * bet_step
+    initial_bet = min_bet + ((min(500, max_bet) - min_bet) // bet_step) * bet_step
+    stored_bet = int(st.session_state.get("bet_slider_val", initial_bet))
+    stored_bet = min_bet + ((stored_bet - min_bet) // bet_step) * bet_step
+    st.session_state["bet_slider_val"] = max(min_bet, min(max_bet, stored_bet))
     bet_val = st.session_state["bet_slider_val"]
 
     def _betting_asset(filename):
@@ -846,6 +847,177 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
         unsafe_allow_html=True,
     )
 
+    # 화면 너비가 320px까지 줄어도 열이 접히거나 잘리지 않도록 구조를 고정한다.
+    # 기본 Streamlit 테마 및 다른 게임에는 영향을 주지 않는다.
+    st.markdown(
+        """
+        <style>
+        .block-container:has(.st-key-casino_betting_shell) {
+            width:100% !important; max-width:700px !important;
+            padding: max(.35rem, env(safe-area-inset-top)) clamp(9px, 3vw, 20px)
+                max(1rem, env(safe-area-inset-bottom)) !important;
+        }
+        .st-key-casino_betting_shell {
+            width:100% !important; min-width:0 !important;
+            box-sizing:border-box !important; padding:clamp(10px,2.5vw,22px) !important;
+            overflow:hidden !important; border-radius:24px !important;
+        }
+        .st-key-casino_betting_shell [data-testid="stHorizontalBlock"] {
+            flex-wrap:nowrap !important; gap:clamp(3px,1.2vw,10px) !important;
+            align-items:center !important;
+        }
+        .st-key-casino_betting_shell [data-testid="column"] {
+            min-width:0 !important; box-sizing:border-box !important;
+        }
+        .st-key-casino_betting_shell .cb-hero { min-width:0 !important; }
+        .st-key-casino_betting_shell .cb-bet-logo {
+            width:min(85%,340px) !important; max-width:100% !important;
+            margin:0 auto 6px !important;
+        }
+        .st-key-casino_betting_shell .cb-scene,
+        .st-key-casino_betting_shell .cb-scene:has(.cb-asset-news) {
+            position:relative; width:100%; max-width:600px;
+            height:clamp(218px,67vw,355px) !important;
+            margin:5px auto 0 !important; overflow:visible;
+        }
+        .st-key-casino_betting_shell .cb-asset-news {
+            top:0 !important; left:50%; width:100% !important;
+            max-width:100% !important; height:auto !important; object-fit:contain;
+            transform:translateX(-50%) !important;
+        }
+        .st-key-casino_betting_shell .cb-asset-podium {
+            left:50%; bottom:0 !important; width:94% !important;
+            max-width:500px !important; height:auto !important;
+            object-fit:contain; transform:translateX(-50%) !important;
+        }
+        .st-key-casino_bet_controls {width:100% !important; min-width:0 !important;}
+        .st-key-casino_bet_row {width:100% !important; min-width:0 !important;}
+        .st-key-casino_bet_row [data-testid="stHorizontalBlock"] {
+            display:flex !important; flex-flow:row nowrap !important;
+            align-items:center !important; gap:8px !important;
+            width:100% !important; min-width:0 !important;
+        }
+        .st-key-casino_bet_row [data-testid="stHorizontalBlock"] > [data-testid="column"] {
+            min-width:0 !important; box-sizing:border-box;
+        }
+        .st-key-casino_bet_row [data-testid="stHorizontalBlock"] > [data-testid="column"]:first-child,
+        .st-key-casino_bet_row [data-testid="stHorizontalBlock"] > [data-testid="column"]:last-child {
+            flex:0 0 42px !important; width:42px !important;
+        }
+        .st-key-casino_bet_row [data-testid="stHorizontalBlock"] > [data-testid="column"]:nth-child(2) {
+            flex:1 1 0 !important; width:0 !important;
+        }
+        .st-key-casino_bet_row [data-testid="stSlider"] {
+            width:100% !important; min-width:0 !important; margin:0 !important;
+        }
+        .st-key-casino_bet_row [data-baseweb="slider"] {
+            width:100% !important; min-width:0 !important;
+        }
+        .st-key-casino_bet_row [data-baseweb="slider"] [role="slider"] {
+            background:#fbe4ff !important; border:3px solid #fff7ff !important;
+            box-shadow:0 0 9px 2px #cb5aff !important;
+            width:24px !important; height:24px !important;
+            cursor:grab; touch-action:pan-y;
+        }
+        .st-key-casino_bet_row [data-testid="stTickBar"],
+        .st-key-casino_bet_row [data-testid="stSliderTickBarMin"],
+        .st-key-casino_bet_row [data-testid="stSliderTickBarMax"] {
+            display:none !important;
+        }
+        .st-key-bet_btn_minus button,.st-key-bet_btn_plus button {
+            height:42px !important; min-height:42px !important;
+            width:42px !important; padding:0 !important;
+        }
+        .st-key-bet_btn_minus button:disabled,
+        .st-key-bet_btn_plus button:disabled {
+            opacity:.44 !important; cursor:not-allowed !important;
+        }
+        .cb-fixed-slider {
+            position:relative; width:100%; height:8px;
+            margin:18px 0; background:#a538fb; border-radius:999px;
+            box-shadow:0 0 8px #af33fc;
+        }
+        .cb-fixed-slider-thumb {
+            position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+            width:24px;height:24px;border:3px solid #fff;border-radius:50%;
+            background:#e8a7ff;box-shadow:0 0 9px 3px #b532ff;
+        }
+        .st-key-casino_betting_shell .cb-range-ends {
+            padding:0 50px !important; font-size:clamp(.7rem,2.7vw,.84rem);
+            line-height:1.1; margin-top:0;
+        }
+        .st-key-casino_betting_shell .cb-prediction {width:100%; min-width:0;}
+        .st-key-casino_betting_shell .cb-stat-label {
+            overflow-wrap:anywhere; white-space:normal; line-height:1.4;
+        }
+        .st-key-casino_betting_shell .cb-stat-number,
+        .st-key-casino_betting_shell .cb-stat-sub {
+            white-space:normal; overflow-wrap:anywhere;
+        }
+        @media(max-width:480px) {
+            .st-key-casino_betting_shell {
+                padding:10px !important;border-radius:18px !important;
+            }
+            .st-key-casino_betting_shell .cb-bet-logo {width:min(78%,255px) !important;}
+            .st-key-casino_betting_shell .cb-hero-title {
+                font-size:clamp(1.55rem,7vw,2rem) !important;
+                margin:0 0 2px !important;
+            }
+            .st-key-casino_betting_shell .cb-scene,
+            .st-key-casino_betting_shell .cb-scene:has(.cb-asset-news) {
+                height:clamp(210px,67vw,270px) !important;margin-top:0 !important;
+            }
+            .st-key-casino_betting_shell .cb-asset-news {width:100% !important;}
+            .st-key-casino_betting_shell .cb-asset-podium {width:96% !important;}
+            .st-key-casino_bet_controls {padding:13px 9px 10px !important;border-radius:20px;}
+            .st-key-casino_bet_row [data-testid="stHorizontalBlock"] {gap:5px !important;}
+            .st-key-casino_bet_row [data-testid="stHorizontalBlock"] > [data-testid="column"]:first-child,
+            .st-key-casino_bet_row [data-testid="stHorizontalBlock"] > [data-testid="column"]:last-child {
+                flex:0 0 37px !important; width:37px !important;
+            }
+            .st-key-bet_btn_minus button,.st-key-bet_btn_plus button {
+                width:37px !important; height:37px !important; min-height:37px !important;
+            }
+            .st-key-casino_betting_shell .cb-range-ends {padding:0 38px !important;}
+            .st-key-casino_betting_shell .cb-stat {min-height:100px;padding:10px 8px;}
+            .st-key-casino_betting_shell .cb-stat-label {
+                font-size:clamp(.64rem,2.5vw,.81rem); letter-spacing:-.05em;
+            }
+            .st-key-casino_betting_shell .cb-rank-delta {
+                position:static; float:none; margin-top:4px; font-size:.75rem;
+            }
+            .st-key-casino_betting_shell .cb-stat-sub {margin-top:2px;}
+            .st-key-casino_betting_shell .cb-stat-number {
+                font-size:clamp(1.25rem,6vw,1.75rem);
+            }
+            .st-key-casino_betting_shell .cb-balance {
+                gap:5px; font-size:clamp(.94rem,4vw,1.15rem);
+            }
+            .st-key-casino_betting_shell .cb-gold-token {
+                width:29px;height:29px; flex:0 0 29px; font-size:18px;
+            }
+            .st-key-bet_nav_back button,.st-key-bet_nav_bank button {
+                width:35px !important;height:35px !important;min-height:35px !important;
+                font-size:1.3rem !important;
+            }
+            .st-key-casino_betting_shell .cb-betting-note {font-size:.68rem;}
+            .stApp:has(.st-key-casino_betting_shell) {
+                background-attachment:scroll !important;
+            }
+        }
+        @media(max-width:335px) {
+            .st-key-casino_betting_shell .cb-stat-art {font-size:.8rem;margin-right:2px;}
+            .st-key-casino_betting_shell .cb-prediction {
+                grid-template-columns:1fr 1fr;
+            }
+            .st-key-casino_betting_shell .cb-stat {padding:9px 6px;}
+            .st-key-casino_betting_shell .cb-stat-label {font-size:.64rem;}
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
     if backdrop_img:
         st.markdown(
             f'<style>.stApp:has(.st-key-casino_betting_shell) {{'
@@ -858,7 +1030,7 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
     else:
         st.markdown(f"<style>.st-key-casino_betting_shell {{ background: {bg_style}; background-size:cover; background-position:center; }}</style>", unsafe_allow_html=True)
     with st.container(key="casino_betting_shell"):
-        back_col, space_col, balance_col, bank_col = st.columns([.7, .9, 2.8, .75], gap="small")
+        back_col, balance_col, bank_col = st.columns([1, 3.2, 1], gap="small")
         with back_col:
             if st.button("❮", key="bet_nav_back", help="메인 화면으로 돌아가기"):
                 change_page("main")
@@ -904,16 +1076,26 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
 
         with st.container(key="casino_bet_controls"):
             st.markdown(f'<div class="cb-amount"><span class="cb-gold-token">$</span>{bet_val:,}</div>', unsafe_allow_html=True)
-            minus_col, range_col, plus_col = st.columns([1, 5, 1], gap="small")
-            with minus_col:
-                st.button("−", use_container_width=True, key="bet_btn_minus",
-                          on_click=_adjust_bet_amount, args=(-50, min_bet, max_bet))
-            with range_col:
-                st.slider("베팅 금액 선택", min_value=min_bet, max_value=max_bet, step=50,
-                          key="bet_slider_val", label_visibility="collapsed")
-            with plus_col:
-                st.button("+", use_container_width=True, key="bet_btn_plus",
-                          on_click=_adjust_bet_amount, args=(50, min_bet, max_bet))
+            with st.container(key="casino_bet_row"):
+                minus_col, range_col, plus_col = st.columns([1, 5, 1], gap="small")
+                with minus_col:
+                    st.button("−", use_container_width=True, key="bet_btn_minus",
+                              disabled=bet_val <= min_bet,
+                              on_click=_adjust_bet_amount, args=(-bet_step, min_bet, max_bet))
+                with range_col:
+                    if max_bet > min_bet:
+                        st.slider("베팅 금액 선택", min_value=min_bet, max_value=max_bet,
+                                  step=bet_step, key="bet_slider_val", label_visibility="collapsed")
+                    else:
+                        st.markdown(
+                            '<div class="cb-fixed-slider" aria-label="선택할 수 있는 유일한 베팅 금액">'
+                            '<div class="cb-fixed-slider-thumb"></div></div>',
+                            unsafe_allow_html=True,
+                        )
+                with plus_col:
+                    st.button("+", use_container_width=True, key="bet_btn_plus",
+                              disabled=bet_val >= max_bet,
+                              on_click=_adjust_bet_amount, args=(bet_step, min_bet, max_bet))
             st.markdown(f'<div class="cb-range-ends"><span>{min_bet:,}</span><span>{max_bet:,}</span></div>', unsafe_allow_html=True)
 
         rise_label = f"▲ {rank_climb}" if rank_climb else "—"
