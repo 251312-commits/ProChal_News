@@ -2,10 +2,14 @@ import streamlit as st
 from modules.news_ai import summary, similarity_check
 from modules.db_handler import init_gspread, init_news_sheet
 from modules.ui_components import change_page
+from views.ranking import fetch_ranking_data
 from games.common import get_game_news_selection, check_user_coins_or_pop_bank, render_betting_ui
 
 ws = init_gspread()
 ws_news = init_news_sheet()
+
+# 순이익(잔액 증가액) 배율. UI 예상 코인과 실제 승리 정산에 공통 적용.
+GAME_1_WIN_MULTIPLIER = 100.0
 
 # 정의된 함수: show_game_1
 
@@ -19,7 +23,12 @@ def show_game_1():
         current_coins = int(user_data.get('코인', 0))
         current_sid = str(st.session_state.get('current_user', ''))
         current_nickname = str(user_data.get('아이디', ''))
-        users_data = st.session_state.get('ranking_users_cache', [])
+        # 랭킹 화면과 같은, 최대 10초 캐시된 사용자 코인 목록을 이용한다.
+        # 이전에는 캐시가 없는 경우 빈 목록으로 처리돼 1위로 잘못 표시됐다.
+        try:
+            users_data = fetch_ranking_data()
+        except Exception:
+            users_data = None
 
         # 📌 assets/bg.png 로컬 이미지 경로 전달
         confirmed_bet = render_betting_ui(
@@ -28,7 +37,9 @@ def show_game_1():
             current_sid=current_sid,
             current_nickname=current_nickname,
             min_bet=100,
-            bg_image_path="assets/bg.png"  # 👈 로컬 파일 경로 입력
+            bg_image_path="assets/bg.png",
+            payout_multiplier=GAME_1_WIN_MULTIPLIER,
+            title="title",  # 나중에 실제 게임 제목으로 교체
         )
 
         if confirmed_bet is not None:
@@ -119,7 +130,7 @@ def show_game_1():
             diff = abs(pred_score - actual_score)
 
             if diff == 0:
-                reward = int(bet_coin * 100.0)
+                reward = int(bet_coin * GAME_1_WIN_MULTIPLIER)
                 is_win = True
                 result_msg = f"🎉 대박 성공! (오차 {diff}점)"
             else:

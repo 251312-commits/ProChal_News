@@ -1,5 +1,7 @@
 import streamlit as st
 import base64
+from html import escape
+from games.betting_math import calculate_expected_gain, format_payout_multiplier, project_rank_change
 import streamlit.components.v1 as components
 from modules.news_ai import bring_article, pick_3_lowest_count_news
 from modules.db_handler import init_news_sheet
@@ -548,10 +550,11 @@ def _adjust_bet_amount(step, min_val, max_val):
     st.session_state["bet_slider_val"] = max(min_val, min(max_val, aligned + step))
 
 
-def render_betting_ui(current_coins, users_data=None, current_sid="", current_nickname="", min_bet=100, bg_image_path=None):
-    """Responsive betting screen, using the supplied alpha PNG assets.
+def render_betting_ui(current_coins, users_data=None, current_sid="", current_nickname="", min_bet=100, bg_image_path=None, *, payout_multiplier, title="title"):
+    """Responsive betting screen with configurable net-win multiplier and title.
 
-    Keep the return contract unchanged: None before confirmation, wager on click.
+    payout_multiplier is the factor *added* to the existing coin balance on a win.
+    Return value stays unchanged: None before confirmation, wager on click.
     """
     current_coins = int(current_coins)
     min_bet = int(min_bet)
@@ -584,32 +587,13 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
         except (OSError, ValueError):
             pass
 
-    # Projection preserves the existing illustrative 2x multiplier and rank calculation.
-    expected_payout = bet_val * 2
-    simulated_total_coins = current_coins + expected_payout
-    curr_rank, sim_rank, rank_climb = 1, 1, 0
-    if users_data:
-        clean_sid = str(current_sid).strip().replace(".0", "")
-        clean_nick = str(current_nickname).strip()
-        processed_users = []
-        for user in users_data:
-            try:
-                amount = int(user.get("코인", 0))
-            except (ValueError, TypeError):
-                amount = 0
-            user_sid = str(user.get("학번", user.get("id", ""))).strip().replace(".0", "")
-            user_nick = str(user.get("아이디", user.get("nickname", ""))).strip()
-            is_me = bool((clean_sid and user_sid == clean_sid) or (clean_nick and user_nick == clean_nick))
-            processed_users.append({"coins": amount, "is_me": is_me})
-        ranked = sorted(processed_users, key=lambda item: item["coins"], reverse=True)
-        curr_rank = next((i + 1 for i, user in enumerate(ranked) if user["is_me"]), len(ranked) + 1)
-        future_ranked = sorted(
-            [{"coins": simulated_total_coins if user["is_me"] else user["coins"], "is_me": user["is_me"]}
-             for user in processed_users],
-            key=lambda item: item["coins"], reverse=True,
-        )
-        sim_rank = next((i + 1 for i, user in enumerate(future_ranked) if user["is_me"]), curr_rank)
-        rank_climb = max(0, curr_rank - sim_rank)
+    # The UI must use the same *net win* multiplier as the game's settlement.
+    expected_payout = calculate_expected_gain(bet_val, payout_multiplier)
+    multiplier_label = format_payout_multiplier(payout_multiplier)
+    curr_rank, sim_rank = project_rank_change(
+        users_data, current_coins, current_sid, current_nickname, expected_payout
+    )
+    safe_title = escape(str(title))
 
     # Scoped, asset-proportion-based layout: never position 2D art using fixed heights.
     st.markdown(
@@ -627,7 +611,7 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
             min-width:0;overflow:hidden;padding:clamp(11px,2.7vw,23px);
             border:1px solid rgba(178,75,247,.52);border-radius:24px;
             color:#fdf7ff;
-            background:linear-gradient(170deg,rgba(23,6,43,.87),rgba(8,3,22,.91));
+            background:linear-gradient(170deg,rgba(23,6,43,.53),rgba(8,3,22,.65));
             box-shadow:0 0 38px rgba(116,28,195,.25),inset 0 0 22px rgba(150,45,221,.17);
         }
         .st-key-casino_betting_shell [data-testid="stVerticalBlock"] {gap:clamp(6px,1.4vw,12px);}
@@ -657,6 +641,13 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
         .cb-logo {display:block;width:min(82%,365px);height:auto;margin:0 auto 3px;
             filter:drop-shadow(0 0 10px rgba(171,62,255,.35));}
         .cb-logo-fallback {font-size:1.5rem;color:#e6a9ff;font-weight:900;letter-spacing:4px;}
+        .cb-game-title {
+            margin:5px auto 6px !important; padding:0 8px;
+            color:#ffe4a8; font-weight:800; letter-spacing:.07em;
+            font-size:clamp(.94rem,3.8vw,1.25rem);
+            line-height:1.4; overflow-wrap:anywhere;
+            text-shadow:0 0 14px rgba(160,74,241,.6);
+        }
         .cb-heading {margin:0 !important;line-height:1.22;
             font-size:clamp(1.65rem,6.3vw,2.55rem);font-weight:950;letter-spacing:-.045em;
             color:#fff4ff;text-shadow:0 0 15px rgba(178,103,255,.32);}
@@ -675,7 +666,7 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
         .st-key-casino_bet_controls {min-width:0 !important;width:100% !important;
             border:1px solid #9c34d3;border-radius:22px;
             padding:clamp(12px,2.4vw,17px) !important;
-            background:linear-gradient(145deg,rgba(43,12,67,.96),rgba(15,5,30,.96));
+            background:linear-gradient(145deg,rgba(43,12,67,.79),rgba(15,5,30,.82));
             box-shadow:inset 0 2px 12px rgba(197,87,255,.19),0 0 15px rgba(137,26,209,.2);}
         .cb-amount {display:flex;align-items:center;justify-content:center;gap:10px;
             font-size:clamp(1.75rem,7vw,2.45rem);font-weight:950;
@@ -713,7 +704,7 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
             border:3px solid #fff;border-radius:50%;background:#e7b3ff;box-shadow:0 0 8px #af31e7;}
         .cb-stats {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
             border:1px solid #9631e1;border-radius:21px;overflow:hidden;
-            background:linear-gradient(130deg,rgba(54,13,80,.95),rgba(18,6,36,.97));
+            background:linear-gradient(130deg,rgba(54,13,80,.77),rgba(18,6,36,.83));
             box-shadow:0 0 19px rgba(136,30,213,.26),inset 0 0 14px rgba(151,47,241,.18);}
         .cb-stat {min-width:0;padding:clamp(10px,2.8vw,16px);}
         .cb-stat + .cb-stat {border-left:1px solid rgba(185,87,238,.34);}
@@ -731,6 +722,7 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
         .cb-rank {font-size:clamp(.93rem,4vw,1.25rem);font-weight:850;margin-top:11px;
             font-variant-numeric:tabular-nums;white-space:nowrap;}
         .cb-rank b {color:#ca6bff;}
+        .cb-rank-unavailable {color:#b2a1c4;font-size:.78rem;white-space:normal;}
         .cb-up {color:#43e4bc;font-size:.8rem;font-weight:850;white-space:nowrap;margin-top:3px;}
         .st-key-bet_confirm_cta button {
             width:100% !important;min-height:clamp(62px,14vw,83px) !important;
@@ -764,7 +756,7 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
     if background_img:
         st.markdown(
             f'<style>.stApp:has(.st-key-casino_betting_shell) {{'
-            f'background-image:linear-gradient(180deg,rgba(8,1,20,.27),rgba(9,2,20,.62)),url("{background_img}") !important;'
+            f'background-image:linear-gradient(180deg,rgba(8,1,20,.15),rgba(9,2,20,.39)),url("{background_img}") !important;'
             f'background-size:cover !important;background-position:center top !important;'
             f'background-attachment:scroll !important;background-color:#0b031b !important;'
             f'}}</style>',
@@ -798,6 +790,7 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
             f'''
             <section class="cb-hero" aria-label="베팅 금액 선택">
               {logo_html}
+              <p class="cb-game-title">{safe_title}</p>
               <h2 class="cb-heading">얼마를 걸까요?</h2>
               <p class="cb-description">베팅하면 뉴스가 공개됩니다</p>
               <div class="cb-scene">{news_html}{podium_html}</div>
@@ -831,19 +824,25 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
                 unsafe_allow_html=True,
             )
 
-        up_display = f'▲ {rank_climb}' if rank_climb else '—'
+        if curr_rank is None:
+            up_display = "조회 불가"
+            rank_display = '<span class="cb-rank-unavailable">랭킹 데이터 없음</span>'
+        else:
+            change = curr_rank - sim_rank
+            up_display = f'▲ {change}' if change > 0 else (f'▼ {abs(change)}' if change < 0 else '—')
+            rank_display = f'{curr_rank}위 → <b>{sim_rank}위</b>'
         st.markdown(
             f'''
             <div class="cb-stats">
               <div class="cb-stat">
                 <div class="cb-stat-label">{coin_html}<span>예상 당첨액 ⓘ</span></div>
                 <div class="cb-stat-value">+ {expected_payout:,}</div>
-                <div class="cb-pill">배율 2.0x</div>
+                <div class="cb-pill">배율 {multiplier_label}</div>
               </div>
               <div class="cb-stat">
                 <div class="cb-stat-label"><span aria-hidden="true">🏆</span><span>예상 랭킹 변동 ⓘ</span></div>
                 <div class="cb-up">{up_display}</div>
-                <div class="cb-rank">{curr_rank}위 → <b>{sim_rank}위</b></div>
+                <div class="cb-rank">{rank_display}</div>
               </div>
             </div>
             ''', unsafe_allow_html=True,
