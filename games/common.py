@@ -659,7 +659,7 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
             filter:drop-shadow(0 0 13px rgba(170,41,234,.38));}
         .cb-podium-image {display:block;position:relative;z-index:2;
             width:89%;height:auto;max-width:89%;object-fit:contain;
-            margin-top:clamp(-28px,-3.8vw,-10px);
+            margin-top:clamp(8px,1.8vw,16px);
             filter:drop-shadow(0 8px 14px rgba(8,0,18,.65));}
         .cb-art-fallback {width:90%;margin:auto;border:1px solid #ae41e6;
             border-radius:18px;background:#291244;color:#e7a9ff;font-size:3.7rem;text-align:center;padding:30px;}
@@ -815,22 +815,29 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
                 margin:1px 0 !important;
                 line-height:1.25 !important;
             }
+            /* Separate rows ensure the podium never covers the mystery card.
+               The scene is only slightly taller than before, avoiding extra scroll. */
             .st-key-casino_betting_shell .cb-scene {
-                width:100% !important; height:clamp(115px,23dvh,200px) !important;
-                margin:0 auto !important; position:relative !important;
-                display:block !important; overflow:visible;
+                width:100% !important;height:clamp(180px,29dvh,252px) !important;
+                margin:0 auto !important;position:relative !important;
+                display:grid !important;
+                grid-template-rows:minmax(0,1fr) minmax(0,1fr) !important;
+                justify-items:center !important;align-items:center !important;
+                row-gap:3px !important;overflow:visible;
             }
             .st-key-casino_betting_shell .cb-news-image {
-                position:absolute !important;left:50% !important;top:0 !important;
-                transform:translateX(-50%) !important;
-                width:100% !important;height:61% !important;max-width:100% !important;
-                object-fit:contain !important;
+                position:static !important;top:auto !important;left:auto !important;
+                transform:none !important;
+                width:100% !important;max-width:100% !important;
+                height:100% !important;min-height:0 !important;
+                object-fit:contain !important;align-self:center;
             }
             .st-key-casino_betting_shell .cb-podium-image {
-                position:absolute !important;left:50% !important;bottom:0 !important;
-                transform:translateX(-50%) !important;margin:0 !important;
+                position:static !important;left:auto !important;bottom:auto !important;
+                transform:none !important;margin:0 !important;
                 width:90% !important;max-width:90% !important;
-                height:72% !important;object-fit:contain !important;
+                height:100% !important;min-height:0 !important;
+                object-fit:contain !important;align-self:center;
             }
             .st-key-casino_betting_shell .cb-art-fallback {
                 position:relative;padding:15px !important;font-size:2rem !important;
@@ -890,7 +897,7 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
                 height:clamp(34px,7dvh,48px) !important;
             }
             .st-key-casino_betting_shell .cb-scene {
-                height:clamp(100px,19dvh,146px) !important;
+                height:clamp(145px,25dvh,178px) !important;
             }
             .st-key-casino_betting_shell .cb-hero {margin:0 !important;}
             .st-key-casino_betting_shell .cb-stat {padding:5px 8px !important;}
