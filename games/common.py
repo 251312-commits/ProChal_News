@@ -542,586 +542,314 @@ def check_user_coins_or_pop_bank(min_required=1000):
     return True
 
 def _adjust_bet_amount(step, min_val, max_val):
-    """50코인 단위에 맞추어 슬라이더 값을 안전하게 갱신한다."""
+    """Keep the shared slider in valid 50-coin increments."""
     current = int(st.session_state.get("bet_slider_val", min_val))
     aligned = min_val + ((current - min_val) // 50) * 50
     st.session_state["bet_slider_val"] = max(min_val, min(max_val, aligned + step))
 
 
 def render_betting_ui(current_coins, users_data=None, current_sid="", current_nickname="", min_bet=100, bg_image_path=None):
-    """모바일 대응 프리미엄 네온 베팅 화면. 기존 게임/코인 로직은 유지한다."""
+    """Responsive betting screen, using the supplied alpha PNG assets.
+
+    Keep the return contract unchanged: None before confirmation, wager on click.
+    """
+    current_coins = int(current_coins)
+    min_bet = int(min_bet)
     if current_coins < min_bet:
         st.error(f"최소 베팅 금액 {min_bet:,} C에 필요한 코인이 부족합니다.")
         return None
 
-    # 위젯의 실제 범위와 상태를 50코인 간격으로 정렬한다.
-    # 예: 보유 1,237 C인 사용자의 max_value=1,237 / step=50 충돌 방지.
-    min_bet = int(min_bet)
-    current_coins = int(current_coins)
-    bet_step = 50
-    max_bet = min_bet + ((current_coins - min_bet) // bet_step) * bet_step
-    initial_bet = min_bet + ((min(500, max_bet) - min_bet) // bet_step) * bet_step
+    step = 50
+    max_bet = min_bet + ((current_coins - min_bet) // step) * step
+    initial_bet = min_bet + ((min(500, max_bet) - min_bet) // step) * step
     stored_bet = int(st.session_state.get("bet_slider_val", initial_bet))
-    stored_bet = min_bet + ((stored_bet - min_bet) // bet_step) * bet_step
+    stored_bet = min_bet + ((stored_bet - min_bet) // step) * step
     st.session_state["bet_slider_val"] = max(min_bet, min(max_bet, stored_bet))
     bet_val = st.session_state["bet_slider_val"]
 
-    def _betting_asset(filename):
-        """새 이미지가 아직 업로드되지 않았으면 기존 CSS 그래픽을 사용한다."""
+    def asset(filename):
         try:
             return load_local_image_as_base64(f"assets/{filename}")
         except (OSError, ValueError):
             return None
 
-    crown_img = _betting_asset("bet_crown.png")
-    news_img = _betting_asset("bet_news_cards.png")
-    podium_img = _betting_asset("bet_podium.png")
-    coin_img = _betting_asset("bet_coin_stack.png")
-    backdrop_img = _betting_asset("bet_background.jpg")
-
-    # 배경 이미지가 제공된 경우 기존 게임의 배경을 함께 사용한다.
-    bg_style = "radial-gradient(ellipse at 50% 9%, rgba(107, 28, 178, .55), transparent 55%), linear-gradient(180deg, #10051e, #080411 80%)"
-    if bg_image_path:
+    crown_img = asset("bet_crown.png")
+    news_img = asset("bet_news_cards.png")
+    podium_img = asset("bet_podium.png")
+    coin_img = asset("bet_coin_stack.png")
+    background_img = asset("bet_background.jpg")
+    if not background_img and bg_image_path:
         try:
-            encoded_bg = load_local_image_as_base64(bg_image_path)
+            background_img = load_local_image_as_base64(bg_image_path)
         except (OSError, ValueError):
-            encoded_bg = None
-        if encoded_bg:
-            bg_style = f"linear-gradient(180deg, rgba(13, 3, 28, .80), rgba(8, 3, 18, .92)), url('{encoded_bg}')"
+            pass
 
-    st.markdown(
-        """
-        <style>
-        /* 모든 규칙은 게임 1 베팅 화면에만 적용한다. */
-        .st-key-casino_betting_shell {
-            position: relative; isolation: isolate; overflow: hidden;
-            max-width: 660px; margin: 0 auto 1.2rem;
-            padding: clamp(12px, 3.2vw, 24px) !important;
-            border-radius: 28px; border: 1px solid rgba(180, 78, 255, .42);
-            box-shadow: 0 15px 60px rgba(4, 0, 10, .8), inset 0 0 55px rgba(89, 0, 158, .15);
-            color: #fff;
-        }
-        .st-key-casino_betting_shell::before {
-            content: ''; position: absolute; pointer-events: none;
-            inset: 0; z-index: -1;
-            background: radial-gradient(circle at 16% 26%, rgba(176, 63, 252, .17), transparent 12%),
-                        radial-gradient(circle at 90% 14%, rgba(218, 111, 255, .15), transparent 14%),
-                        radial-gradient(circle at 7% 75%, rgba(233, 136, 33, .14), transparent 12%);
-        }
-        .st-key-casino_betting_shell [data-testid="stVerticalBlock"] {gap: .55rem;}
-        .st-key-casino_betting_shell [data-testid="stHorizontalBlock"] {align-items: center;}
-        .st-key-casino_betting_shell button {font-family: inherit !important;}
-
-        /* 상단 뒤로가기 / 잔액 / 충전 */
-        .st-key-bet_nav_back button, .st-key-bet_nav_bank button {
-            min-height: 42px !important; height: 42px !important;
-            width: 42px !important; padding: 0 !important;
-            border-radius: 50% !important; border: 1px solid rgba(176, 85, 249, .7) !important;
-            background: rgba(25, 12, 40, .87) !important;
-            box-shadow: inset 0 1px 5px rgba(255,255,255,.08), 0 0 12px rgba(144, 38, 221, .2) !important;
-            color: #fff !important; font-size: 1.6rem !important;
-        }
-        .st-key-bet_nav_bank button {border-color: #ac34ff !important; color: #e9c7ff !important;}
-        .cb-balance {
-            display:flex; align-items:center; justify-content:flex-end; gap:9px;
-            min-height:42px; font-size: clamp(1rem, 4.4vw, 1.4rem);
-            font-weight:900; letter-spacing:.02em; white-space:nowrap;
-            text-shadow:0 1px 4px #07010d;
-        }
-        .cb-gold-token, .cb-mini-token {
-            display:inline-flex; align-items:center; justify-content:center;
-            border-radius:50%; border:2px solid #ffd46c;
-            background: radial-gradient(circle at 30% 25%, #ffeeb3 0%, #ffcf36 24%, #ee8f0c 65%, #ad5307 90%);
-            color:#b46c11; font-weight:950;
-            box-shadow:inset 0 0 0 3px rgba(255,241,155,.34), 0 2px 8px rgba(255,153,0,.6);
-            text-shadow:0 1px 1px #ffdd73;
-        }
-        .cb-gold-token {width:36px; height:36px; font-size:22px;}
-        .cb-mini-token {width:28px; height:28px; font-size:17px; vertical-align:middle;}
-
-        /* 보라색 왕관 / 제목 / 카드 무대 */
-        .cb-hero {position:relative; padding-top:14px; text-align:center;}
-        .cb-insignia {position:relative; margin:0 auto 10px; width:150px; padding-top:11px;
-            border-top:1px solid rgba(217, 146, 255, .8); border-radius:85px 85px 0 0;
-            color:#ffc57d; text-shadow:0 0 12px rgba(246,126,255,.65);}
-        .cb-insignia::after {content:''; position:absolute; height:1px; top:43px; left:-43px; right:-43px;
-            background:linear-gradient(90deg, transparent, #a537f5, #ffbf74, #a537f5, transparent); opacity:.7;}
-        .cb-crown {display:block; font-size:34px; line-height:1; filter:drop-shadow(0 0 9px #ae3cff);}
-        .cb-bet-tag {display:block; font-family:Georgia,serif; font-weight:700; letter-spacing:7px; font-size:22px;}
-        .cb-hero-title {font-size:clamp(1.65rem, 6.8vw, 2.5rem); font-weight:950;
-            letter-spacing:-.045em; line-height:1.25; margin:3px 0 5px;
-            color:#fbf6ff; text-shadow:0 0 15px rgba(176,90,248,.4);}
-        .cb-hero-subtitle {font-size:clamp(.84rem, 3.3vw, 1.04rem); color:#c3b5d4; margin:0;}
-        .cb-scene {position:relative; height:330px; max-width:570px; margin:8px auto 0; perspective:850px;}
-        .cb-scene::before {content:''; position:absolute; inset:16% 4% 20%;
-            border-radius:50%; background:radial-gradient(ellipse, rgba(176,59,255,.27), transparent 67%);
-            filter:blur(18px);}
-        .cb-card {position:absolute; left:6%; right:6%; top:14px; height:214px;
-            background:linear-gradient(140deg, rgba(60,23,91,.93), #1c102c 46%, #270b43 100%);
-            border:1.5px solid #bc55ff; border-radius:26px;
-            box-shadow:0 0 25px rgba(169,50,255,.6), inset 0 0 40px rgba(145,53,231,.26);
-            transform:perspective(800px) rotateX(8deg);}
-        .cb-card-back-left {left:3%; right:11%; top:27px; transform:rotate(-7deg); opacity:.6;}
-        .cb-card-back-right {left:11%; right:3%; top:26px; transform:rotate(7deg); opacity:.6;}
-        .cb-card-front {z-index:2; overflow:hidden;
-            background:linear-gradient(126deg, rgba(93,30,130,.82), rgba(24,11,42,.97) 54%,rgba(54,14,86,.87));}
-        .cb-card-front::before {content:''; position:absolute; left:12%; right:12%; top:0;
-            height:2px; background:linear-gradient(90deg,transparent,#ffcdca,#bf41ff,transparent);
-            box-shadow:0 0 20px 7px rgba(209,53,255,.42);}
-        .cb-news-paper {position:absolute; inset:28% 25%; opacity:.25; border-radius:8px;
-            transform:skewX(-3deg); background:linear-gradient(#704683,#704683) 19% 25%/40% 8px no-repeat,
-            repeating-linear-gradient(0deg,#7f5995 0 6px,transparent 6px 16px);
-            border:10px solid rgba(114,78,145,.35);}
-        .cb-question {position:absolute; inset:0; display:grid; place-items:center;
-            color:#efc3ff; font-size:clamp(5rem,17vw,8rem); font-weight:950;
-            text-shadow:0 0 12px #c066fb, 0 0 35px rgba(220,124,255,.86);}
-        .cb-platform {position:absolute; z-index:3; bottom:1px; left:7%; right:7%; height:88px;
-            border-radius:50% / 45%; border:3px solid rgba(182,66,255,.8);
-            background:radial-gradient(ellipse at 50% 35%, #4b1a75 0%, #1b0b33 60%, #0c041b 100%);
-            box-shadow:0 17px 4px #0c0613, 0 25px 30px #020106, 0 0 26px #982cff,
-                       inset 0 5px 12px rgba(217,131,255,.4);}
-        .cb-platform::before {content:'';position:absolute;inset:12px 5%; border-radius:50%;
-            border:1px solid rgba(223,126,255,.6);}
-        .cb-coins {position:absolute;z-index:4;left:50%;bottom:52px; width:270px;height:123px;
-            transform:translateX(-50%);pointer-events:none;}
-        .cb-stack {position:absolute;bottom:0;width:62px;border:1px solid #b85d0c;border-radius:5px 5px 8px 8px;
-            background:repeating-linear-gradient(to bottom,#ffdb60 0px,#fff0a3 3px,#c9770b 5px,#a64c04 10px,#f6a927 13px);
-            box-shadow:inset 5px 0 9px #ffdb75,inset -7px 0 9px #b65a07, 2px 5px 7px #1a0924;}
-        .cb-stack::before {content:'';position:absolute;left:-1px;right:-1px;top:-11px;height:19px;
-            border-radius:50%;background:radial-gradient(ellipse at 50% 45%,#fff4ad,#ffbf31 60%,#ba6307 90%);
-            border:2px solid #f5c44e;box-shadow:0 2px 3px #854007;}
-        .cb-stack-one {left:16px;height:37px;}.cb-stack-two {left:64px;height:80px;}
-        .cb-stack-three {left:113px;height:55px;}.cb-stack-four {left:169px;height:78px;}
-        .cb-stack-five {left:217px;width:40px;height:31px;}
-        .cb-medal {position:absolute;z-index:5; left:50%; bottom:40px; transform:translateX(-50%);
-            width:92px;height:92px;display:grid;place-items:center;
-            border:5px solid #ffe1a0;border-radius:50%;font-size:49px;color:#dc7f0c;
-            background:radial-gradient(circle at 33% 21%,#fff2a1,#ffbe1e 63%,#b96305);
-            text-shadow:0 2px 1px rgba(255,251,187,.8);
-            box-shadow:inset 0 0 0 5px rgba(222,135,16,.72),0 0 12px #ffc55c,0 7px 14px #15061f;}
-
-        /* 금액 컨트롤러 */
-        .st-key-casino_bet_controls {border:1px solid rgba(174,55,255,.65);
-            border-radius:28px;padding:16px 15px 12px !important;
-            background:linear-gradient(160deg,rgba(48,16,69,.96),rgba(19,8,37,.96));
-            box-shadow:inset 0 3px 12px rgba(217,133,255,.16),0 0 20px rgba(126,17,203,.2);}
-        .cb-amount {display:flex;align-items:center;justify-content:center;gap:12px;
-            font-size:clamp(1.75rem,7.5vw,2.5rem);font-weight:950;line-height:1.25;
-            letter-spacing:.005em;text-shadow:0 0 12px rgba(239,196,255,.3);}
-        .cb-range-ends {display:flex;justify-content:space-between;color:#9c8aaf;
-            padding:0 48px;font-size:.79rem;font-weight:700;}
-        .st-key-casino_bet_controls .stSlider {margin:0 !important;}
-        .st-key-casino_bet_controls [data-baseweb="slider"] [role="slider"] {
-            background:#f5d7ff !important; border:3px solid #fff7ff !important;
-            box-shadow:0 0 8px 3px #d553ff !important; width:29px !important;height:29px !important;}
-        .st-key-bet_btn_minus button, .st-key-bet_btn_plus button {
-            width:45px !important; height:45px !important; min-height:45px !important;
-            padding:0 !important; border-radius:50% !important;
-            background:#210c39 !important;border:1.5px solid #b829ff !important;
-            box-shadow:0 0 15px rgba(169,40,255,.5),inset 0 0 10px rgba(132,38,223,.2) !important;
-            color:#fff !important; font-size:1.45rem !important;font-weight:900 !important;}
-
-        /* 예상 결과 */
-        .cb-prediction {display:grid;grid-template-columns:1fr 1fr;gap:0;margin:9px 0 7px;
-            border:1px solid #a82cec;border-radius:24px;overflow:hidden;
-            background:linear-gradient(150deg, rgba(64,15,92,.92), rgba(20,7,38,.96));
-            box-shadow:inset 0 0 25px rgba(137,31,228,.28),0 0 18px rgba(129,33,204,.3);}
-        .cb-stat {position:relative;min-width:0;min-height:113px; padding:15px 12px 14px;}
-        .cb-stat + .cb-stat {border-left:1px solid rgba(192,105,241,.28);}
-        .cb-stat-label {font-size:clamp(.71rem,2.9vw,.86rem); color:#efdfef;font-weight:750;
-            white-space:nowrap;letter-spacing:-.04em;}
-        .cb-stat-number {font-size:clamp(1.34rem,6.4vw,2.2rem);font-weight:950;line-height:1.25;
-            white-space:nowrap;letter-spacing:-.04em; margin-top:6px;}
-        .cb-stat-number.is-gold {color:#ffcf52;text-shadow:0 0 14px rgba(255,188,40,.25);}
-        .cb-stat-pill {display:inline-block;margin-top:4px;border:1px solid rgba(206,97,255,.65);
-            color:#d69aff;background:#1d0a32;border-radius:14px;padding:2px 12px;font-size:.7rem;}
-        .cb-stat-sub {font-size:clamp(.84rem,3vw,1.05rem);font-weight:900;white-space:nowrap;margin-top:7px;}
-        .cb-stat-sub b {color:#c265ff;font-size:1.18em;}
-        .cb-rank-delta {position:absolute;right:12px;top:15px;color:#37e9bd;font-weight:900;font-size:.8rem;}
-        .cb-stat-art {font-size:1.05rem;filter:drop-shadow(0 0 7px #b843fd);margin-right:4px;}
-
-        /* 베팅 확정 버튼 */
-        .st-key-bet_confirm_cta button {
-            min-height:79px !important;border-radius:999px !important;width:100% !important;
-            background:linear-gradient(180deg,#bb42ff 0%,#7d12f4 43%,#4a0bdd 100%) !important;
-            border:2px solid #e879ff !important; color:#fff !important;
-            font-size:clamp(1.2rem,5.8vw,1.75rem) !important;font-weight:950 !important;
-            box-shadow:inset 0 4px 10px rgba(255,255,255,.4),inset 0 -8px 18px rgba(54,4,144,.72),
-                0 5px 22px rgba(211,57,255,.6) !important;
-            text-shadow:0 1px 10px rgba(255,255,255,.4);}
-        .st-key-bet_confirm_cta button:hover {filter:brightness(1.13);transform:translateY(-1px);}
-        .cb-betting-note {text-align:center;color:#9c88ac;font-size:.7rem;margin:3px 0 0;}
-        @media (max-width:480px) {
-            .st-key-casino_betting_shell {padding:12px !important;border-radius:21px;}
-            .st-key-casino_betting_shell [data-testid="stHorizontalBlock"] {gap:.3rem; flex-wrap:nowrap !important;}
-            .st-key-casino_betting_shell [data-testid="column"] {min-width:0 !important; padding:0 !important;}
-            .cb-hero {padding-top:4px;}
-            .cb-scene {height:278px;}
-            .cb-card {height:184px;top:11px;border-radius:20px;}
-            .cb-card-back-left,.cb-card-back-right {top:22px;}
-            .cb-platform {height:68px;bottom:2px;}
-            .cb-coins {transform:translateX(-50%) scale(.78);transform-origin:bottom center;bottom:45px;}
-            .cb-medal {transform:translateX(-50%) scale(.8);transform-origin:bottom center;bottom:31px;}
-            .cb-stat {min-height:102px;padding:12px 9px;}
-            .cb-rank-delta {top:11px;right:8px;}
-            .cb-range-ends {padding:0 34px;}
-            .st-key-casino_bet_controls {padding:13px 9px 9px !important;}
-            .st-key-bet_btn_minus button,.st-key-bet_btn_plus button {width:38px !important;height:38px !important;min-height:38px !important;}
-            .st-key-bet_confirm_cta button {min-height:64px !important;}
-        }
-        @media (prefers-reduced-motion: no-preference) {
-            .cb-card-front {animation:cb-hover 4s ease-in-out infinite;}
-            @keyframes cb-hover {0%,100% {translate:0 0;}50% {translate:0 -5px;}}
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # 승리/정산 로직 자체는 건드리지 않고 기존 2.0배 예측 모델을 유지한다.
+    # Projection preserves the existing illustrative 2x multiplier and rank calculation.
     expected_payout = bet_val * 2
     simulated_total_coins = current_coins + expected_payout
-    curr_rank, sim_rank = 1, 1
-    rank_climb = 0
+    curr_rank, sim_rank, rank_climb = 1, 1, 0
     if users_data:
-        clean_sid = str(current_sid).strip().replace('.0', '')
+        clean_sid = str(current_sid).strip().replace(".0", "")
         clean_nick = str(current_nickname).strip()
         processed_users = []
-        for u in users_data:
+        for user in users_data:
             try:
-                coins = int(u.get('코인', 0))
+                amount = int(user.get("코인", 0))
             except (ValueError, TypeError):
-                coins = 0
-            u_id = str(u.get('학번', u.get('id', ''))).strip().replace('.0', '')
-            u_nick = str(u.get('아이디', u.get('nickname', ''))).strip()
-            is_me = (clean_sid and u_id == clean_sid) or (clean_nick and u_nick == clean_nick)
-            processed_users.append({'coins': coins, 'is_me': bool(is_me)})
-        current_order = sorted(processed_users, key=lambda u: u['coins'], reverse=True)
-        curr_rank = next((i + 1 for i, u in enumerate(current_order) if u['is_me']), len(current_order) + 1)
-        simulated = sorted([
-            {'coins': simulated_total_coins if u['is_me'] else u['coins'], 'is_me': u['is_me']}
-            for u in processed_users
-        ], key=lambda u: u['coins'], reverse=True)
-        sim_rank = next((i + 1 for i, u in enumerate(simulated) if u['is_me']), curr_rank)
+                amount = 0
+            user_sid = str(user.get("학번", user.get("id", ""))).strip().replace(".0", "")
+            user_nick = str(user.get("아이디", user.get("nickname", ""))).strip()
+            is_me = bool((clean_sid and user_sid == clean_sid) or (clean_nick and user_nick == clean_nick))
+            processed_users.append({"coins": amount, "is_me": is_me})
+        ranked = sorted(processed_users, key=lambda item: item["coins"], reverse=True)
+        curr_rank = next((i + 1 for i, user in enumerate(ranked) if user["is_me"]), len(ranked) + 1)
+        future_ranked = sorted(
+            [{"coins": simulated_total_coins if user["is_me"] else user["coins"], "is_me": user["is_me"]}
+             for user in processed_users],
+            key=lambda item: item["coins"], reverse=True,
+        )
+        sim_rank = next((i + 1 for i, user in enumerate(future_ranked) if user["is_me"]), curr_rank)
         rank_climb = max(0, curr_rank - sim_rank)
 
-    # 실물 이미지를 렌더링할 때에만 사용되는 레이어 (HTML 카드·금화 CSS는 폴백으로 유지).
-    st.markdown(
-        """
-        <style>
-        .st-key-casino_betting_shell .cb-bet-logo {
-            display:block; width:min(88%,390px); height:auto; margin:0 auto 10px;
-            filter:drop-shadow(0 0 18px rgba(184,61,255,.37));
-        }
-        .st-key-casino_betting_shell .cb-asset-news {
-            position:absolute; z-index:2; top:8px; left:50%;
-            transform:translateX(-50%); width:min(110%,620px); height:auto; max-width:none;
-            filter:drop-shadow(0 0 19px rgba(180,39,255,.43));
-        }
-        .st-key-casino_betting_shell .cb-asset-podium {
-            position:absolute; z-index:4; bottom:0; left:50%;
-            transform:translateX(-50%); width:min(99%,540px); height:auto;
-            filter:drop-shadow(0 11px 18px rgba(4,0,13,.62));
-        }
-        .st-key-casino_betting_shell .cb-scene:has(.cb-asset-news) {
-            height:clamp(270px, 66vw, 395px); max-width:600px; margin:3px auto 0;
-        }
-        .st-key-casino_betting_shell .cb-stat-coin {
-            display:inline-block; width:31px; height:27px; object-fit:contain;
-            vertical-align:middle; margin:-5px 3px -6px -4px;
-        }
-        .st-key-casino_betting_shell .cb-hero:has(.cb-bet-logo) {padding-top:2px;}
-        .st-key-casino_betting_shell .cb-hero:has(.cb-bet-logo) .cb-hero-title {margin-top:2px;}
-        @media(max-width:480px) {
-            .st-key-casino_betting_shell .cb-bet-logo {width:91%;max-width:290px;margin-bottom:5px;}
-            .st-key-casino_betting_shell .cb-scene:has(.cb-asset-news) {height:clamp(240px,74vw,280px);}
-            .st-key-casino_betting_shell .cb-asset-news {top:6px; width:112%;}
-            .st-key-casino_betting_shell .cb-asset-podium {width:105%;bottom:0;}
-        }
-        @media (prefers-reduced-motion: no-preference) {
-            .st-key-casino_betting_shell .cb-asset-news {animation:bet-card-float 4s ease-in-out infinite;}
-            @keyframes bet-card-float {0%,100% {translate:0 0;}50% {translate:0 -4px;}}
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # 화면 너비가 320px까지 줄어도 열이 접히거나 잘리지 않도록 구조를 고정한다.
-    # 기본 Streamlit 테마 및 다른 게임에는 영향을 주지 않는다.
+    # Scoped, asset-proportion-based layout: never position 2D art using fixed heights.
     st.markdown(
         """
         <style>
         .block-container:has(.st-key-casino_betting_shell) {
-            width:100% !important; max-width:700px !important;
-            padding: max(.35rem, env(safe-area-inset-top)) clamp(9px, 3vw, 20px)
-                max(1rem, env(safe-area-inset-bottom)) !important;
+            width:100% !important; max-width:690px !important;
+            box-sizing:border-box !important;margin-inline:auto !important;
+            padding: max(8px,env(safe-area-inset-top)) clamp(9px,2.8vw,22px)
+                max(22px,env(safe-area-inset-bottom)) !important;
         }
+        .st-key-casino_betting_shell, .st-key-casino_betting_shell * {box-sizing:border-box;}
         .st-key-casino_betting_shell {
-            width:100% !important; min-width:0 !important;
-            box-sizing:border-box !important; padding:clamp(10px,2.5vw,22px) !important;
-            overflow:hidden !important; border-radius:24px !important;
+            width:100%;max-width:650px;margin:0 auto 12px;
+            min-width:0;overflow:hidden;padding:clamp(11px,2.7vw,23px);
+            border:1px solid rgba(178,75,247,.52);border-radius:24px;
+            color:#fdf7ff;
+            background:linear-gradient(170deg,rgba(23,6,43,.87),rgba(8,3,22,.91));
+            box-shadow:0 0 38px rgba(116,28,195,.25),inset 0 0 22px rgba(150,45,221,.17);
         }
+        .st-key-casino_betting_shell [data-testid="stVerticalBlock"] {gap:clamp(6px,1.4vw,12px);}
         .st-key-casino_betting_shell [data-testid="stHorizontalBlock"] {
-            flex-wrap:nowrap !important; gap:clamp(3px,1.2vw,10px) !important;
-            align-items:center !important;
-        }
-        .st-key-casino_betting_shell [data-testid="column"] {
-            min-width:0 !important; box-sizing:border-box !important;
-        }
-        .st-key-casino_betting_shell .cb-hero { min-width:0 !important; }
-        .st-key-casino_betting_shell .cb-bet-logo {
-            width:min(85%,340px) !important; max-width:100% !important;
-            margin:0 auto 6px !important;
-        }
-        .st-key-casino_betting_shell .cb-scene,
-        .st-key-casino_betting_shell .cb-scene:has(.cb-asset-news) {
-            position:relative; width:100%; max-width:600px;
-            height:clamp(218px,67vw,355px) !important;
-            margin:5px auto 0 !important; overflow:visible;
-        }
-        .st-key-casino_betting_shell .cb-asset-news {
-            top:0 !important; left:50%; width:100% !important;
-            max-width:100% !important; height:auto !important; object-fit:contain;
-            transform:translateX(-50%) !important;
-        }
-        .st-key-casino_betting_shell .cb-asset-podium {
-            left:50%; bottom:0 !important; width:94% !important;
-            max-width:500px !important; height:auto !important;
-            object-fit:contain; transform:translateX(-50%) !important;
-        }
-        .st-key-casino_bet_controls {width:100% !important; min-width:0 !important;}
-        .st-key-casino_bet_row {width:100% !important; min-width:0 !important;}
-        .st-key-casino_bet_row [data-testid="stHorizontalBlock"] {
             display:flex !important; flex-flow:row nowrap !important;
-            align-items:center !important; gap:8px !important;
-            width:100% !important; min-width:0 !important;
+            gap:clamp(3px,1.2vw,10px) !important;align-items:center !important;
         }
-        .st-key-casino_bet_row [data-testid="stHorizontalBlock"] > [data-testid="column"] {
-            min-width:0 !important; box-sizing:border-box;
+        .st-key-casino_betting_shell [data-testid="column"] {min-width:0 !important;padding:0 !important;}
+        .st-key-casino_betting_shell button {font-family:inherit !important;}
+        .st-key-bet_nav_back button,.st-key-bet_nav_bank button {
+            display:block !important;width:clamp(34px,8vw,44px) !important;
+            height:clamp(34px,8vw,44px) !important; min-height:0 !important;
+            padding:0 !important;border-radius:50% !important;
+            border:1.5px solid #aa39ec !important;background:rgba(20,7,39,.82) !important;
+            box-shadow:0 0 10px rgba(161,42,239,.44) !important;
+            color:#fff !important; font-size:clamp(1.3rem,5vw,1.65rem) !important;
         }
+        .cb-balance {min-width:0;display:flex;align-items:center;justify-content:flex-end;
+            gap:7px;font-weight:900;font-size:clamp(.87rem,3.8vw,1.38rem);
+            font-variant-numeric:tabular-nums;white-space:nowrap;text-shadow:0 1px 7px #1d0031;}
+        .cb-coin-symbol {flex:none;display:inline-grid;place-items:center;
+            width:clamp(28px,7vw,37px);height:clamp(28px,7vw,37px);
+            border:2px solid #ffd66b;border-radius:50%;font-size:clamp(1rem,4vw,1.3rem);
+            color:#b86a00;background:radial-gradient(circle at 27% 22%,#fff4b6,#ffcd27 45%,#d17104 88%);
+            box-shadow:inset 0 0 0 2px #ffdf72,0 0 13px rgba(243,157,36,.4);}
+        .cb-hero {text-align:center;min-width:0;}
+        .cb-logo {display:block;width:min(82%,365px);height:auto;margin:0 auto 3px;
+            filter:drop-shadow(0 0 10px rgba(171,62,255,.35));}
+        .cb-logo-fallback {font-size:1.5rem;color:#e6a9ff;font-weight:900;letter-spacing:4px;}
+        .cb-heading {margin:0 !important;line-height:1.22;
+            font-size:clamp(1.65rem,6.3vw,2.55rem);font-weight:950;letter-spacing:-.045em;
+            color:#fff4ff;text-shadow:0 0 15px rgba(178,103,255,.32);}
+        .cb-description {margin:3px 0 7px;color:#c9b6df;font-size:clamp(.78rem,3.2vw,1rem);}
+        .cb-scene {width:100%;max-width:575px;margin:0 auto;display:flex;
+            flex-direction:column;align-items:center;justify-content:flex-start;isolation:isolate;}
+        .cb-news-image {display:block;position:relative;z-index:1;
+            width:100%;height:auto;max-width:100%;object-fit:contain;
+            filter:drop-shadow(0 0 13px rgba(170,41,234,.38));}
+        .cb-podium-image {display:block;position:relative;z-index:2;
+            width:89%;height:auto;max-width:89%;object-fit:contain;
+            margin-top:clamp(-28px,-3.8vw,-10px);
+            filter:drop-shadow(0 8px 14px rgba(8,0,18,.65));}
+        .cb-art-fallback {width:90%;margin:auto;border:1px solid #ae41e6;
+            border-radius:18px;background:#291244;color:#e7a9ff;font-size:3.7rem;text-align:center;padding:30px;}
+        .st-key-casino_bet_controls {min-width:0 !important;width:100% !important;
+            border:1px solid #9c34d3;border-radius:22px;
+            padding:clamp(12px,2.4vw,17px) !important;
+            background:linear-gradient(145deg,rgba(43,12,67,.96),rgba(15,5,30,.96));
+            box-shadow:inset 0 2px 12px rgba(197,87,255,.19),0 0 15px rgba(137,26,209,.2);}
+        .cb-amount {display:flex;align-items:center;justify-content:center;gap:10px;
+            font-size:clamp(1.75rem,7vw,2.45rem);font-weight:950;
+            line-height:1.1;font-variant-numeric:tabular-nums;}
+        .st-key-casino_bet_row {width:100% !important;min-width:0 !important;}
+        .st-key-casino_bet_row [data-testid="stHorizontalBlock"] {
+            display:flex !important;flex-flow:row nowrap !important;align-items:center !important;
+            gap:clamp(5px,1.4vw,10px) !important;min-width:0 !important;}
         .st-key-casino_bet_row [data-testid="stHorizontalBlock"] > [data-testid="column"]:first-child,
         .st-key-casino_bet_row [data-testid="stHorizontalBlock"] > [data-testid="column"]:last-child {
-            flex:0 0 42px !important; width:42px !important;
-        }
+            flex:0 0 clamp(36px,9vw,47px) !important;width:clamp(36px,9vw,47px) !important;}
         .st-key-casino_bet_row [data-testid="stHorizontalBlock"] > [data-testid="column"]:nth-child(2) {
-            flex:1 1 0 !important; width:0 !important;
-        }
-        .st-key-casino_bet_row [data-testid="stSlider"] {
-            width:100% !important; min-width:0 !important; margin:0 !important;
-        }
-        .st-key-casino_bet_row [data-baseweb="slider"] {
-            width:100% !important; min-width:0 !important;
-        }
-        .st-key-casino_bet_row [data-baseweb="slider"] [role="slider"] {
-            background:#fbe4ff !important; border:3px solid #fff7ff !important;
-            box-shadow:0 0 9px 2px #cb5aff !important;
-            width:24px !important; height:24px !important;
-            cursor:grab; touch-action:pan-y;
-        }
-        .st-key-casino_bet_row [data-testid="stTickBar"],
-        .st-key-casino_bet_row [data-testid="stSliderTickBarMin"],
-        .st-key-casino_bet_row [data-testid="stSliderTickBarMax"] {
-            display:none !important;
-        }
+            flex:1 1 0 !important;width:0 !important;min-width:0 !important;}
         .st-key-bet_btn_minus button,.st-key-bet_btn_plus button {
-            height:42px !important; min-height:42px !important;
-            width:42px !important; padding:0 !important;
+            width:clamp(36px,9vw,47px) !important;height:clamp(36px,9vw,47px) !important;
+            min-height:0 !important;padding:0 !important;border-radius:50% !important;
+            border:1.5px solid #b72cff !important;background:#210a38 !important;
+            color:white !important;font-size:1.5rem !important;
+            box-shadow:0 0 11px rgba(161,39,244,.55) !important;}
+        .st-key-bet_btn_minus button:disabled,.st-key-bet_btn_plus button:disabled {
+            opacity:.37 !important;cursor:default !important;}
+        .st-key-casino_bet_row [data-testid="stSlider"],
+        .st-key-casino_bet_row [data-baseweb="slider"] {min-width:0 !important;width:100% !important;}
+        .st-key-casino_bet_row [data-baseweb="slider"] [role="slider"] {
+            width:25px !important;height:25px !important;
+            background:#f3c8ff !important;border:3px solid #fff5ff !important;
+            box-shadow:0 0 11px 3px #c64aff !important;touch-action:pan-y;}
+        .st-key-casino_bet_row [data-testid="stTickBar"] {display:none !important;}
+        .cb-ends {display:flex;justify-content:space-between;
+            padding:0 clamp(39px,10vw,53px);font-size:.78rem;color:#ac9bbe;font-variant-numeric:tabular-nums;}
+        .cb-fixed-track {position:relative;width:100%;height:7px;margin:14px 0;
+            border-radius:8px;background:linear-gradient(90deg,#ad38f4,#7420a9);}
+        .cb-fixed-track::after {content:'';position:absolute;top:50%;left:50%;
+            transform:translate(-50%,-50%);width:24px;height:24px;
+            border:3px solid #fff;border-radius:50%;background:#e7b3ff;box-shadow:0 0 8px #af31e7;}
+        .cb-stats {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+            border:1px solid #9631e1;border-radius:21px;overflow:hidden;
+            background:linear-gradient(130deg,rgba(54,13,80,.95),rgba(18,6,36,.97));
+            box-shadow:0 0 19px rgba(136,30,213,.26),inset 0 0 14px rgba(151,47,241,.18);}
+        .cb-stat {min-width:0;padding:clamp(10px,2.8vw,16px);}
+        .cb-stat + .cb-stat {border-left:1px solid rgba(185,87,238,.34);}
+        .cb-stat-label {display:flex;align-items:center;gap:4px;
+            font-size:clamp(.67rem,2.7vw,.86rem);color:#eee0f5;font-weight:750;
+            line-height:1.35;word-break:keep-all;}
+        .cb-small-coin {width:clamp(28px,6vw,42px);height:clamp(25px,5.8vw,39px);
+            object-fit:contain;flex-shrink:0;margin:-3px 0;}
+        .cb-stat-value {font-size:clamp(1.25rem,5.9vw,2.2rem);font-weight:900;
+            color:#ffd46c;line-height:1.3;margin-top:6px;font-variant-numeric:tabular-nums;
+            overflow-wrap:anywhere;}
+        .cb-pill {display:inline-block;margin-top:4px;padding:2px 9px;
+            border:1px solid #a356d2;background:#29083d;border-radius:12px;
+            color:#d59dfa;font-size:clamp(.65rem,2.5vw,.74rem);}
+        .cb-rank {font-size:clamp(.93rem,4vw,1.25rem);font-weight:850;margin-top:11px;
+            font-variant-numeric:tabular-nums;white-space:nowrap;}
+        .cb-rank b {color:#ca6bff;}
+        .cb-up {color:#43e4bc;font-size:.8rem;font-weight:850;white-space:nowrap;margin-top:3px;}
+        .st-key-bet_confirm_cta button {
+            width:100% !important;min-height:clamp(62px,14vw,83px) !important;
+            border-radius:999px !important;border:2px solid #ea8dff !important;
+            background:linear-gradient(180deg,#c84bff,#850ef4 50%,#4b0bcb) !important;
+            color:white !important;font-weight:950 !important;
+            font-size:clamp(1.17rem,5.2vw,1.75rem) !important;
+            box-shadow:inset 0 5px 9px rgba(255,255,255,.3),inset 0 -7px 10px rgba(52,7,130,.55),
+                0 5px 21px rgba(183,33,238,.52) !important;}
+        .cb-footnote {text-align:center;margin:0;color:#a995b9;font-size:.72rem;}
+        @media(max-width:380px) {
+            .st-key-casino_betting_shell {border-radius:17px;padding:10px;}
+            .cb-logo {width:min(79%,270px);}
+            .cb-description {margin-bottom:4px;}
+            .cb-podium-image {width:92%;max-width:92%;}
+            .st-key-casino_bet_controls {padding:12px 9px !important;border-radius:18px;}
+            .cb-stat {padding:10px 8px;}
+            .cb-stat-label {gap:3px;}
+            .cb-rank {font-size:clamp(.83rem,3.8vw,1rem);}
+            .cb-ends {font-size:.69rem;}
         }
-        .st-key-bet_btn_minus button:disabled,
-        .st-key-bet_btn_plus button:disabled {
-            opacity:.44 !important; cursor:not-allowed !important;
-        }
-        .cb-fixed-slider {
-            position:relative; width:100%; height:8px;
-            margin:18px 0; background:#a538fb; border-radius:999px;
-            box-shadow:0 0 8px #af33fc;
-        }
-        .cb-fixed-slider-thumb {
-            position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-            width:24px;height:24px;border:3px solid #fff;border-radius:50%;
-            background:#e8a7ff;box-shadow:0 0 9px 3px #b532ff;
-        }
-        .st-key-casino_betting_shell .cb-range-ends {
-            padding:0 50px !important; font-size:clamp(.7rem,2.7vw,.84rem);
-            line-height:1.1; margin-top:0;
-        }
-        .st-key-casino_betting_shell .cb-prediction {width:100%; min-width:0;}
-        .st-key-casino_betting_shell .cb-stat-label {
-            overflow-wrap:anywhere; white-space:normal; line-height:1.4;
-        }
-        .st-key-casino_betting_shell .cb-stat-number,
-        .st-key-casino_betting_shell .cb-stat-sub {
-            white-space:normal; overflow-wrap:anywhere;
-        }
-        @media(max-width:480px) {
-            .st-key-casino_betting_shell {
-                padding:10px !important;border-radius:18px !important;
-            }
-            .st-key-casino_betting_shell .cb-bet-logo {width:min(78%,255px) !important;}
-            .st-key-casino_betting_shell .cb-hero-title {
-                font-size:clamp(1.55rem,7vw,2rem) !important;
-                margin:0 0 2px !important;
-            }
-            .st-key-casino_betting_shell .cb-scene,
-            .st-key-casino_betting_shell .cb-scene:has(.cb-asset-news) {
-                height:clamp(210px,67vw,270px) !important;margin-top:0 !important;
-            }
-            .st-key-casino_betting_shell .cb-asset-news {width:100% !important;}
-            .st-key-casino_betting_shell .cb-asset-podium {width:96% !important;}
-            .st-key-casino_bet_controls {padding:13px 9px 10px !important;border-radius:20px;}
-            .st-key-casino_bet_row [data-testid="stHorizontalBlock"] {gap:5px !important;}
-            .st-key-casino_bet_row [data-testid="stHorizontalBlock"] > [data-testid="column"]:first-child,
-            .st-key-casino_bet_row [data-testid="stHorizontalBlock"] > [data-testid="column"]:last-child {
-                flex:0 0 37px !important; width:37px !important;
-            }
-            .st-key-bet_btn_minus button,.st-key-bet_btn_plus button {
-                width:37px !important; height:37px !important; min-height:37px !important;
-            }
-            .st-key-casino_betting_shell .cb-range-ends {padding:0 38px !important;}
-            .st-key-casino_betting_shell .cb-stat {min-height:100px;padding:10px 8px;}
-            .st-key-casino_betting_shell .cb-stat-label {
-                font-size:clamp(.64rem,2.5vw,.81rem); letter-spacing:-.05em;
-            }
-            .st-key-casino_betting_shell .cb-rank-delta {
-                position:static; float:none; margin-top:4px; font-size:.75rem;
-            }
-            .st-key-casino_betting_shell .cb-stat-sub {margin-top:2px;}
-            .st-key-casino_betting_shell .cb-stat-number {
-                font-size:clamp(1.25rem,6vw,1.75rem);
-            }
-            .st-key-casino_betting_shell .cb-balance {
-                gap:5px; font-size:clamp(.94rem,4vw,1.15rem);
-            }
-            .st-key-casino_betting_shell .cb-gold-token {
-                width:29px;height:29px; flex:0 0 29px; font-size:18px;
-            }
-            .st-key-bet_nav_back button,.st-key-bet_nav_bank button {
-                width:35px !important;height:35px !important;min-height:35px !important;
-                font-size:1.3rem !important;
-            }
-            .st-key-casino_betting_shell .cb-betting-note {font-size:.68rem;}
-            .stApp:has(.st-key-casino_betting_shell) {
-                background-attachment:scroll !important;
-            }
-        }
-        @media(max-width:335px) {
-            .st-key-casino_betting_shell .cb-stat-art {font-size:.8rem;margin-right:2px;}
-            .st-key-casino_betting_shell .cb-prediction {
-                grid-template-columns:1fr 1fr;
-            }
-            .st-key-casino_betting_shell .cb-stat {padding:9px 6px;}
-            .st-key-casino_betting_shell .cb-stat-label {font-size:.64rem;}
+        @media(prefers-reduced-motion:no-preference) {
+            .cb-news-image {animation:cb-float 4.8s ease-in-out infinite;}
+            @keyframes cb-float {0%,100% {translate:0 0;}50% {translate:0 -4px;}}
         }
         </style>
         """,
         unsafe_allow_html=True,
     )
 
-    if backdrop_img:
+    if background_img:
         st.markdown(
             f'<style>.stApp:has(.st-key-casino_betting_shell) {{'
-            f'background-image:linear-gradient(180deg,rgba(9,2,22,.26),rgba(7,1,18,.55)),url("{backdrop_img}") !important;'
-            f'background-position:center top !important; background-size:cover !important;'
-            f'background-attachment:fixed !important; background-color:#080313 !important;'
-            f'}} .st-key-casino_betting_shell {{background:linear-gradient(180deg,rgba(22,6,43,.3),rgba(13,5,25,.55)) !important;}}</style>',
+            f'background-image:linear-gradient(180deg,rgba(8,1,20,.27),rgba(9,2,20,.62)),url("{background_img}") !important;'
+            f'background-size:cover !important;background-position:center top !important;'
+            f'background-attachment:scroll !important;background-color:#0b031b !important;'
+            f'}}</style>',
             unsafe_allow_html=True,
         )
-    else:
-        st.markdown(f"<style>.st-key-casino_betting_shell {{ background: {bg_style}; background-size:cover; background-position:center; }}</style>", unsafe_allow_html=True)
+
+    logo_html = (f'<img class="cb-logo" src="{crown_img}" alt="BET 로고">'
+                 if crown_img else '<div class="cb-logo-fallback">♛ BET</div>')
+    news_html = (f'<img class="cb-news-image" src="{news_img}" alt="물음표 뉴스 카드">'
+                 if news_img else '<div class="cb-art-fallback">?</div>')
+    podium_html = (f'<img class="cb-podium-image" src="{podium_img}" alt="왕관 금화와 원형 받침대">'
+                   if podium_img else '<div class="cb-art-fallback">♛</div>')
+    coin_html = (f'<img class="cb-small-coin" src="{coin_img}" alt="">'
+                 if coin_img else '<span aria-hidden="true">🪙</span>')
+
     with st.container(key="casino_betting_shell"):
-        back_col, balance_col, bank_col = st.columns([1, 3.2, 1], gap="small")
-        with back_col:
-            if st.button("❮", key="bet_nav_back", help="메인 화면으로 돌아가기"):
+        left, middle, right = st.columns([0.8, 3.2, 0.8], gap="small")
+        with left:
+            if st.button("❮", key="bet_nav_back", help="메인으로"):
                 change_page("main")
-        with balance_col:
-            st.markdown(f'<div class="cb-balance"><span class="cb-gold-token">$</span>{current_coins:,}</div>', unsafe_allow_html=True)
-        with bank_col:
-            if st.button("+", key="bet_nav_bank", help="은행으로 이동"):
+        with middle:
+            st.markdown(
+                f'<div class="cb-balance"><span class="cb-coin-symbol">$</span>{current_coins:,}</div>',
+                unsafe_allow_html=True,
+            )
+        with right:
+            if st.button("+", key="bet_nav_bank", help="은행으로"):
                 change_page("bank")
 
-        bet_logo_html = (
-            f'<img class="cb-bet-logo" src="{crown_img}" alt="왕관 BET 배지">'
-            if crown_img else
-            '<div class="cb-insignia"><span class="cb-crown">♛</span><span class="cb-bet-tag">BET</span></div>'
-        )
-        bet_cards_html = (
-            f'<img class="cb-asset-news" src="{news_img}" alt="">'
-            if news_img else
-            '<div class="cb-card cb-card-back-left"></div><div class="cb-card cb-card-back-right"></div>'
-            '<div class="cb-card cb-card-front"><div class="cb-news-paper"></div><div class="cb-question">?</div></div>'
-        )
-        bet_podium_html = (
-            f'<img class="cb-asset-podium" src="{podium_img}" alt="">'
-            if podium_img else
-            '<div class="cb-platform"></div><div class="cb-coins"><div class="cb-stack cb-stack-one"></div>'
-            '<div class="cb-stack cb-stack-two"></div><div class="cb-stack cb-stack-three"></div>'
-            '<div class="cb-stack cb-stack-four"></div><div class="cb-stack cb-stack-five"></div></div>'
-            '<div class="cb-medal">♛</div>'
-        )
         st.markdown(
-            f"""
-            <section class="cb-hero" aria-label="베팅 화면">
-                {bet_logo_html}
-                <div class="cb-hero-title">얼마를 걸까요?</div>
-                <p class="cb-hero-subtitle">베팅하면 뉴스가 공개됩니다</p>
-                <div class="cb-scene" aria-label="뉴스 카드와 금화 무대" role="img">
-                    {bet_cards_html}
-                    {bet_podium_html}
-                </div>
+            f'''
+            <section class="cb-hero" aria-label="베팅 금액 선택">
+              {logo_html}
+              <h2 class="cb-heading">얼마를 걸까요?</h2>
+              <p class="cb-description">베팅하면 뉴스가 공개됩니다</p>
+              <div class="cb-scene">{news_html}{podium_html}</div>
             </section>
-            """,
-            unsafe_allow_html=True,
+            ''', unsafe_allow_html=True,
         )
 
         with st.container(key="casino_bet_controls"):
-            st.markdown(f'<div class="cb-amount"><span class="cb-gold-token">$</span>{bet_val:,}</div>', unsafe_allow_html=True)
+            st.markdown(
+                f'<div class="cb-amount"><span class="cb-coin-symbol">$</span>{bet_val:,}</div>',
+                unsafe_allow_html=True,
+            )
             with st.container(key="casino_bet_row"):
-                minus_col, range_col, plus_col = st.columns([1, 5, 1], gap="small")
-                with minus_col:
-                    st.button("−", use_container_width=True, key="bet_btn_minus",
-                              disabled=bet_val <= min_bet,
-                              on_click=_adjust_bet_amount, args=(-bet_step, min_bet, max_bet))
-                with range_col:
+                minus, slider_column, plus = st.columns([1, 5, 1], gap="small")
+                with minus:
+                    st.button("−", key="bet_btn_minus", use_container_width=True,
+                              disabled=(bet_val <= min_bet),
+                              on_click=_adjust_bet_amount, args=(-step, min_bet, max_bet))
+                with slider_column:
                     if max_bet > min_bet:
-                        st.slider("베팅 금액 선택", min_value=min_bet, max_value=max_bet,
-                                  step=bet_step, key="bet_slider_val", label_visibility="collapsed")
+                        st.slider("베팅 금액", min_value=min_bet, max_value=max_bet,
+                                  step=step, key="bet_slider_val", label_visibility="collapsed")
                     else:
-                        st.markdown(
-                            '<div class="cb-fixed-slider" aria-label="선택할 수 있는 유일한 베팅 금액">'
-                            '<div class="cb-fixed-slider-thumb"></div></div>',
-                            unsafe_allow_html=True,
-                        )
-                with plus_col:
-                    st.button("+", use_container_width=True, key="bet_btn_plus",
-                              disabled=bet_val >= max_bet,
-                              on_click=_adjust_bet_amount, args=(bet_step, min_bet, max_bet))
-            st.markdown(f'<div class="cb-range-ends"><span>{min_bet:,}</span><span>{max_bet:,}</span></div>', unsafe_allow_html=True)
+                        st.markdown('<div class="cb-fixed-track"></div>', unsafe_allow_html=True)
+                with plus:
+                    st.button("+", key="bet_btn_plus", use_container_width=True,
+                              disabled=(bet_val >= max_bet),
+                              on_click=_adjust_bet_amount, args=(step, min_bet, max_bet))
+            st.markdown(
+                f'<div class="cb-ends"><span>{min_bet:,}</span><span>{max_bet:,}</span></div>',
+                unsafe_allow_html=True,
+            )
 
-        rise_label = f"▲ {rank_climb}" if rank_climb else "—"
-        coin_decoration = (
-            f'<img class="cb-stat-coin" src="{coin_img}" alt="">'
-            if coin_img else '<span class="cb-stat-art">🪙</span>'
-        )
+        up_display = f'▲ {rank_climb}' if rank_climb else '—'
         st.markdown(
-            f"""
-            <div class="cb-prediction">
+            f'''
+            <div class="cb-stats">
               <div class="cb-stat">
-                <div class="cb-stat-label">{coin_decoration}예상 당첨액 ⓘ</div>
-                <div class="cb-stat-number is-gold">+ {expected_payout:,}</div>
-                <div class="cb-stat-pill">배율 2.0x</div>
+                <div class="cb-stat-label">{coin_html}<span>예상 당첨액 ⓘ</span></div>
+                <div class="cb-stat-value">+ {expected_payout:,}</div>
+                <div class="cb-pill">배율 2.0x</div>
               </div>
               <div class="cb-stat">
-                <div class="cb-stat-label"><span class="cb-stat-art">🏆</span>예상 랭킹 변동 ⓘ</div>
-                <div class="cb-rank-delta">{rise_label}</div>
-                <div class="cb-stat-sub">{curr_rank}위 → <b>{sim_rank}위</b></div>
+                <div class="cb-stat-label"><span aria-hidden="true">🏆</span><span>예상 랭킹 변동 ⓘ</span></div>
+                <div class="cb-up">{up_display}</div>
+                <div class="cb-rank">{curr_rank}위 → <b>{sim_rank}위</b></div>
               </div>
             </div>
-            """,
-            unsafe_allow_html=True,
+            ''', unsafe_allow_html=True,
         )
-        if st.button(f"⚡ {bet_val:,} 베팅하기", key="bet_confirm_cta", use_container_width=True, type="primary"):
+        if st.button(f"⚡ {bet_val:,} 베팅하기", type="primary", key="bet_confirm_cta", use_container_width=True):
             return bet_val
-        st.markdown('<div class="cb-betting-note">베팅 금액에 따라 예상 수익과 순위가 달라집니다.</div>', unsafe_allow_html=True)
+        st.markdown('<p class="cb-footnote">베팅 금액에 따라 예상 수익과 순위가 달라집니다.</p>', unsafe_allow_html=True)
 
     return None
