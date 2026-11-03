@@ -671,30 +671,61 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
         .cb-amount {display:flex;align-items:center;justify-content:center;gap:10px;
             font-size:clamp(1.75rem,7vw,2.45rem);font-weight:950;
             line-height:1.1;font-variant-numeric:tabular-nums;}
-        .st-key-casino_bet_row {width:100% !important;min-width:0 !important;}
-        .st-key-casino_bet_row [data-testid="stHorizontalBlock"] {
-            display:flex !important;flex-flow:row nowrap !important;align-items:center !important;
-            gap:clamp(5px,1.4vw,10px) !important;min-width:0 !important;}
-        .st-key-casino_bet_row [data-testid="stHorizontalBlock"] > [data-testid="column"]:first-child,
-        .st-key-casino_bet_row [data-testid="stHorizontalBlock"] > [data-testid="column"]:last-child {
-            flex:0 0 clamp(36px,9vw,47px) !important;width:clamp(36px,9vw,47px) !important;}
-        .st-key-casino_bet_row [data-testid="stHorizontalBlock"] > [data-testid="column"]:nth-child(2) {
-            flex:1 1 0 !important;width:0 !important;min-width:0 !important;}
+        /* Use a three-cell amount row. The full-width slider lives BELOW it,
+           never inside a narrow Streamlit column (the previous overflow cause). */
+        .st-key-casino_bet_amount_row {
+            width:100% !important;min-width:0 !important;
+        }
+        .st-key-casino_bet_amount_row [data-testid="stHorizontalBlock"] {
+            width:100% !important;min-width:0 !important;
+            display:grid !important;
+            grid-template-columns:clamp(36px,9vw,47px) minmax(0,1fr) clamp(36px,9vw,47px) !important;
+            align-items:center !important;gap:clamp(5px,1.5vw,11px) !important;
+        }
+        .st-key-casino_bet_amount_row [data-testid="stHorizontalBlock"] > [data-testid="column"] {
+            width:100% !important;min-width:0 !important;
+            flex:initial !important;
+        }
+        .st-key-casino_bet_amount_row [data-testid="stHorizontalBlock"] > [data-testid="column"] > div {
+            min-width:0 !important;max-width:100% !important;
+        }
+        .cb-amount {
+            display:flex; align-items:center; justify-content:center; gap:6px;
+            min-width:0; max-width:100%; text-align:center;
+            font-size:clamp(1.35rem,6.2vw,2.45rem);
+            font-weight:950;line-height:1.1;font-variant-numeric:tabular-nums;
+            white-space:nowrap;
+        }
+        .cb-amount .cb-coin-symbol {
+            width:clamp(24px,6vw,34px); height:clamp(24px,6vw,34px);
+            font-size:clamp(.85rem,3.5vw,1.12rem);
+        }
         .st-key-bet_btn_minus button,.st-key-bet_btn_plus button {
-            width:clamp(36px,9vw,47px) !important;height:clamp(36px,9vw,47px) !important;
+            width:100% !important;height:clamp(36px,9vw,47px) !important;
             min-height:0 !important;padding:0 !important;border-radius:50% !important;
             border:1.5px solid #b72cff !important;background:#210a38 !important;
             color:white !important;font-size:1.5rem !important;
-            box-shadow:0 0 11px rgba(161,39,244,.55) !important;}
+            box-shadow:0 0 11px rgba(161,39,244,.55) !important;
+        }
         .st-key-bet_btn_minus button:disabled,.st-key-bet_btn_plus button:disabled {
-            opacity:.37 !important;cursor:default !important;}
-        .st-key-casino_bet_row [data-testid="stSlider"],
-        .st-key-casino_bet_row [data-baseweb="slider"] {min-width:0 !important;width:100% !important;}
-        .st-key-casino_bet_row [data-baseweb="slider"] [role="slider"] {
-            width:25px !important;height:25px !important;
+            opacity:.37 !important;cursor:default !important;
+        }
+        /* Slider occupies the entire container width, inset by its thumb radius. */
+        .st-key-casino_bet_controls [data-testid="stSlider"] {
+            min-width:0 !important;width:100% !important;
+            max-width:100% !important;box-sizing:border-box !important;
+            padding:0 14px !important;margin:0 !important;
+        }
+        .st-key-casino_bet_controls [data-baseweb="slider"] {
+            width:100% !important;min-width:0 !important;
+            max-width:100% !important;
+        }
+        .st-key-casino_bet_controls [data-baseweb="slider"] [role="slider"] {
+            width:24px !important;height:24px !important;
             background:#f3c8ff !important;border:3px solid #fff5ff !important;
-            box-shadow:0 0 11px 3px #c64aff !important;touch-action:pan-y;}
-        .st-key-casino_bet_row [data-testid="stTickBar"] {display:none !important;}
+            box-shadow:0 0 9px 2px #c64aff !important;touch-action:pan-y;
+        }
+        .st-key-casino_bet_controls [data-testid="stTickBar"] {display:none !important;}
         .cb-ends {display:flex;justify-content:space-between;
             padding:0 clamp(39px,10vw,53px);font-size:.78rem;color:#ac9bbe;font-variant-numeric:tabular-nums;}
         .cb-fixed-track {position:relative;width:100%;height:7px;margin:14px 0;
@@ -743,6 +774,128 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
             .cb-stat-label {gap:3px;}
             .cb-rank {font-size:clamp(.83rem,3.8vw,1rem);}
             .cb-ends {font-size:.69rem;}
+        }
+        /* Mobile-specific compact layout. Background remains visible; only
+           the large decorative scene shrinks on short devices. */
+        @media(max-width:600px) {
+            .stApp:has(.st-key-casino_betting_shell) header[data-testid="stHeader"] {
+                height:0 !important;min-height:0 !important;visibility:hidden !important;
+            }
+            .block-container:has(.st-key-casino_betting_shell) {
+                width:100% !important;max-width:100% !important;
+                min-width:0 !important;box-sizing:border-box !important;
+                padding:4px 8px max(8px,env(safe-area-inset-bottom)) !important;
+            }
+            .st-key-casino_betting_shell {
+                width:100% !important;max-width:100% !important;
+                min-width:0 !important; margin:0 auto !important;
+                padding:8px 10px !important; border-radius:17px !important;
+            }
+            .st-key-casino_betting_shell [data-testid="stVerticalBlock"] {
+                gap:3px !important;
+            }
+            .st-key-casino_betting_shell [data-testid="stHorizontalBlock"] {
+                flex-flow:row nowrap !important;min-width:0 !important;
+            }
+            .st-key-casino_betting_shell .cb-logo {
+                display:block;width:auto !important;height:clamp(39px,8dvh,67px) !important;
+                max-width:min(82%,245px) !important;object-fit:contain;
+                margin:0 auto 1px !important;
+            }
+            .st-key-casino_betting_shell .cb-game-title {
+                font-size:clamp(.75rem,3.3vw,.98rem) !important;
+                line-height:1.12 !important; margin:0 auto 2px !important;
+            }
+            .st-key-casino_betting_shell .cb-heading {
+                font-size:clamp(1.22rem,5.4vw,1.65rem) !important;
+                line-height:1.13 !important;
+            }
+            .st-key-casino_betting_shell .cb-description {
+                font-size:clamp(.68rem,2.8vw,.86rem) !important;
+                margin:1px 0 !important;
+                line-height:1.25 !important;
+            }
+            .st-key-casino_betting_shell .cb-scene {
+                width:100% !important; height:clamp(115px,23dvh,200px) !important;
+                margin:0 auto !important; position:relative !important;
+                display:block !important; overflow:visible;
+            }
+            .st-key-casino_betting_shell .cb-news-image {
+                position:absolute !important;left:50% !important;top:0 !important;
+                transform:translateX(-50%) !important;
+                width:100% !important;height:61% !important;max-width:100% !important;
+                object-fit:contain !important;
+            }
+            .st-key-casino_betting_shell .cb-podium-image {
+                position:absolute !important;left:50% !important;bottom:0 !important;
+                transform:translateX(-50%) !important;margin:0 !important;
+                width:90% !important;max-width:90% !important;
+                height:72% !important;object-fit:contain !important;
+            }
+            .st-key-casino_betting_shell .cb-art-fallback {
+                position:relative;padding:15px !important;font-size:2rem !important;
+            }
+            .st-key-casino_bet_controls {
+                padding:8px 10px !important;border-radius:17px !important;
+            }
+            .st-key-casino_bet_amount_row [data-testid="stHorizontalBlock"] {
+                display:grid !important;grid-template-columns:36px minmax(0,1fr) 36px !important;
+                gap:5px !important;
+            }
+            .st-key-bet_btn_minus button,.st-key-bet_btn_plus button {
+                width:36px !important;height:36px !important;font-size:1.25rem !important;
+            }
+            .st-key-casino_bet_controls [data-testid="stSlider"] {
+                padding:0 15px !important;
+            }
+            .st-key-casino_betting_shell .cb-ends {
+                padding:0 15px !important;font-size:.69rem !important;
+                line-height:1.1 !important;
+            }
+            .st-key-casino_betting_shell .cb-stats {
+                border-radius:15px !important;
+            }
+            .st-key-casino_betting_shell .cb-stat {
+                padding:7px 9px !important;
+            }
+            .st-key-casino_betting_shell .cb-small-coin {
+                width:26px !important;height:23px !important;
+            }
+            .st-key-casino_betting_shell .cb-stat-label {
+                font-size:clamp(.64rem,2.7vw,.8rem) !important;
+                line-height:1.2 !important;
+            }
+            .st-key-casino_betting_shell .cb-stat-value {
+                font-size:clamp(1.12rem,4.8vw,1.55rem) !important;
+                line-height:1.1 !important;margin-top:3px !important;
+            }
+            .st-key-casino_betting_shell .cb-pill {
+                margin-top:2px !important;padding:1px 7px !important;
+            }
+            .st-key-casino_betting_shell .cb-rank {
+                margin-top:3px !important;
+                font-size:clamp(.83rem,3.5vw,1rem) !important;
+            }
+            .st-key-casino_betting_shell .cb-up {
+                margin-top:1px !important;font-size:.7rem !important;
+            }
+            .st-key-bet_confirm_cta button {
+                min-height:48px !important;
+                font-size:clamp(1.05rem,4.6vw,1.3rem) !important;
+            }
+            .st-key-casino_betting_shell .cb-footnote {display:none !important;}
+        }
+        @media(max-width:600px) and (max-height:720px) {
+            .st-key-casino_betting_shell .cb-logo {
+                height:clamp(34px,7dvh,48px) !important;
+            }
+            .st-key-casino_betting_shell .cb-scene {
+                height:clamp(100px,19dvh,146px) !important;
+            }
+            .st-key-casino_betting_shell .cb-hero {margin:0 !important;}
+            .st-key-casino_betting_shell .cb-stat {padding:5px 8px !important;}
+            .st-key-casino_bet_controls {padding:6px 8px !important;}
+            .st-key-bet_confirm_cta button {min-height:44px !important;}
         }
         @media(prefers-reduced-motion:no-preference) {
             .cb-news-image {animation:cb-float 4.8s ease-in-out infinite;}
@@ -799,26 +952,28 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
         )
 
         with st.container(key="casino_bet_controls"):
-            st.markdown(
-                f'<div class="cb-amount"><span class="cb-coin-symbol">$</span>{bet_val:,}</div>',
-                unsafe_allow_html=True,
-            )
-            with st.container(key="casino_bet_row"):
-                minus, slider_column, plus = st.columns([1, 5, 1], gap="small")
+            # Buttons sit beside the amount; slider gets a separate full-width row.
+            # Avoids native Streamlit slider minimum-width pushing the minus button off-screen.
+            with st.container(key="casino_bet_amount_row"):
+                minus, amount_col, plus = st.columns([1, 4, 1], gap="small")
                 with minus:
                     st.button("−", key="bet_btn_minus", use_container_width=True,
                               disabled=(bet_val <= min_bet),
                               on_click=_adjust_bet_amount, args=(-step, min_bet, max_bet))
-                with slider_column:
-                    if max_bet > min_bet:
-                        st.slider("베팅 금액", min_value=min_bet, max_value=max_bet,
-                                  step=step, key="bet_slider_val", label_visibility="collapsed")
-                    else:
-                        st.markdown('<div class="cb-fixed-track"></div>', unsafe_allow_html=True)
+                with amount_col:
+                    st.markdown(
+                        f'<div class="cb-amount"><span class="cb-coin-symbol">$</span>{bet_val:,}</div>',
+                        unsafe_allow_html=True,
+                    )
                 with plus:
                     st.button("+", key="bet_btn_plus", use_container_width=True,
                               disabled=(bet_val >= max_bet),
                               on_click=_adjust_bet_amount, args=(step, min_bet, max_bet))
+            if max_bet > min_bet:
+                st.slider("베팅 금액", min_value=min_bet, max_value=max_bet,
+                          step=step, key="bet_slider_val", label_visibility="collapsed")
+            else:
+                st.markdown('<div class="cb-fixed-track"></div>', unsafe_allow_html=True)
             st.markdown(
                 f'<div class="cb-ends"><span>{min_bet:,}</span><span>{max_bet:,}</span></div>',
                 unsafe_allow_html=True,
