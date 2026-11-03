@@ -10,8 +10,6 @@ ws_news = init_news_sheet()
 # 정의된 함수: show_game_1
 
 def show_game_1():
-    st.title("🎮 게임 1: 뉴스 유사도 예측 게임")
-
     if "game_1_bet" not in st.session_state:
         # 코인 부족 검사 (부족 시 은행 팝업)
         if not check_user_coins_or_pop_bank(min_required=100):
@@ -38,6 +36,8 @@ def show_game_1():
             st.rerun()
 
         return
+
+    st.title("🎮 게임 1: 뉴스 유사도 예측 게임")
 
     # [2단계 & 3단계] 기사 선택
     title, article_text, url = get_game_news_selection("game_1")

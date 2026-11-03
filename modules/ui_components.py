@@ -1,5 +1,6 @@
 import streamlit as st
 import base64
+import mimetypes
 
 # 정의된 함수: load_local_image_as_base64, change_page, show_placeholder_page, inject_casino_theme
 
@@ -7,7 +8,8 @@ import base64
 def load_local_image_as_base64(file_path: str) -> str:
     with open(file_path, "rb") as f:
         encoded = base64.b64encode(f.read()).decode()
-    return f"data:image/png;base64,{encoded}"
+    image_type = mimetypes.guess_type(file_path)[0] or "image/png"
+    return f"data:{image_type};base64,{encoded}"
     
 def change_page(page_name):
     st.session_state.page = page_name
