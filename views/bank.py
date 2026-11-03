@@ -1,5 +1,7 @@
 """Royal-purple parchment bank screen for the Streamlit game."""
 
+from textwrap import dedent
+
 import streamlit as st
 
 from modules.db_handler import init_gspread
@@ -80,7 +82,6 @@ def _amount_selector(label: str, key: str, limit: int, default: int) -> int:
         label,
         min_value=UNIT,
         max_value=limit,
-        value=st.session_state[key],
         step=UNIT,
         key=key,
         label_visibility="collapsed",
@@ -95,7 +96,7 @@ def _amount_selector(label: str, key: str, limit: int, default: int) -> int:
 
 def _summary(coins: int, loan: int, available: int) -> None:
     st.markdown(
-        f"""
+        dedent(f"""
         <div class="bank-summary">
           <div class="bank-summary-grid">
             <div class="bank-summary-item">
@@ -120,7 +121,7 @@ def _summary(coins: int, loan: int, available: int) -> None:
             복리로 추가됩니다.
           </div>
         </div>
-        """,
+        """),
         unsafe_allow_html=True,
     )
 
@@ -600,13 +601,13 @@ def show_bank():
                 change_page("main")
         with wallet:
             st.markdown(
-                f"""
+                dedent(f"""
                 <div class="bank-wallet" aria-label="보유 코인 {current_coins:,}">
                     <span class="bank-wallet-coin">＄</span>
                     <span>{current_coins:,} C</span>
                     <span class="bank-wallet-plus" aria-hidden="true">+</span>
                 </div>
-                """,
+                """),
                 unsafe_allow_html=True,
             )
 
@@ -614,7 +615,7 @@ def show_bank():
 
         with st.container(key="bank-paper"):
             st.markdown(
-                f"""
+                dedent(f"""
                 <div class="bank-wax" aria-hidden="true">♛</div>
                 <div class="bank-stamp" aria-hidden="true"><span>♛</span>BANK</div>
                 <div class="bank-doc-title">대출 신청서</div>
@@ -628,7 +629,7 @@ def show_bank():
                     <div class="bank-term-value">{MAX_LOAN:,} C</div>
                 </div>
                 <div class="bank-divider"><span>❖</span></div>
-                """,
+                """),
                 unsafe_allow_html=True,
             )
 
