@@ -739,7 +739,8 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
         .cb-betting-note {text-align:center;color:#9c88ac;font-size:.7rem;margin:3px 0 0;}
         @media (max-width:480px) {
             .st-key-casino_betting_shell {padding:12px !important;border-radius:21px;}
-            .st-key-casino_betting_shell [data-testid="stHorizontalBlock"] {gap:.3rem;}
+            .st-key-casino_betting_shell [data-testid="stHorizontalBlock"] {gap:.3rem; flex-wrap:nowrap !important;}
+            .st-key-casino_betting_shell [data-testid="column"] {min-width:0 !important; padding:0 !important;}
             .cb-hero {padding-top:4px;}
             .cb-scene {height:278px;}
             .cb-card {height:184px;top:11px;border-radius:20px;}
