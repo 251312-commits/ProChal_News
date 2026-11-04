@@ -1,548 +1,259 @@
-/* The reference-style loan application is intentionally scoped to draw_loan.
-   pay_loan continues to use bank_forms.css and its original layout. */
-.st-key-bank-body > [data-testid="stLayoutWrapper"]:has(> .st-key-bank-draw-screen) {
-  flex: 1 1 0 !important;
-  min-height: 0 !important;
-  width: 100% !important;
+/* Keep the illustrated page in the reference's 9:16 frame even on taller phones.
+   Explicit columns matter: Streamlit's keyed blocks default to justify-content:start. */
+.st-key-bank-page:has(.st-key-bank-draw-screen) {
+  --safe-w: calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right));
+  --safe-h: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  inset: env(safe-area-inset-top) env(safe-area-inset-right)
+         env(safe-area-inset-bottom) env(safe-area-inset-left);
+  margin: auto;
+  width: min(var(--safe-w), calc(var(--safe-h) * 9 / 16), 486px);
+  height: min(var(--safe-h), calc(var(--safe-w) * 16 / 9), 864px);
+  padding: 0;
+  display: grid;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
 }
-.st-key-bank-draw-screen, .st-key-bank-draw-screen * {
-  box-sizing: border-box;
+.st-key-bank-page:has(.st-key-bank-draw-screen) > * { grid-area: 1 / 1; min-width: 0; }
+.st-key-bank-page:has(.st-key-bank-draw-screen) > :has(.st-key-bank-nav) {
+  align-self: start;
+  z-index: 2;
+}
+.st-key-bank-page:has(.st-key-bank-draw-screen) .st-key-bank-nav { padding: 2px 3%; }
+.st-key-bank-body:has(.st-key-bank-draw-screen),
+.st-key-bank-body > :has(> .st-key-bank-draw-screen) {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
 }
 .st-key-bank-draw-screen {
+  display: grid;
+  grid-template: 20.5% minmax(0, 1fr) / minmax(0, 1fr);
   width: 100%;
   height: 100%;
-  min-height: 0;
   min-width: 0;
-  display: grid !important;
-  grid-template-rows: clamp(84px, 19dvh, 175px) minmax(0, 1fr);
-  gap: 0 !important;
+  min-height: 0;
+  container-type: inline-size;
   font-family: system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  font-variant-numeric: tabular-nums;
+  word-break: keep-all;
 }
-.st-key-bank-draw-screen > [data-testid="stElementContainer"],
-.st-key-bank-draw-screen > [data-testid="stLayoutWrapper"] {
-  min-height: 0;
-  min-width: 0;
-  width: 100%;
+.st-key-bank-draw-screen *, .st-key-bank-draw-screen *::before,
+.st-key-bank-draw-screen *::after { box-sizing: border-box; }
+.st-key-bank-draw-screen > *, .st-key-bank-draw-screen > * > [data-testid="stHtml"] {
+  width: 100%; height: 100%; min-height: 0; min-width: 0;
 }
 .bank-draw-masthead {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  text-align: center;
-  isolation: isolate;
-}
-.bank-draw-temple {
-  position: absolute;
-  inset: 0 0 auto;
-  height: 100%;
-  width: min(96%, 430px);
-  left: 50%;
-  transform: translateX(-50%);
-  object-fit: contain;
-  object-position: center top;
-  opacity: .98;
-  filter: drop-shadow(0 0 14px #a12bd580);
-}
-.bank-draw-masthead-text {
-  position: absolute;
-  inset: auto 0 1%;
-  padding: 0 6px;
-  text-shadow: 0 2px 8px #210622, 0 0 13px #210622;
+  display: flex; flex-direction: column; justify-content: end;
+  align-items: center; height: 100%; padding-bottom: .6cqw;
+  background: var(--temple) center 80% / auto 89% no-repeat;
+  text-align: center; color: #fcefff;
 }
 .st-key-bank-draw-screen .bank-draw-masthead h1 {
-  margin: 0 0 clamp(1px,.65dvh,5px) !important;
-  padding: 0 !important;
-  color: #fff0ff !important;
-  font: 900 clamp(23px, min(7vw, 4.7dvh), 46px)/1.12 system-ui, sans-serif !important;
-  letter-spacing: -.06em;
-  text-shadow: 0 1px 5px #0d0418, 0 0 13px #af50ed !important;
+  margin: 0; padding: 0;
+  color: #fff1ff !important;
+  font: 850 7.4cqw/1.12 system-ui, sans-serif !important;
+  letter-spacing: -.055em; text-shadow: 0 2px 6px #1c081d !important;
 }
 .bank-draw-masthead p {
-  margin: 0;
-  font: 650 clamp(11px, min(3.25vw, 2.15dvh), 17px)/1.25 system-ui,sans-serif;
-  white-space: nowrap;
-  color: #f6e3fb;
+  margin: .7cqw 0 0; color: #f4dff5;
+  font: 550 3.4cqw/1.25 system-ui, sans-serif; text-shadow: 0 1px 5px #1b0825;
 }
 .st-key-bank-draw-parchment {
   position: relative;
-  isolation: isolate;
-  min-height: 0;
-  min-width: 0;
-  height: 100%;
-  width: min(100%, 505px);
-  margin: 0 auto;
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: space-between;
-  gap: clamp(2px, .65dvh, 7px) !important;
-  padding: clamp(20px, 3.3dvh, 43px) clamp(19px, 7.2%, 43px)
-           clamp(14px, 3.3dvh, 32px) !important;
-  color: #422b36;
-  font-variant-numeric: tabular-nums;
-  word-break: keep-all;
-  overflow-wrap: anywhere;
+  display: grid;
+  grid-template: minmax(0, 1.65fr) minmax(0, 1.08fr) minmax(0, 1.04fr) minmax(0, .76fr) / minmax(0, 1fr);
+  align-items: center;
+  gap: 0;
+  width: 100%; height: 100%; min-width: 0; min-height: 0;
+  padding: 1.7cqw 6.4cqw 9.3cqw;
+  background: var(--paper) center / 100% 100% no-repeat;
+  color: #382231;
 }
-.st-key-bank-draw-parchment::before,
-.st-key-bank-draw-parchment::after {
-  content: "";
-  position: absolute;
-  pointer-events: none;
-  inset: 1% 0 0;
-  background: var(--bank-draw-paper, linear-gradient(145deg, #efc5cc, #e5b3bf)) center / 100% 100% no-repeat;
-  filter: drop-shadow(0 12px 12px rgba(12, 2, 22, .6));
-  z-index: -1;
-}
-.st-key-bank-draw-parchment::after {
-  inset: 3% 2% 0;
-  transform: rotate(2.5deg) translate(1%, 1%);
-  filter: brightness(.8) drop-shadow(0 7px 9px #11031a9c);
-  z-index: -2;
-}
-.st-key-bank-draw-parchment > [data-testid="stElementContainer"],
-.st-key-bank-draw-parchment > [data-testid="stLayoutWrapper"] {
-  min-height: 0;
-  min-width: 0;
-}
+.st-key-bank-draw-parchment > * { width: 100%; min-width: 0; min-height: 0; }
 .bank-draw-document-title {
-  width: 100%;
-  min-height: 0;
   position: relative;
+  padding: 8.6cqw 0 1.55cqw;
   text-align: center;
-  padding-top: clamp(2px,.7dvh,7px);
 }
-.bank-draw-wax {
-  position: absolute;
-  top: clamp(-29px,-2.5dvh,-9px);
-  left: 50%;
-  width: clamp(34px,6dvh,69px);
-  height: auto;
-  transform: translateX(-50%);
-  filter: drop-shadow(0 3px 4px #4b153b6e);
-  pointer-events: none;
+.bank-draw-document-title::before, .bank-draw-document-title::after {
+  content: ""; position: absolute; pointer-events: none;
 }
-.bank-draw-postmark {
-  position: absolute;
-  right: -4%;
-  top: 1%;
-  width: clamp(39px,8.5dvh,100px);
-  opacity: .38;
-  transform: rotate(12deg);
-  pointer-events: none;
-  filter: sepia(.55);
+.bank-draw-document-title::before {
+  width: 9.8cqw; height: 9.8cqw; top: -1.4cqw; left: 50%; transform: translateX(-50%);
+  background: var(--seal) center / contain no-repeat;
+}
+.bank-draw-document-title::after {
+  right: -3cqw; bottom: 0; width: 24cqw; height: 14cqw;
+  opacity: .62; background: var(--postmark) center / contain no-repeat;
 }
 .st-key-bank-draw-screen .bank-draw-document-title h2 {
-  margin: clamp(11px,2dvh,20px) 0 1px !important;
-  padding: 0 !important;
-  color: #412432 !important;
-  font: 850 clamp(22px,min(7.2vw,4.5dvh),38px)/1.12 Georgia,"Batang",serif !important;
-  letter-spacing: -.04em;
-  text-shadow: 0 1px 1px #ffe5dc !important;
+  color: #382231 !important; padding: 0; margin: 0;
+  font: 800 5.9cqw/1.2 "AppleMyungjo", "Noto Serif CJK KR", "Batang", Georgia, serif !important;
+  letter-spacing: .02em; text-shadow: 0 1px 0 #fff2e4 !important;
 }
-.bank-draw-english {
-  font: 700 clamp(8px,1.45dvh,11px)/1.25 Georgia,serif;
-  color: #85556e;
-  letter-spacing: .28em;
+.bank-draw-document-title span {
+  display: block; margin-top: .4cqw; color: #78566d;
+  font: 700 1.68cqw/1.2 Georgia, serif; letter-spacing: .31em;
 }
 .bank-draw-terms {
-  display: grid;
-  grid-template-columns: 1fr;
-  width: 100%;
-  border: 1px solid #b48197;
-  border-radius: 5px;
-  background: #f8e2da2e;
-  overflow: hidden;
+  margin: 0 auto; width: 82%; border: 1px solid #a78091;
+  border-radius: 6px; background: #fff2e72e; overflow: hidden;
 }
 .bank-draw-terms > div {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, .95fr);
-  min-height: clamp(27px, 4.1dvh, 44px);
-  align-items: center;
-  border-bottom: 1px solid #c69caa8c;
-  color: #382734;
-  font-size: clamp(11px, min(3.2vw, 2.15dvh), 16px);
+  display: grid; grid-template-columns: 47% 1fr; min-height: 6.4cqw;
+  align-items: stretch; color: #372433; font-size: 2.95cqw;
 }
-.bank-draw-terms > div:last-child { border-bottom: 0; }
-.bank-draw-terms b {
-  padding: 3px 4px;
-  text-align: center;
-  font-weight: 850;
-  white-space: nowrap;
+.bank-draw-terms > div + div { border-top: 1px solid #bb95a2aa; }
+.bank-draw-terms dt, .bank-draw-terms dd {
+  display: flex; align-items: center; margin: 0; padding: 0 2.1cqw;
+  line-height: 1.15; white-space: nowrap;
 }
-.bank-draw-terms .bank-draw-rate { color: #7512a4; }
-.bank-draw-term-label {
-  display: flex;
-  align-items: center;
-  gap: clamp(4px,1.3vw,9px);
-  height: 100%;
-  padding: 2px clamp(5px, 1.7vw, 11px);
-  border-right: 1px solid #bc8e9c;
-  font-weight: 750;
-  white-space: nowrap;
-}
-.bank-draw-term-label i {
-  display: inline-grid;
-  place-items: center;
-  min-width: 20px;
-  font: 900 clamp(15px, 2.5dvh, 22px)/1 Georgia,serif;
-  color: #765477;
-  font-style: normal;
-}
-.bank-draw-ornament {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: clamp(7px,1.6dvh,16px);
-  color: #ae7991;
-  font-size: 16px;
-  line-height: 1;
-}
-.bank-draw-ornament::before,
-.bank-draw-ornament::after {
-  content:"";
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg,transparent,#ad8294);
-}
-.bank-draw-ornament::after { transform: rotate(180deg); }
-.bank-draw-ornament span { padding: 0 8px; }
-.st-key-bank-draw-parchment > [data-testid="stLayoutWrapper"]:has(> .st-key-bank-draw-controls) {
-  flex: 1 1 0;
-  min-height: 0;
-}
+.bank-draw-terms dt { gap: 1.6cqw; border-right: 1px solid #bd94a3; font-weight: 700; }
+.bank-draw-terms dt svg { width: 3.7cqw; height: 3.7cqw; color: #73536e; }
+.bank-draw-terms dd { justify-content: end; font-weight: 850; font-size: 3.5cqw; }
+.bank-draw-terms .bank-draw-rate { color: #69169a; font-size: 3.1cqw; }
+
 .st-key-bank-draw-controls {
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: space-between;
-  gap: clamp(1px,.55dvh,6px) !important;
-  width: 100%;
-  height: 100%;
-  min-height: 0;
+  position: relative; width: 82%; margin-inline: auto;
+  display: flex; flex-direction: column; gap: 0;
 }
-.st-key-bank-draw-controls > [data-testid="stElementContainer"],
-.st-key-bank-draw-controls > [data-testid="stLayoutWrapper"] {
-  width: 100%;
-  min-width: 0;
+.st-key-bank-draw-controls::before {
+  content: "◆"; text-align: center; color: #aa7b92; font: 2cqw/1 Georgia, serif;
+  background: linear-gradient(90deg, transparent, #ad8793 44%, transparent 46% 54%, #ad8793 56%, transparent) center / 100% 1px no-repeat;
 }
-.st-key-bank-draw-screen .bank-amount-label {
-  text-align: center;
-  color: #352236;
-  margin: 0 !important;
-  padding: 0;
-  font-weight: 900;
-  font-size: clamp(14px,2.85dvh,20px);
-  line-height: 1.15;
+.bank-amount-label, .bank-draw-no-credit {
+  margin: .8cqw 0 1.2cqw; text-align: center;
+  color: #3b2433; font-weight: 800; line-height: 1.18;
 }
+.st-key-bank-draw-screen .bank-amount-label { font-size: 3.65cqw; }
+.bank-draw-no-credit { padding: 2cqw 0; font-size: 3.2cqw; }
 .st-key-bank-draw-screen .st-key-bank-stepper {
-  display: grid !important;
-  grid-template-columns: clamp(33px,6.3dvh,52px) minmax(0,1fr) clamp(33px,6.3dvh,52px) !important;
-  gap: clamp(4px,1.2vw,12px) !important;
-  align-items: center !important;
-  min-width: 0 !important;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center; gap: 2cqw; width: 100%;
 }
-.st-key-bank-draw-screen .st-key-bank-stepper > * { min-width: 0 !important; width: 100%; }
-.st-key-bank-draw-screen .st-key-bank-stepper .stButton button {
-  width: clamp(33px,6.3dvh,52px) !important;
-  height: clamp(33px,6.3dvh,52px) !important;
-  min-height: 0 !important;
-  padding: 0 !important;
-  border-radius: 50% !important;
-  border: 1.5px solid #e4a3ee !important;
-  background: radial-gradient(circle at 36% 16%,#9829bd,#4c136a 70%,#290b41) !important;
-  box-shadow: 0 3px 3px #38134470, 0 0 7px #d56cf9b0 !important;
-  color: #fff !important;
-  font-size: clamp(22px,4dvh,32px) !important;
-  line-height: 1 !important;
+.st-key-bank-draw-screen .st-key-bank-stepper > * { width: 100%; min-width: 0; }
+.st-key-bank-draw-screen .st-key-bank-stepper button {
+  display: grid; place-content: center; width: max(36px,9cqw); height: max(36px,9cqw);
+  min-height: 0; padding: 0; border-radius: 50%;
+  border: 1px solid #e1a1f6 !important; color: #fff !important;
+  background: radial-gradient(at 38% 12%,#7d398b,#391446 75%) !important;
+  box-shadow: inset 0 1px 3px #edaffe88, 0 2px 4px #42144299 !important;
 }
-.st-key-bank-draw-screen .st-key-bank-stepper .stButton button:disabled { opacity: .37 !important; }
+.st-key-bank-draw-screen .st-key-bank-stepper button p {
+  margin: 0; color: inherit; font: 600 5.7cqw/1 system-ui, sans-serif;
+}
 .st-key-bank-draw-screen .bank-amount-value {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: clamp(32px,6.3dvh,54px);
-  min-width: 0;
-  border-radius: 10px;
-  background: linear-gradient(120deg, #44214d, #754580 60%, #3f1c49);
-  color: white;
-  font: 900 clamp(18px,min(6vw,4.5dvh),35px)/1 system-ui,sans-serif;
+  display: grid; place-items: center;
+  height: max(34px,8.7cqw); border-radius: 1.8cqw;
+  color: #fff5fc; background: linear-gradient(115deg, #412144, #68416c 75%, #482449);
+  box-shadow: inset 0 1px 4px #31123970; font: 850 5.8cqw/1 system-ui, sans-serif;
   white-space: nowrap;
-  text-shadow: 0 0 6px #fff4;
-  box-shadow: inset 0 2px 6px #2111316a;
 }
-.st-key-bank-draw-screen [data-testid="stSlider"] {
-  padding: 0 8px !important;
-  width: 100%;
-  min-width: 0;
-  margin: 0;
+.st-key-bank-draw-screen [data-testid="stSlider"] { margin: 0 2.4cqw; }
+.st-key-bank-draw-screen [data-testid="stSliderTickBar"],
+.st-key-bank-draw-screen [data-testid="stSliderThumbValue"] { display: none; }
+/* Keep BaseWeb's live progress gradient and its keyboard/touch event targets. */
+.st-key-bank-draw-screen [data-baseweb="slider"] [style*="linear-gradient"] {
+  height: 2.3cqw !important; border-radius: 99px;
+  filter: hue-rotate(260deg) saturate(1.6);
+  box-shadow: inset 0 1px 3px #56226366;
 }
-.st-key-bank-draw-screen [data-baseweb="slider"] {
-  filter: hue-rotate(267deg) saturate(1.7);
-}
-.st-key-bank-draw-screen [data-testid="stSliderThumbValue"],
-.st-key-bank-draw-screen [data-testid="stSliderTickBar"] { display: none; }
-.st-key-bank-draw-screen [data-baseweb="slider"] [role="slider"] {
-  box-shadow: 0 0 9px #c44afd !important;
+.st-key-bank-draw-screen [role="slider"] {
+  z-index: 1; width: 5cqw; height: 5cqw;
+  border: 2px solid #ffe2ff; background: radial-gradient(#fff0ff, #d686ff 50%, #a23ae3);
+  box-shadow: 0 0 7px #c53ef9;
 }
 .bank-draw-range {
-  display: flex;
-  justify-content: space-between;
-  font: 750 clamp(10px,2.5vw,14px)/1.1 system-ui,sans-serif;
-  color: #54364a;
-  padding: 0 3px;
-}
-.bank-draw-no-credit {
-  text-align: center;
-  font-size: 12px;
-  font-weight: 750;
-  color: #7e285f;
-  margin: 2px 0;
+  display: flex; justify-content: space-between; margin-top: -.9cqw;
+  font: 750 2.55cqw/1.15 system-ui,sans-serif; color: #4b3044;
 }
 .bank-draw-summary {
-  width: 100%;
-  min-width: 0;
-  padding: clamp(5px,1.25dvh,13px) clamp(4px,1.3vw,12px);
-  color: #fce7ff;
-  border-radius: clamp(10px,2.5vw,18px);
-  border: 1px solid #a953d5;
-  background: linear-gradient(155deg, #3f1b51, #190e2d 60%, #351343);
-  box-shadow: 0 0 13px #aa27d04b, inset 0 0 12px #a44bc14a;
+  width: 100%; padding: 2.3cqw 2.8cqw; border: 1px solid #9c57bd;
+  border-radius: 3cqw; color: #fff0fc; text-align: center;
+  background: linear-gradient(155deg,#351b43,#20112e 65%,#381d44);
+  box-shadow: inset 0 0 9px #b17dd841,0 3px 7px #67356988;
 }
 .bank-draw-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(3,minmax(0,1fr));
+  display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); margin: 0;
 }
-.bank-draw-summary-grid > div {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(1px,.3dvh,4px);
-  text-align: center;
-  padding: 0 2px;
-  border-right: 1px solid #ad5dc870;
-}
-.bank-draw-summary-grid > div:last-child { border-right: 0; }
-.bank-draw-summary-grid i {
-  color: #dfa8ff;
-  font-style: normal;
-  font-size: clamp(13px,2.5dvh,24px);
-  line-height: 1;
-}
-.bank-draw-summary-grid span {
-  font-size: clamp(9px,min(2.7vw,1.75dvh),13px);
-  font-weight: 700;
-  white-space: nowrap;
-}
-.bank-draw-summary-grid b {
-  font-size: clamp(13px,min(4.1vw,2.7dvh),23px);
-  line-height: 1.13;
-  font-weight: 850;
-  white-space: nowrap;
-}
-.bank-draw-summary-grid .bank-draw-gold { color: #ffd08d; }
+.bank-draw-summary-grid > div + div { border-left: 1px solid #9656ac80; }
+.bank-draw-summary-grid dt { display: grid; justify-items: center; gap: .6cqw; font-size: 2.85cqw; font-weight: 650; }
+.bank-draw-summary-grid svg { width: 5cqw; height: 5cqw; color: #f2b454; }
+.bank-draw-summary-grid > div:nth-child(2) svg { color: #d99ae9; }
+.bank-draw-summary-grid dd { margin: .65cqw 0 0; font-weight: 800; font-size: 4.2cqw; line-height: 1.18; white-space: nowrap; }
+.bank-draw-summary-grid > div:last-child dd { color: #ffd08a; }
 .bank-draw-summary p {
-  margin: clamp(4px,.8dvh,9px) 0 0;
-  padding-top: clamp(4px,.8dvh,9px);
-  border-top: 1px solid #ad66c45e;
-  font: 550 clamp(9px, min(2.55vw,1.6dvh),13px)/1.3 system-ui,sans-serif;
-  text-align: center;
-  color: #dec8eb;
+  margin: 1.7cqw 0 0; padding-top: 1.5cqw; border-top: 1px solid #9861aa80;
+  font: 550 2.45cqw/1.35 system-ui,sans-serif; color: #e9cfe9;
 }
-.bank-draw-summary p span, .bank-draw-summary p strong { color: #cf83ec; }
-.bank-draw-action-heading { height: 0; }
+.bank-draw-summary strong { color: #f0adff; }
+
+.st-key-bank-draw-screen .st-key-bank-borrow-submit {
+  position: relative; width: 84%; margin-inline: auto;
+}
 .st-key-bank-draw-screen .st-key-bank-borrow-submit button {
-  position: relative;
-  width: 100%;
-  min-height: clamp(39px, 7.5dvh, 70px) !important;
-  border: 2px solid #f5a3ff !important;
-  border-radius: 999px !important;
-  color: #fff !important;
-  background: linear-gradient(180deg,#bb4be8 0%,#8a18d1 45%,#4d0b77 100%) !important;
-  box-shadow: 0 0 14px #e23befae,inset 0 3px 7px #f7b0ffd4,0 3px 4px #270b327d !important;
-  font: 900 clamp(15px,min(5.2vw,3dvh),25px)/1.1 system-ui,sans-serif !important;
-  text-shadow: 0 2px 4px #35113f;
+  width: 100%; min-height: max(40px,12.8cqw); padding: 0 8%;
+  border: 2px solid #f7beff !important; border-radius: 100px;
+  color: #fff3ff !important;
+  background: linear-gradient(#9737c1,#551683 32%,#410c65 80%,#8e29be) !important;
+  box-shadow: 0 0 0 2px #874b91,0 3px 0 3px #512646,0 5px 10px #5f2a5caa,inset 0 0 7px #ee8fff !important;
 }
-.st-key-bank-draw-screen .st-key-bank-borrow-submit button:disabled { opacity: .55; }
-.bank-draw-decorative-stamp {
-  position: absolute;
-  width: clamp(32px,8dvh,84px);
-  height: auto;
-  right: -1%;
-  bottom: 1%;
-  z-index: 3;
-  transform: rotate(-25deg);
-  pointer-events: none;
-  filter: drop-shadow(0 4px 3px #240e3075);
+.st-key-bank-draw-screen .st-key-bank-borrow-submit button p { margin: 0; font: 850 4.9cqw/1.15 system-ui,sans-serif; }
+.st-key-bank-draw-screen .st-key-bank-borrow-submit button [data-testid="stIconMaterial"] { font-size: 5.1cqw; color: #ffd59c; }
+.st-key-bank-draw-screen .st-key-bank-borrow-submit::after {
+  content: ""; position: absolute; pointer-events: none;
+  bottom: -.15cqw; right: -7.3cqw; width: 20cqw; height: 20cqw;
+  background: var(--stamp) center / contain no-repeat;
 }
-/* Landscape and very short viewports: let the parchment form use the full
-   display width; the decorative header compresses before controls do. */
+.st-key-bank-draw-screen button:disabled { opacity: .55; }
+
 @media (orientation: landscape) and (max-height: 560px) {
-  .st-key-bank-draw-screen {
-    grid-template-rows: clamp(48px,16dvh,78px) minmax(0,1fr);
-    max-width: 780px;
-    margin: auto;
+  .st-key-bank-page:has(.st-key-bank-draw-screen) {
+    width: min(var(--safe-w), 840px); height: var(--safe-h);
   }
-  .bank-draw-temple { width: min(55%,360px); }
-  .bank-draw-masthead-text { bottom: 0; }
-  .st-key-bank-draw-screen .bank-draw-masthead h1 { font-size: clamp(18px,5.2dvh,27px) !important; }
-  .bank-draw-masthead p { font-size: 11px; }
+  .st-key-bank-draw-screen {
+    grid-template-rows: minmax(48px,19%) minmax(0,1fr);
+    /* Keep type and target sizes independent of the extra landscape width. */
+    container-type: normal;
+  }
+  .bank-draw-masthead { padding: 0; background-size: auto 100%; }
+  .st-key-bank-draw-screen .bank-draw-masthead h1 { font-size: 20px !important; }
+  .bank-draw-masthead p { margin: 0; font-size: 11px; }
   .st-key-bank-draw-parchment {
-    width: 100%;
-    padding: 12px 8% 9px !important;
-    gap: 2px !important;
+    container-type: inline-size;
+    grid-template: repeat(3, minmax(0, 1fr)) / minmax(0, .93fr) minmax(0,1.07fr);
+    gap: 4px 5%; padding: 12px 7% 19px;
   }
-  .bank-draw-document-title { padding: 0; }
-  .st-key-bank-draw-screen .bank-draw-document-title h2 {
-    font-size: 23px !important;
-    margin: 4px 0 0 !important;
-  }
-  .bank-draw-wax { display: none; }
-  .bank-draw-postmark { width: 40px; }
-  .bank-draw-terms > div { min-height: 24px; font-size: 12px; }
-  .bank-draw-ornament { display: none; }
-  .st-key-bank-draw-screen .bank-amount-label { font-size: 13px; }
-  .bank-draw-summary { padding: 5px 8px; }
-  .bank-draw-summary-grid i { display: none; }
-  .bank-draw-summary p { margin-top: 2px; padding-top: 2px; }
-  .st-key-bank-draw-screen .st-key-bank-borrow-submit button { min-height: 35px !important; }
-  .bank-draw-decorative-stamp { display: none; }
-}
-@media (max-height: 600px) and (orientation: portrait) {
-  .st-key-bank-draw-parchment { padding-inline: 7% !important; }
-  .bank-draw-summary-grid i { display: none; }
-  .bank-draw-summary p { margin-top: 3px; padding-top: 3px; }
-  .bank-draw-postmark { opacity: .26; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .st-key-bank-draw-screen *, .st-key-bank-draw-screen *::before,
-  .st-key-bank-draw-screen *::after { animation: none !important; transition: none !important; }
-}
-
-/* Streamlit renders keyed containers inside an additional layout wrapper.
-   Grid tracks alone do not give their nested content a percentage height. */
-.st-key-bank-body > [data-testid="stLayoutWrapper"]:has(> .st-key-bank-draw-screen) {
-  height: 100% !important;
-}
-.st-key-bank-draw-screen > [data-testid="stElementContainer"],
-.st-key-bank-draw-screen > [data-testid="stLayoutWrapper"] {
-  height: 100% !important;
-}
-.st-key-bank-draw-screen > [data-testid="stElementContainer"] [data-testid="stHtml"] {
-  height: 100% !important;
-}
-.st-key-bank-draw-parchment > [data-testid="stLayoutWrapper"]:has(> .st-key-bank-draw-controls) {
-  height: auto !important;
-  display: flex;
-  flex: 1 1 0;
-}
-.st-key-bank-draw-controls {
-  flex: 1 1 0;
-}
-
-/* On 320×568 and similarly short portrait displays, recover enough vertical
-   space for the entire primary action inside the document. */
-@media (orientation: portrait) and (max-height: 600px) {
-  .st-key-bank-draw-screen {
-    grid-template-rows: clamp(78px, 17dvh, 95px) minmax(0,1fr) !important;
-  }
-  .st-key-bank-draw-parchment {
-    padding-top: 13px !important;
-    padding-bottom: 8px !important;
-  }
-  .st-key-bank-draw-screen .bank-draw-document-title h2 {
-    margin-top: 6px !important;
-  }
-  .bank-draw-terms > div { min-height: 25px !important; }
-  .bank-draw-ornament { height: 7px !important; }
-  .bank-draw-summary { padding-block: 4px !important; }
-  .st-key-bank-draw-screen .st-key-bank-borrow-submit button {
-    min-height: 38px !important;
-  }
-}
-
-/* Landscape uses a genuine two-column document: terms at left and controls
-   at right. Overrides the compact portrait flex arrangement. */
-@media (orientation: landscape) and (max-height: 560px) {
-  .st-key-bank-body > [data-testid="stLayoutWrapper"]:has(> .st-key-bank-draw-screen) {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    flex: 1 1 100% !important;
-  }
-  .st-key-bank-draw-screen {
-    width: 100% !important;
-    max-width: none !important;
-    min-width: 0 !important;
-    margin: 0 !important;
-    grid-template-rows: clamp(44px, 14dvh, 65px) minmax(0,1fr) !important;
-  }
-  .st-key-bank-draw-parchment {
-    display: grid !important;
-    grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr);
-    grid-template-rows: auto minmax(0,1fr);
-    align-items: start;
-    column-gap: clamp(10px,3vw,22px) !important;
-    width: 100% !important;
-    max-width: none !important;
-    padding: clamp(8px,2.4dvh,16px) 7% 7px !important;
-  }
-  .st-key-bank-draw-parchment > [data-testid="stElementContainer"]:has(.bank-draw-document-title) {
-    grid-column: 1;
-    grid-row: 1;
-  }
-  .st-key-bank-draw-parchment > [data-testid="stElementContainer"]:has(.bank-draw-terms) {
-    grid-column: 1;
-    grid-row: 2;
-  }
-  .st-key-bank-draw-parchment > [data-testid="stLayoutWrapper"]:has(> .st-key-bank-draw-controls) {
-    grid-column: 2;
-    grid-row: 1 / 3;
-    width: 100%;
-    min-height: 0;
-    height: 100% !important;
-  }
-  .st-key-bank-draw-parchment > [data-testid="stElementContainer"]:has(.bank-draw-decorative-stamp) {
-    position: absolute;
-    inset: auto 0 0 auto;
-    height: 0;
-  }
-  .st-key-bank-draw-controls { height: 100% !important; }
-  .st-key-bank-draw-screen .bank-draw-document-title h2 {
-    margin-top: 6px !important;
-    font-size: clamp(19px,5.5dvh,25px) !important;
-  }
-  .bank-draw-terms > div { min-height: clamp(24px,6.5dvh,30px) !important; }
-  .bank-draw-summary-grid i { display: none; }
-  .bank-draw-summary { padding: 4px 5px; }
-  .bank-draw-summary p { font-size: 10px; }
-  .st-key-bank-draw-screen .st-key-bank-borrow-submit button {
-    min-height: clamp(33px,10dvh,39px) !important;
-  }
-}
-
-/* The app's Streamlit wrapper can reserve a 50px intrinsic-width gutter.
-   Claim the actual padded viewport so the parchment is visually centered. */
-@media (orientation: portrait) and (max-width: 600px),
-       (orientation: landscape) and (max-height: 560px) {
-  .st-key-bank-body > [data-testid="stLayoutWrapper"]:has(> .st-key-bank-draw-screen) {
-    flex: 0 0 auto !important;
-    width: calc(100dvw - 24px) !important;
-    max-width: calc(100dvw - 24px) !important;
-  }
-  .st-key-bank-draw-screen {
-    width: 100% !important;
-    max-width: none !important;
-  }
-}
-
-/* Explicit viewport width on the actual keyed container: Streamlit's nested
-   layout wrapper retains an intrinsic 50px gutter despite width:100%. */
-@media (orientation: portrait) and (max-width: 600px),
-       (orientation: landscape) and (max-height: 560px) {
-  .st-key-bank-draw-screen {
-    width: calc(100dvw - 24px) !important;
-    min-width: calc(100dvw - 24px) !important;
-    max-width: calc(100dvw - 24px) !important;
-  }
+  .st-key-bank-draw-parchment > :first-child { grid-area: 1 / 1 / 4 / 2; }
+  .st-key-bank-draw-parchment > :nth-child(n+2) { grid-column: 2; }
+  .bank-draw-document-title { padding: 29px 0 8px; }
+  .bank-draw-document-title::before { width: 33px; height: 33px; top: -6px; }
+  .bank-draw-document-title::after { width: 50px; height: 32px; right: -6px; }
+  .st-key-bank-draw-screen .bank-draw-document-title h2 { font-size: 23px !important; }
+  .bank-draw-document-title span { font-size: 8px; }
+  .bank-draw-terms { width: 100%; }
+  .bank-draw-terms > div { min-height: 28px; font-size: 11px; }
+  .bank-draw-terms dt, .bank-draw-terms dd { padding: 0 5px; }
+  .bank-draw-terms dt { gap: 4px; }
+  .bank-draw-terms dt svg { width: 14px; height: 14px; }
+  .bank-draw-terms dd, .bank-draw-terms .bank-draw-rate { font-size: 12px; }
+  .st-key-bank-draw-controls { width: 100%; }
+  .st-key-bank-draw-controls::before { display: none; }
+  .bank-draw-no-credit, .st-key-bank-draw-screen .bank-amount-label { font-size: 13px; margin: 0 0 2px; }
+  .st-key-bank-draw-screen .st-key-bank-stepper { gap: 6px; }
+  .st-key-bank-draw-screen .st-key-bank-stepper button { width: 34px; height: 34px; }
+  .st-key-bank-draw-screen .st-key-bank-stepper button p { font-size: 20px; }
+  .st-key-bank-draw-screen .bank-amount-value { height: 32px; font-size: 20px; }
+  .st-key-bank-draw-screen [data-baseweb="slider"] [style*="linear-gradient"] { height: 6px !important; }
+  .st-key-bank-draw-screen [role="slider"] { width: 16px; height: 16px; }
+  .bank-draw-range { font-size: 10px; }
+  .bank-draw-summary { padding: 5px; border-radius: 10px; }
+  .bank-draw-summary-grid dt { font-size: 10px; }
+  .bank-draw-summary-grid svg { display: none; }
+  .bank-draw-summary-grid dd { font-size: 15px; margin: 1px 0 0; }
+  .bank-draw-summary p { font-size: 9px; padding-top: 3px; margin-top: 4px; }
+  .st-key-bank-draw-screen .st-key-bank-borrow-submit button { min-height: 36px; }
+  .st-key-bank-draw-screen .st-key-bank-borrow-submit button p { font-size: 17px; }
+  .st-key-bank-draw-screen .st-key-bank-borrow-submit button [data-testid="stIconMaterial"] { font-size: 18px; }
+  .st-key-bank-draw-screen .st-key-bank-borrow-submit::after { width: 46px; height: 46px; right: -17px; }
 }
