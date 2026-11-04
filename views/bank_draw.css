@@ -439,3 +439,24 @@
 .st-key-bank-draw-controls {
   flex: 1 1 0;
 }
+
+/* On 320×568 and similarly short portrait displays, recover enough vertical
+   space for the entire primary action inside the document. */
+@media (orientation: portrait) and (max-height: 600px) {
+  .st-key-bank-draw-screen {
+    grid-template-rows: clamp(78px, 17dvh, 95px) minmax(0,1fr) !important;
+  }
+  .st-key-bank-draw-parchment {
+    padding-top: 13px !important;
+    padding-bottom: 8px !important;
+  }
+  .st-key-bank-draw-screen .bank-draw-document-title h2 {
+    margin-top: 6px !important;
+  }
+  .bank-draw-terms > div { min-height: 25px !important; }
+  .bank-draw-ornament { height: 7px !important; }
+  .bank-draw-summary { padding-block: 4px !important; }
+  .st-key-bank-draw-screen .st-key-bank-borrow-submit button {
+    min-height: 38px !important;
+  }
+}
