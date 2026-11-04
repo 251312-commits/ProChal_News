@@ -104,6 +104,20 @@ class PredictionPickerTests(unittest.TestCase):
         self.assertEqual(self.st.session_state.game1_pred_ones, 6)
         self.assertNotIn("game_1_predicted_digits", self.st.session_state)
 
+    def test_mobile_layout_uses_grid_without_streamlit_horizontal_wrappers(self):
+        root = Path(__file__).resolve().parents[1]
+        source = (root / "games" / "game1_prediction_ui.py").read_text(encoding="utf-8")
+        css = (root / "games" / "game1_prediction_ui.css").read_text(encoding="utf-8")
+        # A vertical container provides three direct grid items on narrow phones.
+        self.assertIn('st.container(key="game1-prediction-nav", gap=None)', source)
+        self.assertIn('st.container(key="game1-prediction-reels", gap=None)', source)
+        self.assertNotIn('key="game1-prediction-reels", horizontal=True', source)
+        self.assertIn("grid-template-columns:minmax(0,.77fr)", css)
+        self.assertIn(".st-key-game1-prediction-machine > :has(.st-key-game1-prediction-reels)", css)
+        self.assertIn("max-height:620px", css)
+        self.assertIn("env(safe-area-inset-bottom)", css)
+        self.assertEqual(css.count("{"), css.count("}"))
+
     def test_artwork_and_styles_are_checked_into_the_repository(self):
         root = Path(__file__).resolve().parents[1]
         for name in ("pred_header", "pred_tag", "pred_news", "pred_frame", "pred_reel"):
