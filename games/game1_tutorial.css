@@ -1,0 +1,63 @@
+.stApp:has(.st-key-game1-guide) {
+    background: radial-gradient(ellipse at center, #32152e, #100712 70%) !important;
+}
+.stApp:has(.st-key-game1-guide) [data-testid="stHeader"] { display: none; }
+.stApp:has(.st-key-game1-guide) .block-container {
+    display: grid;
+    align-content: center;
+    min-height: 100svh;
+    padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+             max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)) !important;
+}
+.stApp:has(.st-key-game1-guide) .block-container > [data-testid="stVerticalBlock"] { gap: 0; }
+.st-key-game1-guide {
+    width: min(100%, 510px);
+    margin-inline: auto;
+}
+.game1-guide-sheet { position: relative; }
+.game1-guide-sheet img {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: calc(100svh - 88px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    margin: auto;
+}
+.game1-guide-copy {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+}
+.st-key-game1-guide-actions { flex-wrap: nowrap; }
+.st-key-game1-guide-actions button {
+    min-height: 44px;
+    border-radius: 8px;
+}
+.st-key-game1-guide-back button {
+    background: #251325 !important;
+    color: #f7e8d5 !important;
+    border: 1px solid #a58056 !important;
+    box-shadow: none !important;
+}
+.st-key-game1-guide-start button {
+    background: linear-gradient(#ffdf8c, #e6ae56) !important;
+    color: #301328 !important;
+    box-shadow: none !important;
+}
+.st-key-game1-guide-actions button:focus-visible { outline: 3px solid white; outline-offset: 2px; }
+
+@media (orientation: landscape) and (max-height: 540px) {
+    .st-key-game1-guide { width: min(100%, 660px); }
+    .game1-guide-sheet { display: flex; align-items: center; gap: clamp(10px, 3vw, 24px); }
+    .game1-guide-sheet img { max-width: 31%; margin: 0; }
+    .game1-guide-copy { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+    .game1-guide-copy h1 {
+        margin: 0; padding: 0; color: #ffdc98 !important;
+        text-align: left; text-shadow: none !important; font-size: 1.35rem;
+    }
+    .game1-guide-copy p, .game1-guide-copy ol { margin: .45rem 0; line-height: 1.4; }
+    .game1-guide-copy ol { padding-inline-start: 1.4rem; }
+    .game1-guide-copy { color: #fff1dc; word-break: keep-all; }
+}
