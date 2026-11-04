@@ -1,7 +1,5 @@
 """Regression checks for parent-window background music control JavaScript."""
-import re
 import unittest
-from pathlib import Path
 from unittest.mock import patch
 
 from sounds import bgm
@@ -25,11 +23,18 @@ class BgmSettingsTests(unittest.TestCase):
         source = self.rendered_script()
         for token in (
             "sessionStorage", "news-bgm-preferences-v1", 'type="range"',
-            'type="checkbox"', "applyPrefs(current", "intro.volume = volume",
-            "loop.volume = volume", "player.muted", "pagehide",
+            'type="checkbox"', "applyPrefs(current", "intro.volume = gain",
+            "loop.volume = gain", "level * level", "player.muted", "pagehide",
             "beforeunload", "visibilitychange", "pointerdown",
         ):
             self.assertIn(token, source)
+
+    def test_perceptual_gain_applies_to_both_tracks(self):
+        source = self.rendered_script()
+        self.assertIn("const gain = player.muted ? 0 : volumeGain(player.volume);", source)
+        self.assertIn("return level * level;", source)
+        self.assertIn("player.intro.volume = gain;", source)
+        self.assertIn("player.loop.volume = gain;", source)
 
     def test_urls_are_safely_json_quoted(self):
         source = self.rendered_script()

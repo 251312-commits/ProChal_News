@@ -51,10 +51,18 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
             }} catch (_) {{}}
           }}
 
+          // Audio.volume is linear in signal amplitude, while human loudness
+          // perception is closer to logarithmic. Square the slider fraction
+          // so 10%, 30%, and 60% sound distinctly quieter than 100%.
+          function volumeGain(sliderValue) {{
+            const level = clamp(sliderValue);
+            return level * level;
+          }}
+
           function updateAudio(player) {{
-            const volume = player.muted ? 0 : player.volume;
-            player.intro.volume = volume;
-            player.loop.volume = volume;
+            const gain = player.muted ? 0 : volumeGain(player.volume);
+            player.intro.volume = gain;
+            player.loop.volume = gain;
           }}
 
           function stop(player) {{
