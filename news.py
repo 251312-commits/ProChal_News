@@ -13,6 +13,7 @@ from views.ranking import show_ranking
 from views.bank import show_bank
 
 from games.game1 import show_game_1
+from games.game1_tutorial import show_game_1_tutorial
 from games.game2 import show_game_2
 from games.game3 import show_game_3
 from games.game4 import show_game_4
@@ -56,6 +57,8 @@ else:
         show_ranking()
     elif st.session_state.page in ('bank', 'draw_loan', 'pay_loan'):
         show_bank()
+    elif st.session_state.page == 'game_1_tutorial':
+        show_game_1_tutorial()
     elif st.session_state.page == 'game_1':
         show_game_1()
     elif st.session_state.page == 'game_2':
