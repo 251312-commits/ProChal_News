@@ -1,0 +1,245 @@
+
+/* Game 1 prediction only. All other game screens retain their own theme. */
+.stApp:has(.st-key-game1-prediction) [data-testid="stHeader"] { display:none !important; }
+.stApp:has(.st-key-game1-prediction) .block-container {
+  box-sizing:border-box !important; width:100%; max-width:520px !important; margin:0 auto;
+  min-height:100svh; padding:max(5px,env(safe-area-inset-top))
+    max(10px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom))
+    max(10px,env(safe-area-inset-left)) !important;
+  display:flex; align-items:center; justify-content:center;
+}
+.stApp:has(.st-key-game1-prediction) .block-container > [data-testid="stVerticalBlock"] {
+  width:100%; min-width:0; gap:0 !important;
+}
+.st-key-game1-prediction {
+  width:100%; max-width:490px; margin:0 auto; color:#fff4ff;
+  font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+}
+.st-key-game1-prediction, .st-key-game1-prediction * { box-sizing:border-box; }
+.st-key-game1-prediction > [data-testid="stVerticalBlock"] {
+  width:100%; min-width:0; gap:clamp(2px,.5svh,6px) !important;
+}
+.st-key-game1-prediction button {
+  -webkit-tap-highlight-color:transparent; font-family:inherit !important;
+}
+.st-key-game1-prediction button:focus-visible {
+  outline:3px solid #fff6ae !important; outline-offset:2px;
+}
+/* Top navigation / balance */
+.st-key-game1-prediction-nav,
+.st-key-game1-prediction-nav > [data-testid="stHorizontalBlock"] {
+  display:flex !important; align-items:center !important; width:100%;
+  min-height:clamp(34px,5.7svh,46px); flex-wrap:nowrap !important;
+  gap:5px !important;
+}
+.st-key-game1-prediction-nav [data-testid="stElementContainer"]:has(.game1-pred-wallet) {
+  margin-left:auto; min-width:0; width:auto;
+}
+.st-key-game1-pred-back button {
+  width:clamp(36px,6svh,44px); height:clamp(36px,6svh,44px); min-height:0 !important;
+  border:0 !important; box-shadow:none !important; background:transparent !important;
+  color:#fae1ff !important; font-size:clamp(23px,5svh,33px) !important;
+  padding:0 !important; line-height:1;
+}
+.st-key-game1-pred-bank button {
+  border:1px solid #ae4be4 !important; border-radius:50% !important;
+  background:linear-gradient(145deg,#602387,#2a0d4d) !important;
+  color:#fff3fe !important; font-size:28px !important; line-height:1 !important;
+  font-weight:500 !important; padding:0 !important; box-shadow:0 0 12px #a32be688 !important;
+  width:clamp(34px,5.7svh,43px); height:clamp(34px,5.7svh,43px); min-height:0 !important;
+}
+.game1-pred-wallet {
+  display:flex; align-items:center; justify-content:flex-end;
+  height:clamp(34px,5.7svh,44px); padding:2px 9px 2px 3px;
+  border-radius:24px 4px 4px 24px; border:1px solid #9633c5; border-right:0;
+  background:#18091bdc; color:#fff1f9;
+  font-size:clamp(15px,4vw,21px); font-weight:850; white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
+.game1-pred-wallet-coin {
+  display:inline-grid; place-items:center; margin-right:8px; flex:none;
+  width:clamp(28px,4.9svh,38px); height:clamp(28px,4.9svh,38px);
+  border-radius:50%; border:2px solid #ffda5c;
+  background:radial-gradient(circle at 30% 25%,#fff5aa 0%,#ffcd3e 32%,#dd7b06 76%,#a94f08 100%);
+  color:#ffefac; font-size:clamp(15px,3vw,19px); font-weight:900;
+  box-shadow:inset 0 1px 2px #fff9a5,0 0 8px #f7aa27a8;text-shadow:0 1px 2px #894505;
+}
+/* Title with the provided gold/purple crest */
+.game1-pred-heading { width:100%; text-align:center; min-width:0; }
+.game1-pred-banner {
+  display:block; margin:0 auto; width:86%;
+  height:clamp(38px,10svh,82px); object-fit:contain;
+  filter:drop-shadow(0 0 9px #9b1ac68f);
+}
+.game1-pred-banner-fallback {
+  display:block; padding:4px; color:#f6bf70; font-family:Georgia,serif;
+  font-size:clamp(13px,3.8vw,18px); letter-spacing:.12em;
+}
+.game1-pred-heading h1 {
+  margin:-.08em 0 0 !important; padding:0 !important;
+  font-size:clamp(23px,6.6vw,39px) !important; line-height:1.07 !important;
+  font-weight:900 !important; letter-spacing:-.04em;
+  color:#fff3ff !important; text-align:center;
+  text-shadow:0 2px 0 #381144,0 0 15px #b641ffbb !important;
+}
+.game1-pred-heading p {
+  color:#e8d1ec; font-size:clamp(11px,3.5vw,16px);
+  line-height:1.32; margin:clamp(2px,.45svh,7px) 0 0;
+  word-break:keep-all;
+}
+/* Fixed ornament is separate from dynamic news text. */
+.game1-pred-news-wrap {
+  position:relative; width:100%; height:clamp(68px,13.4svh,114px);
+  margin:0 auto; border:1px solid #c36cf4; border-radius:15px;
+  background:linear-gradient(#ffedf6,#e8acd5 72%,#b974ac);
+  background-position:center bottom; background-size:100% 74%; background-repeat:no-repeat;
+  box-shadow:0 0 13px #c82cff55; isolation:isolate;
+}
+.game1-pred-news-tag {
+  display:block; position:absolute; z-index:1; top:-2%; left:50%;
+  transform:translateX(-50%); width:min(43%,210px); height:37%; object-fit:contain;
+  filter:drop-shadow(0 0 6px #eb77ff);
+}
+.game1-pred-news-tag-fallback {
+  position:absolute; left:50%; top:-8%; transform:translateX(-50%);
+  background:linear-gradient(#7f278a,#2d103e); border:2px solid #edaa63;
+  border-radius:12px; padding:2px 14px; white-space:nowrap;
+  color:#ffe7b6;font-weight:850;font-size:clamp(12px,3.3vw,17px);
+}
+.game1-pred-news-title {
+  position:absolute; top:52%; transform:translateY(-35%);
+  left:28.5%; right:6%; max-height:58%;
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2;
+  overflow:hidden; color:#321043; font-size:clamp(12px,3.8vw,21px);
+  font-weight:900; line-height:1.16; letter-spacing:-.04em;
+  word-break:keep-all; overflow-wrap:anywhere; text-align:center;
+}
+/* The supplied frame image supplies the gold border, crown, and depth. */
+.st-key-game1-prediction-machine {
+  position:relative; width:100%; height:clamp(193px,35.4svh,332px);
+  flex-shrink:0; min-width:0; padding:0 !important;
+  background:linear-gradient(165deg,#4b1363,#180b25 50%,#4a1464);
+  background-position:center; background-repeat:no-repeat; background-size:100% 100%;
+  border:3px solid #e2a15e; border-radius:26px;
+  box-shadow:0 0 18px #b321f954;
+}
+.st-key-game1-prediction-machine > [data-testid="stVerticalBlock"] {
+  position:relative; width:100%; height:100%; min-height:0; gap:0 !important;
+}
+.st-key-game1-prediction-machine [data-testid="stElementContainer"] {min-width:0;}
+.game1-pred-machine-title {
+  position:absolute; top:17%; left:5%; width:90%; text-align:center;
+  color:#ffe8ff; font-size:clamp(12px,3.55vw,19px);
+  font-weight:850; line-height:1.1; text-shadow:0 0 7px #d737ff;
+  white-space:nowrap; pointer-events:none;
+}
+.st-key-game1-prediction-reels {
+  position:absolute !important; left:14%; top:29%; width:72%; height:50%; min-width:0;
+}
+.st-key-game1-prediction-reels > [data-testid="stHorizontalBlock"] {
+  display:grid !important; grid-template-columns:minmax(0,.68fr) repeat(2,minmax(0,1fr));
+  grid-template-rows:100%; gap:0 !important; flex-wrap:nowrap !important;
+  width:100%; height:100%; align-items:center !important;
+}
+.st-key-game1-prediction-reels > [data-testid="stHorizontalBlock"] > * {
+  min-width:0 !important; width:100% !important; height:100%; margin:0 !important; padding:0 !important;
+}
+.game1-pred-zero {
+  display:grid; place-items:center; height:100%;
+  color:#fff0ff; font:900 clamp(46px,13vw,88px)/1 Georgia,serif;
+  font-variant-numeric:tabular-nums; letter-spacing:-.08em;
+  text-shadow:0 0 9px #d46fff,0 0 24px #a946ff9c;
+}
+.st-key-game1-pred-reel-tens, .st-key-game1-pred-reel-ones {
+  height:100%; width:100%; min-width:0; position:relative;
+  background:linear-gradient(#4b0769,#bf37ee 50%,#2b0547); background-repeat:no-repeat;
+  background-position:center; background-size:100% 100%;
+  border:2px solid #d68df3; border-radius:21%;
+  box-shadow:inset 0 0 15px #1e0628,0 0 10px #e346f699;
+}
+.st-key-game1-pred-reel-tens > [data-testid="stVerticalBlock"],
+.st-key-game1-pred-reel-ones > [data-testid="stVerticalBlock"] {
+  display:grid !important; grid-template-rows:23% 54% 23%; gap:0 !important;
+  height:100%; width:100%; min-height:0;
+}
+.st-key-game1-pred-reel-tens [data-testid="stElementContainer"],
+.st-key-game1-pred-reel-ones [data-testid="stElementContainer"] {
+  min-height:0; height:100%; min-width:0; margin:0 !important;
+}
+.st-key-game1-pred-reel-tens [data-testid="stButton"],
+.st-key-game1-pred-reel-ones [data-testid="stButton"] { height:100%; width:100%; }
+.st-key-game1-pred-reel-tens button,
+.st-key-game1-pred-reel-ones button {
+  width:100% !important; height:100% !important; min-height:0 !important;
+  padding:0 !important; border:0 !important; border-radius:0 !important;
+  background:transparent !important; box-shadow:none !important;
+  color:#ffd079 !important; font-size:clamp(11px,3vw,19px) !important;
+}
+.game1-pred-digit {
+  display:grid; place-items:center; width:100%; height:100%;
+  font:900 clamp(43px,12vw,81px)/1 Georgia,"Times New Roman",serif;
+  font-variant-numeric:tabular-nums; color:#fff3ca;
+  text-shadow:0 2px 2px #571032,0 0 8px #f7beee; pointer-events:none;
+}
+.game1-pred-range {
+  position:absolute; bottom:15%; left:20%; width:60%;
+  margin:0 !important; padding:3px 4px;
+  color:#e6cbe9; text-align:center; font-size:clamp(10px,2.7vw,14px);
+  line-height:1.15; white-space:nowrap;
+  border:1px solid #af35d6; border-radius:100px;
+  background:#3b1255b9; box-shadow:inset 0 0 7px #9b2fc968;
+}
+.game1-pred-range span {color:#fff1ff;}
+.game1-pred-coins {display:flex;justify-content:center;align-items:center;width:100%;
+  height:clamp(33px,8svh,70px);margin:-.2svh 0 0;}
+.game1-pred-coins img {
+  width:55%; max-width:235px; height:100%; object-fit:contain;
+  filter:drop-shadow(0 5px 11px #a92effb0);
+}
+/* Confirmation lives below the physical coin stack; one click settles once. */
+.st-key-game1-pred-submit button {
+  display:flex !important;justify-content:center;align-items:center;
+  width:100%; height:clamp(44px,7.5svh,67px);min-height:0 !important;
+  margin:0 auto !important; padding:0 14px !important;
+  background:linear-gradient(180deg,#c54cf7 0%,#7a14c5 48%,#6b10bf 100%) !important;
+  border:2px solid #ffbbfa !important; border-radius:100px !important;
+  color:#fff5ff !important;font-size:clamp(18px,5vw,25px) !important;font-weight:900 !important;
+  text-shadow:0 0 5px #e69dff;
+  box-shadow:inset 0 2px 7px #f4baff,0 0 15px #dc39ff,0 6px 20px #4d086cae !important;
+}
+.st-key-game1-pred-submit button:hover {filter:brightness(1.13);}
+@media (max-height:610px) and (orientation:portrait) {
+  .st-key-game1-prediction > [data-testid="stVerticalBlock"] {gap:1px !important;}
+  .game1-pred-banner {height:7.5svh;}
+  .game1-pred-heading h1 {font-size:clamp(22px,6vw,29px) !important;}
+  .game1-pred-heading p {font-size:clamp(10px,3vw,13px);line-height:1.2;margin-top:0;}
+  .game1-pred-news-wrap {height:12.5svh;}
+  .st-key-game1-prediction-machine {height:34svh;}
+  .game1-pred-coins {height:6.5svh;}
+}
+@media (orientation:landscape) and (max-height:590px) {
+  .stApp:has(.st-key-game1-prediction) .block-container {max-width:930px !important;}
+  .st-key-game1-prediction {max-width:900px;}
+  .st-key-game1-prediction > [data-testid="stVerticalBlock"] {
+    display:grid !important;
+    grid-template-columns:minmax(0,45%) minmax(0,55%);
+    grid-template-rows:clamp(32px,10svh,45px) auto minmax(0,1fr) auto;
+    gap:3px 10px !important;
+  }
+  .st-key-game1-prediction-nav {grid-area:1/1/2/3;}
+  .st-key-game1-prediction > [data-testid="stVerticalBlock"] >
+  [data-testid="stElementContainer"]:has(.game1-pred-heading) {grid-area:2/1/3/2;}
+  .game1-pred-banner {height:clamp(30px,15svh,55px);}
+  .game1-pred-heading h1 {font-size:clamp(21px,5svh,30px) !important;}
+  .game1-pred-heading p {font-size:clamp(10px,2.9svh,13px);}
+  .st-key-game1-prediction > [data-testid="stVerticalBlock"] >
+  [data-testid="stElementContainer"]:has(.game1-pred-news-wrap) {grid-area:3/1/4/2;align-self:start;}
+  .game1-pred-news-wrap {height:clamp(56px,18svh,94px);}
+  .st-key-game1-prediction-machine {grid-area:2/2/5/3;height:min(70svh,290px);align-self:center;}
+  .game1-pred-coins {display:none;}
+  .st-key-game1-pred-submit {grid-area:4/1/5/2;align-self:end;}
+  .st-key-game1-pred-submit button {height:clamp(36px,10svh,55px);}
+}
+@media (prefers-reduced-motion:reduce) {
+ .st-key-game1-prediction button {transition:none !important;}
+}
