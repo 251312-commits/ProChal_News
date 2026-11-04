@@ -234,6 +234,10 @@ def show_game_3():
 
     st.title("🎰 뉴스 유사도 홀짝 게임")
 
+    if "game_3_result" in st.session_state:
+        _show_game_3_result(st.session_state.game_3_result)
+        return
+
     ws = init_gspread()
 
     # ======================================
@@ -455,7 +459,7 @@ def show_game_3():
 
         st.info(
             "AI가 뉴스 본문을 요약하고 "
-            "뉴스 제목과 본문의 유사도를 분석합니다."
+            "기사 제목과 요약문의 유사도를 분석합니다."
         )
 
         if st.button(
@@ -593,16 +597,12 @@ def show_game_3():
                         f"게임 진행 중 오류가 발생했습니다: {e}"
                     )
 
-    # ======================================
-    # STEP 7. 최종 결과 화면
-    # ======================================
 
-    if "game_3_result" not in st.session_state:
-        return
-
-    res = st.session_state.game_3_result
-
-    show_summary_before_score(res["summary"], "game_3_summary_revealed")
+def _show_game_3_result(res):
+    show_summary_before_score(
+        res["summary"], "game_3_summary_revealed",
+        title=res["title"], score=int(res["actual_score"]),
+    )
 
     st.markdown("---")
     st.markdown("### 🏆 최종 게임 결과")
@@ -624,20 +624,6 @@ def show_game_3():
     with col2:
         st.metric("AI 판정", res["ai_result"])
 
-    st.markdown("### 📊 AI 분석 결과")
-
-    st.metric(
-        "뉴스 제목-본문 유사도",
-        f"{res['actual_score']:.2f}%"
-    )
-
-    st.progress(
-        max(
-            0.0,
-            min(1.0, res["actual_score"] / 100)
-        )
-    )
-
     with st.expander("분석한 뉴스 기사 정보"):
 
         st.write(res["title"])
@@ -652,20 +638,6 @@ def show_game_3():
         text-align:center;
         color:white;
     ">
-        <h3>뉴스 유사도</h3>
-
-        <h1 style="color:#00ffcc;">
-            {res['actual_score']:.2f}%
-        </h1>
-
-        <p>홀짝 판정 기준 정수: {res['integer_score']}</p>
-
-        <h1 style="color:#ffd700;">
-            {res['ai_result']}
-        </h1>
-
-        <hr>
-
         <p>베팅 금액: {res['bet']:,} C</p>
 
         <h1 style="color:{'#00ffcc' if res['is_win'] else '#ff5555'};">

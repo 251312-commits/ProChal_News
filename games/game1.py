@@ -62,7 +62,7 @@ def show_game_1():
     if "game_1_predicted_score" not in st.session_state:
         st.markdown("---")
         st.markdown("### 🎯 4단계: AI 유사도 점수 예측")
-        st.caption("AI가 제목과 본문을 분석해 산출할 유사도 점수(00~99점)를 예측해 보세요!")
+        st.caption("기사 제목과 AI 요약문의 유사도 점수를 예측해 보세요. 00~99 사이의 숫자를 고를 수 있습니다.")
 
         @st.fragment
         def render_neon_digit_picker():
@@ -128,7 +128,7 @@ def show_game_1():
         with st.spinner("🤖 AI가 유사도를 분석 중입니다..."):
             summary_text = asyncio.run(summary(article_text))
             if not summary_text:
-                st.error("뉴스 본문 요약에 실패해 일치율을 계산할 수 없습니다.")
+                st.error("뉴스 본문 요약에 실패해 유사도 점수를 계산할 수 없습니다.")
                 return
             actual_score = similarity_check(summary_text, title)
             
@@ -173,6 +173,7 @@ def show_game_1():
                 st.session_state.current_user_data['연승'] = new_streak
 
             st.session_state.game_1_result = {
+                "title": title,
                 "summary": summary_text,
                 "actual_score": actual_score,
                 "diff": diff,
@@ -185,7 +186,10 @@ def show_game_1():
 
     # 최종 결과 출력
     res = st.session_state.game_1_result
-    show_summary_before_score(res.get("summary", ""), "game_1_summary_revealed")
+    show_summary_before_score(
+        res.get("summary", ""), "game_1_summary_revealed",
+        title=res.get("title", title), score=res["actual_score"],
+    )
     st.markdown("---")
     st.markdown("### 🏆 6단계: 최종 결과")
 
