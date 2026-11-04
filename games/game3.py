@@ -41,7 +41,6 @@ def reset_game_3_state():
 
 # ==========================================
 # 게임 3 전용 뉴스 버튼 CSS
-# common.py는 수정하지 않음
 # ==========================================
 
 def apply_game_3_news_css():
@@ -49,7 +48,7 @@ def apply_game_3_news_css():
     st.markdown("""
     <style>
 
-    /* 게임 3 뉴스 버튼에만 적용 */
+    /* 게임 3 뉴스 버튼 */
     div[class*="st-key-btn_game_3_"] button {
 
         transition:
@@ -59,7 +58,7 @@ def apply_game_3_news_css():
 
     }
 
-    /* 버튼에 마우스를 올렸을 때 */
+    /* 마우스를 올렸을 때 */
     div[class*="st-key-btn_game_3_"] button:hover {
 
         filter: brightness(0.95) !important;
@@ -67,27 +66,28 @@ def apply_game_3_news_css():
 
     }
 
-    /* 실제 누르고 있는 버튼 */
+    /* 버튼을 누르는 순간 */
     div[class*="st-key-btn_game_3_"] button:active {
 
-        filter: brightness(0.70) !important;
-        transform: translate(2px, 2px) !important;
-        box-shadow: none !important;
+        filter: brightness(0.75) !important;
+        transform: translateY(1px) !important;
 
     }
 
-    /* 게임 3 버튼에만 기존 애니메이션 제거 */
+    /* 슬롯 오버레이 제거 */
     div[class*="st-key-btn_game_3_"] button::before,
     div[class*="st-key-btn_game_3_"] button::after {
 
+        content: none !important;
+        display: none !important;
         animation: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
 
     }
 
     </style>
     """, unsafe_allow_html=True)
-
-
 # ==========================================
 # 기사 URL 및 본문 가져오기
 # ==========================================
@@ -378,48 +378,46 @@ def show_game_3():
     bet_coin = st.session_state.game_3_bet
 
     # ======================================
-    # STEP 3. 뉴스 선택 및 기사 본문 가져오기
-    # ======================================
+# STEP 3. 뉴스 선택 및 기사 본문 가져오기
+# ======================================
 
-    st.markdown("---")
+st.markdown("---")
 
-    st.markdown("### 📰 STEP 3. 뉴스 기사 선택")
+st.markdown("### 📰 STEP 3. 뉴스 기사 선택")
 
-    st.info(
-        "분석할 뉴스 기사를 선택하세요. "
-        "선택한 기사의 URL을 이용해 실제 기사 본문을 가져옵니다."
-    )
+st.info(
+    "분석할 뉴스 기사를 선택하세요. "
+    "선택한 기사의 URL을 이용해 실제 기사 본문을 가져옵니다."
+)
 
-    # 게임 3 전용 버튼 CSS
-    apply_game_3_news_css()
+# 뉴스 선택 및 기사 읽기 화면 실행
+title, article_text, url = load_game_3_article()
 
-    title, article_text, url = load_game_3_article()
+# common.py의 CSS가 적용된 다음 게임 3 전용 CSS 적용
+apply_game_3_news_css()
 
-    # 뉴스 선택 전 또는 기사 읽기 단계라면
-    # 여기서 멈추고 다음 실행을 기다림
-    if not title or not article_text or not url:
+# 아직 선택된 기사가 없으면 대기
+if not title or not article_text or not url:
+    return
 
-        return
+# ======================================
+# 선택한 기사 표시
+# ======================================
 
-    # ======================================
-    # 선택한 기사 표시
-    # ======================================
+st.markdown("---")
 
-    st.markdown("---")
+st.markdown("### 📄 선택한 뉴스 기사")
 
-    st.markdown("### 📄 선택한 뉴스 기사")
+st.markdown(
+    f"**뉴스 제목: {escape(str(title))}**"
+)
 
-    st.markdown(
-        f"**뉴스 제목: {escape(str(title))}**"
-    )
+with st.expander("뉴스 본문 확인하기", expanded=True):
+    st.write(article_text)
 
-    with st.expander("뉴스 본문 확인하기", expanded=True):
+st.markdown(f"[기사 원문 열기]({url})")
 
-        st.write(article_text)
-
-    st.markdown(f"[기사 원문 열기]({url})")
-
-    st.caption(f"기사 URL: {url}")
+st.caption(f"기사 URL: {url}")
 
     # ======================================
     # STEP 4. AI 유사도 분석 및 홀짝 판정
