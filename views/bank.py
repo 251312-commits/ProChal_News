@@ -913,10 +913,78 @@ BANK_SCENE_CSS = """
 """
 
 
+BANK_SCENE_IMAGE_CSS = """
+<style>
+/* Layered transparent illustrations from the supplied bank UI artwork. */
+.stApp:has(.st-key-bank-page) {
+  background:
+    radial-gradient(ellipse at 49% 13%, rgba(152,40,200,.33) 0%, transparent 48%),
+    radial-gradient(ellipse at 10% 68%, rgba(133,34,141,.26) 0%, transparent 45%),
+    radial-gradient(ellipse at 85% 85%, rgba(89,16,139,.38) 0%, transparent 52%),
+    #11051d !important;
+}
+.stApp:has(.st-key-bank-page) .block-container {
+  max-width:680px !important;
+  padding-bottom:1.3rem !important;
+}
+.bank-scene-temple img { width:min(92%,470px); }
+.bank-scene-hero { height:clamp(250px,59vw,370px); }
+.bank-scene-cushion {
+  width:100%;left:0;bottom:-3%;
+  filter:drop-shadow(0 18px 16px #13041d99);
+}
+.bank-scene-envelope {
+  width:86%;left:7%;top:2%;
+  filter:drop-shadow(0 10px 16px #19061b9c);
+}
+.bank-scene-envelope-label { top:16%; }
+.bank-scene-envelope-label .crest { font-size:clamp(22px,5vw,31px); }
+.bank-scene-envelope-label .title { font-size:clamp(21px,5.8vw,35px); }
+.bank-scene-benefits { margin-top:22px; }
+.st-key-bank-paper {
+  overflow:visible;
+  background-size:100% 100% !important;
+  padding-top:39px !important;
+  padding-bottom:38px !important;
+}
+.bank-scene-paper-stamp {right:-2%;bottom:-13px;max-width:120px;}
+.bank-scene-paper-wax {top:-28px;}
+.bank-scene-paper-header {padding-top:20px;}
+.bank-scene-transition .closed {width:min(78vw,530px);}
+.bank-scene-transition .opened {width:min(78vw,500px);}
+.bank-scene-transition .sheet {width:min(74vw,410px);}
+@media(max-width:480px) {
+  .stApp:has(.st-key-bank-page) .block-container {
+    padding-left:10px !important;padding-right:10px !important;
+  }
+  .bank-scene-header {padding-bottom:8px;}
+  .bank-scene-temple {height:101px;}
+  .bank-scene-hero {height:clamp(220px,59vw,255px);}
+  .bank-scene-envelope-label {top:19%;}
+  .bank-scene-envelope-label .title {font-size:clamp(20px,5.4vw,26px);}
+  .bank-scene-benefits {margin-top:13px;}
+  .st-key-bank-paper {padding:31px 12px 28px !important;}
+  .bank-scene-paper-stamp {width:80px;right:0;bottom:-7px;}
+  .bank-scene-paper-header {padding-top:12px;margin-bottom:12px;}
+  .bank-terms {margin-bottom:8px;}
+  .bank-summary {margin-top:10px;margin-bottom:12px;}
+  .bank-summary-note {font-size:11px;}
+}
+@media(prefers-reduced-motion:reduce) {
+  .bank-scene-envelope {animation:none !important;}
+  .bank-scene-transition {display:none !important;}
+}
+</style>
+"""
+
 def _bank_asset(filename: str) -> str:
-    """Data URI for one optional transparent asset uploaded to assets/bank/."""
-    path = Path(__file__).resolve().parents[1] / "assets" / "bank" / filename
-    return load_local_image_as_base64(str(path)) if path.is_file() else ""
+    """Resolve a bank illustration, preferring the smaller transparent AVIF."""
+    asset_dir = Path(__file__).resolve().parents[1] / "assets" / "bank"
+    stem = Path(filename).stem
+    for candidate in (asset_dir / f"{stem}.avif", asset_dir / filename):
+        if candidate.is_file():
+            return load_local_image_as_base64(str(candidate))
+    return ""
 
 
 def _bank_img(filename: str, class_name: str) -> str:
@@ -955,6 +1023,8 @@ def _bank_render_styles() -> None:
             f'}}</style>',
             unsafe_allow_html=True,
         )
+
+    st.markdown(BANK_SCENE_IMAGE_CSS, unsafe_allow_html=True)
 
 
 def _bank_title(view: str) -> None:
