@@ -37,6 +37,151 @@ def reset_game_3_state():
 
 
 # ==========================================
+# 슬롯 애니메이션 CSS 수정
+# common.py는 수정하지 않음
+# ==========================================
+
+def fix_game_3_slot_animation():
+
+    st.markdown(
+        """
+        <style>
+
+        /* 슬롯 덮개 사라지는 효과 */
+        @keyframes game3SlotReveal {
+            0% {
+                opacity: 1;
+                visibility: visible;
+            }
+
+            99% {
+                opacity: 1;
+                visibility: visible;
+            }
+
+            100% {
+                opacity: 0;
+                visibility: hidden;
+            }
+        }
+
+        /* 기사 제목 공개 효과 */
+        @keyframes game3TitleReveal {
+            0% {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+
+            65% {
+                transform: scale(1.08);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* 첫 번째 기사 */
+        .st-key-btn_game_3_0 button::before {
+            animation: game3SlotReveal 0.01s linear 3s forwards !important;
+        }
+
+        .st-key-btn_game_3_0 button p {
+            animation: game3TitleReveal 0.4s ease 3s both !important;
+        }
+
+        /* 두 번째 기사 */
+        .st-key-btn_game_3_1 button::before {
+            animation: game3SlotReveal 0.01s linear 3.5s forwards !important;
+        }
+
+        .st-key-btn_game_3_1 button p {
+            animation: game3TitleReveal 0.4s ease 3.5s both !important;
+        }
+
+        /* 세 번째 기사 */
+        .st-key-btn_game_3_2 button::before {
+            animation: game3SlotReveal 0.01s linear 4s forwards !important;
+        }
+
+        .st-key-btn_game_3_2 button p {
+            animation: game3TitleReveal 0.4s ease 4s both !important;
+        }
+
+        /* 기사 버튼 기본 디자인 */
+        .st-key-btn_game_3_0 button,
+        .st-key-btn_game_3_1 button,
+        .st-key-btn_game_3_2 button {
+
+            position: relative !important;
+            overflow: hidden !important;
+
+            min-height: 85px !important;
+
+            background-color: #ffffff !important;
+            color: #2d1842 !important;
+
+            border: 3px solid #2d1842 !important;
+            border-radius: 8px !important;
+
+            padding: 15px !important;
+
+            font-size: 16px !important;
+            font-weight: 900 !important;
+
+            text-align: left !important;
+            white-space: normal !important;
+
+            box-shadow: 4px 4px 0px #2d1842 !important;
+
+            transition: all 0.2s ease !important;
+        }
+
+        /* 제목 글씨 표시 */
+        .st-key-btn_game_3_0 button p,
+        .st-key-btn_game_3_1 button p,
+        .st-key-btn_game_3_2 button p {
+
+            color: #2d1842 !important;
+            font-weight: 900 !important;
+            line-height: 1.5 !important;
+            white-space: normal !important;
+            word-break: keep-all !important;
+
+        }
+
+        /* 마우스 오버 효과 */
+        .st-key-btn_game_3_0 button:hover,
+        .st-key-btn_game_3_1 button:hover,
+        .st-key-btn_game_3_2 button:hover {
+
+            background-color: #f3e8ff !important;
+            border-color: #a855f7 !important;
+
+            transform: translateY(-2px);
+
+            box-shadow: 5px 5px 0px #2d1842 !important;
+        }
+
+        /* 버튼 클릭 효과 */
+        .st-key-btn_game_3_0 button:active,
+        .st-key-btn_game_3_1 button:active,
+        .st-key-btn_game_3_2 button:active {
+
+            background-color: #e9d5ff !important;
+            transform: scale(0.98);
+
+        }
+
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+
+# ==========================================
 # 기사 URL 및 본문 가져오기
 # ==========================================
 
@@ -53,23 +198,29 @@ def load_game_3_article():
         )
 
     try:
+
         # common.py에서 뉴스 제목, 본문, URL 가져오기
         title, article_text, url = get_game_news_selection("game_3")
 
         if not url:
+
             st.error("선택한 뉴스의 URL을 가져오지 못했습니다.")
+
             st.warning(
                 "games/common.py의 get_game_news_selection()에서 "
                 "URL 반환 부분을 확인해야 합니다."
             )
+
             return None, None, None
 
         url = str(url).strip()
 
         # URL 유효성 검사
         if not url.startswith(("http://", "https://")):
-            st.error("올바르지 않은 기사 URL입니다.")
+
+            st.error("올바른 기사 URL이 아닙니다.")
             st.write(f"가져온 URL: {url}")
+
             return None, None, None
 
         # 본문이 비어 있으면 URL로 다시 추출
@@ -132,6 +283,7 @@ def show_game_3():
     ):
 
         if "game_3_choice_deadline" not in st.session_state:
+
             st.session_state.game_3_choice_deadline = time.time() + 10
 
     if st.session_state.get("game_3_choice_timeout", False):
@@ -139,10 +291,12 @@ def show_game_3():
         st.error("⏰ 선택 시간이 초과되었습니다!")
 
         if st.button("🔄 다시 도전하기"):
+
             reset_game_3_state()
             st.rerun()
 
         if st.button("⬅️ 메인으로 돌아가기"):
+
             reset_game_3_state()
             change_page("main")
 
@@ -229,11 +383,14 @@ def show_game_3():
         ).strip().replace(".0", "")
 
         if sid == current_sid:
+
             user_row_idx = idx + 2
             user_info = user
+
             break
 
     if user_info is None:
+
         st.error("사용자 정보를 찾을 수 없습니다.")
         return
 
@@ -272,6 +429,7 @@ def show_game_3():
     if st.button("🎲 베팅 확정", use_container_width=True):
 
         if bet_val > current_coins:
+
             st.error("보유 코인이 부족합니다.")
             return
 
@@ -279,6 +437,7 @@ def show_game_3():
         st.rerun()
 
     if st.button("🔄 홀짝 다시 선택하기"):
+
         reset_game_3_state()
         st.rerun()
 
@@ -299,7 +458,12 @@ def show_game_3():
         "선택한 기사의 URL을 이용해 실제 기사 본문을 가져옵니다."
     )
 
+    # common.py의 기존 뉴스 선택 기능 실행
     title, article_text, url = load_game_3_article()
+
+    # 슬롯 애니메이션 CSS 덮어쓰기
+    # common.py는 수정하지 않음
+    fix_game_3_slot_animation()
 
     if not title or not article_text or not url:
         return
@@ -310,6 +474,7 @@ def show_game_3():
     st.markdown(f"**뉴스 제목: {title}**")
 
     with st.expander("뉴스 본문 확인하기", expanded=True):
+
         st.write(article_text)
 
     st.markdown(f"[기사 원문 열기]({url})")
@@ -342,7 +507,10 @@ def show_game_3():
                     summary_text = asyncio.run(summary(article_text))
 
                     if not summary_text:
-                        raise ValueError("뉴스 요약 결과가 비어 있습니다.")
+
+                        raise ValueError(
+                            "뉴스 요약 결과가 비어 있습니다."
+                        )
 
                     # 제목과 요약문의 유사도 계산
                     actual_score = similarity_check(
@@ -356,7 +524,10 @@ def show_game_3():
                         not math.isfinite(actual_score)
                         or not 0 <= actual_score <= 100
                     ):
-                        raise ValueError("유사도 점수가 올바르지 않습니다.")
+
+                        raise ValueError(
+                            "유사도 점수가 올바르지 않습니다."
+                        )
 
                     # 정수 부분만 사용
                     integer_score = int(actual_score)
@@ -392,11 +563,14 @@ def show_game_3():
                         ).strip().replace(".0", "")
 
                         if sid == current_sid:
+
                             user_row_idx = idx + 2
                             user_info = user
+
                             break
 
                     if user_info is None:
+
                         raise ValueError(
                             "사용자 정보를 다시 찾을 수 없습니다."
                         )
@@ -405,9 +579,15 @@ def show_game_3():
                     current_streak = int(user_info.get("연승", 0))
 
                     if current_balance < bet_coin:
-                        raise ValueError("현재 보유 코인이 부족합니다.")
 
-                    new_balance = max(0, current_balance + reward)
+                        raise ValueError(
+                            "현재 보유 코인이 부족합니다."
+                        )
+
+                    new_balance = max(
+                        0,
+                        current_balance + reward
+                    )
 
                     new_streak = (
                         current_streak + 1 if is_win else 0
@@ -425,6 +605,7 @@ def show_game_3():
 
                     # 결과 저장
                     st.session_state.game_3_result = {
+
                         "actual_score": actual_score,
                         "integer_score": integer_score,
                         "ai_result": ai_result,
@@ -437,13 +618,16 @@ def show_game_3():
                         "title": title,
                         "url": url,
                         "summary": summary_text
+
                     }
 
                     st.rerun()
 
                 except Exception as e:
 
-                    st.error(f"게임 진행 중 오류가 발생했습니다: {e}")
+                    st.error(
+                        f"게임 진행 중 오류가 발생했습니다: {e}"
+                    )
 
     # ======================================
     # STEP 7. 최종 결과 화면
@@ -458,9 +642,12 @@ def show_game_3():
     st.markdown("### 🏆 최종 게임 결과")
 
     if res["is_win"]:
+
         st.balloons()
         st.success("정답입니다! 베팅 성공!")
+
     else:
+
         st.error("아쉽습니다! 베팅 실패!")
 
     col1, col2 = st.columns(2)
@@ -479,13 +666,18 @@ def show_game_3():
     )
 
     st.progress(
-        max(0.0, min(1.0, res["actual_score"] / 100))
+        max(
+            0.0,
+            min(1.0, res["actual_score"] / 100)
+        )
     )
 
     with st.expander("AI 뉴스 요약 결과"):
+
         st.write(res["summary"])
 
     with st.expander("분석한 뉴스 기사 정보"):
+
         st.write(res["title"])
         st.markdown(f"[기사 원문 열기]({res['url']})")
 
@@ -499,21 +691,33 @@ def show_game_3():
         color:white;
     ">
         <h3>뉴스 유사도</h3>
+
         <h1 style="color:#00ffcc;">
             {res['actual_score']:.2f}%
         </h1>
+
         <p>홀짝 판정 기준 정수: {res['integer_score']}</p>
-        <h1 style="color:#ffd700;">{res['ai_result']}</h1>
+
+        <h1 style="color:#ffd700;">
+            {res['ai_result']}
+        </h1>
+
         <hr>
+
         <p>베팅 금액: {res['bet']:,} C</p>
+
         <h1 style="color:{'#00ffcc' if res['is_win'] else '#ff5555'};">
             {res['reward']:+,} C
         </h1>
+
         <p>현재 보유 코인</p>
+
         <h2 style="color:#ffd700;">
             {res['new_coins']:,} C
         </h2>
+
         <p>현재 연승 기록: {res['new_streak']} 연승</p>
+
     </div>
     """, unsafe_allow_html=True)
 
@@ -525,12 +729,20 @@ def show_game_3():
 
     with col1:
 
-        if st.button("🔄 다시 도전하기", use_container_width=True):
+        if st.button(
+            "🔄 다시 도전하기",
+            use_container_width=True
+        ):
+
             reset_game_3_state()
             st.rerun()
 
     with col2:
 
-        if st.button("⬅️ 메인으로 돌아가기", use_container_width=True):
+        if st.button(
+            "⬅️ 메인으로 돌아가기",
+            use_container_width=True
+        ):
+
             reset_game_3_state()
             change_page("main")
