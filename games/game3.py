@@ -1,9 +1,10 @@
-# 홀짝(정수부분만) (하) (10초안에 선택) ½ (2배)
+# 홀짝(정수부분만) (하) (10초 안에 선택) ½ (2배)
 
 import streamlit as st
 import time
 import math
 import asyncio
+from html import escape
 
 from modules.news_ai import summary, similarity_check, bring_article
 from modules.db_handler import init_gspread
@@ -38,6 +39,51 @@ def reset_game_3_state():
 
 
 # ==========================================
+# 게임 3 전용 뉴스 버튼 CSS
+# common.py는 수정하지 않음
+# ==========================================
+
+def apply_game_3_news_css():
+
+    st.markdown("""
+    <style>
+    /* 게임 3 뉴스 선택 버튼만 대상으로 지정 */
+    div[class*="st-key-btn_game_3_"] button {
+        transition:
+            filter 0.15s ease,
+            transform 0.15s ease,
+            box-shadow 0.15s ease !important;
+
+        animation: none !important;
+    }
+
+    /* 마우스를 올렸을 때 */
+    div[class*="st-key-btn_game_3_"] button:hover {
+        filter: brightness(0.95) !important;
+        transform: translateY(-2px) !important;
+    }
+
+    /* 실제 누르고 있는 버튼 */
+    div[class*="st-key-btn_game_3_"] button:active {
+        filter: brightness(0.70) !important;
+        transform: translate(2px, 2px) !important;
+        box-shadow: none !important;
+    }
+
+    /* 포커스된 버튼의 기본 강조 효과 제거 */
+    div[class*="st-key-btn_game_3_"] button:focus {
+        outline: none !important;
+    }
+
+    div[class*="st-key-btn_game_3_"] button:focus-visible {
+        outline: 2px solid #a78bfa !important;
+        outline-offset: 3px !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+
+# ==========================================
 # 기사 URL 및 본문 가져오기
 # ==========================================
 
@@ -54,15 +100,13 @@ def load_game_3_article():
         )
 
     try:
-        # common.py에서 뉴스 제목, 본문, URL 가져오기
+
+        # common.py에서 뉴스 선택 및 읽기 화면 처리
         title, article_text, url = get_game_news_selection("game_3")
 
-        if not url:
-            st.error("선택한 뉴스의 URL을 가져오지 못했습니다.")
-            st.warning(
-                "games/common.py의 get_game_news_selection()에서 "
-                "URL 반환 부분을 확인해야 합니다."
-            )
+        # common.py의 기사 선택/읽기 단계에서는
+        # 아직 기사 정보를 반환하지 않으므로 오류를 띄우지 않음
+        if not title or not article_text or not url:
             return None, None, None
 
         url = str(url).strip()
@@ -70,13 +114,12 @@ def load_game_3_article():
         # URL 유효성 검사
         if not url.startswith(("http://", "https://")):
             st.error("올바르지 않은 기사 URL입니다.")
-            st.write(f"가져온 URL: {url}")
             return None, None, None
 
         # 본문이 비어 있으면 URL로 다시 추출
-        if not article_text or not str(article_text).strip():
+        if not str(article_text).strip():
 
-            with st.spinner("기사 URL에서 본문을 가져오는 중입니다..."):
+            with st.spinner("기사 본문을 가져오는 중입니다..."):
 
                 extracted_title, extracted_text = bring_article(url)
 
@@ -87,10 +130,8 @@ def load_game_3_article():
 
         # 본문 최종 확인
         if not article_text or not str(article_text).strip():
-
             st.error("기사 본문을 가져오지 못했습니다.")
             st.caption(f"기사 URL: {url}")
-
             return None, None, None
 
         if not title:
@@ -302,13 +343,19 @@ def show_game_3():
 
     title, article_text, url = load_game_3_article()
 
+    # common.py에서 아직 뉴스 선택 또는 읽기 단계라면
+    # 여기서 멈추고 다음 화면을 기다림
     if not title or not article_text or not url:
         return
+
+    # ======================================
+    # 선택한 기사 표시
+    # ======================================
 
     st.markdown("---")
     st.markdown("### 📄 선택한 뉴스 기사")
 
-    st.markdown(f"**뉴스 제목: {title}**")
+    st.markdown(f"**뉴스 제목: {escape(str(title))}**")
 
     with st.expander("뉴스 본문 확인하기", expanded=True):
         st.write(article_text)
@@ -535,4 +582,3 @@ def show_game_3():
         if st.button("⬅️ 메인으로 돌아가기", use_container_width=True):
             reset_game_3_state()
             change_page("main")
-
