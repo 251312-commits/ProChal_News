@@ -26,35 +26,41 @@ def test_typing_delays_do_not_exceed_expected_pause():
     assert max(call.args[0] for call in sleeper.call_args_list) <= 0.12
 
 
-def test_marks_shared_words_before_score_and_skips_replay():
+def test_reveals_stored_model_values_before_score_and_skips_replay():
     st = MagicMock()
     st.session_state = {}
-    title, summary = "전기버스 <서울>", "서울역 앞에 전기버스 & 택시"
-    args = (summary, "round")
+    summary = "서울역 앞에 전기버스 & 택시"
+    title = "전기버스 <서울>"
+    details = {
+        "model_name": "BAAI/bge-reranker-v2-m3", "token_count": 37,
+        "logit": 1.25, "normalized": 0.77729986, "score": 78,
+    }
     with patch.dict("sys.modules", streamlit=st), patch("games.result_reveal.time.sleep") as sleep:
-        show_summary_before_score(*args, title=title, score=83)
+        show_summary_before_score(summary, "round", title=title, score=78, details=details)
         events = st.mock_calls
         score_index = next(i for i, event in enumerate(events) if event[0] == "progress")
-        marked = [
+        before_score = "\n".join(
             event.args[0] for event in events[:score_index]
-            if event[0] == "empty().html" and "<mark>" in event.args[0]
-        ]
-        assert len(marked) == 2
-        assert "<mark>전기버스</mark>" in marked[0] and "&lt;서울&gt;" in marked[0]
-        assert "<mark>전기버스</mark>" in marked[1] and " &amp; " in marked[1]
-        st.progress.assert_called_once_with(83, text="AI 유사도 · 83 / 100점")
+            if event[0] in ("html", "empty().html")
+        )
+        assert "<mark>" not in before_score and "&lt;서울&gt;" in before_score
+        steps = ["서울역 앞에 전기버스 &amp; 택시", details["model_name"], "37토큰", "1.2500", "0.7773"]
+        positions = [before_score.index(step) for step in steps]
+        assert positions == sorted(positions)
+        assert st.progress.call_args.args[0] == 78
 
         st.reset_mock()
         sleep.reset_mock()
-        show_summary_before_score(*args, title=title, score=83)
+        show_summary_before_score(summary, "round", title=title, score=78, details=details)
         sleep.assert_not_called()
-        assert st.empty.return_value.html.call_count == 2
+        assert st.progress.call_args.args[0] == 78
 
 
-def test_no_shared_words_still_displays_actual_model_score():
+def test_old_round_keeps_saved_score_without_fabricating_inference_values():
     st = MagicMock()
     st.session_state = {}
     with patch.dict("sys.modules", streamlit=st), patch("games.result_reveal.time.sleep"):
-        show_summary_before_score("강수량 증가", "round", title="비 소식", score=100)
-    assert "낱말" in st.caption.call_args.args[0]
-    st.progress.assert_called_once_with(100, text="AI 유사도 · 100 / 100점")
+        show_summary_before_score("폭우로 하천이 범람했다.", "round", title="도심 침수", score=78)
+    assert st.progress.call_args.args[0] == 78
+    assert "최종 점수만 저장" in st.caption.call_args.args[0]
+    assert all("<data " not in call.args[0] for call in st.html.call_args_list)
