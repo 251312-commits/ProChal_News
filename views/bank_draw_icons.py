@@ -1,4 +1,6 @@
-"""Decorative, color-inheriting pictograms for the loan application."""
+"""Decorative pictograms for the loan application."""
+
+from base64 import b64encode
 
 _STACK = (
     '<path d="M3 14c0-2 4-4 9-4s9 2 9 4v9c0 2.5-4 4.5-9 4.5S3 25.5 3 23z"/>'
@@ -35,8 +37,11 @@ _ICONS = {
 }
 
 
-def icon(name: str) -> str:
-    return (
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="1em" height="1em" '
-        'aria-hidden="true" focusable="false" fill="currentColor">' + _ICONS[name] + '</svg>'
+def icon(name: str, color: str = "#73536e") -> str:
+    # st.html sanitizes inline SVG, but keeps local image data URLs.
+    svg = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="{color}">'
+        f'{_ICONS[name]}</svg>'
     )
+    encoded = b64encode(svg.encode()).decode()
+    return f'<img class="bank-draw-icon" src="data:image/svg+xml;base64,{encoded}" alt="">'

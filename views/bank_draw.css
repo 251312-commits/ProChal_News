@@ -52,7 +52,7 @@
 .bank-draw-masthead {
   display: flex; flex-direction: column; justify-content: end;
   align-items: center; height: 100%; padding-bottom: .6cqw;
-  background: var(--temple) center 80% / auto 89% no-repeat;
+  background: var(--temple) center 8% / auto 81% no-repeat;
   text-align: center; color: #fcefff;
 }
 .st-key-bank-draw-screen .bank-draw-masthead h1 {
@@ -102,6 +102,7 @@
   display: block; margin-top: .4cqw; color: #78566d;
   font: 700 1.68cqw/1.2 Georgia, serif; letter-spacing: .31em;
 }
+.st-key-bank-draw-screen dl { padding: 0; }
 .bank-draw-terms {
   margin: 0 auto; width: 82%; border: 1px solid #a78091;
   border-radius: 6px; background: #fff2e72e; overflow: hidden;
@@ -116,7 +117,7 @@
   line-height: 1.15; white-space: nowrap;
 }
 .bank-draw-terms dt { gap: 1.6cqw; border-right: 1px solid #bd94a3; font-weight: 700; }
-.bank-draw-terms dt svg { width: 3.7cqw; height: 3.7cqw; color: #73536e; }
+.bank-draw-terms dt .bank-draw-icon { width: 3.7cqw; height: 3.7cqw; }
 .bank-draw-terms dd { justify-content: end; font-weight: 850; font-size: 3.5cqw; }
 .bank-draw-terms .bank-draw-rate { color: #69169a; font-size: 3.1cqw; }
 
@@ -125,7 +126,7 @@
   display: flex; flex-direction: column; gap: 0;
 }
 .st-key-bank-draw-controls::before {
-  content: "◆"; text-align: center; color: #aa7b92; font: 2cqw/1 Georgia, serif;
+  content: "◆"; width: 100%; text-align: center; color: #aa7b92; font: 2cqw/1 Georgia, serif;
   background: linear-gradient(90deg, transparent, #ad8793 44%, transparent 46% 54%, #ad8793 56%, transparent) center / 100% 1px no-repeat;
 }
 .bank-amount-label, .bank-draw-no-credit {
@@ -160,6 +161,9 @@
 .st-key-bank-draw-screen [data-testid="stSliderTickBar"],
 .st-key-bank-draw-screen [data-testid="stSliderThumbValue"] { display: none; }
 /* Keep BaseWeb's live progress gradient and its keyboard/touch event targets. */
+.st-key-bank-draw-screen [data-baseweb="slider"] div:has(> [role="slider"]) {
+  z-index: 1; height: 2.3cqw;
+}
 .st-key-bank-draw-screen [data-baseweb="slider"] div:has(> [role="slider"]) + div {
   height: 2.3cqw !important; border-radius: 99px;
   filter: hue-rotate(260deg) saturate(1.6);
@@ -185,13 +189,12 @@
 }
 .bank-draw-summary-grid > div + div { border-left: 1px solid #9656ac80; }
 .bank-draw-summary-grid dt { display: grid; justify-items: center; gap: .6cqw; font-size: 2.85cqw; font-weight: 650; }
-.bank-draw-summary-grid svg { width: 5cqw; height: 5cqw; color: #f2b454; }
-.bank-draw-summary-grid > div:nth-child(2) svg { color: #d99ae9; }
+.bank-draw-summary-grid .bank-draw-icon { width: 5cqw; height: 5cqw; }
 .bank-draw-summary-grid dd { margin: .65cqw 0 0; font-weight: 800; font-size: 4.2cqw; line-height: 1.18; white-space: nowrap; }
 .bank-draw-summary-grid > div:last-child dd { color: #ffd08a; }
 .bank-draw-summary p {
   margin: 1.7cqw 0 0; padding-top: 1.5cqw; border-top: 1px solid #9861aa80;
-  font: 550 2.45cqw/1.35 system-ui,sans-serif; color: #e9cfe9;
+  font: 550 2.65cqw/1.35 system-ui,sans-serif; color: #e9cfe9;
 }
 .bank-draw-summary strong { color: #f0adff; }
 
@@ -228,8 +231,8 @@
   .bank-draw-masthead p { margin: 0; font-size: 11px; }
   .st-key-bank-draw-parchment {
     container-type: inline-size;
-    grid-template: repeat(3, minmax(0, 1fr)) / minmax(0, .93fr) minmax(0,1.07fr);
-    gap: 4px 5%; padding: 12px 7% 19px;
+    grid-template: minmax(0,1.4fr) minmax(0,.92fr) minmax(0,.68fr) / minmax(0, .93fr) minmax(0,1.07fr);
+    gap: 3px 5%; padding: 24px 7% 19px;
   }
   .st-key-bank-draw-parchment > :first-child { grid-area: 1 / 1 / 4 / 2; }
   .st-key-bank-draw-parchment > :nth-child(n+2) { grid-column: 2; }
@@ -242,7 +245,7 @@
   .bank-draw-terms > div { min-height: 28px; font-size: 11px; }
   .bank-draw-terms dt, .bank-draw-terms dd { padding: 0 5px; }
   .bank-draw-terms dt { gap: 4px; }
-  .bank-draw-terms dt svg { width: 14px; height: 14px; }
+  .bank-draw-terms dt .bank-draw-icon { width: 14px; height: 14px; }
   .bank-draw-terms dd, .bank-draw-terms .bank-draw-rate { font-size: 12px; }
   .st-key-bank-draw-controls { width: 100%; }
   .st-key-bank-draw-controls::before { display: none; }
@@ -251,12 +254,13 @@
   .st-key-bank-draw-screen .st-key-bank-stepper button { width: 34px; height: 34px; }
   .st-key-bank-draw-screen .st-key-bank-stepper button p { font-size: 20px; }
   .st-key-bank-draw-screen .bank-amount-value { height: 32px; font-size: 20px; }
+  .st-key-bank-draw-screen [data-baseweb="slider"] div:has(> [role="slider"]),
   .st-key-bank-draw-screen [data-baseweb="slider"] div:has(> [role="slider"]) + div { height: 6px !important; }
   .st-key-bank-draw-screen [role="slider"] { width: 16px; height: 16px; }
   .bank-draw-range { font-size: 10px; }
   .bank-draw-summary { padding: 5px; border-radius: 10px; }
   .bank-draw-summary-grid dt { font-size: 10px; }
-  .bank-draw-summary-grid svg { display: none; }
+  .bank-draw-summary-grid .bank-draw-icon { display: none; }
   .bank-draw-summary-grid dd { font-size: 15px; margin: 1px 0 0; }
   .bank-draw-summary p { font-size: 9px; padding-top: 3px; margin-top: 4px; }
   .st-key-bank-draw-screen .st-key-bank-borrow-submit button { min-height: 36px; }

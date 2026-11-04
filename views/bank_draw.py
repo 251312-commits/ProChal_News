@@ -60,9 +60,9 @@ def draw_loan(coins: int, loan: int) -> None:
             st.html(
                 '<section class="bank-draw-summary" aria-label="현재 대출 현황">'
                 '<dl class="bank-draw-summary-grid">'
-                f'<div><dt>{icon("coins")}보유 코인</dt><dd>{coins:,} C</dd></div>'
-                f'<div><dt>{icon("bank")}대출 잔액</dt><dd>{loan:,} C</dd></div>'
-                f'<div><dt>{icon("coins-plus")}추가 대출 가능액</dt><dd>{available:,} C</dd></div>'
+                f'<div><dt>{icon("coins", "#f2b454")}보유 코인</dt><dd>{coins:,} C</dd></div>'
+                f'<div><dt>{icon("bank", "#d99ae9")}대출 잔액</dt><dd>{loan:,} C</dd></div>'
+                f'<div><dt>{icon("coins-plus", "#f2b454")}추가 대출 가능액</dt><dd>{available:,} C</dd></div>'
                 '</dl>'
                 f'<p>ⓘ &nbsp;대출 잔액에 턴마다 <strong>{rate}%</strong>의 이자가 '
                 '<strong>복리</strong>로 추가됩니다.</p></section>'
