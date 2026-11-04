@@ -391,7 +391,7 @@ def show_game_2():
             unsafe_allow_html=True
         )
 
-        st.write("기사 제목과 AI 요약문의 유사도 점수가 기준 점수 이상일까요, 미만일까요?")
+        st.write("소수 둘째 자리까지 표시한 유사도 점수가 기준 점수 이상일까요, 미만일까요?")
 
         col_high, col_low = st.columns(2)
         with col_high:
@@ -426,10 +426,10 @@ def show_game_2():
 
             if is_win:
                 reward = bet_coin
-                result_msg = f"🎉 예측 성공! (실제 유사도: {actual_score}점)"
+                result_msg = f"🎉 예측 성공! (실제 유사도: {actual_score:.2f}점)"
             else:
                 reward = -bet_coin
-                result_msg = f"💥 예측 실패! (실제 유사도: {actual_score}점)"
+                result_msg = f"💥 예측 실패! (실제 유사도: {actual_score:.2f}점)"
 
             current_sid = st.session_state.current_user
             users_data = ws.get_all_records()
@@ -491,7 +491,8 @@ def show_game_2():
     col_r1, col_r2, col_r3 = st.columns(3)
     with col_r1: st.metric("기준 점수", f"{res['target_num']}점")
     with col_r2: st.metric("내 선택", "이상 (≥)" if user_choice == "HIGH" else "미만 (<)")
-    with col_r3: st.metric("AI 실제 유사도", f"{res['actual_score']}점")
+    score_format = ".2f" if "score_hundredths" in (res.get("score_details") or {}) else ".0f"
+    with col_r3: st.metric("AI 실제 유사도", f"{res['actual_score']:{score_format}}점")
 
     st.markdown(
         f"""

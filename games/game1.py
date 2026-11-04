@@ -58,10 +58,12 @@ def show_game_1():
         return
 
     # [4단계] 점수 예측 UI
-    if "game_1_predicted_score" not in st.session_state:
+    if "game_1_predicted_digits" not in st.session_state and "game_1_result" not in st.session_state:
         st.markdown("---")
-        st.markdown("### 🎯 4단계: AI 유사도 점수 예측")
-        st.caption("기사 제목과 AI 요약문의 유사도 점수를 예측해 보세요. 00~99 사이의 숫자를 고를 수 있습니다.")
+        st.markdown("### 🎯 소수점 뒤 두 자리 맞히기")
+        st.caption("유사도 점수는 소수 둘째 자리까지 표시됩니다. 87.04점이면 04, 100.00점이면 00이 정답입니다.")
+        if "game_1_predicted_score" in st.session_state:
+            st.info("이번 라운드부터 소수점 뒤 두 자리를 맞힙니다. 베팅은 그대로 두고 숫자를 다시 선택하세요.")
 
         @st.fragment
         def render_neon_digit_picker():
@@ -82,15 +84,19 @@ def show_game_1():
                     padding: 10px 20px; min-width: 85px; text-align: center;
                     box-shadow: 0 0 15px rgba(138, 43, 226, 0.6);
                 }
+                .st-key-game_1_digit_picker [data-testid="stHorizontalBlock"] { flex-wrap: nowrap; }
+                .st-key-game_1_digit_picker [data-testid="stColumn"] {
+                    flex: 1 1 0; min-width: 0;
+                }
                 </style>
                 """,
                 unsafe_allow_html=True
             )
 
-            _, col_tens, col_ones, _ = st.columns([1, 1.2, 1.2, 1])
+            col_tens, col_ones = st.columns(2)
 
             with col_tens:
-                st.markdown("<p style='text-align:center; font-weight:bold; color:#a382de; margin-bottom:5px;'>십의 자리</p>", unsafe_allow_html=True)
+                st.markdown("<p style='text-align:center; font-weight:bold; color:#a382de; margin-bottom:5px;'>소수 첫째 자리</p>", unsafe_allow_html=True)
                 if st.button("▲", key="btn_tens_up", use_container_width=True):
                     st.session_state.tens_val = (st.session_state.tens_val + 1) % 10
                     st.rerun(scope="fragment")
@@ -100,7 +106,7 @@ def show_game_1():
                     st.rerun(scope="fragment")
 
             with col_ones:
-                st.markdown("<p style='text-align:center; font-weight:bold; color:#a382de; margin-bottom:5px;'>일의 자리</p>", unsafe_allow_html=True)
+                st.markdown("<p style='text-align:center; font-weight:bold; color:#a382de; margin-bottom:5px;'>소수 둘째 자리</p>", unsafe_allow_html=True)
                 if st.button("▲", key="btn_ones_up", use_container_width=True):
                     st.session_state.ones_val = (st.session_state.ones_val + 1) % 10
                     st.rerun(scope="fragment")
@@ -109,21 +115,22 @@ def show_game_1():
                     st.session_state.ones_val = (st.session_state.ones_val - 1) % 10
                     st.rerun(scope="fragment")
 
-            pred_score = st.session_state.tens_val * 10 + st.session_state.ones_val
-            st.markdown(f"<h3 style='text-align:center; color:#fffb00; margin-top:15px;'>내 예측 점수: {pred_score:02d}점</h3>", unsafe_allow_html=True)
+            predicted_digits = st.session_state.tens_val * 10 + st.session_state.ones_val
+            st.markdown(f"<h3 style='text-align:center; color:#fffb00; margin-top:15px;'>내 예측 · ??.{predicted_digits:02d}</h3>", unsafe_allow_html=True)
 
-            if st.button("✅ 선택 완료 (예측 점수 제출)", use_container_width=True):
-                st.session_state.game_1_predicted_score = pred_score
+            if st.button("✅ 소수 두 자리 제출", use_container_width=True):
+                st.session_state.game_1_predicted_digits = predicted_digits
                 st.rerun()
 
-        render_neon_digit_picker()
+        with st.container(key="game_1_digit_picker"):
+            render_neon_digit_picker()
         return
 
     # [5단계 & 6단계] AI 점수 측정 및 정산
-    pred_score = st.session_state.game_1_predicted_score
     bet_coin = st.session_state.game_1_bet
 
     if "game_1_result" not in st.session_state:
+        predicted_digits = st.session_state.game_1_predicted_digits
         with st.spinner("🤖 AI가 유사도를 분석 중입니다..."):
             summary_text = asyncio.run(summary(article_text))
             if not summary_text:
@@ -131,18 +138,16 @@ def show_game_1():
                 return
             score_details = similarity_check(summary_text, title)
             actual_score = score_details["score"]
-            
-            # diff 변수 선언 추가
-            diff = abs(pred_score - actual_score)
+            answer_digits = score_details["score_hundredths"] % 100
 
-            if diff == 0:
+            if predicted_digits == answer_digits:
                 reward = int(bet_coin * GAME_1_WIN_MULTIPLIER)
                 is_win = True
-                result_msg = f"🎉 대박 성공! (오차 {diff}점)"
+                result_msg = f"🎉 적중! 소수점 뒤 두 자리는 {answer_digits:02d}"
             else:
                 reward = -bet_coin
                 is_win = False
-                result_msg = f"💥 실패 (오차 {diff}점)"
+                result_msg = f"💥 빗나갔습니다. 정답은 {answer_digits:02d}"
 
             current_sid = st.session_state.current_user
             users_data = ws.get_all_records()
@@ -177,7 +182,7 @@ def show_game_1():
                 "summary": summary_text,
                 "actual_score": actual_score,
                 "score_details": score_details,
-                "diff": diff,
+                "predicted_digits": predicted_digits,
                 "reward": reward,
                 "is_win": is_win,
                 "msg": result_msg,
@@ -191,6 +196,7 @@ def show_game_1():
         res.get("summary", ""), "game_1_summary_revealed",
         title=res.get("title", title), score=res["actual_score"],
         details=res.get("score_details"),
+        prediction=res.get("predicted_digits"),
     )
     st.markdown("---")
     st.markdown("### 🏆 6단계: 최종 결과")
@@ -201,10 +207,12 @@ def show_game_1():
     else:
         st.error(f"{res['msg']} | 차감 코인: {res['reward']:,} C")
 
-    col_r1, col_r2, col_r3 = st.columns(3)
-    with col_r1: st.metric("내 예측 점수", f"{pred_score:02d}점")
-    with col_r2: st.metric("AI 측정 점수", f"{res['actual_score']:02d}점")
-    with col_r3: st.metric("점수 오차", f"{res['diff']}점")
+    if "predicted_digits" not in res:
+        # An already settled round from the whole-score game keeps its original result.
+        col_r1, col_r2, col_r3 = st.columns(3)
+        with col_r1: st.metric("내 예측 점수", f"{st.session_state.game_1_predicted_score:02d}점")
+        with col_r2: st.metric("AI 측정 점수", f"{res['actual_score']:02d}점")
+        with col_r3: st.metric("점수 오차", f"{res['diff']}점")
 
     st.markdown(
         f"""
@@ -219,7 +227,7 @@ def show_game_1():
     def reset_game_1_state():
         keys_to_clear = [
             "game_1_bet", "selected_news_game_1", "candidates_game_1", 
-            "read_done_game_1", "game_1_predicted_score", "game_1_result",
+            "read_done_game_1", "game_1_predicted_digits", "game_1_predicted_score", "game_1_result",
             "tens_val", "ones_val", "game_1_summary_revealed"
         ]
         for k in keys_to_clear:
