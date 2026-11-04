@@ -391,7 +391,7 @@ def show_game_2():
             unsafe_allow_html=True
         )
 
-        st.write("이 기사 제목과 본문의 **실제 AI 유사도 점수**는 기준 점수보다 **높을까요(이상), 낮을까요(미만)?**")
+        st.write("기사 제목과 AI 요약문의 유사도 점수가 기준 점수 이상일까요, 미만일까요?")
 
         col_high, col_low = st.columns(2)
         with col_high:
@@ -414,7 +414,7 @@ def show_game_2():
         with st.spinner("🤖 AI가 유사도를 분석 중입니다..."):
             summary_text = asyncio.run(summary(article_text))
             if not summary_text:
-                st.error("뉴스 본문 요약에 실패해 일치율을 계산할 수 없습니다.")
+                st.error("뉴스 본문 요약에 실패해 유사도 점수를 계산할 수 없습니다.")
                 return
             actual_score = similarity_check(summary_text, title)
 
@@ -459,6 +459,7 @@ def show_game_2():
                 st.session_state.current_user_data['연승'] = new_streak
 
             st.session_state.game_2_result = {
+                "title": title,
                 "summary": summary_text,
                 "actual_score": actual_score,
                 "target_num": target_num,
@@ -471,7 +472,10 @@ def show_game_2():
 
     # [6단계] 최종 결과 출력
     res = st.session_state.game_2_result
-    show_summary_before_score(res.get("summary", ""), "game_2_summary_revealed")
+    show_summary_before_score(
+        res.get("summary", ""), "game_2_summary_revealed",
+        title=res.get("title", title), score=res["actual_score"],
+    )
     st.markdown("---")
     st.markdown("### 🏆 6단계: 최종 결과")
 
