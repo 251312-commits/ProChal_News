@@ -1,0 +1,75 @@
+name: Check main BGM controls
+on:
+  push:
+    branches: [feature/main-bgm-volume-controls]
+permissions:
+  contents: read
+jobs:
+  audio-controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unit and browser checks
+        shell: bash
+        run: |
+          set -eu
+          python -m venv /tmp/bgm-venv
+          source /tmp/bgm-venv/bin/activate
+          pip -q install streamlit==1.55.0 playwright
+          python -m unittest discover -s tests -p test_bgm_settings.py -v
+          cat > bgm_demo.py <<'PY'
+          import streamlit as st
+          from sounds.bgm import init_seamless_bgm, stop_bgm
+          st.session_state.setdefault("page", "main")
+          st.title("Main sound control test")
+          if st.button("Go to game"):
+              st.session_state.page = "game"
+          if st.button("Return to main"):
+              st.session_state.page = "main"
+          if st.button("Log out"):
+              st.session_state.page = "login"
+          if st.session_state.page == "login":
+              stop_bgm()
+          else:
+              init_seamless_bgm("https://example.org/intro.mp3",
+                  "https://example.org/loop.mp3",
+                  show_controls=(st.session_state.page == "main"))
+          st.write(st.session_state.page)
+          PY
+          cat > bgm_browser.py <<'PY'
+          from playwright.sync_api import sync_playwright, expect
+          with sync_playwright() as p:
+              b=p.chromium.launch(executable_path="/usr/bin/google-chrome",args=["--no-sandbox"])
+              page=b.new_page(viewport={"width":390,"height":844})
+              page.goto("http://localhost:8501")
+              toggle=page.locator("#news-bgm-controls .news-bgm-toggle")
+              expect(toggle).to_be_visible(timeout=30000)
+              toggle.click()
+              slider=page.locator("#news-bgm-controls .news-bgm-slider")
+              expect(slider).to_be_visible()
+              slider.fill("65")
+              state=page.evaluate("""() => {
+                  const p=window.__newsBgmPlayer;
+                  return [p.volume,p.muted,p.intro.volume,p.loop.volume];
+              }""")
+              assert state==[0.65,False,0.65,0.65],state
+              page.locator("#news-bgm-controls .news-bgm-mute input").check()
+              assert page.evaluate("window.__newsBgmPlayer.intro.volume")==0
+              assert page.evaluate("window.__newsBgmPlayer.loop.volume")==0
+              page.get_by_role("button",name="Go to game").click()
+              expect(page.locator("#news-bgm-controls")).to_have_count(0)
+              assert page.evaluate("window.__newsBgmPlayer.muted") is True
+              page.get_by_role("button",name="Return to main").click()
+              expect(toggle).to_be_visible()
+              toggle.click()
+              expect(page.locator("#news-bgm-controls .news-bgm-mute input")).to_be_checked()
+              page.get_by_role("button",name="Log out").click()
+              expect(page.locator("#news-bgm-controls")).to_have_count(0)
+              assert page.evaluate("window.__newsBgmPlayer.stopped") is True
+              page.close()
+              b.close()
+          PY
+          streamlit run bgm_demo.py --server.headless true --browser.gatherUsageStats false > /tmp/bgm-demo.log 2>&1 &
+          for i in {1..30}; do if curl -fsS http://localhost:8501/_stcore/health; then break; fi; sleep 1; done
+          python bgm_browser.py || { cat /tmp/bgm-demo.log; exit 1; }
