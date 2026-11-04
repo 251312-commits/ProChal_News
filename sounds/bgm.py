@@ -45,8 +45,8 @@ def init_seamless_bgm(intro_url: str, loop_url: str):
         }})();
         </script>
         """,
-        height=0,
-        width=0
+        height=1,
+        width=1
     )
 
 def stop_bgm():
@@ -62,6 +62,6 @@ def stop_bgm():
         })();
         </script>
         """,
-        height=0,
-        width=0
+        height=1,
+        width=1
     )
