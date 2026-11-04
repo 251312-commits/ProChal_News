@@ -1,4 +1,5 @@
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh  # 1. 모듈 import 추가
 from modules.db_handler import init_gspread
 from modules.ui_components import change_page
 
@@ -7,7 +8,6 @@ def fetch_ranking_data():
     ws = init_gspread()
     return ws.get_all_records()
 
-@st.fragment(run_every="10s")
 def show_ranking():
     st.markdown(
         """
@@ -243,6 +243,7 @@ def show_ranking():
     )
 
     st.title("🏆 실시간 랭킹 전광판")
+    st_autorefresh(interval=10000, limit=None, key="ranking_autorefresh")
 
     # 2. ws.get_all_records() 대신 미리 정의된 fetch_ranking_data() 호출로 수정
     users_data = fetch_ranking_data()
