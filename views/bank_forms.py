@@ -84,7 +84,7 @@ def draw_loan(coins: int, loan: int) -> None:
     limit = available // UNIT * UNIT
     with _document(
         "대출 신청서", "LOAN APPLICATION",
-        [("대출 단위", UNIT), ("이자율 · 턴당 20% (복리)", 0), ("최대 대출 한도", MAX_LOAN)],
+        [("대출 단위", UNIT), ("이자율", "턴당 20% (복리)"), ("최대 대출 한도", MAX_LOAN)],
         f"한도 {MAX_LOAN:,} C · {UNIT:,} C 단위<br>"
         f"대출 잔액에 턴마다 {INTEREST_RATE:.0%} 복리 이자 적용",
     ):
