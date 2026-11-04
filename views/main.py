@@ -1,7 +1,4 @@
-import base64
 import streamlit as st
-from streamlit_autorefresh import st_autorefresh
-from st_clickable_images import clickable_images
 from modules.db_handler import init_gspread
 from modules.ui_components import change_page, load_local_image_as_base64
 
@@ -9,8 +6,8 @@ ws = init_gspread()
 
 # 정의된 함수: show_main_page
     
+@st.fragment(run_every="600s")
 def show_main_page():
-    st_autorefresh(interval=600000, limit=None, key="auto_refresh")
 
     # 세션에 유저 정보가 없을 때만 구글 시트에서 데이터를 새로 불러옵니다.
     if not st.session_state.get('current_user_data'):
@@ -49,47 +46,71 @@ def show_main_page():
         unsafe_allow_html=True
     )
 
-    # assets 폴더의 로컬 이미지를 Base64 데이터 스트링으로 로드
-    local_img_paths = [
-        "assets/banner1.png",
-        "assets/banner2.png",
-        "assets/banner3.png",
-        "assets/banner4.png",
-        "assets/banner5.png",
-        "assets/banner6.png",
-        "assets/banner7.png",
+    # Streamlit native buttons avoid third-party frontend component loading errors.
+    # Keep the original image banners and make the entire image area clickable.
+    menu_items = [
+        ("assets/banner1.png", "🏦 은행", "bank"),
+        ("assets/banner2.png", "🏆 랭킹", "ranking"),
+        ("assets/banner3.png", "게임 1", "game_1"),
+        ("assets/banner4.png", "게임 2", "game_2"),
+        ("assets/banner5.png", "게임 3", "game_3"),
+        ("assets/banner6.png", "게임 4", "game_4"),
+        ("assets/banner7.png", "게임 5", "game_5"),
     ]
-    
-    # 캐싱된 Base64 이미지 리스트 생성
-    img_urls = [load_local_image_as_base64(path) for path in local_img_paths]
 
-    clicked_menu = clickable_images(
-        img_urls,
-        titles=["🏦 은행", "🏆 랭킹", "게임 1", "게임 2", "게임 3", "게임 4", "게임 5"],
-        div_style={
-            "display": "flex", 
-            "flex-direction": "column", 
-            "gap": "15px",
-            "justify-content": "center",
-            "padding-bottom": "30px",
-            "background-color": "#05000a" 
-        },
-        img_style={
-            "width": "100%",            
-            "height": "110px",          
-            "object-fit": "cover",      
-            "border-radius": "5px", 
-            "border": "2px solid #8A2BE2", 
-            "box-shadow": "0 0 10px rgba(138, 43, 226, 0.8)",
-            "cursor": "pointer"
-        },
-        key="main_menu_banners"
-    )
-    
-    if clicked_menu == 0: change_page('bank')
-    elif clicked_menu == 1: change_page('ranking')
-    elif clicked_menu == 2: change_page('game_1')
-    elif clicked_menu == 3: change_page('game_2')
-    elif clicked_menu == 4: change_page('game_3')
-    elif clicked_menu == 5: change_page('game_4')
-    elif clicked_menu == 6: change_page('game_5')
+    # An image-backed st.button has normal Streamlit click handling and no
+    # external JavaScript bundle. The labels remain accessible to screen readers.
+    styles = [
+        """
+        .st-key-main-native-menu [data-testid="stVerticalBlock"] {
+            gap: 15px !important;
+        }
+        .st-key-main-native-menu .stButton > button {
+            height: 110px !important;
+            min-height: 110px !important;
+            width: 100% !important;
+            border: 2px solid #8A2BE2 !important;
+            border-radius: 5px !important;
+            padding: 0 !important;
+            box-shadow: 0 0 10px rgba(138,43,226,.8) !important;
+            color: transparent !important;
+            font-size: 0 !important;
+            text-shadow: none !important;
+            cursor: pointer !important;
+            transition: filter .18s ease, box-shadow .18s ease;
+        }
+        .st-key-main-native-menu .stButton > button:hover {
+            filter: brightness(1.15) !important;
+            box-shadow: 0 0 16px rgba(180,66,255,.9) !important;
+        }
+        .st-key-main-native-menu .stButton > button:focus-visible {
+            outline: 3px solid #ffffff !important;
+            outline-offset: 3px !important;
+        }
+        @media(max-width:480px) {
+            .st-key-main-native-menu .stButton > button {
+                height: 100px !important;
+                min-height: 100px !important;
+            }
+        }
+        """
+    ]
+    for index, (img_path, _label, _route) in enumerate(menu_items):
+        image_uri = load_local_image_as_base64(img_path)
+        styles.append(
+            f'.st-key-main-banner-{index} button {{'
+            f'background: #10051d url("{image_uri}") center center / cover no-repeat !important;'
+            f'}}'
+        )
+
+    st.markdown("<style>" + "\n".join(styles) + "</style>", unsafe_allow_html=True)
+
+    with st.container(key="main-native-menu"):
+        for index, (_image, label, route) in enumerate(menu_items):
+            if st.button(
+                label,
+                key=f"main-banner-{index}",
+                help=label,
+                use_container_width=True,
+            ):
+                change_page(route)
