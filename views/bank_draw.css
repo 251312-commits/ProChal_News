@@ -11,6 +11,7 @@
   padding: 0;
   display: grid;
   grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+  align-items: stretch;
 }
 .st-key-bank-page:has(.st-key-bank-draw-screen) > * { grid-area: 1 / 1; min-width: 0; }
 .st-key-bank-page:has(.st-key-bank-draw-screen) > :has(.st-key-bank-nav) {
@@ -18,8 +19,13 @@
   z-index: 2;
 }
 .st-key-bank-page:has(.st-key-bank-draw-screen) .st-key-bank-nav { padding: 2px 3%; }
+/* Anchor the frame to the fixed page. Streamlit wraps each keyed block
+   in a column flexbox whose intrinsic height can otherwise collapse to zero. */
+.st-key-bank-page:has(.st-key-bank-draw-screen) > :has(> .st-key-bank-body),
 .st-key-bank-body:has(.st-key-bank-draw-screen),
 .st-key-bank-body > :has(> .st-key-bank-draw-screen) {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   min-width: 0;
@@ -32,6 +38,7 @@
   height: 100%;
   min-width: 0;
   min-height: 0;
+  flex: none;
   container-type: inline-size;
   font-family: system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   font-variant-numeric: tabular-nums;
@@ -153,7 +160,7 @@
 .st-key-bank-draw-screen [data-testid="stSliderTickBar"],
 .st-key-bank-draw-screen [data-testid="stSliderThumbValue"] { display: none; }
 /* Keep BaseWeb's live progress gradient and its keyboard/touch event targets. */
-.st-key-bank-draw-screen [data-baseweb="slider"] [style*="linear-gradient"] {
+.st-key-bank-draw-screen [data-baseweb="slider"] div:has(> [role="slider"]) + div {
   height: 2.3cqw !important; border-radius: 99px;
   filter: hue-rotate(260deg) saturate(1.6);
   box-shadow: inset 0 1px 3px #56226366;
@@ -244,7 +251,7 @@
   .st-key-bank-draw-screen .st-key-bank-stepper button { width: 34px; height: 34px; }
   .st-key-bank-draw-screen .st-key-bank-stepper button p { font-size: 20px; }
   .st-key-bank-draw-screen .bank-amount-value { height: 32px; font-size: 20px; }
-  .st-key-bank-draw-screen [data-baseweb="slider"] [style*="linear-gradient"] { height: 6px !important; }
+  .st-key-bank-draw-screen [data-baseweb="slider"] div:has(> [role="slider"]) + div { height: 6px !important; }
   .st-key-bank-draw-screen [role="slider"] { width: 16px; height: 16px; }
   .bank-draw-range { font-size: 10px; }
   .bank-draw-summary { padding: 5px; border-radius: 10px; }

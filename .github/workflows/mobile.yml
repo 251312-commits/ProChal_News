@@ -31,6 +31,8 @@ jobs:
           if [ "$ENGINE" = webkit ]; then
             python -m playwright install --with-deps webkit
           fi
+      - name: Run repository unit tests
+        run: python -m unittest discover -s tests
       - name: Exercise actual Streamlit controls at mobile and desktop viewport sizes
         run: |
           cat > bank_fixture.py <<'PY_FIXTURE'
@@ -89,18 +91,33 @@ jobs:
               settle(page)
               name = f"{ENGINE}-{width}x{height}"
               page.screenshot(path=OUT / f"{name}.png")
+              ancestry = submit.evaluate("""button => {
+                const ancestors=[];
+                for(let e=button;e;e=e.parentElement) {
+                  const a=getComputedStyle(e), r=e.getBoundingClientRect(), c={};
+                  for(const k of ['display','position','width','height','minHeight','maxHeight','minWidth','maxWidth',
+                                   'boxSizing','gridArea','gridTemplateRows','gridTemplateColumns','flex','flexDirection',
+                                   'alignItems','alignSelf','justifySelf','justifyContent','margin','padding','inset','contain','containerType'])
+                      c[k]=a[k];
+                  ancestors.push({tag:e.tagName,id:e.id,tid:e.dataset.testid,classes:e.className,
+                                  rect:[r.x,r.y,r.width,r.height], computed:c});
+                  if(e.classList.contains('stApp')) break;
+                }
+                return ancestors;
+              }""")
+              (OUT / f"{name}-dom.json").write_text(json.dumps(ancestry, ensure_ascii=False, indent=2))
               measure = page.evaluate("""async () => {
                 const visible=s=> [...document.querySelectorAll(s)].filter(e=>e.getBoundingClientRect().width && e.getBoundingClientRect().height && !e.closest('.bank-opening')).at(-1);
                 const rect=e=>{const r=e.getBoundingClientRect(); return {x:r.x, y:r.y, w:r.width, h:r.height, right:r.right,bottom:r.bottom};};
-                const scope=visible('.st-key-bank-draw-screen');
+                const scope=[...document.querySelectorAll('.st-key-bank-borrow-submit button')].at(-1).closest('.st-key-bank-draw-screen');
                 const elm=(s)=>[...scope.querySelectorAll(s)].filter(e=>e.getBoundingClientRect().width && e.getBoundingClientRect().height).at(-1);
                 const names={title:'h1',sheetTitle:'h2',terms:'.bank-draw-terms',amount:'.bank-amount-label',minus:'.st-key-bank_borrow_amount_minus button',value:'.bank-amount-value',plus:'.st-key-bank_borrow_amount_plus button',slider:'[role=slider]',summary:'.bank-draw-summary',submit:'.st-key-bank-borrow-submit button'};
                 const geometry={}; for(const [k,s] of Object.entries(names)){const e=elm(s); if(e) geometry[k]=rect(e);}
                 const links=['.st-key-bank-back button','.bank-balance']; for(const s of links) {const e=visible(s); if(e) geometry[s]=rect(e);}
                 const values=[...scope.querySelectorAll('.bank-draw-summary-grid > *')].map(rect);
                 const imgs=[...scope.querySelectorAll('img')].map(e=>[e.className,e.complete&&e.naturalWidth>0]);
-                const main=visible('[data-testid=stMain]');
-                const sheet=visible('.st-key-bank-draw-parchment');
+                const main=scope.closest('[data-testid=stMain]');
+                const sheet=scope.querySelector('.st-key-bank-draw-parchment');
                 const art=await Promise.all(['--paper','--seal','--stamp','--postmark','--temple'].map(async p=>{
                   const val=getComputedStyle(scope).getPropertyValue(p).trim();
                   if (!val.startsWith('url(')) return [p,false];
