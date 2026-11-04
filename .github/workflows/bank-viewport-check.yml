@@ -1,0 +1,95 @@
+name: Verify bank mobile layouts
+on:
+  push:
+    branches: [fix/mobile-bank-loan-forms]
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Measure bank screens in Chrome with a demo account
+        shell: bash
+        run: |
+          set -eu
+          python -m venv /tmp/bank-env
+          source /tmp/bank-env/bin/activate
+          pip -q install 'streamlit==1.55.0' playwright
+          cat > bank_fixture.py <<'PYTHON'
+          import sys
+          from types import ModuleType, SimpleNamespace
+          import streamlit as st
+          import streamlit.components.v1 as components
+
+          mock = ModuleType("modules.db_handler")
+          mock.init_gspread = lambda: SimpleNamespace(
+              find=lambda *a, **kw: SimpleNamespace(row=2), update=lambda **kw: None
+          )
+          sys.modules["modules.db_handler"] = mock
+          from modules.ui_components import inject_casino_theme
+          from views.bank import show_bank
+          st.session_state.setdefault("current_user_data", {"학번": "demo", "코인": 3250, "대출금": 2000})
+          st.session_state.setdefault("page", "bank")
+          inject_casino_theme()
+          components.html("", height=0, width=0)
+          show_bank()
+          PYTHON
+          cat > measure.py <<'PYTHON'
+          from pathlib import Path
+          from playwright.sync_api import sync_playwright, expect
+
+          sizes = [(320,568), (360,640), (390,844), (430,932), (667,375), (844,390), (1280,800)]
+          Path("artifacts").mkdir(exist_ok=True)
+          with sync_playwright() as pw:
+              browser = pw.chromium.launch(executable_path="/usr/bin/google-chrome", args=["--no-sandbox"])
+              for width,height in sizes:
+                  page=browser.new_page(viewport={"width":width,"height":height}, locale="ko-KR")
+                  page.goto("http://localhost:8501")
+                  def rects(view):
+                      page.wait_for_timeout(180)
+                      data=page.evaluate("""() => {
+                          const box = el => {
+                              const r=el.getBoundingClientRect();
+                              return [r.x,r.y,r.width,r.height].map(Math.round)
+                          };
+                          const scope=document.querySelector('.st-key-bank-page');
+                          const items=Array.from(scope.querySelectorAll('button, [role=slider], h1, .bank-envelope-face, .bank-velvet, .bank-benefits, .bank-figures, .bank-estimate'));
+                          const visible=items.filter(n => n.checkVisibility({visibilityProperty:true, opacityProperty:true}) && !n.closest('.bank-opening'));
+                          const record=visible.map(n=>[n.tagName,(n.textContent||n.className||'').trim().slice(0,48),box(n)]);
+                          const main=document.querySelector('[data-testid=stMain]');
+                          return {record, main:[main.scrollWidth-main.clientWidth,main.scrollHeight-main.clientHeight],bg:getComputedStyle(document.querySelector('.stApp')).backgroundImage.includes('data:image/jpeg')};
+                      }""")
+                      print(f"{width}x{height} {view}: {data}",flush=True)
+                      for tag,label,(x,y,w,h) in data["record"]:
+                          assert w > 1 and h > 1 and x >= -2 and y >= -2 and x+w <= width+2 and y+h <= height+2, (view,tag,label,x,y,w,h)
+                      assert max(data["main"])<=2 and data["bg"],(view,data["main"],data["bg"])
+                      assert not page.get_by_test_id("stException").count()
+                      page.screenshot(path=f"artifacts/{width}x{height}-{view}.png")
+                  btn=lambda name: page.locator(f".st-key-{name} button")
+                  expect(btn("bank-home-pay")).to_be_visible(timeout=30000)
+                  rects("home")
+                  if width>height:
+                      a=btn('bank-home-draw').bounding_box(); b=btn('bank-home-pay').bounding_box()
+                      assert abs(a['y']-b['y'])<=2 and b['x']>a['x']
+                  for k,submit in [('draw','bank-borrow-submit'),('pay','bank-repay-submit')]:
+                      btn('bank-home-'+k).click()
+                      expect(btn(submit)).to_be_visible()
+                      page.wait_for_timeout(1500)
+                      rects(k)
+                      btn('bank-back').click()
+                      expect(btn('bank-home-pay')).to_be_visible()
+                  page.close()
+              browser.close()
+          PYTHON
+          streamlit run bank_fixture.py --server.headless true --browser.gatherUsageStats false > /tmp/bank-streamlit.log 2>&1 &
+          for attempt in {1..30}; do if curl -fsS http://localhost:8501/_stcore/health; then break; fi; sleep 1; done
+          python measure.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bank-viewport-checks
+          path: artifacts/
