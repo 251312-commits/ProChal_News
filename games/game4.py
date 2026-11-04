@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 
 # 구간 맞히기 (중) 확률: ⅓ (3배)
 
@@ -334,4 +335,4 @@ updateBalance();
 </body>
 </html>
 """
-    st.iframe(html_code, height=900)
+    components.html(html_code, height=900, scrolling=True)
