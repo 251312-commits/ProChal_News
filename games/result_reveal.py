@@ -5,11 +5,9 @@ only controls what the player sees, and never re-runs a wager or sheet update.
 """
 
 from html import escape
-import re
 import time
 
 
-_WORD = re.compile(r"([^\W_]+)")
 _STYLE = """
 <style>
 .st-key-news_comparison {
@@ -29,28 +27,27 @@ _STYLE = """
     border-left: 3px solid #a589d9; border-radius: 0 10px 10px;
     background: #30233e; padding: .6rem .85rem;
 }
-.st-key-news_comparison mark {
-    background: #f8d98b; color: #271a09; border-radius: .18em;
+.st-key-news_comparison .score-steps {
+    margin: .45rem 0; padding-left: 1.65rem; color: #e7def0;
+}
+.st-key-news_comparison .score-steps li {
+    padding: .25rem 0 .35rem .2rem; line-height: 1.5; overflow-wrap: anywhere;
+}
+.st-key-news_comparison .score-steps li::marker { color: #c4a7e4; font-weight: 700; }
+.st-key-news_comparison .score-steps strong { color: #fff6ff; }
+.st-key-news_comparison .score-steps data {
+    display: inline-block; color: #f8d98b; font-variant-numeric: tabular-nums;
 }
 .st-key-news_comparison [data-testid="stCaptionContainer"] p,
 .st-key-news_comparison .stProgress p { color: #e7def0; }
 @media (prefers-reduced-motion: no-preference) {
-    .st-key-news_comparison .news-scan mark { animation: news-ink .45s ease-out; }
-    @keyframes news-ink {
-        from { background-color: transparent; color: #fff6ff; }
-        to { background-color: #f8d98b; color: #271a09; }
-    }
+    .st-key-news_comparison .score-reveal li { animation: score-step-in .2s ease-out backwards; }
+    .st-key-news_comparison .score-reveal li:nth-child(2) { animation-delay: .22s; }
+    .st-key-news_comparison .score-reveal li:nth-child(3) { animation-delay: .44s; }
+    @keyframes score-step-in { from { opacity: 0; transform: translateY(.2rem); } }
 }
 </style>
 """
-
-
-def _marked_text(text, shared):
-    """Preserve the supplied text and mark only whole, literal matches."""
-    return "".join(
-        f"<mark>{escape(part)}</mark>" if part in shared else escape(part)
-        for part in _WORD.split(text)
-    )
 
 
 def type_summary_characters(summary_text: str):
@@ -73,7 +70,9 @@ def type_summary_characters(summary_text: str):
             time.sleep(delay)
 
 
-def show_summary_before_score(summary_text: str, state_key: str, *, title: str, score: int) -> None:
+def show_summary_before_score(
+    summary_text: str, state_key: str, *, title: str, score: int, details=None
+) -> None:
     """Reveal the two model inputs, then the stored score, once per round."""
     import streamlit as st
 
@@ -81,8 +80,6 @@ def show_summary_before_score(summary_text: str, state_key: str, *, title: str, 
     if not text:
         return
 
-    title_words = {word for word in _WORD.findall(title) if len(word) >= 2}
-    shared = title_words.intersection(_WORD.findall(text))
     score = int(score)
     reveal = (title, text, score)
     animate = st.session_state.get(state_key) != reveal
@@ -90,12 +87,11 @@ def show_summary_before_score(summary_text: str, state_key: str, *, title: str, 
     with st.container(key="news_comparison"):
         st.html(_STYLE)
         st.html('<div class="news-label">기사 제목</div>')
-        headline = st.empty()
+        st.html(f'<div class="news-copy">{escape(title)}</div>')
         st.html('<div class="news-label">AI 요약문</div>')
         message = st.empty()
 
         if animate:
-            headline.html(f'<div class="news-copy">{escape(title)}</div>')
             # Stream plain text so even Markdown-like news is displayed literally.
             partial = []
             next_frame = 0.0
@@ -109,15 +105,28 @@ def show_summary_before_score(summary_text: str, state_key: str, *, title: str, 
                     )
                     next_frame = now + 0.03
 
-        effect = " news-scan" if animate else ""
-        headline.html(f'<div class="news-copy{effect}">{_marked_text(title, shared)}</div>')
-        message.html(f'<div class="news-copy news-message{effect}">{_marked_text(text, shared)}</div>')
-        if shared:
-            st.caption("금색은 두 글에 똑같이 나온 낱말이다. 점수는 AI가 두 글의 의미를 비교해 매긴다.")
+        message.html(f'<div class="news-copy news-message">{escape(text)}</div>')
+        if details is not None:
+            token_count = details["token_count"]
+            logit = details["logit"]
+            normalized = details["normalized"]
+            effect = " score-reveal" if animate else ""
+            st.html(f'<div class="news-label">채점 모델 · {escape(details["model_name"])}</div>')
+            st.html(f"""
+                <ol class="score-steps{effect}">
+                  <li><strong>입력 묶기</strong> · <data value="{token_count}">{token_count}토큰</data><br>
+                    AI 요약문과 기사 제목을 이 순서로 묶었다. 토큰 수에는 시작·구분 기호도 포함된다.</li>
+                  <li><strong>문맥에서 관련성 읽기</strong> · <data value="{logit}">원점수 ≈ {logit:.4f}</data><br>
+                    두 글의 토큰이 서로의 문맥을 반영한다. 모델의 분류층이 첫 토큰의 최종 표현에서
+                    관련성 원점수(logit) 하나를 산출한다.</li>
+                  <li><strong>게임 점수로 환산</strong> · <data value="{normalized}">시그모이드 값 ≈ {normalized:.4f}</data><br>
+                    시그모이드 함수로 원점수를 0~1 사이로 바꾼 뒤, 100을 곱하고 반올림한다.</li>
+                </ol>
+            """)
+            if animate:
+                time.sleep(0.8)
         else:
-            st.caption("같은 표기의 낱말(두 글자 이상)은 없다. AI는 두 글의 의미를 비교해 점수를 매긴다.")
+            st.caption("이 라운드에는 최종 점수만 저장됐다.")
 
-        if animate:
-            time.sleep(0.8)  # Give the player a beat to compare the texts before the score.
         st.progress(score, text=f"AI 유사도 · {score} / 100점")
         st.session_state[state_key] = reveal

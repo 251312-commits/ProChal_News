@@ -481,12 +481,12 @@ def show_game_3():
                         )
 
                     # 제목과 요약문의 유사도 계산
-                    actual_score = similarity_check(
+                    score_details = similarity_check(
                         summary_text,
                         title
                     )
 
-                    actual_score = float(actual_score)
+                    actual_score = float(score_details["score"])
 
                     if (
                         not math.isfinite(actual_score)
@@ -575,6 +575,7 @@ def show_game_3():
                     st.session_state.game_3_result = {
 
                         "actual_score": actual_score,
+                        "score_details": score_details,
                         "integer_score": integer_score,
                         "ai_result": ai_result,
                         "user_choice": user_choice,
@@ -602,6 +603,7 @@ def _show_game_3_result(res):
     show_summary_before_score(
         res["summary"], "game_3_summary_revealed",
         title=res["title"], score=int(res["actual_score"]),
+        details=res.get("score_details"),
     )
 
     st.markdown("---")

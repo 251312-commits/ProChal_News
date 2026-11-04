@@ -11,11 +11,13 @@ from modules.news_summarizer import summarize_news
 # ==========================================
 # 1. 효율성 극대화: AI 모델 캐싱 (최초 1회만 로드)
 # ==========================================
+RERANKER_NAME = "BAAI/bge-reranker-v2-m3"
+
+
 @st.cache_resource
 def load_ai_model():
-    model_name = "BAAI/bge-reranker-v2-m3"
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForSequenceClassification.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(RERANKER_NAME)
+    model = AutoModelForSequenceClassification.from_pretrained(RERANKER_NAME)
     model.eval()
     return tokenizer, model
 
@@ -88,12 +90,19 @@ async def summary(article):
         return None
 
 def similarity_check(summary_text, title):
+    """Return the game score and the intermediate values from the same model call."""
     inputs = tokenizer(summary_text, title, padding=True, truncation=True, return_tensors="pt", max_length=512)
     with torch.no_grad():
         outputs = model(**inputs)
         logits = outputs.logits.squeeze(-1)
-        score = torch.sigmoid(logits).item()
-    return int(round(score * 100))
+        normalized = torch.sigmoid(logits).item()
+    return {
+        "model_name": RERANKER_NAME,
+        "score": int(round(normalized * 100)),
+        "token_count": int(inputs["attention_mask"].sum().item()),
+        "logit": logits.item(),
+        "normalized": normalized,
+    }
 
 # ==========================================
 # 선택 횟수 기반 최저 뉴스 3개 무작위 추출 알고리즘

@@ -416,7 +416,8 @@ def show_game_2():
             if not summary_text:
                 st.error("뉴스 본문 요약에 실패해 유사도 점수를 계산할 수 없습니다.")
                 return
-            actual_score = similarity_check(summary_text, title)
+            score_details = similarity_check(summary_text, title)
+            actual_score = score_details["score"]
 
             if user_choice == "HIGH":
                 is_win = (actual_score >= target_num)
@@ -462,6 +463,7 @@ def show_game_2():
                 "title": title,
                 "summary": summary_text,
                 "actual_score": actual_score,
+                "score_details": score_details,
                 "target_num": target_num,
                 "reward": reward,
                 "is_win": is_win,
@@ -475,6 +477,7 @@ def show_game_2():
     show_summary_before_score(
         res.get("summary", ""), "game_2_summary_revealed",
         title=res.get("title", title), score=res["actual_score"],
+        details=res.get("score_details"),
     )
     st.markdown("---")
     st.markdown("### 🏆 6단계: 최종 결과")
