@@ -5,6 +5,7 @@ These seven transparent AVIF assets are responsive derivatives of the seven bank
 | Asset | Screen |
 | --- | --- |
 | `bank_temple.avif` | Bank lobby and opening animation |
+| `bank_crest.svg` | Printed emblem on the envelope |
 | `bank_cushion.avif` | Home screen, purple cushion |
 | `bank_envelope_closed.avif` | Home screen and opening animation |
 | `bank_envelope_open.avif` | Opening animation |
