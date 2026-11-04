@@ -6,6 +6,7 @@ from modules.db_handler import init_gspread, init_news_sheet
 from modules.ui_components import change_page
 from views.ranking import fetch_ranking_data
 from games.result_reveal import show_summary_before_score
+from games.game1_prediction_ui import render_game1_prediction_picker
 from games.common import get_game_news_selection, check_user_coins_or_pop_bank, render_betting_ui
 
 ws = init_gspread()
@@ -50,82 +51,18 @@ def show_game_1():
 
         return
 
-    if st.session_state.get("selected_news_game_1"):
-        st.title("🎮 게임 1: 뉴스 유사도 예측 게임")
-
-    # [2단계 & 3단계] 기사 선택
+    # [2단계 & 3단계] 기사 선택 / 30초 읽기
     title, article_text, url = get_game_news_selection("game_1")
     if not title:
         return
 
-    # [4단계] 점수 예측 UI
+    # [4단계] 실제 예측값은 소수점 아래 두 자리(00~99)만 저장한다.
     if "game_1_predicted_digits" not in st.session_state and "game_1_result" not in st.session_state:
-        st.markdown("---")
-        st.markdown("### 🎯 소수점 뒤 두 자리 맞히기")
-        st.caption("유사도 점수는 소수 둘째 자리까지 표시됩니다. 87.04점이면 04, 100.00점이면 00이 정답입니다.")
-        if "game_1_predicted_score" in st.session_state:
-            st.info("이번 라운드부터 소수점 뒤 두 자리를 맞힙니다. 베팅은 그대로 두고 숫자를 다시 선택하세요.")
-
-        @st.fragment
-        def render_neon_digit_picker():
-            if "tens_val" not in st.session_state:
-                st.session_state.tens_val = 5
-            if "ones_val" not in st.session_state:
-                st.session_state.ones_val = 0
-
-            st.markdown(
-                """
-                <style>
-                .digit-display-container { display: flex; justify-content: center; align-items: center; margin: 15px 0; }
-                .large-digit {
-                    font-family: 'Press Start 2P', monospace, sans-serif;
-                    font-size: 4.2rem; font-weight: 900; color: #00ffcc;
-                    text-shadow: 0 0 15px #00ffcc, 0 0 25px #ff00ff;
-                    background: #110022; border: 3.5px solid #8A2BE2; border-radius: 12px;
-                    padding: 10px 20px; min-width: 85px; text-align: center;
-                    box-shadow: 0 0 15px rgba(138, 43, 226, 0.6);
-                }
-                .st-key-game_1_digit_picker [data-testid="stHorizontalBlock"] { flex-wrap: nowrap; }
-                .st-key-game_1_digit_picker [data-testid="stColumn"] {
-                    flex: 1 1 0; min-width: 0;
-                }
-                </style>
-                """,
-                unsafe_allow_html=True
-            )
-
-            col_tens, col_ones = st.columns(2)
-
-            with col_tens:
-                st.markdown("<p style='text-align:center; font-weight:bold; color:#a382de; margin-bottom:5px;'>소수 첫째 자리</p>", unsafe_allow_html=True)
-                if st.button("▲", key="btn_tens_up", use_container_width=True):
-                    st.session_state.tens_val = (st.session_state.tens_val + 1) % 10
-                    st.rerun(scope="fragment")
-                st.markdown(f"<div class='digit-display-container'><div class='large-digit'>{st.session_state.tens_val}</div></div>", unsafe_allow_html=True)
-                if st.button("▼", key="btn_tens_down", use_container_width=True):
-                    st.session_state.tens_val = (st.session_state.tens_val - 1) % 10
-                    st.rerun(scope="fragment")
-
-            with col_ones:
-                st.markdown("<p style='text-align:center; font-weight:bold; color:#a382de; margin-bottom:5px;'>소수 둘째 자리</p>", unsafe_allow_html=True)
-                if st.button("▲", key="btn_ones_up", use_container_width=True):
-                    st.session_state.ones_val = (st.session_state.ones_val + 1) % 10
-                    st.rerun(scope="fragment")
-                st.markdown(f"<div class='digit-display-container'><div class='large-digit'>{st.session_state.ones_val}</div></div>", unsafe_allow_html=True)
-                if st.button("▼", key="btn_ones_down", use_container_width=True):
-                    st.session_state.ones_val = (st.session_state.ones_val - 1) % 10
-                    st.rerun(scope="fragment")
-
-            predicted_digits = st.session_state.tens_val * 10 + st.session_state.ones_val
-            st.markdown(f"<h3 style='text-align:center; color:#fffb00; margin-top:15px;'>내 예측 · ??.{predicted_digits:02d}</h3>", unsafe_allow_html=True)
-
-            if st.button("✅ 소수 두 자리 제출", use_container_width=True):
-                st.session_state.game_1_predicted_digits = predicted_digits
-                st.rerun()
-
-        with st.container(key="game_1_digit_picker"):
-            render_neon_digit_picker()
+        render_game1_prediction_picker(title)
         return
+
+    if st.session_state.get("selected_news_game_1"):
+        st.title("🎮 게임 1: 뉴스 유사도 예측 게임")
 
     # [5단계 & 6단계] AI 점수 측정 및 정산
     bet_coin = st.session_state.game_1_bet
@@ -229,7 +166,7 @@ def show_game_1():
         keys_to_clear = [
             "game_1_bet", "selected_news_game_1", "candidates_game_1", 
             "read_done_game_1", "game_1_predicted_digits", "game_1_predicted_score", "game_1_result",
-            "tens_val", "ones_val", "game_1_summary_revealed"
+            "tens_val", "ones_val", "game1_pred_tens", "game1_pred_ones", "game_1_summary_revealed"
         ]
         for k in keys_to_clear:
             if k in st.session_state:
