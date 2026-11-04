@@ -5,7 +5,7 @@ import time
 import math
 import asyncio
 
-from modules.news_ai import summary, similarity_check
+from modules.news_ai import summary, similarity_check, bring_article
 from modules.db_handler import init_gspread
 from modules.ui_components import change_page
 from games.common import get_game_news_selection
@@ -28,12 +28,89 @@ def reset_game_3_state():
         "selected_news_game_3",
         "candidates_game_3",
         "read_done_game_3",
+        "game_3_article_data",
     ]
 
     for key in keys:
         st.session_state.pop(key, None)
 
     st.session_state.game_3_round = old_round + 1
+
+
+# ==========================================
+# 기사 URL 및 본문 가져오기
+# ==========================================
+
+def load_game_3_article():
+
+    # 이미 가져온 기사가 있으면 재사용
+    saved_article = st.session_state.get("game_3_article_data")
+
+    if saved_article:
+        return (
+            saved_article["title"],
+            saved_article["article_text"],
+            saved_article["url"]
+        )
+
+    try:
+        # common.py에서 뉴스 제목, 본문, URL 가져오기
+        title, article_text, url = get_game_news_selection("game_3")
+
+        if not url:
+            st.error("선택한 뉴스의 URL을 가져오지 못했습니다.")
+            st.warning(
+                "games/common.py의 get_game_news_selection()에서 "
+                "URL 반환 부분을 확인해야 합니다."
+            )
+            return None, None, None
+
+        url = str(url).strip()
+
+        # URL 유효성 검사
+        if not url.startswith(("http://", "https://")):
+            st.error("올바르지 않은 기사 URL입니다.")
+            st.write(f"가져온 URL: {url}")
+            return None, None, None
+
+        # 본문이 비어 있으면 URL로 다시 추출
+        if not article_text or not str(article_text).strip():
+
+            with st.spinner("기사 URL에서 본문을 가져오는 중입니다..."):
+
+                extracted_title, extracted_text = bring_article(url)
+
+                if extracted_title:
+                    title = extracted_title
+
+                article_text = extracted_text
+
+        # 본문 최종 확인
+        if not article_text or not str(article_text).strip():
+
+            st.error("기사 본문을 가져오지 못했습니다.")
+            st.caption(f"기사 URL: {url}")
+
+            return None, None, None
+
+        if not title:
+            title = "제목을 가져오지 못한 기사"
+
+        # 기사 정보 저장
+        st.session_state.game_3_article_data = {
+            "title": title,
+            "article_text": article_text,
+            "url": url
+        }
+
+        return title, article_text, url
+
+    except Exception as e:
+
+        st.error("뉴스 기사 처리 중 오류가 발생했습니다.")
+        st.exception(e)
+
+        return None, None, None
 
 
 # ==========================================
@@ -90,6 +167,7 @@ def show_game_3():
             st.markdown(f"## ⏳ 남은 시간: {remaining}초")
 
             if remaining <= 0:
+
                 st.session_state.game_3_choice_timeout = True
                 st.rerun()
                 return
@@ -130,7 +208,7 @@ def show_game_3():
         return
 
     # ======================================
-    # STEP 2. 현재 보유 코인 확인 및 베팅
+    # STEP 2. 코인 확인 및 베팅
     # ======================================
 
     st.markdown("---")
@@ -211,7 +289,7 @@ def show_game_3():
     bet_coin = st.session_state.game_3_bet
 
     # ======================================
-    # STEP 3. 뉴스 선택 및 기사 확인
+    # STEP 3. 뉴스 선택 및 기사 본문 가져오기
     # ======================================
 
     st.markdown("---")
@@ -219,14 +297,12 @@ def show_game_3():
 
     st.info(
         "분석할 뉴스 기사를 선택하세요. "
-        "선택한 기사의 제목과 본문을 자동으로 가져옵니다."
+        "선택한 기사의 URL을 이용해 실제 기사 본문을 가져옵니다."
     )
 
-    # 기존 common.py의 뉴스 선택 기능 사용
-    title, article_text, url = get_game_news_selection("game_3")
+    title, article_text, url = load_game_3_article()
 
-    # 뉴스 선택 또는 기사 읽기가 완료되지 않았다면 대기
-    if not title or not article_text:
+    if not title or not article_text or not url:
         return
 
     st.markdown("---")
@@ -237,6 +313,7 @@ def show_game_3():
     with st.expander("뉴스 본문 확인하기", expanded=True):
         st.write(article_text)
 
+    st.markdown(f"[기사 원문 열기]({url})")
     st.caption(f"기사 URL: {url}")
 
     # ======================================
@@ -268,7 +345,7 @@ def show_game_3():
                     if not summary_text:
                         raise ValueError("뉴스 요약 결과가 비어 있습니다.")
 
-                    # 요약문과 제목의 유사도 계산
+                    # 제목과 요약문의 유사도 계산
                     actual_score = similarity_check(
                         summary_text,
                         title
@@ -331,7 +408,7 @@ def show_game_3():
                     if current_balance < bet_coin:
                         raise ValueError("현재 보유 코인이 부족합니다.")
 
-                    new_balance = current_balance + reward
+                    new_balance = max(0, current_balance + reward)
 
                     new_streak = (
                         current_streak + 1 if is_win else 0
@@ -369,13 +446,12 @@ def show_game_3():
 
                     st.error(f"게임 진행 중 오류가 발생했습니다: {e}")
 
-    # 분석 결과가 아직 없다면 결과 화면으로 넘어가지 않음
-    if "game_3_result" not in st.session_state:
-        return
-
     # ======================================
     # STEP 7. 최종 결과 화면
     # ======================================
+
+    if "game_3_result" not in st.session_state:
+        return
 
     res = st.session_state.game_3_result
 
@@ -384,9 +460,9 @@ def show_game_3():
 
     if res["is_win"]:
         st.balloons()
-        st.success("🎉 정답입니다! 베팅 성공!")
+        st.success("정답입니다! 베팅 성공!")
     else:
-        st.error("💥 아쉽습니다! 베팅 실패!")
+        st.error("아쉽습니다! 베팅 실패!")
 
     col1, col2 = st.columns(2)
 
@@ -410,6 +486,10 @@ def show_game_3():
     with st.expander("AI 뉴스 요약 결과"):
         st.write(res["summary"])
 
+    with st.expander("분석한 뉴스 기사 정보"):
+        st.write(res["title"])
+        st.markdown(f"[기사 원문 열기]({res['url']})")
+
     st.markdown(f"""
     <div style="
         background:#110022;
@@ -419,7 +499,7 @@ def show_game_3():
         text-align:center;
         color:white;
     ">
-        <h3>📊 뉴스 유사도</h3>
+        <h3>뉴스 유사도</h3>
         <h1 style="color:#00ffcc;">
             {res['actual_score']:.2f}%
         </h1>
@@ -455,3 +535,4 @@ def show_game_3():
         if st.button("⬅️ 메인으로 돌아가기", use_container_width=True):
             reset_game_3_state()
             change_page("main")
+
