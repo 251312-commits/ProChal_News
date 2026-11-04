@@ -535,3 +535,14 @@
     max-width: none !important;
   }
 }
+
+/* Explicit viewport width on the actual keyed container: Streamlit's nested
+   layout wrapper retains an intrinsic 50px gutter despite width:100%. */
+@media (orientation: portrait) and (max-width: 600px),
+       (orientation: landscape) and (max-height: 560px) {
+  .st-key-bank-draw-screen {
+    width: calc(100dvw - 24px) !important;
+    min-width: calc(100dvw - 24px) !important;
+    max-width: calc(100dvw - 24px) !important;
+  }
+}
