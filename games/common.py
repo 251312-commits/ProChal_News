@@ -1,6 +1,7 @@
 import streamlit as st
 import base64
 from html import escape
+from games.news_roulette import render_news_slot
 from games.betting_math import calculate_expected_gain, format_payout_multiplier, project_rank_change
 import streamlit.components.v1 as components
 from modules.news_ai import bring_article, pick_3_lowest_count_news
@@ -11,6 +12,66 @@ ws_news = init_news_sheet()
 
 MIN_BET = 1_000
 
+
+def _get_news_candidates(candidates_key):
+    if candidates_key not in st.session_state:
+        raw_records = ws_news.get_all_records()
+        news_data = []
+
+        with st.spinner("🎰 슬롯머신 기사 추천 중..."):
+            for idx, row in enumerate(raw_records):
+                url = str(row.get('URL', '')).strip()
+                if not url:
+                    continue
+                try:
+                    count = int(row.get('Count', 0))
+                except:
+                    count = 0
+                title = str(row.get('Title', '')).strip()
+
+                if not title or title == "None":
+                    try:
+                        title, _ = bring_article(url)
+                        ws_news.update_cell(idx + 2, 3, title)
+                    except:
+                        title = f"뉴스 기사 #{idx+1}"
+
+                news_data.append({
+                    'row_idx': idx + 2,
+                    'url': url,
+                    'count': count,
+                    'title': title
+                })
+
+        if not news_data:
+            st.warning("구글 시트 'News' 탭에 등록된 뉴스 URL이 없습니다.")
+            return []
+
+        st.session_state[candidates_key] = pick_3_lowest_count_news(news_data)
+
+    return st.session_state[candidates_key]
+
+
+def _open_chosen_article(item, news_key, candidates_key):
+    new_count = item['count'] + 1
+    ws_news.update_cell(item['row_idx'], 2, new_count)
+
+    with st.spinner("선택 기사 읽어오는 중..."):
+        try:
+            title, clean_text = bring_article(item['url'])
+        except:
+            title = item['title']
+            clean_text = "본문 내용을 가져오는 데 실패했습니다."
+
+    st.session_state[news_key] = {
+        'title': title,
+        'text': clean_text,
+        'url': item['url']
+    }
+    del st.session_state[candidates_key]
+    st.rerun()
+
+
 def get_game_news_selection(game_id: str):
     news_key = f"selected_news_{game_id}"
     candidates_key = f"candidates_{game_id}"
@@ -19,6 +80,14 @@ def get_game_news_selection(game_id: str):
     if st.session_state.get(read_done_key, False):
         chosen = st.session_state[news_key]
         return chosen['title'], chosen['text'], chosen['url']
+
+    if game_id == "game_1" and not st.session_state.get(news_key):
+        candidates = _get_news_candidates(candidates_key)
+        if candidates:
+            index = render_news_slot(candidates)
+            if index is not None:
+                _open_chosen_article(candidates[index], news_key, candidates_key)
+        return None, None, None
 
     st.markdown(
         """
@@ -226,42 +295,9 @@ def get_game_news_selection(game_id: str):
             unsafe_allow_html=True
         )
 
-        if candidates_key not in st.session_state:
-            raw_records = ws_news.get_all_records()
-            news_data = []
-
-            with st.spinner("🎰 슬롯머신 기사 추천 중..."):
-                for idx, row in enumerate(raw_records):
-                    url = str(row.get('URL', '')).strip()
-                    if not url:
-                        continue
-                    try:
-                        count = int(row.get('Count', 0))
-                    except:
-                        count = 0
-                    title = str(row.get('Title', '')).strip()
-                    
-                    if not title or title == "None":
-                        try:
-                            title, _ = bring_article(url)
-                            ws_news.update_cell(idx + 2, 3, title)
-                        except:
-                            title = f"뉴스 기사 #{idx+1}"
-
-                    news_data.append({
-                        'row_idx': idx + 2,
-                        'url': url,
-                        'count': count,
-                        'title': title
-                    })
-
-            if not news_data:
-                st.warning("구글 시트 'News' 탭에 등록된 뉴스 URL이 없습니다.")
-                return None, None, None
-
-            st.session_state[candidates_key] = pick_3_lowest_count_news(news_data)
-
-        candidates = st.session_state[candidates_key]
+        candidates = _get_news_candidates(candidates_key)
+        if not candidates:
+            return None, None, None
 
         components.html(
             """
@@ -348,23 +384,7 @@ def get_game_news_selection(game_id: str):
 
             for idx, item in enumerate(candidates):
                 if st.button(f"📰 {item['title']}", key=f"btn_{game_id}_{idx}", use_container_width=True):
-                    new_count = item['count'] + 1
-                    ws_news.update_cell(item['row_idx'], 2, new_count)
-
-                    with st.spinner("선택 기사 읽어오는 중..."):
-                        try:
-                            title, clean_text = bring_article(item['url'])
-                        except:
-                            title = item['title']
-                            clean_text = "본문 내용을 가져오는 데 실패했습니다."
-
-                    st.session_state[news_key] = {
-                        'title': title,
-                        'text': clean_text,
-                        'url': item['url']
-                    }
-                    del st.session_state[candidates_key]
-                    st.rerun()
+                    _open_chosen_article(item, news_key, candidates_key)
 
         return None, None, None
 
@@ -462,6 +482,8 @@ def get_game_news_selection(game_id: str):
         if next_clicked:
             st.session_state[read_done_key] = True
             st.rerun()
+
+    return None, None, None
 
 
 @st.dialog("🚨 잔액 부족!")
