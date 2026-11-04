@@ -520,3 +520,18 @@
     min-height: clamp(33px,10dvh,39px) !important;
   }
 }
+
+/* The app's Streamlit wrapper can reserve a 50px intrinsic-width gutter.
+   Claim the actual padded viewport so the parchment is visually centered. */
+@media (orientation: portrait) and (max-width: 600px),
+       (orientation: landscape) and (max-height: 560px) {
+  .st-key-bank-body > [data-testid="stLayoutWrapper"]:has(> .st-key-bank-draw-screen) {
+    flex: 0 0 auto !important;
+    width: calc(100dvw - 24px) !important;
+    max-width: calc(100dvw - 24px) !important;
+  }
+  .st-key-bank-draw-screen {
+    width: 100% !important;
+    max-width: none !important;
+  }
+}
