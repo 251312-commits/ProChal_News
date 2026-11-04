@@ -63,8 +63,8 @@ def render_game1_prediction_picker(article_title: str) -> None:
         f"background:#13051e url('{background}') center center/cover fixed !important;"
         "}" if background else "",
         f".st-key-game1-prediction-machine {{ background-image:url('{frame}') !important; border:0 !important; }}" if frame else "",
-        f".st-key-game1-prediction-news {{ background-image:url('{news_plate}') !important; border:0 !important; }}" if news_plate else "",
-        f".st-key-game1-pred-reel-tens,.st-key-game1-pred-reel-ones {{ background-image:url('{reel}') !important; border:0 !important; }}" if reel else "",
+        f".game1-pred-news-wrap {{ background-image:url('{news_plate}') !important; background-size:100% 100% !important; border:0 !important; }}" if news_plate else "",
+        f".st-key-game1-pred-reel-tens,.st-key-game1-pred-reel-ones {{ background-image:url('{reel}') !important; border:0 !important; }} .st-key-game1-pred-reel-tens button,.st-key-game1-pred-reel-ones button {{ color:transparent !important; text-shadow:none !important; }}" if reel else "",
     ]
 
     with st.container(key="game1-prediction", gap=None):
