@@ -16,6 +16,7 @@ jobs:
         shell: bash
         run: |
           set -eu
+          sudo apt-get install -y fonts-noto-cjk >/dev/null
           python -m venv /tmp/bank-env
           source /tmp/bank-env/bin/activate
           pip -q install 'streamlit==1.55.0' playwright
@@ -47,7 +48,7 @@ jobs:
           with sync_playwright() as pw:
               browser = pw.chromium.launch(executable_path="/usr/bin/google-chrome", args=["--no-sandbox"])
               for width,height in sizes:
-                  page=browser.new_page(viewport={"width":width,"height":height}, locale="ko-KR")
+                  page=browser.new_page(viewport={"width":width,"height":height}, locale="ko-KR", device_scale_factor=2)
                   page.goto("http://localhost:8501")
                   def rects(view):
                       page.wait_for_timeout(180)
@@ -56,10 +57,10 @@ jobs:
                               const r=el.getBoundingClientRect();
                               return [r.x,r.y,r.width,r.height].map(Math.round)
                           };
-                          const scope=document.querySelector('.st-key-bank-page');
-                          const items=Array.from(scope.querySelectorAll('button, [role=slider], h1, .bank-envelope-face, .bank-velvet, .bank-benefits, .bank-figures, .bank-estimate'));
+                          const scope=Array.from(document.querySelectorAll('.st-key-bank-page')).filter(e=>e.checkVisibility()).at(-1);
+                          const items=Array.from(scope.querySelectorAll('button, [role=slider], h1, .bank-envelope-face, .bank-velvet, .bank-benefits, .bank-figures, .bank-estimate, .bank-calligraphy, .bank-inscription svg'));
                           const visible=items.filter(n => n.checkVisibility({visibilityProperty:true, opacityProperty:true}) && !n.closest('.bank-opening'));
-                          const record=visible.map(n=>[n.tagName,(n.textContent||n.className||'').trim().slice(0,48),box(n)]);
+                          const record=visible.map(n=>[n.tagName,(n.textContent||n.getAttribute('class')||'').trim().slice(0,48),box(n)]);
                           const main=document.querySelector('[data-testid=stMain]');
                           return {record, main:[main.scrollWidth-main.clientWidth,main.scrollHeight-main.clientHeight],bg:getComputedStyle(document.querySelector('.stApp')).backgroundImage.includes('data:image/jpeg')};
                       }""")
@@ -69,7 +70,7 @@ jobs:
                       assert max(data["main"])<=2 and data["bg"],(view,data["main"],data["bg"])
                       assert not page.get_by_test_id("stException").count()
                       page.screenshot(path=f"artifacts/{width}x{height}-{view}.png")
-                  btn=lambda name: page.locator(f".st-key-{name} button")
+                  btn=lambda name: page.locator(f".st-key-{name} button:visible").last
                   expect(btn("bank-home-pay")).to_be_visible(timeout=30000)
                   rects("home")
                   if width>height:
@@ -80,6 +81,14 @@ jobs:
                       expect(btn(submit)).to_be_visible()
                       page.wait_for_timeout(1500)
                       rects(k)
+                      if width==390:
+                          slider=page.locator('[role=slider]:visible').last
+                          slider.focus()
+                          slider.press('ArrowLeft' if k=='draw' else 'ArrowRight')
+                          if k=='draw':
+                              expect(page.locator('.bank-amount-value:visible').last).to_have_text("4,000 C")
+                          btn(submit).click()
+                          expect(page.locator('.bank-balance:visible').last).to_contain_text("7,250 C" if k=="draw" else "1,250 C")
                       btn('bank-back').click()
                       expect(btn('bank-home-pay')).to_be_visible()
                   page.close()
