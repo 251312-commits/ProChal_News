@@ -78,7 +78,7 @@ h1::before, h1::after {
 .headline {
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
   font-size: clamp(11px, 3.8cqw, 20px); line-height: 1.15; font-weight: 800;
-  letter-spacing: -.035em; overflow-wrap: anywhere;
+  letter-spacing: -.035em; word-break: keep-all; overflow-wrap: anywhere;
 }
 .pending { color: #764260; font-weight: 650; letter-spacing: .1em; }
 .row.rolling .tape { animation: spin var(--time) cubic-bezier(.28, .05, .18, 1) both; }
