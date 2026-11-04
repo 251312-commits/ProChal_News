@@ -1,0 +1,197 @@
+name: QA bank repayment mobile layout
+on:
+  push:
+    branches:
+      - qa/bank-repay-mobile
+permissions:
+  contents: read
+jobs:
+  mobile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, webkit]
+    env:
+      ENGINE: ${{ matrix.engine }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install test dependencies
+        run: |
+          pip install --quiet 'streamlit==1.55.0' playwright
+          if ! fc-list :lang=ko | grep -q .; then
+            sudo apt-get -qq update
+            sudo apt-get -qq install fonts-noto-cjk
+          fi
+          if [ "$ENGINE" = webkit ]; then
+            python -m playwright install --with-deps webkit
+          fi
+      - name: Run repository unit tests
+        run: python -m unittest discover -s tests
+      - name: Test repayment visual and transaction behavior
+        run: |
+          cat > bank_fixture.py <<'PY_FIXTURE'
+          import sys
+          from types import ModuleType, SimpleNamespace
+          import streamlit as st
+
+          def update(range_name, values):
+              assert range_name == "C2:D2"
+              st.session_state["qa_saved"] = values[0]
+
+          db = ModuleType("modules.db_handler")
+          db.init_gspread = lambda: SimpleNamespace(find=lambda *args, **kw: SimpleNamespace(row=2), update=update)
+          sys.modules["modules.db_handler"] = db
+
+          from modules.ui_components import inject_casino_theme
+          from sounds.bgm import init_seamless_bgm
+          from views.bank import show_bank
+
+          st.session_state.setdefault("current_user_data", {"학번": "fixture", "코인": 3250, "대출금": 3000})
+          st.session_state.setdefault("page", "bank")
+          inject_casino_theme()
+          silence = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA="
+          init_seamless_bgm(silence, silence)
+          show_bank()
+          if "qa_saved" in st.session_state:
+              assert st.session_state["qa_saved"] == [
+                  st.session_state.current_user_data["코인"], st.session_state.current_user_data["대출금"]
+              ]
+          PY_FIXTURE
+          cat > measure.py <<'PY_MEASURE'
+          import json
+          import os
+          import traceback
+          from pathlib import Path
+          from playwright.sync_api import sync_playwright, expect
+
+          SIZES = [(320, 568), (360, 640), (390, 844), (430, 932),
+                   (667, 375), (844, 390), (1280, 800)]
+          OUT = Path("screenshots")
+          OUT.mkdir(exist_ok=True)
+          ENGINE = os.environ.get("ENGINE", "chromium")
+
+          def button(page, name):
+              return page.locator(f".st-key-{name} button:visible").last
+
+          def check(page, width, height):
+              button(page, "bank-home-pay").click()
+              submit = button(page, "bank-repay-submit")
+              expect(submit).to_be_visible()
+              expect(page.get_by_test_id("stException")).to_have_count(0)
+              page.wait_for_timeout(1600)
+              page.evaluate("document.fonts.ready")
+              name=f"{ENGINE}-{width}x{height}"
+              page.screenshot(path=OUT/f"{name}.png")
+              result=page.evaluate("""async () => {
+                const scope=[...document.querySelectorAll('.st-key-bank-repay-screen')].filter(
+                  e=> e.getBoundingClientRect().width && e.getBoundingClientRect().height).at(-1);
+                if (!scope) throw new Error('missing repayment screen');
+                const rect=e=>{const r=e.getBoundingClientRect(); return {x:r.x,y:r.y,w:r.width,h:r.height,right:r.right,bottom:r.bottom}};
+                const el=s=>[...scope.querySelectorAll(s)].filter(
+                  e=>e.getBoundingClientRect().width && e.getBoundingClientRect().height).at(-1);
+                const selectors={heading:'.bank-repay-header',vault:'.bank-repay-vault-scene',
+                  podium:'.bank-repay-podium',coin:'.bank-repay-drop-coin',safe:'.bank-repay-safe',
+                  panel:'.st-key-bank-repay-panel',label:'.bank-repay-label',
+                  minus:'.st-key-bank_repay_amount_minus button',
+                  value:'.bank-repay-amount',plus:'.st-key-bank_repay_amount_plus button',
+                  balances:'.bank-repay-balance-row',submit:'.st-key-bank-repay-submit button'};
+                const geometry={}; for(const [k,s] of Object.entries(selectors)){const e=el(s); if(e)geometry[k]=rect(e)}
+                const imgs=[...scope.querySelectorAll('.bank-repay-vault-scene img')].map(
+                  e=>({cls:e.className,ok:e.complete&&e.naturalWidth>0,w:e.naturalWidth,h:e.naturalHeight}));
+                const main=scope.closest('[data-testid=stMain]');
+                return {geometry,imgs,
+                  viewport:[innerWidth,innerHeight],
+                  scrolling:[main.scrollWidth-main.clientWidth,main.scrollHeight-main.clientHeight,
+                    document.documentElement.scrollWidth-innerWidth,document.documentElement.scrollHeight-innerHeight],
+                  nav:rect(document.querySelector('.st-key-bank-nav'))}
+              }""")
+              (OUT/f"{name}.json").write_text(json.dumps(result,ensure_ascii=False,indent=2))
+              g=result["geometry"]
+              assert result["viewport"]==[width,height],result["viewport"]
+              assert max(result["scrolling"])<=3,("overflow",result["scrolling"])
+              assert len(result["imgs"])==3 and all(p["ok"] for p in result["imgs"]),result["imgs"]
+              assert len(g)==12,("missing controls",g.keys())
+              for k,r in g.items():
+                  assert -3<=r["x"] and r["right"]<=width+3,("x clipping",k,r,width)
+                  assert -3<=r["y"] and r["bottom"]<=height+3,("y clipping",k,r,height)
+              assert g["panel"]["bottom"]<=g["submit"]["y"]+4,("panel/CTA overlap",g)
+              assert g["balances"]["bottom"]<=g["panel"]["bottom"]+4,("balance clipping",g)
+              assert g["minus"]["right"]<=g["value"]["x"]+3 and g["value"]["right"]<=g["plus"]["x"]+3,("stepper",g)
+              assert abs((g["minus"]["y"]+g["minus"]["h"]/2)-(g["plus"]["y"]+g["plus"]["h"]/2))<=3
+              assert g["safe"]["bottom"]>g["podium"]["y"],("assets not layered",g)
+              if width<height:
+                  assert g["heading"]["bottom"]<=g["panel"]["y"],g
+                  assert g["panel"]["w"] >=width*.74,g
+              if width==390:
+                  output=page.locator(".bank-repay-amount:visible").last
+                  expect(output).to_have_text("1,000 C")
+                  expect(page.locator(".bank-repay-after:visible").last).to_have_text("2,000 C")
+                  plus=button(page,"bank_repay_amount_plus")
+                  minus=button(page,"bank_repay_amount_minus")
+                  plus.click()
+                  expect(output).to_have_text("2,000 C")
+                  expect(page.locator(".bank-repay-after:visible").last).to_have_text("1,000 C")
+                  plus.click()
+                  expect(output).to_have_text("3,000 C")
+                  expect(plus).to_be_disabled()
+                  minus.click()
+                  expect(output).to_have_text("2,000 C")
+                  submit.click()
+                  expect(page.locator(".bank-balance:visible").last).to_contain_text("1,250 C")
+                  expect(page.locator(".bank-repay-balance-row:visible").last).to_contain_text("1,000 C")
+                  expect(page.locator(".bank-repay-vault-scene.is-success")).to_have_count(1)
+                  expect(output).to_have_text("1,000 C")
+                  expect(plus).to_be_disabled()
+                  submit.click()
+                  expect(page.locator(".bank-balance:visible").last).to_contain_text("250 C")
+                  expect(page.locator(".bank-repay-unavailable:visible").last).to_contain_text("상환할 대출금이 없습니다.")
+                  expect(submit).to_be_disabled()
+                  page.screenshot(path=OUT/f"{name}-paid.png")
+              button(page,"bank-back").click()
+              expect(button(page,"bank-home-draw")).to_be_visible()
+              if width==390:
+                  button(page,"bank-home-draw").click()
+                  expect(button(page,"bank-borrow-submit")).to_be_visible()
+              print("PASS",name,flush=True)
+
+          errors=[]
+          with sync_playwright() as pw:
+              browser=(pw.webkit.launch() if ENGINE=="webkit"
+                       else pw.chromium.launch(channel="chrome",args=["--no-sandbox"]))
+              for w,h in ([(390,844)] if ENGINE=="webkit" else SIZES):
+                  context=browser.new_context(viewport={"width":w,"height":h},is_mobile=w<1000,
+                    has_touch=w<1000,locale="ko-KR")
+                  page=context.new_page()
+                  page.set_default_timeout(22000)
+                  try:
+                      page.goto("http://127.0.0.1:8501")
+                      check(page,w,h)
+                  except Exception as exc:
+                      traceback.print_exc()
+                      errors.append((w,h,str(exc)))
+                      page.screenshot(path=OUT/f"{ENGINE}-{w}x{h}-failure.png")
+                  finally:
+                      context.close()
+              browser.close()
+          if errors:
+              raise AssertionError(errors)
+          PY_MEASURE
+          streamlit run bank_fixture.py --server.headless true --browser.gatherUsageStats false > /tmp/repay-fixture.log 2>&1 &
+          for attempt in {1..30}; do
+            if curl -fsS http://127.0.0.1:8501/_stcore/health; then break; fi
+            sleep 1
+          done
+          python measure.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: repay-mobile-${{ matrix.engine }}
+          path: screenshots/
+          retention-days: 5
