@@ -272,7 +272,7 @@ def show_game_3():
     if "game_3_choice" not in st.session_state:
 
         st.markdown("### 🎯 STEP 1. 홀짝 선택")
-        st.info("10초 안에 홀 또는 짝을 선택하세요!")
+        st.info("10초 안에 최종 점수의 정수 부분이 홀인지 짝인지 선택하세요. 예를 들어 87.04점은 87이므로 홀입니다.")
 
         @st.fragment(run_every="1s")
         def choice_screen():
@@ -498,7 +498,7 @@ def show_game_3():
                         )
 
                     # 정수 부분만 사용
-                    integer_score = int(actual_score)
+                    integer_score = score_details["score_hundredths"] // 100
 
                     # 홀짝 판정
                     ai_result = (
@@ -602,7 +602,7 @@ def show_game_3():
 def _show_game_3_result(res):
     show_summary_before_score(
         res["summary"], "game_3_summary_revealed",
-        title=res["title"], score=int(res["actual_score"]),
+        title=res["title"], score=res["actual_score"],
         details=res.get("score_details"),
     )
 
@@ -624,7 +624,7 @@ def _show_game_3_result(res):
         st.metric("내 선택", res["user_choice"])
 
     with col2:
-        st.metric("AI 판정", res["ai_result"])
+        st.metric("정수 부분의 홀짝", f"{res['integer_score']} · {res['ai_result']}")
 
     with st.expander("분석한 뉴스 기사 정보"):
 

@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from modules.news_summarizer import summarize_news
+from modules.score_math import score_hundredths
 
 # ==========================================
 # 1. 효율성 극대화: AI 모델 캐싱 (최초 1회만 로드)
@@ -96,9 +97,11 @@ def similarity_check(summary_text, title):
         outputs = model(**inputs)
         logits = outputs.logits.squeeze(-1)
         normalized = torch.sigmoid(logits).item()
+    hundredths = score_hundredths(normalized)
     return {
         "model_name": RERANKER_NAME,
-        "score": int(round(normalized * 100)),
+        "score": hundredths / 100,
+        "score_hundredths": hundredths,
         "token_count": int(inputs["attention_mask"].sum().item()),
         "logit": logits.item(),
         "normalized": normalized,

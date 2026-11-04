@@ -1,5 +1,8 @@
 """Checks for the news comparison reveal."""
 
+from base64 import b64decode
+from math import log
+import re
 from unittest.mock import MagicMock, patch
 
 from games.result_reveal import show_summary_before_score, type_summary_characters
@@ -26,41 +29,54 @@ def test_typing_delays_do_not_exceed_expected_pause():
     assert max(call.args[0] for call in sleeper.call_args_list) <= 0.12
 
 
-def test_reveals_stored_model_values_before_score_and_skips_replay():
+def test_round_graph_uses_stored_score_and_skips_replay():
     st = MagicMock()
     st.session_state = {}
     summary = "서울역 앞에 전기버스 & 택시"
     title = "전기버스 <서울>"
     details = {
         "model_name": "BAAI/bge-reranker-v2-m3", "token_count": 37,
-        "logit": 1.25, "normalized": 0.77729986, "score": 78,
+        "logit": log(0.8704 / (1 - 0.8704)), "normalized": 0.8704,
+        "score_hundredths": 8704, "score": 87.04,
     }
     with patch.dict("sys.modules", streamlit=st), patch("games.result_reveal.time.sleep") as sleep:
-        show_summary_before_score(summary, "round", title=title, score=78, details=details)
-        events = st.mock_calls
-        score_index = next(i for i, event in enumerate(events) if event[0] == "progress")
-        before_score = "\n".join(
-            event.args[0] for event in events[:score_index]
-            if event[0] in ("html", "empty().html")
+        show_summary_before_score(summary, "round", title=title, score=87.04, details=details, prediction=4)
+        html = "\n".join(
+            call.args[0] for call in st.mock_calls if call[0] in ("html", "empty().html")
         )
-        assert "<mark>" not in before_score and "&lt;서울&gt;" in before_score
-        steps = ["서울역 앞에 전기버스 &amp; 택시", details["model_name"], "37토큰", "1.2500", "0.7773"]
-        positions = [before_score.index(step) for step in steps]
-        assert positions == sorted(positions)
-        assert st.progress.call_args.args[0] == 78
+        assert "전기버스 &lt;서울&gt;" in html
+        assert html.index("서울역 앞에 전기버스 &amp; 택시") < html.index("87.04점")
+        assert 'aria-label="AI 유사도 87.04점"' in html
+        assert '<span class="score-fraction">04</span>' in html
+        assert '내 예측 <b>04</b>' in html
+        assert "<mark>" not in html
+        image = re.search(r'data:image/svg\+xml;base64,([a-zA-Z0-9+/=]+)', html)
+        assert image, "The measured score should be visualized."
+        diagram = b64decode(image.group(1)).decode()
+        assert "<polyline" in diagram and "<circle" in diagram
+        assert details["model_name"] in html and "bge-reranker-v2-m3" in diagram
+        assert "37토큰" in diagram
+        assert f"{details['logit']:.4f}" in diagram and "0.8704" in diagram
 
         st.reset_mock()
         sleep.reset_mock()
-        show_summary_before_score(summary, "round", title=title, score=78, details=details)
+        show_summary_before_score(summary, "round", title=title, score=87.04, details=details, prediction=4)
         sleep.assert_not_called()
-        assert st.progress.call_args.args[0] == 78
 
 
-def test_old_round_keeps_saved_score_without_fabricating_inference_values():
+def test_old_round_keeps_the_saved_integer_even_with_an_old_logit():
     st = MagicMock()
-    st.session_state = {}
+    old_details = {
+        "model_name": "BAAI/bge-reranker-v2-m3", "token_count": 37,
+        "logit": 1.25, "normalized": 0.77729986, "score": 78,
+    }
     with patch.dict("sys.modules", streamlit=st), patch("games.result_reveal.time.sleep"):
-        show_summary_before_score("폭우로 하천이 범람했다.", "round", title="도심 침수", score=78)
-    assert st.progress.call_args.args[0] == 78
-    assert "최종 점수만 저장" in st.caption.call_args.args[0]
-    assert all("<data " not in call.args[0] for call in st.html.call_args_list)
+        for details in (old_details, None):
+            st.reset_mock()
+            st.session_state = {}
+            show_summary_before_score("폭우로 하천이 범람했다.", "round", title="도심 침수", score=78, details=details)
+            html = "\n".join(call.args[0] for call in st.mock_calls if call[0] in ("html", "empty().html"))
+            assert "78점" in html
+            assert "78.00" not in html and "77.73" not in html
+            if details is None:
+                assert "data:image/svg+xml" not in html
