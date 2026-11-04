@@ -355,3 +355,43 @@
   .bank-repay-vault-scene.is-success .bank-repay-drop-coin,
   .bank-repay-vault-scene.is-success .bank-repay-safe { animation: none; }
 }
+
+
+/*
+ * User-provided replacement artwork has a larger transparent canvas than the
+ * earlier tight-cropped PNGs. Restore the visible bounding boxes without
+ * altering the repayment controls, viewport tracks, or coin-drop keyframes.
+ */
+.bank-repay-vault-scene .bank-repay-podium {
+  width: 105.1%;
+  left: -2.55%;
+  bottom: -26.3%;
+}
+.bank-repay-vault-scene .bank-repay-safe {
+  width: 71.4%;
+  left: 14.3%;
+  bottom: 0;
+}
+.bank-repay-vault-scene .bank-repay-drop-coin {
+  width: 25.7%;
+  left: 37.15%;
+  top: -6.3%;
+}
+@media (orientation: landscape) and (max-height: 560px) {
+  .bank-repay-vault-scene .bank-repay-podium {
+    width: 108.5%;
+    left: -4.25%;
+    bottom: -26%;
+  }
+  .bank-repay-vault-scene .bank-repay-safe {
+    width: min(82.8%, 94.2cqh);
+    left: 50%;
+    bottom: 1.6%;
+    transform: translateX(-50%);
+  }
+  .bank-repay-vault-scene .bank-repay-drop-coin {
+    width: 25%;
+    left: 37.5%;
+    top: -2%;
+  }
+}
