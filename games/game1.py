@@ -50,7 +50,8 @@ def show_game_1():
 
         return
 
-    st.title("🎮 게임 1: 뉴스 유사도 예측 게임")
+    if st.session_state.get("selected_news_game_1"):
+        st.title("🎮 게임 1: 뉴스 유사도 예측 게임")
 
     # [2단계 & 3단계] 기사 선택
     title, article_text, url = get_game_news_selection("game_1")

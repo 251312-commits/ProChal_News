@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>오늘의 뉴스 선택</title>
+  <link rel="stylesheet" href="./slot.css">
+  <script src="./slot.js" defer></script>
+</head>
+<body>
+  <main class="scene" data-phase="idle" hidden>
+    <nav aria-label="게임 메뉴">
+      <button class="back" type="button" aria-label="베팅 화면으로 돌아가기">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 3-9 9 9 9"/></svg>
+      </button>
+      <div class="balance">
+        <span class="coin" aria-hidden="true">₵</span>
+        <span class="coins" aria-label="보유 코인"></span>
+        <button class="bank" type="button" aria-label="은행으로 이동">+</button>
+      </div>
+    </nav>
+    <header>
+      <img class="crown" alt="" draggable="false">
+      <h1>오늘의 뉴스는?</h1>
+      <p class="hint" aria-live="polite"></p>
+    </header>
+    <div class="stage-space">
+      <div class="stage">
+        <img class="cushion" alt="" draggable="false">
+        <div class="housing">
+          <div class="window" role="group" aria-label="뉴스 후보"></div>
+          <img class="frame" alt="" draggable="false">
+          <button class="lever" type="button" aria-label="레버를 아래로 당겨 뉴스 뽑기">
+            <img class="arm" alt="" draggable="false">
+          </button>
+          <svg class="arrow" aria-hidden="true" viewBox="0 0 32 64">
+            <path d="M2 3Q27 12 22 47" stroke="#ffd2ff" stroke-width="3" fill="none"/>
+            <path d="m13 42 8 16 10-15" fill="#ffd2ff"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <footer>
+      <button class="confirm" type="button" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="m7.5 12 3 3 6-6"/></svg>
+        선택하기
+      </button>
+    </footer>
+  </main>
+</body>
+</html>
