@@ -185,7 +185,7 @@ def show_game_1():
 
     # 최종 결과 출력
     res = st.session_state.game_1_result
-    show_summary_before_score(res["summary"], "game_1_summary_revealed")
+    show_summary_before_score(res.get("summary", ""), "game_1_summary_revealed")
     st.markdown("---")
     st.markdown("### 🏆 6단계: 최종 결과")
 
