@@ -22,10 +22,10 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
           const loopURL = {loop};
           const onMain = {visible};
           const jsFrame = window.frameElement;
-          if (jsFrame) {
+          if (jsFrame) {{
             jsFrame.setAttribute("aria-hidden", "true");
             jsFrame.style.cssText += ";position:absolute!important;width:0!important;height:0!important;border:0!important;pointer-events:none!important;";
-          }
+          }}
           const CONTROL_ID = "news-bgm-controls";
           const STYLE_ID = "news-bgm-controls-style";
           const STORAGE_KEY = "news-bgm-preferences-v1";
@@ -77,12 +77,12 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
             selected.play().then(() => {{
               player.pending = false;
               if (player.stopped || player.muted || player.volume <= 0 ||
-                  doc.visibilityState === "hidden") {
+                  doc.visibilityState === "hidden") {{
                 selected.pause();
                 player.playing = false;
                 host.__bgm_playing = false;
                 return;
-              }
+              }}
               player.playing = true;
               host.__bgm_playing = true;
             }}).catch(() => {{
@@ -112,16 +112,16 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
 
           let player = host.__newsBgmPlayer;
           if (!player || player.introURL !== introURL || player.loopURL !== loopURL) {{
-            if (player) {
+            if (player) {{
               stop(player);
-              if (player.listeners) {
+              if (player.listeners) {{
                 doc.removeEventListener("pointerdown", player.listeners.gesture);
                 doc.removeEventListener("keydown", player.listeners.gesture);
                 doc.removeEventListener("visibilitychange", player.listeners.visibility);
                 host.removeEventListener("pagehide", player.listeners.teardown);
                 host.removeEventListener("beforeunload", player.listeners.teardown);
-              }
-            }
+              }}
+            }}
             const prefs = getPrefs();
             const introAudio = new host.Audio(introURL);
             const loopAudio = new host.Audio(loopURL);
