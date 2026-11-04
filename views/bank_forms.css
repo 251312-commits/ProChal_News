@@ -141,3 +141,113 @@
   .st-key-bank-form .bank-figures { margin-top: 8px; }
   .st-key-bank-form .bank-contract, .st-key-bank-form .bank-estimate { font-size: 12px; }
 }
+
+
+/* Reference-style application: embossed pink document, violet controls and a dark summary. */
+.st-key-bank-form {
+  width: min(100%, 490px);
+  max-height: min(100%, 790px);
+  min-height: 0;
+  padding: clamp(20px, 3.7dvh, 38px) clamp(24px, 6.2vw, 48px);
+  gap: clamp(5px, 1.15dvh, 11px);
+  border: 1px solid #f8d6dd88;
+  border-radius: 9px;
+  box-shadow: 0 18px 32px #13051a9c, 0 0 20px #ed8cd52a;
+}
+.st-key-bank-form::before { border-radius: 9px; }
+.st-key-bank-form .bank-document-heading h1 {
+  font-size: clamp(24px, 4.6dvh, 40px);
+  letter-spacing: .02em;
+}
+.bank-document-heading img { width: clamp(30px, 5dvh, 47px); }
+.st-key-bank-form .bank-figures {
+  margin: clamp(5px,1.2dvh,12px) 0 2px;
+  border: 1px solid #a97c90;
+  border-radius: 5px;
+  padding: 0 8px;
+  background: #f5d9df52;
+  font-size: clamp(12px,1.9dvh,15px);
+}
+.st-key-bank-form .bank-figures div {
+  min-height: clamp(26px,4.1dvh,39px);
+  align-items: center;
+  padding: 4px 5px;
+}
+.st-key-bank-form .bank-figures div+div { border-top: 1px solid #b88e9a8c; }
+.st-key-bank-form .bank-figures div:nth-child(2) dd { color: #79209c; }
+.st-key-bank-form .bank-contract { display: none; }
+.st-key-bank-fields { gap: clamp(4px,1dvh,8px); }
+.st-key-bank-form .bank-amount-label { font-size: clamp(14px,2.3dvh,19px); color: #3c2434; }
+.st-key-bank-stepper { grid-template-columns: 44px minmax(0,1fr) 44px; gap: 8px; }
+.st-key-bank-stepper button {
+  width: 44px; height: 44px;
+  border-radius: 50% !important;
+  font-size: 25px !important;
+  color: white !important;
+  border: 1px solid #e7a1f5 !important;
+  background: linear-gradient(150deg,#8c3ca9,#361344) !important;
+  box-shadow: 0 2px 4px #4d214d99, inset 0 1px 5px #ffd2f36b !important;
+}
+.st-key-bank-form .bank-amount-value {
+  padding: 5px 1px;
+  border-radius: 9px;
+  background: linear-gradient(130deg,#54245d,#32163e);
+  color: #fff3ff;
+  font-size: clamp(23px,4.3dvh,35px);
+  text-shadow: 0 0 7px #ffd4ff8a;
+}
+.st-key-bank-form [data-testid="stSlider"] { padding-inline: 6px; }
+.st-key-bank-form .bank-summary {
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 0;
+  margin: clamp(5px,1.2dvh,12px) 0;
+  padding: clamp(9px,1.8dvh,16px) 8px 7px;
+  border-radius: 13px;
+  border: 1px solid #bd72db;
+  background: linear-gradient(155deg,#48234f,#210f31);
+  box-shadow: 0 5px 12px #32163c80, inset 0 1px 8px #c35ce43b;
+  color: #f9e8ff;
+}
+.st-key-bank-form .bank-summary > div {
+  display: flex; flex-direction: column; align-items: center;
+  min-width: 0; gap: 5px;
+  padding: 2px 3px 8px;
+  text-align: center;
+}
+.st-key-bank-form .bank-summary > div+div { border-left: 1px solid #b986cc70; }
+.st-key-bank-form .bank-summary span { font-size: clamp(10px,2.5vw,13px); white-space: nowrap; }
+.st-key-bank-form .bank-summary b { font-size: clamp(13px,3.6vw,22px); white-space: nowrap; }
+.st-key-bank-form .bank-summary > div:nth-child(3) b { color: #ffdc8e; }
+.st-key-bank-form .bank-summary p {
+  grid-column: 1/-1;
+  margin: 0;
+  padding: 8px 3px 0;
+  border-top: 1px solid #b986cc70;
+  color: #e5c7ee;
+  text-align: center;
+  font-size: clamp(10px,2.5vw,12px);
+  line-height: 1.35;
+}
+.st-key-bank-fields .st-key-bank-borrow-submit button {
+  min-height: clamp(45px,7dvh,64px);
+  border: 2px solid #ffc3fa !important;
+  border-radius: 25px !important;
+  background: linear-gradient(180deg,#b52ce2,#74129c 58%,#4c096b) !important;
+  box-shadow: inset 0 0 11px #ffe2ff99, 0 0 12px #cb4be7aa !important;
+  font-size: clamp(17px,3dvh,23px) !important;
+  font-weight: 800;
+}
+@media (max-height: 640px) {
+ .st-key-bank-form { padding-block: 12px; gap: 3px; }
+ .st-key-bank-form .bank-figures div { min-height: 24px; }
+ .st-key-bank-form .bank-summary { padding: 5px 5px 3px; margin: 2px 0; }
+ .st-key-bank-form .bank-summary > div { gap: 1px; padding-bottom: 3px; }
+ .st-key-bank-form .bank-summary p { padding-top: 3px; }
+ .st-key-bank-fields .st-key-bank-borrow-submit button { min-height: 44px; }
+}
+@media (orientation: landscape) and (max-height: 530px) {
+ .st-key-bank-form { max-width: none; max-height: 100%; padding: 9px 5%; gap: 8px; }
+ .st-key-bank-form .bank-summary { margin: 2px 0; }
+ .st-key-bank-form .bank-summary p { display: none; }
+}
