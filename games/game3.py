@@ -41,26 +41,14 @@ def reset_game_3_state():
 # common.py는 수정하지 않음
 # ==========================================
 
+
 def fix_game_3_slot_animation():
 
     st.markdown(
         """
         <style>
 
-        /* 슬롯 오버레이가 계속 남는 현상 방지 */
-        .st-key-btn_game_3_0 button::before,
-        .st-key-btn_game_3_1 button::before,
-        .st-key-btn_game_3_2 button::before {
-
-            animation: none !important;
-            opacity: 0 !important;
-            visibility: hidden !important;
-            display: none !important;
-            content: none !important;
-
-        }
-
-        /* 기사 버튼 디자인 */
+        /* 기사 버튼 기본 디자인 */
         .st-key-btn_game_3_0 button,
         .st-key-btn_game_3_1 button,
         .st-key-btn_game_3_2 button {
@@ -89,7 +77,7 @@ def fix_game_3_slot_animation():
             transition: all 0.2s ease !important;
         }
 
-        /* 기사 제목 */
+        /* 기사 제목 글씨 */
         .st-key-btn_game_3_0 button p,
         .st-key-btn_game_3_1 button p,
         .st-key-btn_game_3_2 button p {
@@ -99,7 +87,6 @@ def fix_game_3_slot_animation():
             line-height: 1.5 !important;
             white-space: normal !important;
             word-break: keep-all !important;
-            opacity: 1 !important;
 
         }
 
@@ -130,6 +117,7 @@ def fix_game_3_slot_animation():
         """,
         unsafe_allow_html=True
     )
+
 
 
 # ==========================================
