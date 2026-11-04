@@ -418,3 +418,24 @@
   .st-key-bank-draw-screen *, .st-key-bank-draw-screen *::before,
   .st-key-bank-draw-screen *::after { animation: none !important; transition: none !important; }
 }
+
+/* Streamlit renders keyed containers inside an additional layout wrapper.
+   Grid tracks alone do not give their nested content a percentage height. */
+.st-key-bank-body > [data-testid="stLayoutWrapper"]:has(> .st-key-bank-draw-screen) {
+  height: 100% !important;
+}
+.st-key-bank-draw-screen > [data-testid="stElementContainer"],
+.st-key-bank-draw-screen > [data-testid="stLayoutWrapper"] {
+  height: 100% !important;
+}
+.st-key-bank-draw-screen > [data-testid="stElementContainer"] [data-testid="stHtml"] {
+  height: 100% !important;
+}
+.st-key-bank-draw-parchment > [data-testid="stLayoutWrapper"]:has(> .st-key-bank-draw-controls) {
+  height: auto !important;
+  display: flex;
+  flex: 1 1 0;
+}
+.st-key-bank-draw-controls {
+  flex: 1 1 0;
+}
