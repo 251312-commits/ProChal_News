@@ -21,6 +21,11 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
           const introURL = {intro};
           const loopURL = {loop};
           const onMain = {visible};
+          const jsFrame = window.frameElement;
+          if (jsFrame) {
+            jsFrame.setAttribute("aria-hidden", "true");
+            jsFrame.style.cssText += ";position:absolute!important;width:0!important;height:0!important;border:0!important;pointer-events:none!important;";
+          }
           const CONTROL_ID = "news-bgm-controls";
           const STYLE_ID = "news-bgm-controls-style";
           const STORAGE_KEY = "news-bgm-preferences-v1";
