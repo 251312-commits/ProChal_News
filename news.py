@@ -54,7 +54,7 @@ else:
         show_main_page()
     elif st.session_state.page == 'ranking':
         show_ranking()
-    elif st.session_state.page == 'bank':
+    elif st.session_state.page in ('bank', 'draw_loan', 'pay_loan'):
         show_bank()
     elif st.session_state.page == 'game_1':
         show_game_1()

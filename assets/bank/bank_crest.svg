@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 36" fill="none" stroke="#986349" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke-width="1.8" d="m23 11 17-8 17 8zm2 3h30m-26 3v11m7-11v11m8-11v11m7-11v11m-26 3h30m-34 3h38"/>
+  <circle cx="40" cy="8" r="1" fill="#986349"/>
+  <g id="laurel" stroke-width="1">
+    <path d="M17 32C7 27 5 18 7 10"/>
+    <path fill="#b78a70" d="M7 17q-5-4-4-8 5 4 4 8zm0 5q-5-1-6-6 5 1 6 6zm4 6q-6 0-8-4 5-1 8 4zm-3-8q-1-5 4-8 1 5-4 8zm3 7q-1-6 3-9 2 6-3 9z"/>
+  </g>
+  <use href="#laurel" transform="translate(80 0) scale(-1 1)"/>
+</svg>
