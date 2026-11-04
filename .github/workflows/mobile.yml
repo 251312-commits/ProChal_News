@@ -111,7 +111,7 @@ jobs:
                 const rect=e=>{const r=e.getBoundingClientRect(); return {x:r.x, y:r.y, w:r.width, h:r.height, right:r.right,bottom:r.bottom};};
                 const scope=[...document.querySelectorAll('.st-key-bank-borrow-submit button')].at(-1).closest('.st-key-bank-draw-screen');
                 const elm=(s)=>[...scope.querySelectorAll(s)].filter(e=>e.getBoundingClientRect().width && e.getBoundingClientRect().height).at(-1);
-                const names={title:'h1',sheetTitle:'h2',terms:'.bank-draw-terms',amount:'.bank-amount-label',minus:'.st-key-bank_borrow_amount_minus button',value:'.bank-amount-value',plus:'.st-key-bank_borrow_amount_plus button',slider:'[role=slider]',summary:'.bank-draw-summary',submit:'.st-key-bank-borrow-submit button'};
+                const names={title:'h1',sheetTitle:'h2',terms:'.bank-draw-terms',amount:'.bank-amount-label',minus:'.st-key-bank_borrow_amount_minus button',value:'.bank-amount-value',plus:'.st-key-bank_borrow_amount_plus button',slider:'[role=slider]',endpoints:'.bank-draw-range',summary:'.bank-draw-summary',submit:'.st-key-bank-borrow-submit button'};
                 const geometry={}; for(const [k,s] of Object.entries(names)){const e=elm(s); if(e) geometry[k]=rect(e);}
                 const links=['.st-key-bank-back button','.bank-balance']; for(const s of links) {const e=visible(s); if(e) geometry[s]=rect(e);}
                 const values=[...scope.querySelectorAll('.bank-draw-summary-grid > *')].map(rect);
@@ -151,7 +151,8 @@ jobs:
               assert len(values)==3 and max(v["y"] for v in values)-min(v["y"] for v in values)<2, ("three balances",values)
               assert abs(values[0]["x"]-g["summary"]["x"] - (g["summary"]["right"]-values[-1]["right"]))<=2, ("equal balance insets",values,g["summary"])
               assert abs(g["summary"]["x"] + g["summary"]["w"]/2 - g["submit"]["x"] - g["submit"]["w"]/2) <= max(width*.04,8), ("action alignment",g["summary"],g["submit"])
-              order=["amount", "value", "slider", "summary", "submit"]
+              assert g["endpoints"]["bottom"] + 3 <= g["summary"]["y"], ("slider endpoints touch summary", g["endpoints"], g["summary"])
+              order=["amount", "value", "slider", "endpoints", "summary", "submit"]
               if width < height:
                   order = ["title", "sheetTitle", "terms"]+order
                   assert g["summary"]["w"] >= width*.60, ("too narrow", g["summary"], width)
