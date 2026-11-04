@@ -1,0 +1,77 @@
+name: Check reference loan application
+on:
+  push:
+    branches: [feature/bank-draw-reference-ui]
+permissions:
+  contents: read
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Render at mobile and landscape sizes
+        run: |
+          set -eu
+          sudo apt-get install -y fonts-noto-cjk >/dev/null
+          python -m venv /tmp/loan-ui-env
+          source /tmp/loan-ui-env/bin/activate
+          pip -q install streamlit==1.55.0 playwright
+          cat > demo_loan.py <<'PY'
+          import sys
+          from types import ModuleType, SimpleNamespace
+          import streamlit as st
+          mock=ModuleType("modules.db_handler")
+          mock.init_gspread=lambda: SimpleNamespace(find=lambda *a,**k:SimpleNamespace(row=2),update=lambda **k:None)
+          sys.modules["modules.db_handler"]=mock
+          from modules.ui_components import inject_casino_theme
+          from views.bank import show_bank
+          st.session_state.setdefault("page","draw_loan")
+          st.session_state.setdefault("current_user_data",{"학번":"demo","코인":1250,"대출금":3000})
+          inject_casino_theme()
+          show_bank()
+          PY
+          cat > test_loan.py <<'PY'
+          from pathlib import Path
+          from playwright.sync_api import sync_playwright, expect
+          Path("bank-captures").mkdir(exist_ok=True)
+          sizes=[(320,568),(360,640),(390,844),(430,932),(667,375),(844,390),(1280,800)]
+          with sync_playwright() as p:
+              browser=p.chromium.launch(executable_path="/usr/bin/google-chrome",args=["--no-sandbox"])
+              for w,h in sizes:
+                  page=browser.new_page(viewport={"width":w,"height":h},locale="ko-KR")
+                  page.goto("http://localhost:8501")
+                  expect(page.locator(".st-key-bank-borrow-submit button:visible").last).to_be_visible(timeout=30000)
+                  page.wait_for_timeout(400)
+                  result=page.evaluate("""() => {
+                    const box=e=>{let r=e.getBoundingClientRect();return [r.x,r.y,r.width,r.height].map(Math.round)};
+                    const scope=[...document.querySelectorAll('.st-key-bank-draw-screen')].find(e=>e.getBoundingClientRect().width>0);
+                    const keys=['.bank-draw-masthead','.st-key-bank-draw-parchment','.bank-draw-document-title','.bank-draw-terms','.bank-amount-value','.bank-draw-summary','.st-key-bank-borrow-submit button'];
+                    const bounds=keys.map(k=>[k,box(scope.querySelector(k))]);
+                    const main=document.querySelector('[data-testid=stMain]');
+                    return {bounds,scroll:[main.scrollWidth-main.clientWidth,main.scrollHeight-main.clientHeight],
+                       bg:getComputedStyle(document.querySelector('.stApp')).backgroundImage.includes('data:image/jpeg'),
+                       errors:document.querySelectorAll('[data-testid=stException]').length};
+                  }""")
+                  print(f"{w}x{h}: {result}",flush=True)
+                  assert result["bg"] and not result["errors"] and max(result["scroll"])<=2
+                  for name,(x,y,ww,hh) in result["bounds"]:
+                      assert ww>0 and hh>0 and x>=-2 and y>=-2 and x+ww<=w+2 and y+hh<=h+2,(w,h,name,x,y,ww,hh)
+                  page.screenshot(path=f"bank-captures/{w}x{h}.png")
+                  if w==390:
+                      expect(page.locator('.bank-amount-value:visible').last).to_have_text("5,000 C")
+                      page.locator('.st-key-bank_borrow_amount_minus button:visible').last.click()
+                      expect(page.locator('.bank-amount-value:visible').last).to_have_text("4,000 C")
+                      page.locator('.st-key-bank-borrow-submit button:visible').last.click()
+                      expect(page.locator('.bank-balance:visible').last).to_contain_text("5,250 C")
+                  page.close()
+              browser.close()
+          PY
+          streamlit run demo_loan.py --server.headless true --browser.gatherUsageStats false >/tmp/streamlit-loan.log 2>&1 &
+          for i in {1..35}; do if curl -fsS http://localhost:8501/_stcore/health; then break; fi; sleep 1; done
+          python test_loan.py || { cat /tmp/streamlit-loan.log; exit 1; }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bank-draw-screens
+          path: bank-captures/
