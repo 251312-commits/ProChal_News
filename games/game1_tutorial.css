@@ -93,7 +93,7 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: center / 100% 100% no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 500' preserveAspectRatio='none' fill='none' stroke='%23dbddd1' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M160 54 Q238 46 266 102 M252 97 L267 104 Q271 94 274 87 M245 228 Q205 223 158 264 M159 247 L155 267 L174 264 M156 351 Q201 388 253 377 M240 366 L257 376 L246 390'/%3E%3C/svg%3E");
+    background: center / 100% 100% no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 500' preserveAspectRatio='none' fill='none' stroke='%23dbddd1' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M160 54 Q238 46 266 102 M252 97 L267 104 Q271 94 274 87 M245 228 Q205 223 158 264 M159 247 L155 267 L174 264 M186 354 Q211 385 253 377 M240 366 L257 376 L246 390'/%3E%3C/svg%3E");
 }
 .game1-guide-sheet li {
     z-index: 1;
