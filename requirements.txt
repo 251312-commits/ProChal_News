@@ -1,5 +1,5 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
-streamlit
+streamlit==1.55.0
 streamlit-autorefresh
 newspaper3k
 lxml_html_clean
