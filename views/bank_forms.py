@@ -13,7 +13,7 @@ MAX_LOAN = 10_000
 INTEREST_RATE = 0.20
 
 
-def _save_balances(coins: int, loan: int, message: str) -> None:
+def _save_balances(coins: int, loan: int, message: str, *, success_state_key: str | None = None) -> None:
     user = st.session_state.current_user_data
     student_id = str(user.get("학번", "")).strip()
     try:
@@ -30,6 +30,8 @@ def _save_balances(coins: int, loan: int, message: str) -> None:
         return
 
     user.update({"코인": coins, "대출금": loan})
+    if success_state_key:
+        st.session_state[success_state_key] = True
     st.toast(message)
     st.rerun()
 
@@ -101,20 +103,7 @@ def draw_loan(coins: int, loan: int) -> None:
 
 
 def pay_loan(coins: int, loan: int) -> None:
-    limit = min(coins, loan) // UNIT * UNIT
-    with _document(
-        "대출 상환서", "LOAN REPAYMENT",
-        [("대출 잔액", loan), ("보유 코인", coins)],
-        f"보유 코인에서 {UNIT:,} C 단위로 상환<br>"
-        f"남은 잔액에 턴마다 {INTEREST_RATE:.0%} 복리 이자 적용",
-    ):
-        if limit < UNIT:
-            message = "상환할 대출금이 없습니다." if loan <= 0 else (
-                f"상환하려면 대출 잔액과 보유 코인이 각각 {UNIT:,} C 이상이어야 합니다."
-            )
-            st.html(f'<p class="bank-empty">{message}</p>')
-            return
-        amount = _amount_selector("상환 금액", "bank_repay_amount", limit, limit)
-        st.html(f'<p class="bank-estimate">상환 후 대출 잔액 <b>{loan - amount:,} C</b></p>')
-        if st.button("대출 상환 확정", key="bank-repay-submit", type="primary", width="stretch"):
-            _save_balances(coins - amount, loan - amount, f"{amount:,} C를 상환했습니다.")
+    """Compatibility entrypoint for the illustrated repayment view."""
+    from .bank_repay import pay_loan as render_repayment
+
+    render_repayment(coins, loan)

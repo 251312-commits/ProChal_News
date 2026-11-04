@@ -1,0 +1,357 @@
+/* A single illustrated scene, following the approved 9:16 bank loan layout. */
+.st-key-bank-page:has(.st-key-bank-repay-screen) {
+  --bank-repay-safe-width: calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right));
+  --bank-repay-safe-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  inset: env(safe-area-inset-top) env(safe-area-inset-right)
+         env(safe-area-inset-bottom) env(safe-area-inset-left);
+  width: min(var(--bank-repay-safe-width), calc(var(--bank-repay-safe-height) * 9 / 16), 486px);
+  height: min(var(--bank-repay-safe-height), calc(var(--bank-repay-safe-width) * 16 / 9), 864px);
+  margin: auto;
+  padding: 0;
+  display: grid;
+  grid-template: minmax(0,1fr)/minmax(0,1fr);
+  align-items: stretch;
+}
+.st-key-bank-page:has(.st-key-bank-repay-screen) > * {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+.st-key-bank-page:has(.st-key-bank-repay-screen) > :has(.st-key-bank-nav) {
+  align-self: start;
+  z-index: 4;
+}
+.st-key-bank-page:has(.st-key-bank-repay-screen) .st-key-bank-nav {
+  padding: 2px 3%;
+}
+/* Streamlit containers have intrinsic sizing; anchor the entire nested scene. */
+.st-key-bank-page:has(.st-key-bank-repay-screen) > :has(> .st-key-bank-body),
+.st-key-bank-body:has(.st-key-bank-repay-screen),
+.st-key-bank-body > :has(> .st-key-bank-repay-screen) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+.st-key-bank-repay-screen {
+  container-type: inline-size;
+  display: grid;
+  grid-template: minmax(0, .210fr) minmax(0, .402fr) minmax(0, .272fr) minmax(0, .116fr) / minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex: none;
+  gap: 0;
+  font-family: system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  font-variant-numeric: tabular-nums;
+  color: #fff4ff;
+}
+.st-key-bank-repay-screen *,
+.st-key-bank-repay-screen *::before,
+.st-key-bank-repay-screen *::after {
+  box-sizing: border-box;
+}
+.st-key-bank-repay-screen > *,
+.st-key-bank-repay-screen > * > [data-testid="stHtml"] {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+}
+.bank-repay-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: end;
+  width: 100%;
+  height: 100%;
+  padding: 0 4cqw 2cqw;
+  text-align: center;
+  background: var(--bank-repay-temple) center 8% / auto 83% no-repeat;
+}
+.st-key-bank-repay-screen .bank-repay-header h1 {
+  margin: 0;
+  padding: 0;
+  font: 850 7.4cqw/1.15 system-ui, sans-serif !important;
+  letter-spacing: -.05em;
+  color: #fff1ff !important;
+  text-shadow: 0 2px 6px #14051b !important;
+}
+.bank-repay-header p {
+  margin: 1.1cqw 0 0;
+  font: 570 3.4cqw/1.23 system-ui, sans-serif;
+  color: #efd9f2;
+  text-shadow: 0 1px 5px #14051b;
+}
+.bank-repay-vault-scene {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.bank-repay-vault-scene::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0 8% 1%;
+  background: radial-gradient(ellipse 48% 65% at 50% 53%, #dd6bff69 0, #771a8e4f 42%, transparent 83%);
+  filter: blur(13px);
+}
+.bank-repay-spotlight {
+  position: absolute;
+  top: -11%;
+  left: 50%;
+  height: 90%;
+  width: 53%;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #ffce73a1, #f5a93b00 80%);
+  clip-path: polygon(40% 0, 60% 0, 100% 100%, 0 100%);
+  opacity: .64;
+  filter: blur(8px);
+  pointer-events: none;
+}
+.bank-repay-vault-scene img {
+  display: block;
+  position: absolute;
+  height: auto;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+.bank-repay-podium {
+  z-index: 1;
+  width: 91%;
+  left: 4.5%;
+  bottom: 0;
+  filter: drop-shadow(0 7px 9px #35004494);
+}
+.bank-repay-safe {
+  z-index: 3;
+  width: 63%;
+  left: 18.5%;
+  bottom: 12%;
+  filter: drop-shadow(0 7px 10px #13011f73);
+}
+.bank-repay-drop-coin {
+  z-index: 2;
+  width: 19.5%;
+  left: 40.25%;
+  top: -4%;
+  transform-origin: 50% 80%;
+  filter: drop-shadow(0 0 6px #ffbf4b9a);
+}
+.bank-repay-vault-scene.is-success .bank-repay-drop-coin {
+  animation: bank-repay-coin-drop 1.05s cubic-bezier(.32,.02,.58,1) both;
+}
+.bank-repay-vault-scene.is-success .bank-repay-safe {
+  animation: bank-repay-vault-flash 1.05s ease-out both;
+}
+@keyframes bank-repay-coin-drop {
+  0% { transform: translateY(-14%) scale(1); opacity: 1; }
+  18% { transform: translateY(1%) scale(1); opacity: 1; }
+  68% { transform: translateY(95%) scale(.74); opacity: 1; }
+  90%,100% { transform: translateY(135%) scale(.55); opacity: 0; }
+}
+@keyframes bank-repay-vault-flash {
+  0%,54% { filter: drop-shadow(0 7px 10px #13011f73); }
+  72% { filter: drop-shadow(0 0 20px #f8be5ae3) drop-shadow(0 0 18px #db6effc9); }
+  100% { filter: drop-shadow(0 7px 10px #13011f73); }
+}
+.st-key-bank-repay-screen .st-key-bank-repay-panel {
+  display: grid;
+  grid-template: minmax(0,.29fr) minmax(0,.77fr) minmax(0,.79fr) / minmax(0,1fr);
+  align-items: center;
+  gap: 0;
+  height: 100%;
+  width: 93.2%;
+  margin: 0 auto;
+  padding: 1.4cqw 5.2cqw 2.4cqw;
+  border: 1px solid #e19bf4;
+  border-radius: 5.9cqw;
+  background: linear-gradient(155deg, #53235fbf, #281131eb 64%, #43204ee9);
+  box-shadow: inset 0 0 13px #f7a9ff55, 0 0 10px #9e34be77, 0 4px 12px #13041aa3;
+}
+.st-key-bank-repay-panel > *,
+.st-key-bank-repay-panel > * > [data-testid="stHtml"] {
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+.st-key-bank-repay-screen .bank-repay-label {
+  margin: 0;
+  text-align: center;
+  color: #fff7ff !important;
+  font: 790 4.45cqw/1.2 system-ui, sans-serif !important;
+}
+.st-key-bank-repay-screen .st-key-bank-repay-stepper {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(40px, .22fr) minmax(0, 1fr) minmax(40px, .22fr);
+  align-items: center;
+  gap: 2.9cqw;
+}
+.st-key-bank-repay-stepper > * {
+  min-width: 0;
+  width: 100%;
+}
+.st-key-bank-repay-stepper button {
+  display: grid;
+  place-content: center;
+  height: max(38px, 10.5cqw);
+  width: max(38px, 10.5cqw);
+  min-height: 0;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid #e8a0ff !important;
+  background: radial-gradient(circle at 32% 6%, #993fb6, #431057 62%, #260d35) !important;
+  box-shadow: inset 0 1px 5px #f7bcffa8, 0 0 7px #bf35fe96 !important;
+  color: #fff !important;
+}
+.st-key-bank-repay-stepper button p {
+  margin: 0;
+  color: inherit;
+  font: 700 6cqw/1 system-ui, sans-serif !important;
+}
+.st-key-bank-repay-stepper button:disabled {
+  opacity: .38;
+}
+.bank-repay-amount {
+  display: grid;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: max(38px, 10.4cqw);
+  border: 1px solid #cc86eb;
+  border-radius: 3.5cqw;
+  background: linear-gradient(135deg, #230d31, #3a1649 80%, #201029);
+  box-shadow: inset 0 0 6px #bc65dc75;
+  color: #fff4ff;
+  white-space: nowrap;
+  font: 850 6.2cqw/1 system-ui, sans-serif;
+  letter-spacing: -.035em;
+}
+.bank-repay-unavailable {
+  margin: 0;
+  text-align: center;
+  color: #f0c9ee;
+  font: 650 3.05cqw/1.35 system-ui, sans-serif;
+}
+.bank-repay-balance-row {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto minmax(0,1fr);
+  gap: 2cqw;
+  align-items: center;
+  justify-items: center;
+  border-top: 1px solid #a05d9f;
+  padding-top: 1.9cqw;
+}
+.bank-repay-balance-row > div {
+  min-width: 0;
+  display: grid;
+  justify-items: center;
+  gap: 1.2cqw;
+}
+.bank-repay-balance-row span:not(.bank-repay-arrow) {
+  color: #ead5e9;
+  font: 560 3cqw/1.2 system-ui, sans-serif;
+  white-space: nowrap;
+}
+.bank-repay-balance-row strong {
+  color: #fff8ff;
+  font: 825 5.15cqw/1.1 system-ui, sans-serif;
+  white-space: nowrap;
+}
+.bank-repay-balance-row .bank-repay-after { color: #ffd18b; }
+.bank-repay-arrow {
+  color: #da86f3;
+  font: 700 7cqw/1 system-ui, sans-serif;
+}
+.st-key-bank-repay-screen .st-key-bank-repay-submit {
+  align-self: center;
+  position: relative;
+  width: 84%;
+  margin-inline: auto;
+}
+.st-key-bank-repay-screen .st-key-bank-repay-submit button {
+  display: flex;
+  width: 100%;
+  min-height: max(42px, 13.5cqw);
+  border: 2px solid #f4baff !important;
+  border-radius: 100px;
+  padding: 0 1.5cqw;
+  gap: 2.5cqw;
+  background: linear-gradient(#b341d4, #6b158e 32%, #3e075b 78%, #b521e6) !important;
+  box-shadow: inset 0 0 10px #f8b3ff, 0 0 0 2px #87459d, 0 5px 15px #da45fe9d !important;
+  color: #fff3ff !important;
+  justify-content: center;
+  align-items: center;
+}
+.st-key-bank-repay-screen .st-key-bank-repay-submit button p {
+  margin: 0;
+  color: inherit;
+  font: 800 4.5cqw/1.1 system-ui, sans-serif !important;
+  white-space: nowrap;
+}
+.st-key-bank-repay-screen .st-key-bank-repay-submit button [data-testid="stIconMaterial"] {
+  font-size: 5.6cqw;
+  color: #ffcb72;
+}
+.st-key-bank-repay-screen .st-key-bank-repay-submit button:disabled { opacity: .48; }
+@media (orientation: landscape) and (max-height: 560px) {
+  .st-key-bank-page:has(.st-key-bank-repay-screen) {
+    width: min(var(--bank-repay-safe-width), 840px);
+    height: var(--bank-repay-safe-height);
+  }
+  .st-key-bank-repay-screen {
+    container-type: normal;
+    grid-template: minmax(42px,.19fr) minmax(0,1fr) / minmax(0,1fr) minmax(0,1fr);
+  }
+  .st-key-bank-repay-screen > :nth-child(1) { grid-area: 1 / 1 / 2 / 3; }
+  .st-key-bank-repay-screen > :nth-child(2) { grid-area: 2 / 1; }
+  .st-key-bank-repay-screen > :nth-child(3),
+  .st-key-bank-repay-screen > :nth-child(4) { grid-column: 2; }
+  .st-key-bank-repay-screen {
+    grid-template-rows: minmax(42px,.2fr) minmax(0,.7fr) minmax(40px,.16fr);
+  }
+  .st-key-bank-repay-screen > :nth-child(2) { grid-area: 2 / 1 / 4 / 2; }
+  .st-key-bank-repay-screen > :nth-child(3) { grid-area: 2 / 2; }
+  .st-key-bank-repay-screen > :nth-child(4) { grid-area: 3 / 2; }
+  .bank-repay-header {
+    justify-content: center;
+    padding: 0 0 0 110px;
+    background-size: auto 96%;
+    background-position: calc(50% - 85px) center;
+  }
+  .st-key-bank-repay-screen .bank-repay-header h1 { font-size: 20px !important; }
+  .bank-repay-header p { margin: 0; font-size: 11px; }
+  .bank-repay-vault-scene { container-type: size; }
+  .bank-repay-safe { width: min(73%, 83cqh); left: 50%; transform: translateX(-50%); bottom: 13%; }
+  .bank-repay-podium { width: 94%; left: 3%; }
+  .bank-repay-drop-coin { width: 19%; left: 40.5%; top: 0; }
+  .st-key-bank-repay-panel {
+    container-type: inline-size;
+    width: 92%; margin: 4px auto; padding: 4px 4%; border-radius: 14px;
+  }
+  .st-key-bank-repay-screen .bank-repay-label { font-size: 14px !important; }
+  .st-key-bank-repay-screen .st-key-bank-repay-stepper { gap: 7px; }
+  .st-key-bank-repay-stepper button { width: 36px; height: 36px; }
+  .st-key-bank-repay-stepper button p { font-size: 22px !important; }
+  .bank-repay-amount { font-size: 24px; height: 35px; border-radius: 12px; }
+  .bank-repay-balance-row { gap: 5px; padding-top: 4px; }
+  .bank-repay-balance-row > div { gap: 2px; }
+  .bank-repay-balance-row span:not(.bank-repay-arrow) { font-size: 10px; }
+  .bank-repay-balance-row strong { font-size: 17px; }
+  .bank-repay-arrow { font-size: 23px; }
+  .bank-repay-unavailable { font-size: 11px; }
+  .st-key-bank-repay-screen .st-key-bank-repay-submit { width: 88%; align-self: center; }
+  .st-key-bank-repay-screen .st-key-bank-repay-submit button { min-height: 35px; }
+  .st-key-bank-repay-screen .st-key-bank-repay-submit button p { font-size: 15px !important; }
+  .st-key-bank-repay-screen .st-key-bank-repay-submit button [data-testid="stIconMaterial"] { font-size: 18px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .bank-repay-vault-scene.is-success .bank-repay-drop-coin,
+  .bank-repay-vault-scene.is-success .bank-repay-safe { animation: none; }
+}
