@@ -271,3 +271,85 @@
   .st-key-bank-draw-screen .st-key-bank-borrow-submit button [data-testid="stIconMaterial"] { font-size: 18px; }
   .st-key-bank-draw-screen .st-key-bank-borrow-submit::after { width: 46px; height: 46px; right: -17px; }
 }
+
+
+/* A successful application stamps its parchment once, after persistence. */
+.bank-draw-document-title:has(.bank-borrow-stamp-effect)::after {
+  opacity: 0; /* The ordinary BANK postmark makes way for the approval seal. */
+}
+.bank-borrow-stamp-effect {
+  position: absolute;
+  z-index: 5;
+  right: -1.8cqw;
+  top: 0;
+  width: 25cqw;
+  height: 27cqw;
+  pointer-events: none;
+  isolation: isolate;
+}
+.bank-borrow-approval-mark {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  top: 12cqw;
+  right: 3.3cqw;
+  width: 16cqw;
+  height: 16cqw;
+  border: .68cqw double #98374fe0;
+  border-radius: 50%;
+  color: #932e4c;
+  background: #c75e7824;
+  box-shadow: inset 0 0 0 .85cqw #f5e2dd8a;
+  font: 800 4.6cqw/1 "AppleMyungjo", "Batang", serif;
+  opacity: 0;
+  transform: rotate(-17deg) scale(1.45);
+  animation: bank-borrow-ink-appear 1.35s ease-out both;
+}
+.bank-borrow-stamp-object {
+  position: absolute;
+  z-index: 2;
+  top: -9cqw;
+  right: -7cqw;
+  width: 25cqw;
+  height: 25cqw;
+  background: var(--stamp) center / contain no-repeat;
+  filter: drop-shadow(1cqw 1.5cqw 1.4cqw #3a112a80);
+  transform-origin: 60% 76%;
+  animation: bank-borrow-stamp-press 1.35s cubic-bezier(.2,.62,.25,1) both;
+}
+@keyframes bank-borrow-stamp-press {
+  0%   { opacity: 0; transform: translate(11cqw, -13cqw) rotate(-24deg) scale(1.25); }
+  15%  { opacity: 1; transform: translate(7cqw, -8cqw) rotate(-18deg) scale(1.15); }
+  37%  { opacity: 1; transform: translate(-2cqw, 16cqw) rotate(-14deg) scale(.92); }
+  44%  { opacity: 1; transform: translate(-2cqw, 17cqw) rotate(-14deg) scale(.86); }
+  65%  { opacity: 1; transform: translate(1cqw, 2cqw) rotate(-12deg) scale(1); }
+  90%, 100% { opacity: 0; transform: translate(11cqw, -12cqw) rotate(11deg) scale(1.18); }
+}
+@keyframes bank-borrow-ink-appear {
+  0%, 39% { opacity: 0; transform: rotate(-17deg) scale(1.45); }
+  46% { opacity: .95; transform: rotate(-17deg) scale(.80); }
+  60% { opacity: .78; transform: rotate(-17deg) scale(1.04); }
+  76%, 100% { opacity: .92; transform: rotate(-17deg) scale(1); }
+}
+@media (orientation: landscape) and (max-height: 560px) {
+  .bank-borrow-stamp-effect { right: -5px; top: 0; width: 82px; height: 82px; }
+  .bank-borrow-approval-mark {
+    width: 45px; height: 45px; right: 15px; top: 22px;
+    font-size: 13px; border-width: 2px; box-shadow: inset 0 0 0 3px #f5e2dd8a;
+  }
+  .bank-borrow-stamp-object {
+    width: 70px; height: 70px; right: -20px; top: -25px;
+    animation-name: bank-borrow-stamp-press-compact;
+  }
+}
+@keyframes bank-borrow-stamp-press-compact {
+  0%   { opacity: 0; transform: translate(30px, -36px) rotate(-24deg) scale(1.25); }
+  15%  { opacity: 1; transform: translate(19px, -24px) rotate(-18deg) scale(1.15); }
+  37%, 44% { opacity: 1; transform: translate(-5px, 45px) rotate(-14deg) scale(.88); }
+  65%  { opacity: 1; transform: translate(3px, 6px) rotate(-12deg) scale(1); }
+  90%,100% { opacity: 0; transform: translate(30px, -34px) rotate(11deg) scale(1.18); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bank-borrow-approval-mark { animation: none; opacity: .92; transform: rotate(-17deg); }
+  .bank-borrow-stamp-object { animation: none; display: none; }
+}
