@@ -9,7 +9,7 @@ from modules.ui_components import change_page, load_local_image_as_base64
 
 ws_news = init_news_sheet()
 
-# 정의된 함수: get_game_news_selection, check_user_coins_or_pop_bank(min_required=1000), render_betting_ui
+MIN_BET = 1_000
 
 def get_game_news_selection(game_id: str):
     news_key = f"selected_news_{game_id}"
@@ -527,13 +527,13 @@ def _no_money_modal(min_required, current_coins):
             st.rerun()
 
 
-def check_user_coins_or_pop_bank(min_required=1000):
+def check_user_coins_or_pop_bank(min_required=MIN_BET):
     """
     유저의 코인을 검사하고, 부족하면 은행 유도 팝업을 띄운 뒤 False를 반환합니다.
     코인이 충분하면 True를 반환합니다.
     
     사용 예시:
-    if not check_user_coins_or_pop_bank(1000):
+    if not check_user_coins_or_pop_bank():
         return
     """
     current_coins = int(st.session_state.current_user_data.get('코인', 0)) if st.session_state.get('current_user_data') else 0
@@ -550,22 +550,21 @@ def _adjust_bet_amount(step, min_val, max_val):
     st.session_state["bet_slider_val"] = max(min_val, min(max_val, aligned + step))
 
 
-def render_betting_ui(current_coins, users_data=None, current_sid="", current_nickname="", min_bet=100, bg_image_path=None, *, payout_multiplier, title="title"):
+def render_betting_ui(current_coins, users_data=None, current_sid="", current_nickname="", min_bet=MIN_BET, bg_image_path=None, *, payout_multiplier, title="title"):
     """Responsive betting screen with configurable net-win multiplier and title.
 
     payout_multiplier is the factor *added* to the existing coin balance on a win.
     Return value stays unchanged: None before confirmation, wager on click.
     """
     current_coins = int(current_coins)
-    min_bet = int(min_bet)
+    min_bet = max(MIN_BET, int(min_bet))
     if current_coins < min_bet:
-        st.error(f"최소 베팅 금액 {min_bet:,} C에 필요한 코인이 부족합니다.")
+        _no_money_modal(min_bet, current_coins)
         return None
 
     step = 50
     max_bet = min_bet + ((current_coins - min_bet) // step) * step
-    initial_bet = min_bet + ((min(500, max_bet) - min_bet) // step) * step
-    stored_bet = int(st.session_state.get("bet_slider_val", initial_bet))
+    stored_bet = int(st.session_state.get("bet_slider_val", min_bet))
     stored_bet = min_bet + ((stored_bet - min_bet) // step) * step
     st.session_state["bet_slider_val"] = max(min_bet, min(max_bet, stored_bet))
     bet_val = st.session_state["bet_slider_val"]
