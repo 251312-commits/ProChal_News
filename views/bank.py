@@ -1,11 +1,12 @@
 """Royal-purple parchment bank screen for the Streamlit game."""
 
 from textwrap import dedent
+from pathlib import Path
 
 import streamlit as st
 
 from modules.db_handler import init_gspread
-from modules.ui_components import change_page
+from modules.ui_components import change_page, load_local_image_as_base64
 
 MAX_LOAN = 10_000
 INTEREST_RATE = 0.20
@@ -578,7 +579,7 @@ BANK_TEMPLE = """
 """
 
 
-def show_bank():
+def _show_bank_legacy():
     if not st.session_state.get("current_user_data"):
         st.error("로그인 정보가 없습니다. 메인 화면으로 이동하세요.")
         if st.button("메인으로 돌아가기", key="bank-login-back"):
@@ -698,3 +699,503 @@ def show_bank():
             '<div class="bank-footnote">ROYAL BANK · LOAN SERVICE</div>',
             unsafe_allow_html=True,
         )
+
+
+# ---------------------------------------------------------------------------
+# Envelope-first bank UI.  The legacy screen remains above as a reference;
+# the public entry points below reuse its tested sheet transaction functions.
+# Assets are optional, so the bank remains functional before PNGs are deployed.
+# ---------------------------------------------------------------------------
+
+BANK_SCENE_CSS = """
+<style>
+.stApp:has(.st-key-bank-page) .block-container {
+  max-width:740px !important;
+  padding-top:.45rem !important;
+}
+.st-key-bank-page {max-width:670px !important;margin:0 auto}
+.bank-scene-header {
+  text-align:center;
+  padding:0 0 15px;
+  margin-top:-15px;
+}
+.bank-scene-temple {height:clamp(105px,23vw,200px);display:flex;align-items:center;justify-content:center}
+.bank-scene-temple img {
+  width:min(88%,425px);height:100%;object-fit:contain;
+  filter:drop-shadow(0 0 16px #c351e475);
+}
+.bank-scene-logo-fallback {
+  font:800 36px Georgia,serif;letter-spacing:8px;color:#ffcc96;
+  text-shadow:0 0 22px #a631da;
+}
+.bank-scene-header h1 {
+  color:#fff0ff !important;
+  font-size:clamp(32px,7.7vw,53px) !important;
+  font-weight:900 !important;
+  margin:-5px 0 9px !important;
+  line-height:1.15;
+  text-shadow:0 0 24px #ac49d5 !important;
+}
+.bank-scene-header p {
+  font-size:clamp(13px,3.4vw,20px);
+  line-height:1.5;
+  letter-spacing:-.03em;
+  color:#ead5ef;
+  margin:0;
+}
+.bank-scene-hero {
+  height:clamp(248px,65vw,410px);
+  position:relative;isolation:isolate;
+  margin:0 auto 4px;
+  max-width:620px;
+}
+.bank-scene-cushion {
+  position:absolute;width:100%;height:auto;left:0;bottom:-6%;
+  object-fit:contain;z-index:1;
+  filter:drop-shadow(0 14px 18px #09010bb5);
+}
+.bank-scene-envelope {
+  position:absolute;z-index:2;top:1%;left:5%;
+  width:90%;height:auto;object-fit:contain;
+  filter:drop-shadow(0 13px 14px #10041488);
+  animation:bank-envelope-float 4.5s ease-in-out infinite;
+}
+.bank-scene-envelope-label {
+  position:absolute;z-index:3;
+  top:19%;left:18%;width:64%;
+  text-align:center;pointer-events:none;
+  color:#66352e;
+  font-weight:850;
+  text-shadow:0 1px 2px #ffddd1b0;
+}
+.bank-scene-envelope-label .crest {display:block;font-size:clamp(22px,6vw,35px);opacity:.68}
+.bank-scene-envelope-label .title {display:block;font-size:clamp(23px,6vw,38px);line-height:1.25}
+.bank-scene-envelope-label .eng {font:700 clamp(7px,1.4vw,11px) Georgia,serif;letter-spacing:3px}
+.bank-scene-envelope-placeholder {
+  position:absolute;inset:12% 5% 14%;
+  border-radius:16px;background:linear-gradient(145deg,#e5abb9,#ffe0c9,#d9a1b6);
+  display:grid;place-items:center;box-shadow:0 18px 35px #0009;
+}
+.bank-scene-envelope-placeholder span {color:#7b3d59;font-size:27px;font-weight:800}
+.bank-scene-buttons {margin:5px 0 9px}
+.st-key-bank-home-borrow button,
+.st-key-bank-home-repay button {
+  width:100% !important;
+  min-height:clamp(53px,10vw,75px) !important;
+  font-weight:900 !important;
+  font-size:clamp(13px,3.5vw,20px) !important;
+  white-space:nowrap;
+  border-radius:33px !important;
+}
+.st-key-bank-home-borrow button {
+  background:linear-gradient(180deg,#ab2cdf 0%,#7610cb 55%,#490873 100%) !important;
+  border:2px solid #fd97fc !important;
+  color:#fff !important;
+  box-shadow:0 0 14px #dc38efae, inset 0 4px 8px #ffffff94 !important;
+}
+.st-key-bank-home-repay button {
+  background:linear-gradient(135deg,#4c285e 0%,#25112e 100%) !important;
+  border:1.5px solid #c675dd !important;
+  box-shadow:0 3px 11px #a83ad45c,inset 0 0 13px #8240926c !important;
+  color:#f5e7fb !important;
+}
+.bank-scene-benefits {
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  text-align:center;gap:0;margin:24px 0 8px;
+  color:#f2e0fa;font-weight:800;
+}
+.bank-scene-benefit {min-width:0;padding:0 2px;border-right:1px solid #ad6bc289}
+.bank-scene-benefit:last-child {border-right:none}
+.bank-scene-benefit .ico {
+  display:grid;place-items:center;
+  width:42px;height:42px;margin:0 auto 9px;
+  border:1px solid #cc91e6;border-radius:50%;
+  background:#682e8336;color:#dfb0fa;font-size:23px;
+}
+.bank-scene-benefit .label {font-size:clamp(10px,2.5vw,14px);white-space:nowrap}
+.st-key-bank-paper {
+  margin-top:17px !important;
+  padding:clamp(28px,6vw,46px) clamp(12px,4vw,33px) 42px !important;
+}
+.st-key-bank-paper::before,.st-key-bank-paper::after {display:none !important}
+.bank-scene-paper-header {
+  text-align:center;
+  padding-top:27px;
+  margin-bottom:16px;
+  position:relative;
+  z-index:1;
+}
+.bank-scene-paper-header h2 {
+  color:#3f2938 !important;
+  font-size:clamp(29px,6.5vw,41px);
+  font-weight:900;
+  margin:0 0 5px !important;
+  text-shadow:0 1px 0 #ffffff9c !important;
+}
+.bank-scene-paper-header .en {
+  font:700 10px Georgia,serif;letter-spacing:3px;color:#8c637a;
+}
+.bank-scene-paper-wax {
+  pointer-events:none;
+  position:absolute;left:50%;top:-24px;transform:translateX(-50%);
+  width:clamp(58px,10vw,76px);height:auto;
+  filter:drop-shadow(1px 4px 5px #72123f6e);
+  z-index:4;
+}
+.bank-scene-paper-stamp {
+  pointer-events:none;
+  position:absolute;right:-4%;bottom:-23px;
+  width:clamp(76px,17vw,128px);height:auto;
+  transform:rotate(-9deg);z-index:4;
+  filter:drop-shadow(0 5px 5px #35122d6e);
+}
+.bank-scene-paper-lower {padding-bottom:16px}
+.bank-scene-paper-subtext {
+  text-align:center;font-size:12px;font-weight:700;color:#674766;margin-bottom:9px;
+}
+.bank-scene-transition {
+  position:fixed;inset:0;z-index:99999;
+  display:flex;align-items:center;justify-content:center;
+  pointer-events:none;overflow:hidden;
+  background:#1d0827eb;
+  animation:bank-transition-hide 1.45s ease forwards;
+}
+.bank-scene-transition img {position:absolute;max-width:min(85vw,560px);height:auto}
+.bank-scene-transition .closed {
+  animation:bank-closed-exit 1.45s ease both;
+}
+.bank-scene-transition .opened {
+  opacity:0;animation:bank-open-enter 1.45s ease both;
+}
+.bank-scene-transition .sheet {
+  width:min(75vw,490px);
+  opacity:0;animation:bank-paper-exit 1.45s ease both;
+}
+@keyframes bank-envelope-float {
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-6px)}
+}
+@keyframes bank-transition-hide {
+  0%,60%{opacity:1;visibility:visible}
+  100%{opacity:0;visibility:hidden}
+}
+@keyframes bank-closed-exit {
+  0%,24%{opacity:1;transform:translateY(0) scale(1)}
+  40%,100%{opacity:0;transform:translateY(8px) scale(.95)}
+}
+@keyframes bank-open-enter {
+  0%,20%{opacity:0;transform:scale(.94)}
+  35%,58%{opacity:1;transform:scale(1)}
+  78%,100%{opacity:0;transform:scale(1.03)}
+}
+@keyframes bank-paper-exit {
+  0%,42%{opacity:0;transform:translateY(100px) scale(.65)}
+  58%{opacity:1}
+  95%,100%{opacity:0;transform:translateY(-30px) scale(1.04)}
+}
+@media(max-width:480px){
+  .bank-scene-header {margin-top:-13px}
+  .bank-scene-temple {height:115px}
+  .bank-scene-header p{font-size:14px}
+  .bank-scene-hero {height:clamp(225px,68vw,300px)}
+  .bank-scene-envelope-label {top:19%}
+  .bank-scene-benefits{margin-top:16px}
+  .bank-scene-benefit .ico{width:36px;height:36px;font-size:21px}
+  .st-key-bank-paper{padding:36px 12px 29px !important}
+  .bank-scene-paper-header {padding-top:19px}
+  .bank-scene-paper-stamp{right:-5%;bottom:-15px}
+}
+@media(prefers-reduced-motion:reduce){
+  .bank-scene-transition {display:none !important}
+  .bank-scene-envelope {animation:none !important}
+}
+</style>
+"""
+
+
+def _bank_asset(filename: str) -> str:
+    """Data URI for one optional transparent asset uploaded to assets/bank/."""
+    path = Path(__file__).resolve().parents[1] / "assets" / "bank" / filename
+    return load_local_image_as_base64(str(path)) if path.is_file() else ""
+
+
+def _bank_img(filename: str, class_name: str) -> str:
+    src = _bank_asset(filename)
+    return f'<img class="{class_name}" src="{src}" alt="">' if src else ""
+
+
+def _bank_render_styles() -> None:
+    st.markdown(BANK_CSS, unsafe_allow_html=True)
+    st.markdown(BANK_SCENE_CSS, unsafe_allow_html=True)
+    root = Path(__file__).resolve().parents[1]
+    betting_bg = root / "assets" / "bet_background.jpg"
+    if betting_bg.is_file():
+        background_uri = load_local_image_as_base64(str(betting_bg))
+        st.markdown(
+            f'<style>.stApp:has(.st-key-bank-page) {{'
+            f'background-image:linear-gradient(180deg,#11051b80,#12031eab),'
+            f'url("{background_uri}") !important;'
+            f'background-size:cover !important;'
+            f'background-position:center top !important;'
+            f'background-attachment:fixed !important;'
+            f'}}</style>',
+            unsafe_allow_html=True,
+        )
+
+    paper_uri = _bank_asset("bank_paper.png")
+    if paper_uri:
+        st.markdown(
+            f'<style>.st-key-bank-paper {{'
+            f'background-image:url("{paper_uri}") !important;'
+            f'background-size:100% 100% !important;'
+            f'background-repeat:no-repeat !important;'
+            f'background-color:transparent !important;'
+            f'border:0 !important;border-radius:0 !important;'
+            f'box-shadow:0 24px 35px #08020c66 !important;'
+            f'}}</style>',
+            unsafe_allow_html=True,
+        )
+
+
+def _bank_title(view: str) -> None:
+    temple = _bank_img("bank_temple.png", "bank-scene-temple-image")
+    if not temple:
+        temple = '<div class="bank-scene-logo-fallback">♛ BANK</div>'
+    subtitle = (
+        "필요한 만큼 코인을 대출받고,<br>원하는 시점에 상환하세요."
+        if view == "home" else
+        "지금 필요한 코인을 대출받으세요."
+        if view == "loan" else
+        "보유한 코인으로 대출 잔액을 상환하세요."
+    )
+    st.markdown(
+        f'<div class="bank-scene-header">'
+        f'<div class="bank-scene-temple">{temple}</div>'
+        f'<h1>은행 대출</h1><p>{subtitle}</p>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def _bank_home() -> None:
+    cushion = _bank_img("bank_cushion.png", "bank-scene-cushion")
+    envelope = _bank_img("bank_envelope_closed.png", "bank-scene-envelope")
+    if not envelope:
+        envelope = (
+            '<div class="bank-scene-envelope-placeholder">'
+            '<span>✉ 대출 신청서</span></div>'
+        )
+    label = (
+        '<div class="bank-scene-envelope-label">'
+        '<span class="crest">♜</span>'
+        '<span class="title">대출 신청서</span>'
+        '<span class="eng">LOAN APPLICATION</span>'
+        '</div>'
+    )
+    st.markdown(
+        f'<div class="bank-scene-hero">{cushion}{envelope}{label}</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown('<div class="bank-scene-buttons"></div>', unsafe_allow_html=True)
+    borrow_col, repay_col = st.columns(2, gap="small")
+    with borrow_col:
+        if st.button("🪙  대출 신청하기", key="bank-home-borrow", use_container_width=True):
+            st.session_state.bank_view = "loan"
+            st.session_state.bank_open_transition = True
+            st.rerun()
+    with repay_col:
+        if st.button("▣  대출 상환하기", key="bank-home-repay", use_container_width=True):
+            st.session_state.bank_view = "repay"
+            st.session_state.bank_open_transition = True
+            st.rerun()
+
+    st.markdown(
+        '<div class="bank-scene-benefits">'
+        '<div class="bank-scene-benefit"><span class="ico">%</span>'
+        '<span class="label">합리적인 이자율</span></div>'
+        '<div class="bank-scene-benefit"><span class="ico">▤</span>'
+        '<span class="label">유연한 상환</span></div>'
+        '<div class="bank-scene-benefit"><span class="ico">✓</span>'
+        '<span class="label">안전한 거래</span></div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def _bank_transition() -> None:
+    """One-shot CSS visual on entering loan or repay, not on slider reruns."""
+    if not st.session_state.pop("bank_open_transition", False):
+        return
+    closed = _bank_img("bank_envelope_closed.png", "closed")
+    opened = _bank_img("bank_envelope_open.png", "opened")
+    sheet = _bank_img("bank_paper.png", "sheet")
+    if not closed or not opened or not sheet:
+        return
+    st.markdown(
+        f'<div class="bank-scene-transition" aria-hidden="true">'
+        f'{closed}{opened}{sheet}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def _bank_paper_title(view: str) -> None:
+    seal = _bank_img("bank_wax_seal.png", "bank-scene-paper-wax")
+    stamp = _bank_img("bank_stamp.png", "bank-scene-paper-stamp")
+    is_loan = view == "loan"
+    name = "대출 신청서" if is_loan else "대출 상환서"
+    en = "LOAN APPLICATION" if is_loan else "LOAN REPAYMENT"
+    st.markdown(
+        f'{seal}{stamp}<div class="bank-scene-paper-header">'
+        f'<h2>{name}</h2><div class="en">{en}</div></div>',
+        unsafe_allow_html=True,
+    )
+
+
+def _bank_document(view: str, coins: int, loan: int) -> None:
+    available = max(0, MAX_LOAN - loan)
+    max_borrow = (available // UNIT) * UNIT
+    max_repay = (min(coins, loan) // UNIT) * UNIT
+    is_loan = view == "loan"
+    with st.container(key="bank-paper"):
+        _bank_paper_title(view)
+        if is_loan:
+            st.markdown(
+                f'<div class="bank-terms">'
+                f'<div class="bank-term-label"><span class="bank-term-ico">♛</span>대출 단위</div>'
+                f'<div class="bank-term-value">{UNIT:,} C</div>'
+                f'<div class="bank-term-label"><span class="bank-term-ico">％</span>이자율</div>'
+                f'<div class="bank-term-value bank-term-rate">턴당 20% (복리)</div>'
+                f'<div class="bank-term-label"><span class="bank-term-ico">▤</span>최대 대출 한도</div>'
+                f'<div class="bank-term-value">{MAX_LOAN:,} C</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                f'<div class="bank-terms">'
+                f'<div class="bank-term-label"><span class="bank-term-ico">♛</span>상환 단위</div>'
+                f'<div class="bank-term-value">{UNIT:,} C</div>'
+                f'<div class="bank-term-label"><span class="bank-term-ico">▤</span>대출 잔액</div>'
+                f'<div class="bank-term-value">{loan:,} C</div>'
+                f'<div class="bank-term-label"><span class="bank-term-ico">◉</span>보유 코인</div>'
+                f'<div class="bank-term-value">{coins:,} C</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+        st.markdown('<div class="bank-divider"><span>❖</span></div>', unsafe_allow_html=True)
+
+        if is_loan:
+            if max_borrow >= UNIT:
+                amount = _amount_selector(
+                    "신청 금액", "bank_borrow_amount", max_borrow,
+                    min(5_000, max_borrow),
+                )
+            else:
+                st.warning("현재 추가로 대출할 수 있는 금액이 없습니다.")
+                amount = 0
+        else:
+            if loan <= 0:
+                st.success("상환할 대출금이 없습니다.")
+                amount = 0
+            elif max_repay < UNIT:
+                st.warning(f"상환에는 최소 {UNIT:,} C가 필요합니다.")
+                amount = 0
+            else:
+                amount = _amount_selector(
+                    "상환 금액", "bank_repay_amount", max_repay, max_repay,
+                )
+
+        _summary(coins, loan, available)
+        if amount:
+            if is_loan:
+                st.markdown(
+                    f'<div class="bank-estimate">신청 금액의 다음 턴 이자: '
+                    f'<strong>+{int(amount * INTEREST_RATE):,} C</strong></div>',
+                    unsafe_allow_html=True,
+                )
+                if st.button(
+                    "🏛  대출 신청하기", key="bank-borrow-submit",
+                    type="primary", use_container_width=True,
+                ):
+                    if _apply_transaction(
+                        st.session_state.current_user_data,
+                        coins + amount, loan + amount,
+                    ):
+                        st.toast(f"{amount:,} C 대출이 완료되었습니다.")
+                        st.rerun()
+            else:
+                st.markdown(
+                    f'<div class="bank-estimate">상환 후 대출 잔액: '
+                    f'<strong>{loan - amount:,} C</strong></div>',
+                    unsafe_allow_html=True,
+                )
+                if st.button(
+                    "🏛  대출금 상환하기", key="bank-repay-submit",
+                    type="primary", use_container_width=True,
+                ):
+                    if _apply_transaction(
+                        st.session_state.current_user_data,
+                        coins - amount, loan - amount,
+                    ):
+                        st.toast(f"{amount:,} C 상환이 완료되었습니다.")
+                        st.rerun()
+        st.markdown('<div class="bank-scene-paper-lower"></div>', unsafe_allow_html=True)
+
+
+def _bank_draw(view: str) -> None:
+    user_data = st.session_state.get("current_user_data")
+    if not user_data:
+        st.error("로그인 정보가 없습니다. 메인 화면으로 이동하세요.")
+        if st.button("메인으로 돌아가기", key="bank-login-back"):
+            change_page("main")
+        return
+
+    coins = int(user_data.get("코인", 0))
+    loan = int(user_data.get("대출금", 0))
+    _bank_render_styles()
+    with st.container(key="bank-page"):
+        back, spacer, wallet = st.columns([1, 1, 4.5], gap="small")
+        with back:
+            if st.button("❮", key="bank-back", help="뒤로 가기", use_container_width=True):
+                if view == "home":
+                    st.session_state.bank_view = "home"
+                    change_page("main")
+                else:
+                    st.session_state.bank_view = "home"
+                    st.rerun()
+        with wallet:
+            st.markdown(
+                f'<div class="bank-wallet" aria-label="보유 코인 {coins:,}">'
+                f'<span class="bank-wallet-coin">＄</span>'
+                f'<span>{coins:,} C</span>'
+                f'<span class="bank-wallet-plus" aria-hidden="true">+</span>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+        _bank_title(view)
+        if view == "home":
+            _bank_home()
+        else:
+            _bank_transition()
+            _bank_document(view, coins, loan)
+
+
+def show_bank_loan() -> None:
+    """Loan application screen (same sheet persistence as the old bank)."""
+    _bank_draw("loan")
+
+
+def show_bank_repay() -> None:
+    """Separate loan repayment screen."""
+    _bank_draw("repay")
+
+
+def show_bank() -> None:
+    """Bank landing screen + app-internal loan/repay navigation."""
+    view = st.session_state.get("bank_view", "home")
+    if view == "loan":
+        show_bank_loan()
+    elif view == "repay":
+        show_bank_repay()
+    else:
+        _bank_draw("home")
