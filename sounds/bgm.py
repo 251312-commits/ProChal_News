@@ -71,6 +71,13 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
             const selected = player.intro.ended ? player.loop : player.intro;
             selected.play().then(() => {{
               player.pending = false;
+              if (player.stopped || player.muted || player.volume <= 0 ||
+                  doc.visibilityState === "hidden") {
+                selected.pause();
+                player.playing = false;
+                host.__bgm_playing = false;
+                return;
+              }
               player.playing = true;
               host.__bgm_playing = true;
             }}).catch(() => {{
@@ -84,6 +91,7 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
           function applyPrefs(player, volume, muted) {{
             player.volume = clamp(volume);
             player.muted = Boolean(muted);
+            player.stopped = false;
             updateAudio(player);
             savePrefs(player);
             if (player.muted || player.volume === 0) {{
@@ -99,7 +107,16 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
 
           let player = host.__newsBgmPlayer;
           if (!player || player.introURL !== introURL || player.loopURL !== loopURL) {{
-            if (player) stop(player);
+            if (player) {
+              stop(player);
+              if (player.listeners) {
+                doc.removeEventListener("pointerdown", player.listeners.gesture);
+                doc.removeEventListener("keydown", player.listeners.gesture);
+                doc.removeEventListener("visibilitychange", player.listeners.visibility);
+                host.removeEventListener("pagehide", player.listeners.teardown);
+                host.removeEventListener("beforeunload", player.listeners.teardown);
+              }
+            }
             const prefs = getPrefs();
             const introAudio = new host.Audio(introURL);
             const loopAudio = new host.Audio(loopURL);
