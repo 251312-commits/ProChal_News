@@ -1,5 +1,6 @@
 # 업다운 (하) ½ (2배)
 
+import asyncio
 import random
 import streamlit as st
 from modules.news_ai import summary, similarity_check
@@ -410,7 +411,10 @@ def show_game_2():
 
     if "game_2_result" not in st.session_state:
         with st.spinner("🤖 AI가 유사도를 분석 중입니다..."):
-            summary_text = summary(article_text)
+            summary_text = asyncio.run(summary(article_text))
+            if not summary_text:
+                st.error("뉴스 본문 요약에 실패해 일치율을 계산할 수 없습니다.")
+                return
             actual_score = similarity_check(summary_text, title)
 
             if user_choice == "HIGH":
