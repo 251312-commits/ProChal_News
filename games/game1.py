@@ -5,6 +5,7 @@ from modules.news_ai import summary, similarity_check
 from modules.db_handler import init_gspread, init_news_sheet
 from modules.ui_components import change_page
 from views.ranking import fetch_ranking_data
+from games.result_reveal import show_summary_before_score
 from games.common import get_game_news_selection, check_user_coins_or_pop_bank, render_betting_ui
 
 ws = init_gspread()
@@ -172,6 +173,7 @@ def show_game_1():
                 st.session_state.current_user_data['연승'] = new_streak
 
             st.session_state.game_1_result = {
+                "summary": summary_text,
                 "actual_score": actual_score,
                 "diff": diff,
                 "reward": reward,
@@ -183,6 +185,7 @@ def show_game_1():
 
     # 최종 결과 출력
     res = st.session_state.game_1_result
+    show_summary_before_score(res.get("summary", ""), "game_1_summary_revealed")
     st.markdown("---")
     st.markdown("### 🏆 6단계: 최종 결과")
 
@@ -211,7 +214,7 @@ def show_game_1():
         keys_to_clear = [
             "game_1_bet", "selected_news_game_1", "candidates_game_1", 
             "read_done_game_1", "game_1_predicted_score", "game_1_result",
-            "tens_val", "ones_val"
+            "tens_val", "ones_val", "game_1_summary_revealed"
         ]
         for k in keys_to_clear:
             if k in st.session_state:
