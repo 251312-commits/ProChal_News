@@ -6,6 +6,7 @@ import streamlit as st
 from modules.news_ai import summary, similarity_check
 from modules.db_handler import init_gspread, init_news_sheet
 from modules.ui_components import change_page  # show_placeholder_page 대신 change_page 사용
+from games.result_reveal import show_summary_before_score
 from games.common import get_game_news_selection
 
 ws = init_gspread()
@@ -458,6 +459,7 @@ def show_game_2():
                 st.session_state.current_user_data['연승'] = new_streak
 
             st.session_state.game_2_result = {
+                "summary": summary_text,
                 "actual_score": actual_score,
                 "target_num": target_num,
                 "reward": reward,
@@ -469,6 +471,7 @@ def show_game_2():
 
     # [6단계] 최종 결과 출력
     res = st.session_state.game_2_result
+    show_summary_before_score(res["summary"], "game_2_summary_revealed")
     st.markdown("---")
     st.markdown("### 🏆 6단계: 최종 결과")
 
@@ -496,7 +499,8 @@ def show_game_2():
     def reset_game_2_state():
         keys_to_clear = [
             "game_2_bet", "selected_news_game_2", "candidates_game_2", 
-            "read_done_game_2", "game_2_target_num", "game_2_user_choice", "game_2_result"
+            "read_done_game_2", "game_2_target_num", "game_2_user_choice", "game_2_result",
+            "game_2_summary_revealed"
         ]
         for k in keys_to_clear:
             if k in st.session_state:
