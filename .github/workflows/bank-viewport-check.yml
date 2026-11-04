@@ -48,7 +48,7 @@ jobs:
           with sync_playwright() as pw:
               browser = pw.chromium.launch(executable_path="/usr/bin/google-chrome", args=["--no-sandbox"])
               for width,height in sizes:
-                  page=browser.new_page(viewport={"width":width,"height":height}, locale="ko-KR", device_scale_factor=2)
+                  page=browser.new_page(viewport={"width":width,"height":height}, locale="ko-KR", device_scale_factor=1)
                   page.goto("http://localhost:8501")
                   def rects(view):
                       page.wait_for_timeout(180)
@@ -58,7 +58,7 @@ jobs:
                               return [r.x,r.y,r.width,r.height].map(Math.round)
                           };
                           const scope=Array.from(document.querySelectorAll('.st-key-bank-page')).filter(e=>e.checkVisibility()).at(-1);
-                          const items=Array.from(scope.querySelectorAll('button, [role=slider], h1, .bank-envelope-face, .bank-velvet, .bank-benefits, .bank-figures, .bank-estimate, .bank-calligraphy, .bank-inscription svg'));
+                          const items=Array.from(scope.querySelectorAll('button, [role=slider], h1, .bank-envelope-face, .bank-velvet, .bank-benefits, .bank-figures, .bank-estimate, .bank-calligraphy, .bank-crest'));
                           const visible=items.filter(n => n.checkVisibility({visibilityProperty:true, opacityProperty:true}) && !n.closest('.bank-opening'));
                           const record=visible.map(n=>[n.tagName,(n.textContent||n.getAttribute('class')||'').trim().slice(0,48),box(n)]);
                           const main=document.querySelector('[data-testid=stMain]');
@@ -73,12 +73,34 @@ jobs:
                   btn=lambda name: page.locator(f".st-key-{name} button:visible").last
                   expect(btn("bank-home-pay")).to_be_visible(timeout=30000)
                   rects("home")
+                  assert page.locator('.bank-crest:visible').last.evaluate("e=>e.complete && e.naturalWidth>0")
                   if width>height:
                       a=btn('bank-home-draw').bounding_box(); b=btn('bank-home-pay').bounding_box()
                       assert abs(a['y']-b['y'])<=2 and b['x']>a['x']
                   for k,submit in [('draw','bank-borrow-submit'),('pay','bank-repay-submit')]:
+                      start=page.locator('.bank-envelope-face:visible').last.bounding_box()
                       btn('bank-home-'+k).click()
                       expect(btn(submit)).to_be_visible()
+                      if width==390 and k=="draw":
+                          # Sample the actual CSS animations at the closed, dropped, and open frames.
+                          scene=page.locator('.bank-opening').last
+                          frames=scene.evaluate("""el => {
+                              const sample = t => {
+                                  const list=document.getAnimations().filter(a => a.animationName && a.animationName.startsWith('bank-'));
+                                  list.forEach(a => {a.pause();a.currentTime=t;});
+                                  const closed=el.querySelector('.bank-envelope-face').getBoundingClientRect();
+                                  const letter=el.querySelector('.bank-letter').getBoundingClientRect();
+                                  const css=s=>getComputedStyle(el.querySelector(s)).opacity;
+                                  return [closed.x,closed.y,letter.y,css('.bank-sealed'),css('.bank-unsealed'),css('.bank-emerging-sheet')];
+                              };
+                              const snapshots=[sample(0),sample(1000)];
+                              document.getAnimations().forEach(a=>a.play());
+                              return snapshots;
+                          }""")
+                          print("Envelope frames",frames,flush=True)
+                          assert abs(start['x']-frames[0][0])<3 and abs(start['y']-frames[0][1])<3
+                          assert frames[1][2]>frames[0][2]+15 and frames[0][3]=='1' and frames[1][3]=='0'
+                          assert frames[1][4:]==['1','1']
                       page.wait_for_timeout(1500)
                       rects(k)
                       if width==390:

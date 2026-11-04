@@ -100,6 +100,9 @@
   font: 800 clamp(22px, 4dvh, 32px)/1.1 Georgia, serif;
 }
 .st-key-bank-form [data-testid="stSlider"] { padding-inline: 4px; }
+/* Tint BaseWeb's filled track while keeping its live progress and drag feedback. */
+.st-key-bank-form [data-baseweb="slider"] { filter: hue-rotate(280deg) saturate(.68); }
+.st-key-bank-form [data-testid="stSliderThumbValue"] { display: none; }
 .st-key-bank-form [data-testid="stSliderTickBar"] { color: #4a2e40; }
 .st-key-bank-form .bank-estimate {
   margin: 0;

@@ -97,7 +97,7 @@
   color: #703d2d;
   text-shadow: 0 1px 0 #fff0d0;
 }
-.st-key-bank-page .bank-inscription svg { width: 14%; }
+.st-key-bank-page .bank-crest { display: block; width: 20%; height: auto; }
 .st-key-bank-page .bank-calligraphy {
   font: 700 8.5cqw/1.22 "AppleMyungjo","Batang","Noto Serif KR",serif;
   letter-spacing: .02em;

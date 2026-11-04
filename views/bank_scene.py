@@ -11,11 +11,16 @@ BANK_ART = Path(__file__).resolve().parents[1] / "assets" / "bank"
 
 
 def asset_uri(stem: str) -> str:
-    return load_local_image_as_base64(str(BANK_ART / f"{stem}.avif"))
+    for suffix in (".avif", ".png"):
+        path = BANK_ART / (stem + suffix)
+        if path.is_file():
+            return load_local_image_as_base64(str(path))
+    return ""
 
 
 def _art(stem: str, css_class: str) -> str:
-    return f'<img src="{asset_uri(stem)}" class="{css_class}" alt="" draggable="false">'
+    src = asset_uri(stem)
+    return f'<img src="{src}" class="{css_class}" alt="" draggable="false">' if src else ""
 
 
 def _heading() -> str:
@@ -30,12 +35,7 @@ def _heading() -> str:
 
 
 def _letter(opening: bool = False) -> str:
-    crest = (
-        '<svg viewBox="0 0 64 36" fill="none" stroke="currentColor" '
-        'stroke-width="2.3" stroke-linejoin="round" aria-hidden="true">'
-        '<path d="M13 12 32 3l19 9zM16 15h32M21 17v12m7-12v12m8-12v12m7-12v12'
-        'M16 31h32m-36 4h40"/><circle cx="32" cy="9" r="1.1"/></svg>'
-    )
+    crest = load_local_image_as_base64(str(BANK_ART / "bank_crest.svg"))
     layers = ""
     if opening:
         layers = (
@@ -53,7 +53,7 @@ def _letter(opening: bool = False) -> str:
         + '<div class="bank-sealed">'
         + _art("bank_envelope_closed", "bank-envelope-face")
         + '<div class="bank-inscription">'
-        + crest
+        + f'<img class="bank-crest" src="{crest}" alt="">'
         + '<span class="bank-calligraphy">대출 신청서</span>'
         '<span class="bank-engraving">LOAN APPLICATION</span>'
         '</div></div></div></div></div>'
