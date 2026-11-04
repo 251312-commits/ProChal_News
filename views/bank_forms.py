@@ -84,7 +84,7 @@ def draw_loan(coins: int, loan: int) -> None:
     limit = available // UNIT * UNIT
     with _document(
         "대출 신청서", "LOAN APPLICATION",
-        [("대출 잔액", loan), ("추가 대출 가능액", available)],
+        [("대출 단위", UNIT), ("이자율 · 턴당 20% (복리)", 0), ("최대 대출 한도", MAX_LOAN)],
         f"한도 {MAX_LOAN:,} C · {UNIT:,} C 단위<br>"
         f"대출 잔액에 턴마다 {INTEREST_RATE:.0%} 복리 이자 적용",
     ):
@@ -93,10 +93,14 @@ def draw_loan(coins: int, loan: int) -> None:
             return
         amount = _amount_selector("신청 금액", "bank_borrow_amount", limit, min(5_000, limit))
         st.html(
-            f'<p class="bank-estimate">신청 금액의 다음 턴 이자 '
-            f'<b>+{int(amount * INTEREST_RATE):,} C</b></p>'
+            '<div class="bank-summary">'
+            f'<div><span>보유 코인</span><b>{coins:,} C</b></div>'
+            f'<div><span>대출 잔액</span><b>{loan:,} C</b></div>'
+            f'<div><span>추가 대출 가능액</span><b>{available:,} C</b></div>'
+            '<p>ⓘ 대출 잔액에 대해 턴마다 20%의 이자가 복리로 추가됩니다.</p>'
+            '</div>'
         )
-        if st.button("대출 신청 확정", key="bank-borrow-submit", type="primary", width="stretch"):
+        if st.button("대출 신청하기", key="bank-borrow-submit", type="primary", width="stretch"):
             _save_balances(coins + amount, loan + amount, f"{amount:,} C를 대출받았습니다.")
 
 
