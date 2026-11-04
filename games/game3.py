@@ -7,6 +7,7 @@ import asyncio
 from modules.news_ai import summary, similarity_check, bring_article
 from modules.db_handler import init_gspread
 from modules.ui_components import change_page
+from games.result_reveal import show_summary_before_score
 from games.common import get_game_news_selection
 
 
@@ -24,6 +25,7 @@ def reset_game_3_state():
         "game_3_choice_timeout",
         "game_3_bet",
         "game_3_result",
+        "game_3_summary_revealed",
         "selected_news_game_3",
         "candidates_game_3",
         "read_done_game_3",
@@ -600,6 +602,8 @@ def show_game_3():
 
     res = st.session_state.game_3_result
 
+    show_summary_before_score(res["summary"], "game_3_summary_revealed")
+
     st.markdown("---")
     st.markdown("### 🏆 최종 게임 결과")
 
@@ -633,10 +637,6 @@ def show_game_3():
             min(1.0, res["actual_score"] / 100)
         )
     )
-
-    with st.expander("AI 뉴스 요약 결과"):
-
-        st.write(res["summary"])
 
     with st.expander("분석한 뉴스 기사 정보"):
 
