@@ -88,7 +88,10 @@ jobs:
               page.wait_for_timeout(1600)
               page.evaluate("document.fonts.ready")
               name=f"{ENGINE}-{width}x{height}"
-              page.screenshot(path=OUT/f"{name}.png")
+              try:
+                  page.screenshot(path=OUT/f"{name}.png", timeout=6000)
+              except Exception as screenshot_error:
+                  print("SCREENSHOT SKIPPED", name, type(screenshot_error).__name__, flush=True)
               result=page.evaluate("""async () => {
                 const scope=[...document.querySelectorAll('.st-key-bank-repay-screen')].filter(
                   e=> e.getBoundingClientRect().width && e.getBoundingClientRect().height).at(-1);
@@ -176,7 +179,10 @@ jobs:
                   except Exception as exc:
                       traceback.print_exc()
                       errors.append((w,h,str(exc)))
-                      page.screenshot(path=OUT/f"{ENGINE}-{w}x{h}-failure.png")
+                      try:
+                          page.screenshot(path=OUT/f"{ENGINE}-{w}x{h}-failure.png", timeout=6000)
+                      except Exception:
+                          pass
                   finally:
                       context.close()
               browser.close()
