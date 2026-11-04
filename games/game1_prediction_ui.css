@@ -16,9 +16,12 @@
   font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
 }
 .st-key-game1-prediction, .st-key-game1-prediction * { box-sizing:border-box; }
-.st-key-game1-prediction > [data-testid="stVerticalBlock"] {
-  width:100%; min-width:0; gap:clamp(2px,.5svh,6px) !important;
+.st-key-game1-prediction {
+  display:flex !important; flex-direction:column !important;
+  gap:clamp(2px,.5svh,6px) !important;
 }
+.st-key-game1-prediction > * { min-width:0; }
+
 .st-key-game1-prediction button {
   -webkit-tap-highlight-color:transparent; font-family:inherit !important;
 }
@@ -123,9 +126,11 @@
   border:3px solid #e2a15e; border-radius:26px;
   box-shadow:0 0 18px #b321f954;
 }
-.st-key-game1-prediction-machine > [data-testid="stVerticalBlock"] {
-  position:relative; width:100%; height:100%; min-height:0; gap:0 !important;
+.st-key-game1-prediction-machine {
+  display:block !important;
 }
+.st-key-game1-prediction-machine > * { min-width:0; }
+
 .st-key-game1-prediction-machine [data-testid="stElementContainer"] {min-width:0;}
 .game1-pred-machine-title {
   position:absolute; top:17%; left:5%; width:90%; text-align:center;
@@ -135,15 +140,16 @@
 }
 .st-key-game1-prediction-reels {
   position:absolute !important; left:14%; top:29%; width:72%; height:50%; min-width:0;
-}
-.st-key-game1-prediction-reels > [data-testid="stHorizontalBlock"] {
   display:grid !important; grid-template-columns:minmax(0,.68fr) repeat(2,minmax(0,1fr));
-  grid-template-rows:100%; gap:0 !important; flex-wrap:nowrap !important;
-  width:100%; height:100%; align-items:center !important;
+  grid-template-rows:100%; gap:0 !important; align-items:center !important;
 }
-.st-key-game1-prediction-reels > [data-testid="stHorizontalBlock"] > * {
+.st-key-game1-prediction-reels > * {
   min-width:0 !important; width:100% !important; height:100%; margin:0 !important; padding:0 !important;
 }
+.st-key-game1-prediction-reels > :has(.game1-pred-zero) {
+  display:flex; align-items:center; justify-content:center;
+}
+
 .game1-pred-zero {
   display:grid; place-items:center; height:100%;
   color:#fff0ff; font:900 clamp(46px,13vw,88px)/1 Georgia,serif;
@@ -157,11 +163,15 @@
   border:2px solid #d68df3; border-radius:21%;
   box-shadow:inset 0 0 15px #1e0628,0 0 10px #e346f699;
 }
-.st-key-game1-pred-reel-tens > [data-testid="stVerticalBlock"],
-.st-key-game1-pred-reel-ones > [data-testid="stVerticalBlock"] {
-  display:grid !important; grid-template-rows:23% 54% 23%; gap:0 !important;
+.st-key-game1-pred-reel-tens, .st-key-game1-pred-reel-ones {
+  display:grid !important; grid-template-rows:23% 54% 23%;
+  gap:0 !important; align-items:stretch !important;
   height:100%; width:100%; min-height:0;
 }
+.st-key-game1-pred-reel-tens > *, .st-key-game1-pred-reel-ones > * {
+  min-width:0; min-height:0; height:100%; width:100%;
+}
+
 .st-key-game1-pred-reel-tens [data-testid="stElementContainer"],
 .st-key-game1-pred-reel-ones [data-testid="stElementContainer"] {
   min-height:0; height:100%; min-width:0; margin:0 !important;
@@ -219,25 +229,31 @@
 }
 @media (orientation:landscape) and (max-height:590px) {
   .stApp:has(.st-key-game1-prediction) .block-container {max-width:930px !important;}
-  .st-key-game1-prediction {max-width:900px;}
-  .st-key-game1-prediction > [data-testid="stVerticalBlock"] {
-    display:grid !important;
-    grid-template-columns:minmax(0,45%) minmax(0,55%);
-    grid-template-rows:clamp(32px,10svh,45px) auto minmax(0,1fr) auto;
-    gap:3px 10px !important;
+  .st-key-game1-prediction {
+    position:relative !important; display:block !important;
+    width:min(100%,900px);max-width:900px;
+    height:calc(100svh - max(6px,env(safe-area-inset-top)) - max(8px,env(safe-area-inset-bottom)) - 8px);
+    margin:0 auto; overflow:hidden;
   }
-  .st-key-game1-prediction-nav {grid-area:1/1/2/3;}
-  .st-key-game1-prediction > [data-testid="stVerticalBlock"] >
-  [data-testid="stElementContainer"]:has(.game1-pred-heading) {grid-area:2/1/3/2;}
-  .game1-pred-banner {height:clamp(30px,15svh,55px);}
-  .game1-pred-heading h1 {font-size:clamp(21px,5svh,30px) !important;}
+  .st-key-game1-prediction-nav {position:absolute;left:0;top:0;width:100%;}
+  .st-key-game1-prediction > :has(.game1-pred-heading) {
+    position:absolute;left:0;top:14%;width:42%;
+  }
+  .game1-pred-banner {height:clamp(29px,14svh,54px);}
+  .game1-pred-heading h1 {font-size:clamp(20px,5svh,29px) !important;}
   .game1-pred-heading p {font-size:clamp(10px,2.9svh,13px);}
-  .st-key-game1-prediction > [data-testid="stVerticalBlock"] >
-  [data-testid="stElementContainer"]:has(.game1-pred-news-wrap) {grid-area:3/1/4/2;align-self:start;}
-  .game1-pred-news-wrap {height:clamp(56px,18svh,94px);}
-  .st-key-game1-prediction-machine {grid-area:2/2/5/3;height:min(70svh,290px);align-self:center;}
-  .game1-pred-coins {display:none;}
-  .st-key-game1-pred-submit {grid-area:4/1/5/2;align-self:end;}
+  .st-key-game1-prediction > :has(.game1-pred-news-wrap) {
+    position:absolute;left:0;top:45%;width:42%;
+  }
+  .game1-pred-news-wrap {height:clamp(54px,22svh,92px);}
+  .st-key-game1-prediction-machine {
+    position:absolute;top:14%;right:0;width:55%;height:72%;
+    margin:0 !important;
+  }
+  .st-key-game1-prediction > :has(.game1-pred-coins) {display:none;}
+  .st-key-game1-pred-submit {
+    position:absolute;left:0;bottom:0;width:42%;
+  }
   .st-key-game1-pred-submit button {height:clamp(36px,10svh,55px);}
 }
 @media (prefers-reduced-motion:reduce) {
