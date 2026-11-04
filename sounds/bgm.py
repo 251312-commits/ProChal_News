@@ -1,9 +1,9 @@
-import streamlit as st
+import streamlit.components.v1 as components
 
 # 정의된 함수: init_seamless_bgm
 
 def init_seamless_bgm(intro_url: str, loop_url: str):
-    st.iframe(
+    components.html(
         f"""
         <script>
         (function() {{
@@ -45,13 +45,13 @@ def init_seamless_bgm(intro_url: str, loop_url: str):
         }})();
         </script>
         """,
-        height=1,
-        width=1
+        height=0,
+        width=0
     )
 
 def stop_bgm():
     """로그인 화면으로 돌아갈 경우 BGM 끄기"""
-    st.iframe(
+    components.html(
         """
         <script>
         (function() {
@@ -62,6 +62,6 @@ def stop_bgm():
         })();
         </script>
         """,
-        height=1,
-        width=1
+        height=0,
+        width=0
     )
