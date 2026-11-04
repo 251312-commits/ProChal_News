@@ -1,0 +1,86 @@
+/* The casino theme and the zero-height music iframe are shared by all routes. */
+.stApp:has(.st-key-bank-page) {
+  background: linear-gradient(180deg, #1d0b29a3, #1b072b81 55%, #180925cf),
+              var(--bank-backdrop) center / cover no-repeat, #1b0a25 !important;
+}
+.stApp:has(.st-key-bank-page) [data-testid="stHeader"],
+.stApp:has(.st-key-bank-page) [data-testid="stBottom"] { display: none; }
+.stApp:has(.st-key-bank-page) .block-container { padding: 0 !important; }
+.st-key-bank-page {
+  box-sizing: border-box;
+  position: fixed;
+  inset: 0 0 auto;
+  width: min(100%, 520px);
+  height: 100vh;
+  height: 100dvh;
+  margin-inline: auto;
+  padding: max(4px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+           max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  color: #fff5ff;
+  font-family: system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  gap: 0;
+  isolation: isolate;
+}
+.st-key-bank-page > [data-testid="stLayoutWrapper"]:has(> .st-key-bank-nav) {
+  flex: 0 0 auto;
+}
+.st-key-bank-page > [data-testid="stLayoutWrapper"]:has(> .st-key-bank-body),
+.st-key-bank-body {
+  display: flex;
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+}
+.st-key-bank-body { position: relative; gap: 0; }
+.st-key-bank-body > [data-testid="stLayoutWrapper"]:has(> .st-key-bank-form) {
+  flex: 0 1 auto; margin-block: auto;
+}
+.st-key-bank-nav {
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  height: 44px;
+  gap: 8px;
+  z-index: 2;
+}
+.st-key-bank-nav > * { flex: 0 0 auto; min-width: 0; }
+.bank-sr, .st-key-bank-nav button [data-testid="stMarkdownContainer"] {
+  position: absolute; width: 1px; height: 1px; padding: 0;
+  clip-path: inset(50%); overflow: hidden; white-space: nowrap;
+}
+.st-key-bank-back button, .st-key-bank-wallet-plus button {
+  display: grid; place-content: center;
+  height: 44px; min-height: 44px; width: 44px;
+  padding: 0 !important; color: #ffe8ff !important;
+  background: transparent !important; border: 0 !important; box-shadow: none !important;
+}
+.st-key-bank-back button [data-testid="stIconMaterial"] { font-size: 25px; }
+.st-key-bank-wallet {
+  height: 32px; padding: 0 5px;
+  border: 1px solid #b868ce; border-radius: 32px; gap: 0;
+  flex-wrap: nowrap; align-items: center;
+  background: linear-gradient(165deg, #391546, #12091b 75%);
+  box-shadow: inset 0 1px 5px #df93ff44, 0 2px 8px #14081f;
+}
+.bank-balance {
+  display: flex; align-items: center; gap: 7px; padding-right: 4px;
+  white-space: nowrap; font-size: clamp(.91rem, 3.8vw, 1.09rem);
+  font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.bank-coin {
+  display: grid; place-items: center;
+  width: 22px; height: 22px; border: 2px double #ffecab; border-radius: 50%;
+  background: radial-gradient(circle at 35% 22%, #ffe377, #ffae28 60%, #b65c06);
+  color: #713006; font: bold 15px Georgia, serif;
+}
+.st-key-bank-wallet-plus button { position: relative; width: 44px; margin-right: -4px; }
+.st-key-bank-wallet-plus button::before {
+  content: ''; position: absolute; width: 25px; height: 25px;
+  top: 50%; left: 50%; transform: translate(-50%, -50%); border-radius: 50%;
+  background: linear-gradient(#8e46ab, #44156b); border: 1px solid #ce8deb;
+}
+.st-key-bank-wallet-plus button [data-testid="stIconMaterial"] { position: relative; font-size: 21px; }
+.st-key-bank-page button:focus-visible { outline: 3px solid #ffc65a !important; outline-offset: 2px; }
+@media (orientation: landscape) and (max-height: 560px) {
+  .st-key-bank-page { width: min(100%, 840px); }
+}
