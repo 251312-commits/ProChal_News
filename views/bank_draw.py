@@ -1,7 +1,6 @@
 """Illustrated, viewport-sized loan application. Repayment remains independent."""
 
 from pathlib import Path
-from html import escape
 
 import streamlit as st
 
