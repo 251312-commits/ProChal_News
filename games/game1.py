@@ -19,7 +19,7 @@ GAME_1_WIN_MULTIPLIER = 100.0
 def show_game_1():
     if "game_1_bet" not in st.session_state:
         # 코인 부족 검사 (부족 시 은행 팝업)
-        if not check_user_coins_or_pop_bank(min_required=100):
+        if not check_user_coins_or_pop_bank():
             return
 
         user_data = st.session_state.get('current_user_data', {})
@@ -39,7 +39,6 @@ def show_game_1():
             users_data=users_data,
             current_sid=current_sid,
             current_nickname=current_nickname,
-            min_bet=100,
             bg_image_path="assets/bg.png",
             payout_multiplier=GAME_1_WIN_MULTIPLIER,
             title="title",  # 나중에 실제 게임 제목으로 교체
