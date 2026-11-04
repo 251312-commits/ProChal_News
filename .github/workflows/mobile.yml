@@ -1,0 +1,203 @@
+name: Measure bank loan layout
+on:
+  push:
+    branches: [qa/bank-loan-mobile-proportions]
+permissions:
+  contents: read
+jobs:
+  mobile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, webkit]
+    env:
+      ENGINE: ${{ matrix.engine }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Streamlit, Playwright and a Korean font
+        run: |
+          pip install --quiet 'streamlit==1.55.0' playwright
+          if ! fc-list :lang=ko | grep -q .; then
+            sudo apt-get -qq update
+            sudo apt-get -qq install fonts-noto-cjk
+          fi
+          if [ "$ENGINE" = webkit ]; then
+            python -m playwright install --with-deps webkit
+          fi
+      - name: Exercise actual Streamlit controls at mobile and desktop viewport sizes
+        run: |
+          cat > bank_fixture.py <<'PY_FIXTURE'
+          import sys
+          from types import ModuleType, SimpleNamespace
+
+          import streamlit as st
+
+          def update(range_name, values):
+              assert range_name == "C2:D2"
+              st.session_state["qa_saved"] = values[0]
+
+          db = ModuleType("modules.db_handler")
+          db.init_gspread = lambda: SimpleNamespace(find=lambda *args, **kw: SimpleNamespace(row=2), update=update)
+          sys.modules["modules.db_handler"] = db
+
+          from modules.ui_components import inject_casino_theme
+          from sounds.bgm import init_seamless_bgm
+          from views.bank import show_bank
+
+          st.session_state.setdefault("current_user_data", {"학번": "fixture", "코인": 1250, "대출금": 3000})
+          st.session_state.setdefault("page", "bank")
+          inject_casino_theme()
+          silence = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA="
+          init_seamless_bgm(silence, silence)
+          show_bank()
+          if "qa_saved" in st.session_state:
+              assert st.session_state["qa_saved"] == [
+                  st.session_state.current_user_data["코인"], st.session_state.current_user_data["대출금"]
+              ]
+          PY_FIXTURE
+          cat > measure.py <<'PY_MEASURE'
+          import json
+          import os
+          import traceback
+          from pathlib import Path
+          from playwright.sync_api import sync_playwright, expect
+
+          SIZES = [(320,568), (360,640), (390,844), (430,932), (667,375), (844,390), (1280,800)]
+          OUT = Path("artifacts")
+          OUT.mkdir(exist_ok=True)
+          ENGINE = os.environ.get("ENGINE", "chromium")
+
+          def key(page, key):
+              return page.locator(f".st-key-{key} button:visible").last
+
+          def settle(page):
+              page.evaluate("document.fonts.ready")
+              page.wait_for_timeout(1700)
+              expect(page.get_by_test_id("stException")).to_have_count(0)
+
+          def check(page, width, height):
+              key(page, "bank-home-draw").click()
+              submit = key(page, "bank-borrow-submit")
+              expect(submit).to_be_visible()
+              settle(page)
+              name = f"{ENGINE}-{width}x{height}"
+              page.screenshot(path=OUT / f"{name}.png")
+              measure = page.evaluate("""async () => {
+                const visible=s=> [...document.querySelectorAll(s)].filter(e=>e.getBoundingClientRect().width && e.getBoundingClientRect().height && !e.closest('.bank-opening')).at(-1);
+                const rect=e=>{const r=e.getBoundingClientRect(); return {x:r.x, y:r.y, w:r.width, h:r.height, right:r.right,bottom:r.bottom};};
+                const scope=visible('.st-key-bank-draw-screen');
+                const elm=(s)=>[...scope.querySelectorAll(s)].filter(e=>e.getBoundingClientRect().width && e.getBoundingClientRect().height).at(-1);
+                const names={title:'h1',sheetTitle:'h2',terms:'.bank-draw-terms',amount:'.bank-amount-label',minus:'.st-key-bank_borrow_amount_minus button',value:'.bank-amount-value',plus:'.st-key-bank_borrow_amount_plus button',slider:'[role=slider]',summary:'.bank-draw-summary',submit:'.st-key-bank-borrow-submit button'};
+                const geometry={}; for(const [k,s] of Object.entries(names)){const e=elm(s); if(e) geometry[k]=rect(e);}
+                const links=['.st-key-bank-back button','.bank-balance']; for(const s of links) {const e=visible(s); if(e) geometry[s]=rect(e);}
+                const values=[...scope.querySelectorAll('.bank-draw-summary-grid > *')].map(rect);
+                const imgs=[...scope.querySelectorAll('img')].map(e=>[e.className,e.complete&&e.naturalWidth>0]);
+                const main=visible('[data-testid=stMain]');
+                const sheet=visible('.st-key-bank-draw-parchment');
+                const art=await Promise.all(['--paper','--seal','--stamp','--postmark','--temple'].map(async p=>{
+                  const val=getComputedStyle(scope).getPropertyValue(p).trim();
+                  if (!val.startsWith('url(')) return [p,false];
+                  const url=val.slice(4,-1).trim().replace(/^["']|["']$/g,'');
+                  const im=new Image(); im.src=url; try{await im.decode();}catch{return [p,false];}
+                  return [p,im.naturalWidth>0];
+                }));
+                return {geometry,values,imgs,art,paper:rect(sheet),main:[main.scrollWidth-main.clientWidth,main.scrollHeight-main.clientHeight,main.scrollTop],
+                  viewport:[innerWidth,innerHeight],bodyScroll:[document.documentElement.scrollWidth-innerWidth, document.documentElement.scrollHeight-innerHeight],
+                  assetbg: getComputedStyle(document.querySelector('.stApp')).backgroundImage.includes('data:image')};
+              }""")
+              (OUT / f"{name}.json").write_text(json.dumps(measure,ensure_ascii=False,indent=2))
+              g = measure["geometry"]
+              assert measure["viewport"] == [width,height], measure["viewport"]
+              assert max(measure["main"] + measure["bodyScroll"]) <= 2, ("scroll",measure["main"],measure["bodyScroll"])
+              assert all(ok for _,ok in measure["imgs"]), measure["imgs"]
+              assert all(ok for _,ok in measure["art"]), ("CSS art load", measure["art"])
+              sheet=measure["paper"]
+              assert abs(sheet["x"]+sheet["w"]/2-width/2)<=3, ("off-center paper",sheet)
+              if width<height and width<=430:
+                  assert sheet["w"] >= width*.90, ("paper narrower than 90% of phone viewport",sheet,width)
+              assert len(g)>=12, ("missing elements", list(g))
+              for k,r in g.items():
+                  assert -2 <= r["x"] and r["right"] <= width+2 and r["y"] >= -2 and r["bottom"] <= height+2, (k,r)
+              minus, value, plus=[g[k] for k in ("minus","value","plus")]
+              assert minus["right"] <=value["x"]+2 and value["right"] <= plus["x"]+2,("horizontal stepper", minus,value,plus)
+              assert max(abs(minus["y"]+minus["h"]/2-p["y"]-p["h"]/2) for p in (value,plus))<=2, ("stepper alignment",minus,value,plus)
+              values=measure["values"]
+              assert len(values)==3 and max(v["y"] for v in values)-min(v["y"] for v in values)<2, ("three balances",values)
+              assert abs(g["summary"]["x"] + g["summary"]["w"]/2 - g["submit"]["x"] - g["submit"]["w"]/2) <= max(width*.04,8), ("action alignment",g["summary"],g["submit"])
+              order=["amount", "value", "slider", "summary", "submit"]
+              if width < height:
+                  order = ["title", "sheetTitle", "terms"]+order
+                  assert g["summary"]["w"] >= width*.60, ("too narrow", g["summary"], width)
+              for a,b in zip(order,order[1:]):
+                  assert g[a]["bottom"] <= g[b]["y"]+3, ("overlap",a,b,g[a],g[b])
+              if width == 390:
+                  displayed=page.locator(".bank-amount-value:visible").last
+                  minus=key(page,"bank_borrow_amount_minus")
+                  plus=key(page,"bank_borrow_amount_plus")
+                  slider=page.get_by_role("slider").last
+                  expect(displayed).to_have_text("5,000 C")
+                  minus.click()
+                  expect(displayed).to_have_text("4,000 C")
+                  plus.click()
+                  expect(displayed).to_have_text("5,000 C")
+                  slider.focus()
+                  slider.press("ArrowRight")
+                  expect(displayed).to_have_text("6,000 C")
+                  submit.click()
+                  expect(page.locator(".bank-balance:visible").last).to_contain_text("7,250 C")
+                  expect(displayed).to_have_text("1,000 C")
+                  expect(minus).to_be_disabled()
+                  expect(plus).to_be_disabled()
+                  submit.click()
+                  expect(page.locator(".bank-balance:visible").last).to_contain_text("8,250 C")
+                  expect(page.get_by_role("slider")).to_have_count(0)
+                  assert not submit.count() or submit.is_disabled()
+                  expect(page.get_by_test_id("stException")).to_have_count(0)
+                  page.screenshot(path=OUT / f"{name}-limit.png")
+              key(page,"bank-back").click()
+              expect(key(page,"bank-home-pay")).to_be_visible()
+              if width == 390:
+                  key(page,"bank-home-pay").click()
+                  expect(key(page,"bank-repay-submit")).to_be_visible()
+              print("PASS",name,flush=True)
+
+          errors=[]
+          with sync_playwright() as pw:
+              browser=(pw.webkit.launch() if ENGINE=="webkit" else pw.chromium.launch(channel="chrome",args=["--no-sandbox"]))
+              for w,h in ([(390,844)] if ENGINE=="webkit" else SIZES):
+                  context=browser.new_context(viewport={"width":w,"height":h},is_mobile=w<1000,has_touch=w<1000,device_scale_factor=1,locale="ko-KR")
+                  page=context.new_page()
+                  page.set_default_timeout(25000)
+                  expect.set_options(timeout=20000)
+                  try:
+                      page.goto("http://127.0.0.1:8501")
+                      check(page,w,h)
+                  except Exception as exc:
+                      traceback.print_exc()
+                      errors.append((w,h,str(exc)))
+                      page.screenshot(path=OUT / f"{ENGINE}-{w}x{h}-failure.png")
+                  finally:
+                      context.close()
+              browser.close()
+          if errors:
+              raise AssertionError(errors)
+          PY_MEASURE
+          streamlit run bank_fixture.py --server.headless true --browser.gatherUsageStats false > /tmp/loan-fixture.log 2>&1 &
+          for attempt in {1..30}; do
+            if curl -fsS http://127.0.0.1:8501/_stcore/health; then break; fi
+            sleep 1
+          done
+          python measure.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bank-loan-${{ matrix.engine }}
+          path: artifacts/
+          retention-days: 5
