@@ -115,7 +115,8 @@ jobs:
                 const geometry={}; for(const [k,s] of Object.entries(names)){const e=elm(s); if(e) geometry[k]=rect(e);}
                 const links=['.st-key-bank-back button','.bank-balance']; for(const s of links) {const e=visible(s); if(e) geometry[s]=rect(e);}
                 const values=[...scope.querySelectorAll('.bank-draw-summary-grid > *')].map(rect);
-                const imgs=[...scope.querySelectorAll('img')].map(e=>[e.className,e.complete&&e.naturalWidth>0]);
+                const icons=[...scope.querySelectorAll('.bank-draw-terms dt img, .bank-draw-summary-grid dt img')];
+                const imgs=icons.map(e=>[e.className,e.complete&&e.naturalWidth>0,e.getBoundingClientRect().width]);
                 const main=scope.closest('[data-testid=stMain]');
                 const sheet=scope.querySelector('.st-key-bank-draw-parchment');
                 const art=await Promise.all(['--paper','--seal','--stamp','--postmark','--temple'].map(async p=>{
@@ -133,7 +134,8 @@ jobs:
               g = measure["geometry"]
               assert measure["viewport"] == [width,height], measure["viewport"]
               assert max(measure["main"] + measure["bodyScroll"]) <= 2, ("scroll",measure["main"],measure["bodyScroll"])
-              assert all(ok for _,ok in measure["imgs"]), measure["imgs"]
+              assert len(measure["imgs"]) == 6 and all(ok for _,ok,_ in measure["imgs"]), ("six icons decoded",measure["imgs"])
+              assert all(w>=8 for _,_,w in measure["imgs"][:3 if width>height and height<=560 else 6]), ("visible icons",measure["imgs"])
               assert all(ok for _,ok in measure["art"]), ("CSS art load", measure["art"])
               sheet=measure["paper"]
               assert abs(sheet["x"]+sheet["w"]/2-width/2)<=3, ("off-center paper",sheet)
@@ -147,6 +149,7 @@ jobs:
               assert max(abs(minus["y"]+minus["h"]/2-p["y"]-p["h"]/2) for p in (value,plus))<=2, ("stepper alignment",minus,value,plus)
               values=measure["values"]
               assert len(values)==3 and max(v["y"] for v in values)-min(v["y"] for v in values)<2, ("three balances",values)
+              assert abs(values[0]["x"]-g["summary"]["x"] - (g["summary"]["right"]-values[-1]["right"]))<=2, ("equal balance insets",values,g["summary"])
               assert abs(g["summary"]["x"] + g["summary"]["w"]/2 - g["submit"]["x"] - g["submit"]["w"]/2) <= max(width*.04,8), ("action alignment",g["summary"],g["submit"])
               order=["amount", "value", "slider", "summary", "submit"]
               if width < height:
