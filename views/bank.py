@@ -5,7 +5,8 @@ from pathlib import Path
 import streamlit as st
 
 from modules.ui_components import change_page, load_local_image_as_base64
-from views.bank_forms import draw_loan, pay_loan
+from views.bank_draw import draw_loan
+from views.bank_forms import pay_loan
 from views.bank_scene import bank_home, opening_scene
 
 
