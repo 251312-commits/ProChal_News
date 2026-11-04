@@ -1,5 +1,6 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
 streamlit
+streamlit-autorefresh
 newspaper3k
 lxml_html_clean
 beautifulsoup4
@@ -7,4 +8,5 @@ transformers
 torch
 gspread
 google-auth
+st-clickable-images
 google-genai
