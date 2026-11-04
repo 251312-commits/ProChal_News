@@ -47,70 +47,20 @@ def fix_game_3_slot_animation():
         """
         <style>
 
-        /* 슬롯 덮개 사라지는 효과 */
-        @keyframes game3SlotReveal {
-            0% {
-                opacity: 1;
-                visibility: visible;
-            }
-
-            99% {
-                opacity: 1;
-                visibility: visible;
-            }
-
-            100% {
-                opacity: 0;
-                visibility: hidden;
-            }
-        }
-
-        /* 기사 제목 공개 효과 */
-        @keyframes game3TitleReveal {
-            0% {
-                transform: scale(0.8);
-                opacity: 0;
-            }
-
-            65% {
-                transform: scale(1.08);
-                opacity: 1;
-            }
-
-            100% {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
-
-        /* 첫 번째 기사 */
-        .st-key-btn_game_3_0 button::before {
-            animation: game3SlotReveal 0.01s linear 3s forwards !important;
-        }
-
-        .st-key-btn_game_3_0 button p {
-            animation: game3TitleReveal 0.4s ease 3s both !important;
-        }
-
-        /* 두 번째 기사 */
-        .st-key-btn_game_3_1 button::before {
-            animation: game3SlotReveal 0.01s linear 3.5s forwards !important;
-        }
-
-        .st-key-btn_game_3_1 button p {
-            animation: game3TitleReveal 0.4s ease 3.5s both !important;
-        }
-
-        /* 세 번째 기사 */
+        /* 슬롯 오버레이가 계속 남는 현상 방지 */
+        .st-key-btn_game_3_0 button::before,
+        .st-key-btn_game_3_1 button::before,
         .st-key-btn_game_3_2 button::before {
-            animation: game3SlotReveal 0.01s linear 4s forwards !important;
+
+            animation: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            display: none !important;
+            content: none !important;
+
         }
 
-        .st-key-btn_game_3_2 button p {
-            animation: game3TitleReveal 0.4s ease 4s both !important;
-        }
-
-        /* 기사 버튼 기본 디자인 */
+        /* 기사 버튼 디자인 */
         .st-key-btn_game_3_0 button,
         .st-key-btn_game_3_1 button,
         .st-key-btn_game_3_2 button {
@@ -139,7 +89,7 @@ def fix_game_3_slot_animation():
             transition: all 0.2s ease !important;
         }
 
-        /* 제목 글씨 표시 */
+        /* 기사 제목 */
         .st-key-btn_game_3_0 button p,
         .st-key-btn_game_3_1 button p,
         .st-key-btn_game_3_2 button p {
@@ -149,6 +99,7 @@ def fix_game_3_slot_animation():
             line-height: 1.5 !important;
             white-space: normal !important;
             word-break: keep-all !important;
+            opacity: 1 !important;
 
         }
 
@@ -191,26 +142,48 @@ def load_game_3_article():
     saved_article = st.session_state.get("game_3_article_data")
 
     if saved_article:
+
         return (
-            saved_article["title"],
-            saved_article["article_text"],
-            saved_article["url"]
+            saved_article.get("title"),
+            saved_article.get("article_text"),
+            saved_article.get("url")
         )
 
     try:
 
-        # common.py에서 뉴스 제목, 본문, URL 가져오기
-        title, article_text, url = get_game_news_selection("game_3")
+        # common.py의 뉴스 선택 기능 실행
+        selection = get_game_news_selection("game_3")
 
-        if not url:
+        # --------------------------------------
+        # 중요 수정:
+        # common.py에서 None을 반환하는 경우 처리
+        # --------------------------------------
 
-            st.error("선택한 뉴스의 URL을 가져오지 못했습니다.")
+        if selection is None:
+            return None, None, None
 
-            st.warning(
-                "games/common.py의 get_game_news_selection()에서 "
-                "URL 반환 부분을 확인해야 합니다."
+        # 반환값이 튜플 또는 리스트인지 확인
+        if not isinstance(selection, (tuple, list)):
+
+            st.error(
+                "뉴스 선택 함수의 반환 형식이 올바르지 않습니다."
             )
 
+            return None, None, None
+
+        # 반환값 개수 확인
+        if len(selection) != 3:
+
+            st.error(
+                "뉴스 선택 함수에서 반환된 데이터가 올바르지 않습니다."
+            )
+
+            return None, None, None
+
+        title, article_text, url = selection
+
+        # common.py에서 기사 선택 또는 읽기가 진행 중인 경우
+        if not title or not article_text or not url:
             return None, None, None
 
         url = str(url).strip()
@@ -458,13 +431,14 @@ def show_game_3():
         "선택한 기사의 URL을 이용해 실제 기사 본문을 가져옵니다."
     )
 
-    # common.py의 기존 뉴스 선택 기능 실행
-    title, article_text, url = load_game_3_article()
-
-    # 슬롯 애니메이션 CSS 덮어쓰기
+    # 슬롯 애니메이션 CSS 적용
     # common.py는 수정하지 않음
     fix_game_3_slot_animation()
 
+    # 뉴스 선택 및 본문 가져오기
+    title, article_text, url = load_game_3_article()
+
+    # 기사가 아직 선택되지 않았거나 읽는 중이면 대기
     if not title or not article_text or not url:
         return
 
