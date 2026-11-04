@@ -125,7 +125,7 @@
   z-index: 1;
   width: 91%;
   left: 4.5%;
-  bottom: -3%;
+  bottom: 0;
   filter: drop-shadow(0 7px 9px #35004494);
 }
 .bank-repay-safe {
@@ -160,13 +160,14 @@
   72% { filter: drop-shadow(0 0 20px #f8be5ae3) drop-shadow(0 0 18px #db6effc9); }
   100% { filter: drop-shadow(0 7px 10px #13011f73); }
 }
-.st-key-bank-repay-panel {
+.st-key-bank-repay-screen .st-key-bank-repay-panel {
   display: grid;
   grid-template: minmax(0,.29fr) minmax(0,.77fr) minmax(0,.79fr) / minmax(0,1fr);
   align-items: center;
   gap: 0;
   height: 100%;
-  margin: 0 3.4%;
+  width: 93.2%;
+  margin: 0 auto;
   padding: 1.4cqw 5.2cqw 2.4cqw;
   border: 1px solid #e19bf4;
   border-radius: 5.9cqw;
@@ -332,7 +333,7 @@
   .bank-repay-drop-coin { width: 19%; left: 40.5%; top: 0; }
   .st-key-bank-repay-panel {
     container-type: inline-size;
-    margin: 4px 4%; padding: 4px 4%; border-radius: 14px;
+    width: 92%; margin: 4px auto; padding: 4px 4%; border-radius: 14px;
   }
   .st-key-bank-repay-screen .bank-repay-label { font-size: 14px !important; }
   .st-key-bank-repay-screen .st-key-bank-repay-stepper { gap: 7px; }
