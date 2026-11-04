@@ -10,7 +10,7 @@ class GameOneEntryTests(unittest.TestCase):
         with patch.dict(sys.modules, {"streamlit": st, "modules.ui_components": ui}):
             show_guide = run_module("games.game1_tutorial")["show_game_1_tutorial"]
             for action, destination in (
-                (None, None), ("메인으로", "main"), ("베팅하러 가기", "game_1"),
+                (None, None), ("메인으로", "main"), ("건너뛰기", "game_1"), ("베팅하러 가기", "game_1"),
             ):
                 with self.subTest(action=action):
                     st.button.side_effect = lambda label, **kwargs: label == action

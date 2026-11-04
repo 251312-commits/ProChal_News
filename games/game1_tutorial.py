@@ -6,26 +6,34 @@ from modules.ui_components import change_page, load_local_image_as_base64
 
 
 def show_game_1_tutorial():
-    poster = Path(__file__).resolve().parents[1] / "assets" / "game1_tutorial.webp"
-    with st.container(key="game1-guide", gap="small"):
+    art = Path(__file__).resolve().parents[1] / "assets" / "game1_guide"
+    steps = (
+        ("bet", "코인 베팅", "금액을 정해 베팅한다.<br>최소 <b>1,000 C</b>"),
+        ("news", "기사 선택", "레버를 내린 뒤<br>기사 한 편을 골라 읽는다."),
+        ("digits", "두 자리 예측", "점수의 소수점 뒤 두 자리<br>예시　87.04점 → <b>04</b>"),
+        ("result", "결과 확인", "적중　+베팅액의 <b>100배</b><br>실패　−베팅액"),
+    )
+    cards = "".join(
+        f'<li><h2><span>{number:02d}</span>{title}</h2>'
+        f'<img src="{load_local_image_as_base64(str(art / (name + ".webp")))}" alt="">'
+        f'<p>{caption}</p></li>'
+        for number, (name, title, caption) in enumerate(steps, 1)
+    )
+    with st.container(key="game1-guide", gap=None):
         st.html(Path(__file__).with_suffix(".css"))
+        with st.container(key="game1-guide-nav", horizontal=True, gap=None):
+            if st.button("메인으로", key="game1-guide-back"):
+                change_page("main")
+            if st.button("건너뛰기", key="game1-guide-skip"):
+                change_page("game_1")
         st.html(f"""
             <section class="game1-guide-sheet" aria-labelledby="game1-guide-title" lang="ko">
-                <img src="{load_local_image_as_base64(str(poster))}" alt="" width="1122" height="1402">
-                <div class="game1-guide-copy">
-                    <h1 id="game1-guide-title">뉴스 유사도 예측</h1>
-                    <p>기사 제목과 AI 요약문의 유사도 점수가 87.04점이면 정답은 <strong>04</strong>다.</p>
-                    <ol>
-                        <li>1,000 C 이상 베팅한다.</li>
-                        <li>추천 기사 중 한 편을 골라 읽는다.</li>
-                        <li>▲▼로 소수점 뒤 두 자리를 골라 제출한다.</li>
-                    </ol>
-                    <p>적중하면 베팅액의 100배를 얻고, 실패하면 베팅액을 잃는다.</p>
-                </div>
+                <header class="game1-guide-heading">
+                    <span>GAME 01</span><h1 id="game1-guide-title">뉴스 유사도 예측</h1>
+                    <p>기사 제목과 AI 요약문은 얼마나 비슷할까?</p>
+                </header>
+                <ol aria-label="게임 진행 순서" role="list">{cards}</ol>
             </section>
         """)
-        with st.container(key="game1-guide-actions", horizontal=True, gap="small"):
-            if st.button("메인으로", key="game1-guide-back", width="stretch"):
-                change_page("main")
-            if st.button("베팅하러 가기", key="game1-guide-start", type="primary", width="stretch"):
-                change_page("game_1")
+        if st.button("베팅하러 가기", key="game1-guide-start", type="primary", width="stretch"):
+            change_page("game_1")

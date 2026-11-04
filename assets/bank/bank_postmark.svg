@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 148 80" fill="none" stroke="#785672">
+  <g transform="rotate(7 40 40)">
+    <circle cx="40" cy="40" r="37" stroke-width="1.8"/>
+    <circle cx="40" cy="40" r="34.7" stroke-width=".7"/>
+    <circle cx="40" cy="40" r="32.4" stroke-width="2.5" stroke-dasharray=".9 2.7" opacity=".75"/>
+    <circle cx="40" cy="40" r="29.7" stroke-width=".9"/>
+    <g fill="#785672" stroke="none">
+      <path d="m27 28 7.6 4.3L40 23l5.4 9.3L53 28l-3.4 13H30.4zM31 43h18v2H31z"/>
+      <circle cx="26.5" cy="26.5" r="1.4"/>
+      <circle cx="40" cy="21.7" r="1.5"/>
+      <circle cx="53.5" cy="26.5" r="1.4"/>
+      <text x="40" y="57" text-anchor="middle" font-family="Georgia,serif" font-size="12" font-weight="bold" letter-spacing="1">BANK</text>
+    </g>
+  </g>
+  <g stroke-width="1.5" stroke-linecap="round" opacity=".82">
+    <path d="M67 29c12 4 18 4 30-1s18-5 29 0 16 4 23 1"/>
+    <path d="M68 36c12 4 18 4 30-1s18-5 29 0 16 4 23 1"/>
+    <path d="M68 43c12 4 18 4 30-1s18-5 29 0 16 4 23 1"/>
+    <path d="M67 50c12 4 18 4 30-1s18-5 29 0 16 4 23 1"/>
+  </g>
+</svg>
