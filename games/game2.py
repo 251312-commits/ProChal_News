@@ -12,9 +12,6 @@ from games.common import get_game_news_selection
 ws = init_gspread()
 ws_news = init_news_sheet()
 
-# 기존 def show_game_2(): show_placeholder_page("게임 2") 줄은 지우고 
-# 아래의 전체 구현 코드로 대체합니다.
-
 def show_game_2():
     st.title("🎮 게임 2: 뉴스 유사도 HIGH / LOW 게임")
 
