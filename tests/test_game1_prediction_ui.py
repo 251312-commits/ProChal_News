@@ -33,7 +33,18 @@ class FakeStreamlit:
         return nullcontext()
 
     def button(self, label, *, key, **kwargs):
-        return key == self.clicked
+        # Real Streamlit callbacks run before the next fragment rerender.
+        if key == self.clicked:
+            self.clicked = None
+            callback = kwargs.get("on_click")
+            if callback:
+                callback(*kwargs.get("args", ()), **kwargs.get("kwargs", {}))
+            return True
+        return False
+
+    @staticmethod
+    def columns(spec, **kwargs):
+        return tuple(nullcontext() for _ in spec)
 
     def html(self, value):
         self.markup.append(str(value))
@@ -75,13 +86,45 @@ class PredictionPickerTests(unittest.TestCase):
         self.assertIn("1,250 C", page)
         self.assertNotIn("game_1_predicted_digits", self.st.session_state)
 
-    def test_buttons_change_single_digit_using_fragment_rerun(self):
+    def test_arrow_callbacks_change_number_and_rerender_display(self):
+        # Pressing any arrow runs its callback; Streamlit then reruns the fragment.
+        for key, expected_tens, expected_ones in (
+            ("game1-pred-tens-up", 1, 4),
+            ("game1-pred-ones-down", 1, 3),
+            ("game1-pred-tens-down", 0, 3),
+            ("game1-pred-ones-up", 0, 4),
+        ):
+            with self.subTest(key=key):
+                self.st.clicked = key
+                self.picker("한 기사")
+                self.assertEqual(
+                    (self.st.session_state.game1_pred_tens,
+                     self.st.session_state.game1_pred_ones),
+                    (expected_tens, expected_ones),
+                )
+                self.st.markup.clear()
+                self.picker("한 기사")  # Simulate Streamlit's automatic fragment rerun.
+                page = "".join(self.st.markup)
+                self.assertIn(f'aria-label="소수 첫째 자리 {expected_tens}"', page)
+                self.assertIn(f'aria-label="소수 둘째 자리 {expected_ones}"', page)
+                self.assertEqual(
+                    (self.st.session_state.tens_val, self.st.session_state.ones_val),
+                    (expected_tens, expected_ones),
+                )
+                self.assertNotIn("game_1_predicted_digits", self.st.session_state)
+                self.assertIsNone(self.st.rerun_scope)
+
+    def test_arrows_wrap_zero_and_nine(self):
+        self.st.session_state.game1_pred_tens = 9
+        self.st.session_state.game1_pred_ones = 0
+        self.st.clicked = "game1-pred-tens-up"
+        self.picker("기사")
+        self.assertEqual(self.st.session_state.game1_pred_tens, 0)
         self.st.clicked = "game1-pred-ones-down"
-        with self.assertRaises(RerunRequested):
-            self.picker("한 기사")
-        self.assertEqual(self.st.session_state.game1_pred_ones, 3)
-        self.assertEqual(self.st.rerun_scope, "fragment")
-        self.assertNotIn("game_1_predicted_digits", self.st.session_state)
+        self.picker("기사")
+        self.assertEqual(self.st.session_state.game1_pred_ones, 9)
+        self.picker("기사")
+        self.assertEqual((self.st.session_state.tens_val, self.st.session_state.ones_val), (0, 9))
 
     def test_submit_commits_existing_score_protocol(self):
         self.st.session_state.game1_pred_tens = 8
@@ -104,18 +147,25 @@ class PredictionPickerTests(unittest.TestCase):
         self.assertEqual(self.st.session_state.game1_pred_ones, 6)
         self.assertNotIn("game_1_predicted_digits", self.st.session_state)
 
-    def test_mobile_layout_uses_grid_without_streamlit_horizontal_wrappers(self):
+    def test_mobile_grid_uses_native_columns_and_correct_assets(self):
         root = Path(__file__).resolve().parents[1]
         source = (root / "games" / "game1_prediction_ui.py").read_text(encoding="utf-8")
         css = (root / "games" / "game1_prediction_ui.css").read_text(encoding="utf-8")
-        # A vertical container provides three direct grid items on narrow phones.
         self.assertIn('st.container(key="game1-prediction-nav", gap=None)', source)
         self.assertIn('st.container(key="game1-prediction-reels", gap=None)', source)
-        self.assertNotIn('key="game1-prediction-reels", horizontal=True', source)
-        self.assertIn("grid-template-columns:minmax(0,.77fr)", css)
-        self.assertIn(".st-key-game1-prediction-machine > :has(.st-key-game1-prediction-reels)", css)
-        self.assertIn("max-height:620px", css)
-        self.assertIn("env(safe-area-inset-bottom)", css)
+        self.assertIn("st.columns([1, 5, 1]", source)
+        self.assertIn("st.columns([0.7, 1, 1]", source)
+        self.assertIn("on_click=_change_digit", source)
+        self.assertNotIn('color:transparent !important', source)
+        self.assertNotIn('bet_coin_stack.png', source)
+        self.assertIn('bet_podium.png', source)
+        self.assertTrue((root / "assets" / "bet_podium.png").exists())
+        self.assertIn('.st-key-game1-prediction-reels [data-testid="stHorizontalBlock"]', css)
+        self.assertIn('grid-template-columns:minmax(0,.67fr)', css)
+        self.assertIn('.st-key-game1-prediction-nav [data-testid="stHorizontalBlock"]', css)
+        self.assertIn('minmax(0,1fr)', css)
+        self.assertIn('max-height:640px', css)
+        self.assertIn('env(safe-area-inset-bottom)', css)
         self.assertEqual(css.count("{"), css.count("}"))
 
     def test_artwork_and_styles_are_checked_into_the_repository(self):
