@@ -261,7 +261,7 @@
 .st-key-game1-pred-reel-ones > [data-testid="stVerticalBlock"],
 .st-key-game1-pred-reel-tens > div > [data-testid="stVerticalBlock"],
 .st-key-game1-pred-reel-ones > div > [data-testid="stVerticalBlock"] {
-  display:grid !important; grid-template-rows:24% 52% 24%;
+  display:grid !important; grid-template-rows:minmax(36px,26%) minmax(0,1fr) minmax(36px,26%);
   width:100% !important; height:100% !important;
   min-width:0 !important; min-height:0 !important; gap:0 !important;
   align-items:stretch !important;
