@@ -1,380 +1,446 @@
-/* Game 1 prediction screen.  Streamlit 1.55: style the actual layout blocks,
-   not just the outer keyed container.  Every selector is scoped to this page. */
+/* GAME 1 — single-screen 9:16-inspired prediction panel (Streamlit 1.55).
+   The root is a viewport stage. Every major element is independently placed.
+   Crucially, NO sum of intrinsic Streamlit container heights can create scroll.
+   Targets are scoped to the keyed stage to leave the rest of the app alone. */
 .stApp:has(.st-key-game1-prediction) {
-  --pred-top:max(8px, env(safe-area-inset-top));
-  --pred-bottom:max(10px, env(safe-area-inset-bottom));
-  color:#fff3ff;
-  background-color:#13051e !important;
-  overflow-x:clip;
+  background:#12051f !important;
+  overflow:hidden !important;
 }
-.stApp:has(.st-key-game1-prediction) [data-testid="stHeader"] {
+.stApp:has(.st-key-game1-prediction) [data-testid="stHeader"],
+.stApp:has(.st-key-game1-prediction) [data-testid="stToolbar"],
+.stApp:has(.st-key-game1-prediction) footer {
   display:none !important;
 }
+.stApp:has(.st-key-game1-prediction) [data-testid="stAppViewContainer"],
+.stApp:has(.st-key-game1-prediction) [data-testid="stMain"],
+.stApp:has(.st-key-game1-prediction) section.main,
 .stApp:has(.st-key-game1-prediction) .block-container {
-  width:100%; max-width:550px !important;
-  min-height:100svh; margin:0 auto !important;
-  padding:var(--pred-top) max(12px,env(safe-area-inset-right))
-    var(--pred-bottom) max(12px,env(safe-area-inset-left)) !important;
-  box-sizing:border-box;
+  height:100dvh !important;
+  min-height:0 !important; max-height:100dvh !important;
+  overflow:hidden !important; overscroll-behavior:none;
+}
+.stApp:has(.st-key-game1-prediction) .block-container {
+  width:100% !important; max-width:none !important;
+  margin:0 !important; padding:0 !important;
 }
 .stApp:has(.st-key-game1-prediction) .block-container > [data-testid="stVerticalBlock"] {
   gap:0 !important;
 }
-.st-key-game1-prediction,
-.st-key-game1-prediction * { box-sizing:border-box; }
+/* Fixed viewbox, including the safe-area on modern iPhones.
+   Outside this box only the background remains visible on wide screens. */
 .st-key-game1-prediction {
-  width:100% !important; max-width:500px !important;
-  min-width:0 !important; margin:0 auto !important;
+  position:fixed !important;
+  inset:0 auto auto 50% !important;
+  transform:translateX(-50%) !important;
+  z-index:100 !important;
+  display:block !important; isolation:isolate;
+  box-sizing:border-box !important;
+  width:min(100vw, 540px) !important;
+  max-width:540px !important;
+  height:100dvh !important; max-height:100dvh !important;
+  min-height:0 !important;
+  margin:0 !important; padding:0 !important;
+  overflow:hidden !important;
+  color:#fff1ff; background:transparent;
   font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
 }
-.st-key-game1-prediction:is([data-testid="stVerticalBlock"]),
-.st-key-game1-prediction > [data-testid="stVerticalBlock"],
-.st-key-game1-prediction > div > [data-testid="stVerticalBlock"] {
-  display:flex !important; flex-direction:column !important;
-  justify-content:space-between !important;
-  gap:clamp(5px,.8svh,11px) !important;
-  min-height:calc(100svh - var(--pred-top) - var(--pred-bottom));
-  width:100% !important;
+.st-key-game1-prediction, .st-key-game1-prediction * {box-sizing:border-box;}
+/* Streamlit adds vertical blocks and element wrappers. They must not
+   establish independent coordinate systems or force vertical growth. */
+.st-key-game1-prediction [data-testid="stVerticalBlock"],
+.st-key-game1-prediction [data-testid="stVerticalBlockBorderWrapper"] {
+  min-width:0 !important; min-height:0 !important;
+  max-width:100% !important;
+  gap:0 !important;
+}
+.st-key-game1-prediction [data-testid="stElementContainer"] {
+  min-width:0 !important; min-height:0 !important;
+  padding:0 !important;
+}
+/* Unpositioned internal blocks allow absolute page sections to use the
+   fixed stage as their coordinate system, not a random React wrapper. */
+.st-key-game1-prediction [data-testid="stVerticalBlock"]:not(.st-key-game1-prediction-machine):not(.st-key-game1-prediction-nav):not(.st-key-game1-prediction-reels):not(.st-key-game1-pred-reel-tens):not(.st-key-game1-pred-reel-ones) {
+  position:static !important;
 }
 .st-key-game1-prediction button {
-  touch-action:manipulation; cursor:pointer;
+  touch-action:manipulation;
   -webkit-tap-highlight-color:transparent;
   font-family:inherit !important;
+  cursor:pointer;
 }
 .st-key-game1-prediction button:focus-visible {
-  outline:3px solid #ffe6a9 !important; outline-offset:2px;
+  outline:3px solid #ffe4a3 !important;outline-offset:1px;
+}
+/* Vertical page coordinates follow the supplied 864 × 1536 composition:
+   navigation 2–7%, crest/text 7–26%, news 26–37%, dial 38–75%,
+   pedestal 73–86%, confirm 85–94%. */
+.st-key-game1-prediction .st-key-game1-prediction-nav {
+  position:absolute !important; z-index:8;
+  top:max(10px,env(safe-area-inset-top)) !important;
+  left:4% !important; width:92% !important;
+  height:clamp(35px,5.7dvh,50px) !important;
+  min-height:0 !important; margin:0 !important; padding:0 !important;
+}
+.st-key-game1-prediction [data-testid="stElementContainer"]:has(.game1-pred-heading) {
+  position:absolute !important; z-index:2;
+  top:6.5% !important; left:6% !important;
+  width:88% !important; height:19.5% !important;
+  margin:0 !important; padding:0 !important;
+}
+.st-key-game1-prediction [data-testid="stElementContainer"]:has(.game1-pred-news-wrap) {
+  position:absolute !important; z-index:4;
+  top:25.8% !important; left:8% !important;
+  width:84% !important; height:11.3% !important;
+  margin:0 !important; padding:0 !important;
+}
+.st-key-game1-prediction .st-key-game1-prediction-machine {
+  position:absolute !important; z-index:3;
+  top:38% !important; left:7% !important;
+  width:86% !important; height:35.8% !important;
+  max-height:none !important; min-height:0 !important;
+  margin:0 !important; padding:0 !important;
+}
+.st-key-game1-prediction [data-testid="stElementContainer"]:has(.game1-pred-podium) {
+  position:absolute !important; z-index:4;
+  top:71.7% !important; left:3% !important;
+  width:94% !important; height:13% !important;
+  overflow:visible !important;
+  margin:0 !important; padding:0 !important;
+  pointer-events:none !important;
+}
+.st-key-game1-prediction .st-key-game1-pred-submit {
+  position:absolute !important; z-index:7;
+  top:85% !important; left:7% !important;
+  width:86% !important; height:8.3% !important;
+  max-height:none !important; min-height:0 !important;
+  margin:0 !important; padding:0 !important;
+}
+/* Ensure the actual keyed contents fill their assigned rectangles. */
+.st-key-game1-prediction-nav > [data-testid="stVerticalBlock"],
+.st-key-game1-prediction-machine > [data-testid="stVerticalBlock"],
+.st-key-game1-prediction-reels > [data-testid="stVerticalBlock"],
+.st-key-game1-pred-reel-tens > [data-testid="stVerticalBlock"],
+.st-key-game1-pred-reel-ones > [data-testid="stVerticalBlock"] {
+  height:100% !important; width:100% !important; min-height:0 !important;
 }
 
-/* Navigation: native st.columns are laid out in one non-wrapping row.
-   The wallet is permitted to shrink but not force a fourth column. */
-.st-key-game1-prediction-nav {
-  width:100% !important; min-width:0 !important;
-}
+/* TOP BAR.  Use the real st.columns (back / coin / bank) and prevent wrap. */
 .st-key-game1-prediction-nav [data-testid="stHorizontalBlock"] {
   display:grid !important;
-  grid-template-columns:clamp(36px,5.8svh,46px) minmax(0,1fr) clamp(36px,5.8svh,46px);
-  grid-template-rows:clamp(36px,5.8svh,46px);
+  grid-template-columns:clamp(35px,5.7dvh,50px) minmax(0,1fr) clamp(35px,5.7dvh,50px);
+  grid-template-rows:minmax(0,1fr);
+  width:100% !important;height:100% !important;
   align-items:center !important;
-  width:100% !important; gap:0 !important;
+  flex-wrap:nowrap !important;gap:0 !important;
 }
 .st-key-game1-prediction-nav [data-testid="stColumn"] {
-  width:100% !important; min-width:0 !important;
-  height:100%; flex:initial !important;
+  flex:none !important;width:100% !important;
+  min-width:0 !important;min-height:0 !important;height:100% !important;
 }
 .st-key-game1-prediction-nav [data-testid="stColumn"] > [data-testid="stVerticalBlock"] {
-  width:100% !important; min-width:0 !important; height:100%;
-  justify-content:center;
-  gap:0 !important;
+  width:100% !important;height:100% !important;
+  min-height:0 !important;justify-content:center !important;gap:0 !important;
 }
 .st-key-game1-pred-back button,
 .st-key-game1-pred-bank button {
-  display:grid !important; place-items:center;
-  width:100% !important; height:clamp(36px,5.8svh,46px) !important;
-  min-height:0 !important; margin:0 !important; padding:0 !important;
-  line-height:1 !important; font-weight:700 !important;
+  display:grid !important;place-items:center !important;
+  width:100% !important;height:clamp(35px,5.7dvh,50px) !important;
+  min-height:0 !important; padding:0 !important;margin:0 !important;
+  line-height:1 !important;
 }
 .st-key-game1-pred-back button {
-  border:0 !important; background:transparent !important;
-  box-shadow:none !important; color:#f5d6ff !important;
-  font-size:clamp(23px,6vw,32px) !important;
+  border:0 !important;background:transparent !important;box-shadow:none !important;
+  color:#fff0ff !important;font-size:clamp(22px,6vw,32px) !important;
 }
 .st-key-game1-pred-bank button {
-  border:1px solid #aa44ee !important; border-radius:50% !important;
-  background:radial-gradient(circle at 30% 20%,#7b35ac,#2c0d4d 80%) !important;
-  box-shadow:0 0 11px #ae43f3b0,inset 0 0 6px #d57cff88 !important;
-  color:#fff4ff !important; font-size:clamp(23px,5.6vw,29px) !important;
+  border:1px solid #c65afb !important;border-radius:50% !important;
+  background:radial-gradient(circle at 27% 25%,#8541b2,#270b42 76%) !important;
+  box-shadow:0 0 9px #b13cf5a9 !important;color:#fdf1ff !important;
+  font-size:clamp(24px,6vw,31px) !important;
 }
 .game1-pred-wallet {
-  display:flex; align-items:center; justify-content:flex-end;
-  margin-left:auto; width:max-content; max-width:100%;
-  height:clamp(36px,5.8svh,46px); min-width:0;
-  overflow:hidden; white-space:nowrap;
-  border:1px solid #ac48e5; border-right:0;
-  border-radius:99px 0 0 99px;
-  padding:2px 8px 2px 3px;
-  background:linear-gradient(105deg,#301041f0,#160620ec);
-  color:#fff2fc;
-  box-shadow:0 0 12px #c63dff80;
-  font-size:clamp(12px,3.8vw,19px);
-  font-weight:850; font-variant-numeric:tabular-nums;
+  display:flex;align-items:center;justify-content:flex-end;
+  width:max-content;max-width:100%;min-width:0;
+  height:clamp(35px,5.7dvh,50px);
+  margin:0 0 0 auto;padding:2px 8px 2px 3px;
+  overflow:hidden;white-space:nowrap;
+  border:1px solid #b64bec;border-right:0;border-radius:100px 0 0 100px;
+  background:linear-gradient(90deg,#2c103bf2,#180624e9);
+  color:#fff2fc;font-size:clamp(13px,3.7vw,21px);
+  font-weight:850;font-variant-numeric:tabular-nums;
+  box-shadow:0 0 11px #a82ded79;
 }
 .game1-pred-wallet-coin {
-  display:grid; place-items:center; flex:none;
-  width:clamp(28px,4.8svh,39px);
-  height:clamp(28px,4.8svh,39px);
-  margin-right:clamp(3px,1vw,8px);
-  border:2px solid #ffe185; border-radius:50%;
-  color:#fff6ce; font-weight:900;
-  background:radial-gradient(circle at 30% 20%,#fff7a4,#ffcc3f 31%,#db7f0a 76%,#ad500d);
-  box-shadow:inset 0 1px 2px #fff6ae,0 0 9px #ffb42c9b;
-  text-shadow:0 1px 2px #8c4500;
-  font-size:clamp(15px,3.8vw,20px);
+  display:grid;place-items:center;flex:none;
+  width:clamp(28px,4.8dvh,42px);height:clamp(28px,4.8dvh,42px);
+  margin-right:clamp(4px,1vw,9px);
+  border:2px solid #ffe18c;border-radius:50%;
+  background:radial-gradient(circle at 30% 21%,#fff5a4,#ffcc3d 32%,#d77a08 75%,#a44504);
+  color:#fff0c4;font-weight:900;font-size:clamp(16px,4vw,21px);
+  text-shadow:0 1px 2px #803d05;
+  box-shadow:inset 0 1px 3px #fff0a4,0 0 6px #ffd1488c;
 }
-.game1-pred-wallet-amount {
-  min-width:0; max-width:100%; white-space:nowrap;
-  overflow:hidden; text-overflow:ellipsis;
-}
+.game1-pred-wallet-amount {min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
-/* Crest, heading and explanation are one self-contained HTML element. */
-.game1-pred-heading {width:100%; min-width:0; text-align:center;}
+/* CROWN, TITLE, DESCRIPTION.  Their height is capped by the assigned
+   rectangle, not the natural size of a Streamlit HTML wrapper. */
+.game1-pred-heading {
+  width:100%;height:100%;min-width:0;
+  text-align:center;overflow:hidden;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:clamp(1px,.35dvh,5px);
+}
 .game1-pred-banner {
-  display:block; width:90%; height:clamp(42px,8svh,86px);
-  margin:0 auto; object-fit:contain;
-  filter:drop-shadow(0 0 9px #b33cf58c);
+  display:block;width:min(91%,490px);height:clamp(44px,9dvh,94px);
+  margin:0 auto;object-fit:contain;
+  flex-shrink:1;min-height:0;
+  filter:drop-shadow(0 0 8px #b02cfc82);
 }
 .game1-pred-banner-fallback {
-  display:block; color:#f5c278; font:700 clamp(13px,3.8vw,19px)/1.3 Georgia,serif;
-  letter-spacing:.09em;
+  color:#f5bf73;font:700 clamp(12px,3.2vw,19px)/1.15 Georgia,serif;
+  letter-spacing:.1em;
 }
 .game1-pred-heading h1 {
-  margin:0 !important; padding:0 !important;
-  color:#fff0ff !important; font-size:clamp(24px,6.7vw,40px) !important;
-  font-weight:900 !important; line-height:1.1 !important;
-  letter-spacing:-.04em; text-align:center;
-  text-shadow:0 2px 0 #4f195b,0 0 12px #c542ffad !important;
+  margin:0 !important;padding:0 !important;flex-shrink:0;
+  font-size:clamp(23px,6.4vw,40px) !important;line-height:1.08 !important;
+  letter-spacing:-.04em;font-weight:900 !important;
+  color:#fff0ff !important;text-align:center;
+  text-shadow:0 0 15px #b638fbb5 !important;
 }
 .game1-pred-heading p {
-  margin:clamp(2px,.55svh,7px) 0 0 !important;
-  font-size:clamp(11px,3.25vw,16px);
-  line-height:1.3; color:#e8cfed; text-align:center;
+  margin:0 !important;flex-shrink:0;
+  color:#edd2f0;text-align:center;
+  line-height:1.25;font-size:clamp(10px,3vw,16px);
   word-break:keep-all;
 }
-
-/* News illustration contains the newspaper icon; text is always real HTML. */
+/* NEWS CARD: preserve pred_news/pred_tag artwork and visible live title. */
 .game1-pred-news-wrap {
-  position:relative; isolation:isolate;
-  width:100%; height:clamp(65px,11.5svh,117px);
-  min-width:0; overflow:visible;
-  border:1px solid #d588ed; border-radius:16px;
-  background:linear-gradient(#ffeff5,#e4a2cd);
-  background-position:center; background-size:100% 100%;
-  background-repeat:no-repeat;
-  box-shadow:0 0 15px #c83bea9b;
+  position:relative;isolation:isolate;
+  width:100%;height:100%;min-width:0;margin:0;
+  border:0;border-radius:14px;
+  background:linear-gradient(#fce6f3,#c98aba);
+  background-size:100% 100%;background-position:center;background-repeat:no-repeat;
+  box-shadow:0 0 15px #d73afc9e;
 }
 .game1-pred-news-tag {
-  position:absolute; left:50%; top:-6%; z-index:1;
-  transform:translateX(-50%); display:block;
-  width:min(45%,215px); height:40%; object-fit:contain;
-  filter:drop-shadow(0 0 6px #cb39f7a1);
-  pointer-events:none;
+  display:block;position:absolute;top:-9%;left:50%;z-index:1;
+  width:43%;height:39%;object-fit:contain;
+  transform:translateX(-50%);pointer-events:none;
+  filter:drop-shadow(0 0 6px #e546f9aa);
 }
 .game1-pred-news-tag-fallback {
-  position:absolute; left:50%; top:-9%; z-index:1; transform:translateX(-50%);
-  background:linear-gradient(#771d85,#280e36); border:1px solid #e0a56c;
-  border-radius:10px; padding:2px 12px; color:#ffe3a1;
-  white-space:nowrap; font-size:clamp(12px,3.1vw,16px);font-weight:850;
+  position:absolute;z-index:1;top:-10%;left:50%;transform:translateX(-50%);
+  padding:2px 10px;white-space:nowrap;
+  background:#431053;color:#ffe5c2;border:1px solid #ffc87f;
+  border-radius:12px;font-size:clamp(11px,3vw,17px);font-weight:850;
 }
 .game1-pred-news-title {
-  position:absolute; left:27%; right:5%; top:53%; transform:translateY(-32%);
-  max-height:61%; min-width:0;
-  display:-webkit-box; -webkit-box-orient:vertical;
-  -webkit-line-clamp:2; line-clamp:2;
-  overflow:hidden; text-align:center;
-  color:#361342; font-size:clamp(12px,3.65vw,21px);
-  font-weight:900; line-height:1.18; letter-spacing:-.035em;
-  word-break:keep-all; overflow-wrap:anywhere;
+  position:absolute;top:54%;left:28%;right:5%;
+  transform:translateY(-30%);
+  max-height:60%;min-width:0;overflow:hidden;
+  display:-webkit-box;-webkit-box-orient:vertical;
+  -webkit-line-clamp:2;line-clamp:2;
+  text-align:center;word-break:keep-all;overflow-wrap:anywhere;
+  color:#2c0e39;font-size:clamp(12px,3.55vw,22px);
+  font-weight:900;line-height:1.14;letter-spacing:-.035em;
 }
-
-/* Machine: use normal document flow instead of absolute overlays, so the
-   arrow hit targets remain clickable and visible at every phone size. */
+/* MACHINE frame art is 520×340; body 0. / tens / ones is the center. */
 .st-key-game1-prediction-machine {
-  position:relative; width:100% !important; min-width:0 !important;
-  height:clamp(223px,36svh,355px) !important;
-  padding:clamp(36px,6svh,58px) clamp(14px,5vw,26px)
-    clamp(12px,2.3svh,23px) !important;
-  margin:0 !important; border:2px solid #e4a85f;
-  border-radius:10% / 13%;
-  background:linear-gradient(175deg,#45105f,#1a0a26 55%,#481361);
-  background-position:center; background-size:100% 100%; background-repeat:no-repeat;
-  box-shadow:0 0 19px #a72bee8a;
+  background:linear-gradient(165deg,#361044,#190923 56%,#4c175c);
+  background-size:100% 100%;background-position:center;background-repeat:no-repeat;
+  border:0 !important;border-radius:12% / 12%;
+  box-shadow:0 0 16px #a42bee76;
 }
-.st-key-game1-prediction-machine:is([data-testid="stVerticalBlock"]),
-.st-key-game1-prediction-machine > [data-testid="stVerticalBlock"],
-.st-key-game1-prediction-machine > div > [data-testid="stVerticalBlock"] {
-  display:grid !important; grid-template-rows:clamp(18px,3svh,27px) minmax(0,1fr) clamp(19px,2.9svh,27px);
-  width:100% !important; height:100% !important;
-  min-width:0 !important; min-height:0 !important; gap:0 !important;
-  align-items:stretch !important;
-}
-.st-key-game1-prediction-machine [data-testid="stElementContainer"] {
-  min-width:0 !important;
-}
-.game1-pred-machine-title {
-  width:100%; margin:0 !important;
-  color:#fbe4fb; text-align:center;
-  white-space:nowrap; font-size:clamp(12px,3.45vw,19px);
-  font-weight:900; line-height:1.3;
-  text-shadow:0 0 7px #dc48ff;
+.st-key-game1-prediction-machine [data-testid="stElementContainer"]:has(.game1-pred-machine-title) {
+  position:absolute !important;top:18% !important;left:5% !important;
+  width:90% !important;height:9% !important;margin:0 !important;
   pointer-events:none;
 }
-
-/* Three actual st.columns: fixed 0. / first digit / second digit.
-   Grid overrides Streamlit's small-screen column wrapping. */
-.st-key-game1-prediction-reels {
-  width:100% !important; height:100% !important;
-  min-width:0 !important; min-height:0 !important;
-  margin:0 !important; padding:0 !important;
+.game1-pred-machine-title {
+  display:grid;place-items:center;width:100%;height:100%;margin:0;
+  color:#fff0fa;text-shadow:0 0 9px #d23af8ab;
+  font-size:clamp(12px,3.35vw,19px);font-weight:900;
+  line-height:1.2;text-align:center;white-space:nowrap;
 }
+.st-key-game1-prediction-machine .st-key-game1-prediction-reels {
+  position:absolute !important;z-index:5;
+  top:29% !important;left:12% !important;
+  width:76% !important;height:56% !important;
+  min-height:0 !important;max-height:none !important;
+  margin:0 !important;padding:0 !important;
+}
+.st-key-game1-prediction-machine [data-testid="stElementContainer"]:has(.game1-pred-range) {
+  position:absolute !important;top:87% !important;left:19% !important;
+  width:62% !important;height:8% !important;
+  margin:0 !important;padding:0 !important;
+  pointer-events:none;
+}
+.game1-pred-range {
+  display:flex;justify-content:center;align-items:center;gap:5px;
+  width:100%;height:100%;margin:0 !important;padding:1px 4px;
+  border:1px solid #a83fd7;border-radius:100px;
+  background:#411052c9;box-shadow:inset 0 0 7px #ba47e87c;
+  color:#f4dbf4;font-size:clamp(9px,2.55vw,14px);
+  font-weight:600;line-height:1.1;text-align:center;white-space:nowrap;
+}
+.game1-pred-range span {color:#fff0ff;}
+
+/* 0. + two wheels. Grid goes on the REAL Streamlit horizontal block,
+   not on a wrapper around it; no handset may wrap the columns. */
 .st-key-game1-prediction-reels [data-testid="stHorizontalBlock"] {
   display:grid !important;
-  grid-template-columns:minmax(0,.67fr) repeat(2,minmax(0,1fr));
+  grid-template-columns:minmax(0,.78fr) repeat(2,minmax(0,1fr));
   grid-template-rows:minmax(0,1fr);
-  width:100% !important; height:100% !important;
-  min-width:0 !important; min-height:0 !important;
-  align-items:stretch !important; gap:clamp(4px,1.8vw,12px) !important;
-  flex-wrap:nowrap !important;
+  gap:clamp(4px,1.4vw,10px) !important;
+  flex-wrap:nowrap !important;align-items:stretch !important;
+  width:100% !important;height:100% !important;
+  min-width:0 !important;min-height:0 !important;
 }
 .st-key-game1-prediction-reels [data-testid="stColumn"] {
-  width:100% !important; min-width:0 !important;
-  height:100% !important; min-height:0 !important;
-  flex:initial !important;
+  flex:none !important;width:100% !important;
+  min-width:0 !important;height:100% !important;min-height:0 !important;
+  margin:0 !important;padding:0 !important;
 }
 .st-key-game1-prediction-reels [data-testid="stColumn"] > [data-testid="stVerticalBlock"] {
-  display:flex !important; flex-direction:column !important;
+  display:flex !important;flex-direction:column !important;
   justify-content:center !important;
-  width:100% !important; height:100% !important;
-  min-width:0 !important; min-height:0 !important; gap:0 !important;
+  width:100% !important;height:100% !important;
+  min-height:0 !important;min-width:0 !important;
+  margin:0 !important;padding:0 !important;gap:0 !important;
 }
 .game1-pred-zero {
-  display:grid; place-items:center;
-  width:100%; height:100%; margin:0;
-  color:#fff4ff;
-  font:900 clamp(36px,11.5vw,80px)/1 Georgia,"Times New Roman",serif;
-  font-variant-numeric:tabular-nums; letter-spacing:-.1em;
-  text-shadow:0 0 10px #dc7aff,0 0 20px #bd46f7a3;
-  pointer-events:none; user-select:none;
+  display:grid;place-items:center;width:100%;height:100%;
+  font:900 clamp(34px,11vw,83px)/1 Georgia,"Times New Roman",serif;
+  font-variant-numeric:tabular-nums;letter-spacing:-.08em;
+  color:#fff0ff;text-shadow:0 0 14px #d46cfce8;
+  pointer-events:none;user-select:none;
 }
-.st-key-game1-pred-reel-tens,
-.st-key-game1-pred-reel-ones {
-  position:relative; width:100% !important;
-  height:100% !important; min-width:0 !important;
-  min-height:0 !important; margin:0 !important;
-  overflow:hidden;
-  border:1px solid #ffcbdb; border-radius:25% / 19%;
-  background:linear-gradient(#4d1267,#9b2ce0 52%,#23043f);
-  background-size:100% 100%; background-position:center; background-repeat:no-repeat;
-  box-shadow:inset 0 0 9px #310a38,0 0 10px #d940ff8f;
+.st-key-game1-pred-reel-tens,.st-key-game1-pred-reel-ones {
+  display:grid !important;
+  grid-template-rows:minmax(0,24%) minmax(0,52%) minmax(0,24%);
+  width:100% !important;height:100% !important;
+  min-width:0 !important;min-height:0 !important;
+  gap:0 !important;margin:0 !important;padding:0 !important;
+  overflow:hidden;position:relative !important;
+  border:0 !important;border-radius:28% / 18%;
+  background:linear-gradient(#5f147e,#aa39e6 48%,#35104c);
+  background-position:center;background-size:100% 100%;background-repeat:no-repeat;
+  box-shadow:0 0 10px #e246ff84,inset 0 0 13px #16051dcf;
 }
-.st-key-game1-pred-reel-tens:is([data-testid="stVerticalBlock"]),
-.st-key-game1-pred-reel-ones:is([data-testid="stVerticalBlock"]),
 .st-key-game1-pred-reel-tens > [data-testid="stVerticalBlock"],
-.st-key-game1-pred-reel-ones > [data-testid="stVerticalBlock"],
-.st-key-game1-pred-reel-tens > div > [data-testid="stVerticalBlock"],
-.st-key-game1-pred-reel-ones > div > [data-testid="stVerticalBlock"] {
-  display:grid !important; grid-template-rows:minmax(36px,26%) minmax(0,1fr) minmax(36px,26%);
-  width:100% !important; height:100% !important;
-  min-width:0 !important; min-height:0 !important; gap:0 !important;
-  align-items:stretch !important;
+.st-key-game1-pred-reel-ones > [data-testid="stVerticalBlock"] {
+  display:grid !important;grid-template-rows:24% 52% 24%;
+  height:100% !important;width:100% !important;gap:0 !important;
+}
+.st-key-game1-pred-reel-tens > *,
+.st-key-game1-pred-reel-ones > * {
+  min-width:0 !important;min-height:0 !important;
 }
 .st-key-game1-pred-reel-tens [data-testid="stElementContainer"],
 .st-key-game1-pred-reel-ones [data-testid="stElementContainer"],
 .st-key-game1-pred-reel-tens [data-testid="stButton"],
 .st-key-game1-pred-reel-ones [data-testid="stButton"] {
-  width:100% !important; height:100% !important;
-  min-height:0 !important; min-width:0 !important;
-  padding:0 !important; margin:0 !important;
+  width:100% !important;height:100% !important;min-height:0 !important;
+  margin:0 !important;padding:0 !important;
 }
 .st-key-game1-pred-reel-tens button,
 .st-key-game1-pred-reel-ones button {
-  display:grid !important; place-items:center !important;
-  width:100% !important; height:100% !important;
-  min-height:0 !important; min-width:0 !important;
-  padding:0 !important; margin:0 !important;
-  border:0 !important; border-radius:0 !important;
-  color:#ffde8a !important; opacity:1 !important;
-  background:transparent !important; box-shadow:none !important;
-  text-shadow:0 0 6px #e6a44e !important;
-  font-size:clamp(14px,3.6vw,21px) !important;
-  font-weight:900 !important; line-height:1 !important;
-  position:relative; z-index:5; cursor:pointer;
+  display:grid !important;place-items:center !important;
+  width:100% !important;height:100% !important;
+  min-height:0 !important;min-width:0 !important;
+  padding:0 !important;margin:0 !important;
+  background:transparent !important;border:0 !important;
+  border-radius:0 !important;box-shadow:none !important;
+  color:#ffe4a1 !important;text-shadow:0 0 7px #f9a6da99 !important;
+  font-size:clamp(13px,3.3vw,21px) !important;
+  line-height:1 !important;font-weight:900 !important;
+  position:relative;z-index:8;
 }
-.st-key-game1-pred-reel-tens button:hover,
-.st-key-game1-pred-reel-ones button:hover,
 .st-key-game1-pred-reel-tens button:active,
-.st-key-game1-pred-reel-ones button:active {
-  background:#f19afb35 !important;
-}
+.st-key-game1-pred-reel-ones button:active {background:#f79afb32 !important;}
 .game1-pred-digit {
-  display:grid; place-items:center;
-  width:100%; height:100%; margin:0;
-  color:#fff0b8;
-  font:900 clamp(39px,11.5vw,81px)/1 Georgia,"Times New Roman",serif;
+  display:grid;place-items:center;
+  width:100%;height:100%;min-height:0;
+  pointer-events:none;user-select:none;
+  color:#fff0b9;text-shadow:0 0 8px #f4a0e4a8;
+  font:900 clamp(35px,11.4vw,87px)/1 Georgia,"Times New Roman",serif;
   font-variant-numeric:tabular-nums;
-  text-shadow:0 1px 3px #571035,0 0 10px #ffb4f5;
-  pointer-events:none; user-select:none;
 }
-.game1-pred-range {
-  width:min(82%,380px); margin:0 auto !important;
-  padding:clamp(2px,.4svh,5px) 5px;
-  color:#f2dcf8; text-align:center;
-  font-size:clamp(10px,2.7vw,14px); font-weight:650;
-  line-height:1.25; white-space:nowrap;
-  border:1px solid #ae3ae0; border-radius:100px;
-  background:#45125bda;
-  box-shadow:inset 0 0 8px #b842f27c;
-  pointer-events:none;
-}
-.game1-pred-range span { color:#fff4ff; }
 
-/* Use existing bet_podium.png exclusively, not bet_coin_stack.png. */
+/* PODIUM: keep the original asset's 1160×566 proportions, so it overlaps
+   the base of the frame instead of stretching into an oval. */
 .game1-pred-podium {
-  display:flex; align-items:center; justify-content:center;
-  width:100%; height:clamp(43px,8svh,87px);
-  min-width:0; margin:0 !important;
-  pointer-events:none;
+  width:100%;height:100%;
+  display:flex;align-items:flex-start;justify-content:center;
+  overflow:visible;
 }
 .game1-pred-podium img {
-  display:block; width:100%; height:100%;
-  object-fit:contain; object-position:center;
-  filter:drop-shadow(0 5px 8px #a92ff0aa);
+  display:block;flex:none;
+  width:min(100%, 490px);height:auto;max-width:none;max-height:none;
+  object-fit:contain;
+  transform:translateY(-12%);
+  filter:drop-shadow(0 5px 13px #9e2ce8ac);
 }
-.game1-pred-podium > span {color:#ffd67f;font-size:38px;}
-.st-key-game1-pred-submit {width:100%; min-width:0;}
+.game1-pred-podium > span {font-size:40px;color:#ffda7a;}
+
+/* CONFIRM is permanently visible without scrolling. */
+.st-key-game1-pred-submit [data-testid="stButton"] {height:100% !important;width:100% !important;}
 .st-key-game1-pred-submit button {
-  display:flex !important; align-items:center;justify-content:center;
-  width:100% !important; height:clamp(48px,7.6svh,75px) !important;
-  min-height:0 !important; margin:0 !important; padding:0 10px !important;
-  border:2px solid #ffc6f5 !important; border-radius:100px !important;
-  color:#fff5ff !important; font-size:clamp(19px,5vw,27px) !important;
-  font-weight:900 !important; line-height:1.15 !important;
-  background:linear-gradient(180deg,#ce4ef7,#8d1fe0 45%,#6411b9) !important;
-  box-shadow:inset 0 2px 8px #f7c8febb,0 0 16px #d73affb0,0 5px 16px #5d0a92c5 !important;
-  text-shadow:0 0 5px #ecc6fb;
+  display:flex !important;align-items:center !important;justify-content:center !important;
+  width:100% !important;height:100% !important;
+  min-width:0 !important;min-height:0 !important;
+  margin:0 !important;padding:0 10px !important;
+  border:2px solid #ffbcf6 !important;border-radius:100px !important;
+  background:linear-gradient(180deg,#cc57fa,#8821cf 45%,#6711bc) !important;
+  box-shadow:inset 0 2px 9px #ffd7ff9c,0 0 17px #db36fb,0 5px 16px #5e0e96c5 !important;
+  color:#fff4ff !important;text-shadow:0 0 5px #e49eff;
+  font-size:clamp(18px,5.1vw,30px) !important;
+  line-height:1.1 !important;font-weight:900 !important;
 }
+.st-key-game1-pred-submit button:hover {filter:brightness(1.12);}
 
-/* Short screens need smaller art, but still preserve visible click targets. */
-@media (max-height:640px) and (orientation:portrait) {
-  .stApp:has(.st-key-game1-prediction) {
-    --pred-top:max(5px,env(safe-area-inset-top));
-    --pred-bottom:max(5px,env(safe-area-inset-bottom));
+/* Tiny phone or short split-screen viewport: everything stays inside
+   the viewbox; the controls shrink together rather than overflowing. */
+@media (max-height:680px) and (orientation:portrait) {
+  .st-key-game1-prediction [data-testid="stElementContainer"]:has(.game1-pred-heading) {
+    top:6.3% !important;height:19.3% !important;
   }
-  .st-key-game1-prediction:is([data-testid="stVerticalBlock"]),
-  .st-key-game1-prediction > [data-testid="stVerticalBlock"] {gap:3px !important;}
-  .game1-pred-banner {height:clamp(31px,6.4svh,45px);}
-  .game1-pred-heading h1 {font-size:clamp(22px,6.1vw,29px) !important;}
-  .game1-pred-heading p {font-size:10px;line-height:1.23;margin-top:2px !important;}
-  .game1-pred-news-wrap {height:clamp(58px,10.3svh,78px);}
-  .st-key-game1-prediction-machine {
-    height:clamp(197px,35svh,235px) !important;
-    padding-top:clamp(32px,5.4svh,43px) !important;
-    padding-bottom:12px !important;
+  .game1-pred-banner {height:clamp(31px,7.7dvh,49px);}
+  .game1-pred-heading h1 {font-size:clamp(21px,6vw,27px) !important;}
+  .game1-pred-heading p {font-size:clamp(9.2px,2.8vw,12px);}
+  .st-key-game1-prediction-machine .st-key-game1-prediction-reels {
+    top:30% !important;height:54% !important;
   }
-  .game1-pred-podium {height:clamp(33px,6.5svh,48px);}
-  .st-key-game1-pred-submit button {height:clamp(45px,8svh,53px) !important;}
+  .game1-pred-wallet {font-size:clamp(12px,3.6vw,16px);}
+  .game1-pred-range {font-size:clamp(8.3px,2.45vw,11px);}
 }
-
-/* Landscape: keep controls side-by-side, allow vertical scrolling as needed.
-   Never use the previous overlapping absolute-positioned two-column layout. */
+@media (max-width:340px) {
+  .st-key-game1-prediction-nav [data-testid="stHorizontalBlock"] {
+    grid-template-columns:34px minmax(0,1fr) 34px;
+  }
+  .st-key-game1-prediction-reels [data-testid="stHorizontalBlock"] {gap:3px !important;}
+  .game1-pred-news-title {font-size:11px;}
+  .game1-pred-range {font-size:8.6px;}
+  .st-key-game1-prediction-machine .st-key-game1-prediction-reels {
+    left:11% !important;width:78% !important;
+  }
+}
+/* Height can be too small in landscape to maintain native legibility.
+   Preserve all six sections by scaling text, never using a page scrollbar. */
 @media (orientation:landscape) and (max-height:590px) {
-  .stApp:has(.st-key-game1-prediction) .block-container {
-    max-width:540px !important;
+  .st-key-game1-prediction {
+    width:min(100vw, 620px) !important;max-width:620px !important;
   }
-  .st-key-game1-prediction:is([data-testid="stVerticalBlock"]),
-  .st-key-game1-prediction > [data-testid="stVerticalBlock"] {
-    min-height:0 !important;
+  .st-key-game1-prediction [data-testid="stElementContainer"]:has(.game1-pred-heading) {
+    top:7% !important;height:19% !important;
   }
-  .game1-pred-banner {height:45px;}
-  .st-key-game1-prediction-machine {height:260px !important;}
+  .game1-pred-banner {height:7dvh;}
+  .game1-pred-heading h1 {font-size:clamp(17px,5dvh,27px) !important;}
+  .game1-pred-heading p {font-size:clamp(9px,2.5dvh,13px);}
+  .game1-pred-news-title {font-size:clamp(10px,3dvh,17px);}
+  .game1-pred-machine-title {font-size:clamp(10px,3dvh,16px);}
+  .game1-pred-zero,.game1-pred-digit {font-size:clamp(28px,11dvh,62px);}
+  .st-key-game1-pred-submit button {font-size:clamp(15px,5dvh,23px) !important;}
 }
 @media (prefers-reduced-motion:reduce) {
   .st-key-game1-prediction button {transition:none !important;}
