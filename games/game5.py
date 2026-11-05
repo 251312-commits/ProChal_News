@@ -101,14 +101,16 @@ def _build_exclusive_range(candidates: list[dict], answer_index: int) -> tuple[f
     quantizer = Decimal("0.01")
     lower = float(Decimal(str(lower)).quantize(quantizer, rounding=ROUND_HALF_UP))
     upper = float(Decimal(str(upper)).quantize(quantizer, rounding=ROUND_HALF_UP))
-    lower = max(
+    lower_candidates = [
         lower,
         *(score + 0.01 for score in other_scores if score < answer_score),
-    )
-    upper = min(
+    ]
+    upper_candidates = [
         upper,
         *(score - 0.01 for score in other_scores if score > answer_score),
-    )
+    ]
+    lower = max(lower_candidates)
+    upper = min(upper_candidates)
     if lower > answer_score or answer_score > upper:
         raise ValueError("후보 뉴스의 일치율로 정답 구간을 만들 수 없습니다.")
     return lower, upper
