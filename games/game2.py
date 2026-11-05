@@ -1,4 +1,4 @@
-# 업다운 (하) ½ (2배)
+# 업다운 (하) ½
 
 import asyncio
 import random
