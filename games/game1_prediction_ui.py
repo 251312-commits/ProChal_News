@@ -60,18 +60,20 @@ def render_game1_prediction_picker(article_title: str) -> None:
     # CSS backgrounds use trusted base64 data URLs. No remote images or scripts.
     asset_css = [
         ".stApp:has(.st-key-game1-prediction) {"
-        f"background:#13051e url('{background}') center center/cover fixed !important;"
+        f"background:#13051e url('{background}') center center/cover no-repeat !important;"
         "}" if background else "",
         f".st-key-game1-prediction-machine {{ background-image:url('{frame}') !important; border:0 !important; }}" if frame else "",
         f".game1-pred-news-wrap {{ background-image:url('{news_plate}') !important; background-size:100% 100% !important; border:0 !important; }}" if news_plate else "",
         f".st-key-game1-pred-reel-tens,.st-key-game1-pred-reel-ones {{ background-image:url('{reel}') !important; border:0 !important; }} .st-key-game1-pred-reel-tens button,.st-key-game1-pred-reel-ones button {{ color:transparent !important; text-shadow:none !important; }}" if reel else "",
     ]
 
+    # The dedicated CSS turns ordinary vertical blocks into stable three-column grids.
+    # Streamlit horizontal containers insert extra flex wrappers on narrow screens.
     with st.container(key="game1-prediction", gap=None):
         st.html(Path(__file__).with_suffix(".css"))
         st.html("<style>" + "\n".join(asset_css) + "</style>")
 
-        with st.container(key="game1-prediction-nav", horizontal=True, gap=None):
+        with st.container(key="game1-prediction-nav", gap=None):
             if st.button("❮", key="game1-pred-back", help="메인으로 돌아가기"):
                 change_page("main")
             st.html(
@@ -98,7 +100,7 @@ def render_game1_prediction_picker(article_title: str) -> None:
 
         with st.container(key="game1-prediction-machine", gap=None):
             st.html('<div class="game1-pred-machine-title">✦&nbsp; 예측하는 유사도 점수 &nbsp;✦</div>')
-            with st.container(key="game1-prediction-reels", horizontal=True, gap=None):
+            with st.container(key="game1-prediction-reels", gap=None):
                 st.html('<span class="game1-pred-zero" aria-hidden="true">0.</span>')
                 for name, value, label in (("tens", tens, "첫째 자리"), ("ones", ones, "둘째 자리")):
                     with st.container(key=f"game1-pred-reel-{name}", gap=None):
