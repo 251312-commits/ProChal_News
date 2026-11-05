@@ -10,6 +10,9 @@ from .bank_forms import INTEREST_RATE, MAX_LOAN, UNIT, _amount_selector, _save_b
 from .bank_scene import BANK_ART, asset_uri
 
 
+BORROW_SUCCESS_KEY = "bank_borrow_success"
+
+
 def draw_loan(coins: int, loan: int) -> None:
     st.html(Path(__file__).with_suffix(".css"))
     paper = asset_uri("bank_paper")
@@ -27,6 +30,15 @@ def draw_loan(coins: int, loan: int) -> None:
     available = max(0, MAX_LOAN - loan)
     limit = available // UNIT * UNIT
     rate = int(INTEREST_RATE * 100)
+    # The confirmation animation runs only on the rerun after Sheets saves.
+    approved = bool(st.session_state.pop(BORROW_SUCCESS_KEY, False))
+    stamp_effect = (
+        '<span class="bank-borrow-stamp-effect" aria-hidden="true">'
+        '<span class="bank-borrow-approval-mark">승인</span>'
+        '<span class="bank-borrow-stamp-object"></span>'
+        '</span>'
+        if approved else ""
+    )
 
     with st.container(key="bank-draw-screen", gap=None):
         st.html(
@@ -36,7 +48,8 @@ def draw_loan(coins: int, loan: int) -> None:
         with st.container(key="bank-draw-parchment", gap=None):
             st.html(
                 '<div class="bank-draw-document-title"><h2>대출 신청서</h2>'
-                '<span lang="en">LOAN APPLICATION</span></div>'
+                '<span lang="en">LOAN APPLICATION</span>'
+                f'{stamp_effect}</div>'
                 '<dl class="bank-draw-terms" aria-label="대출 조건">'
                 f'<div><dt>{icon("bag")}대출 단위</dt><dd>{UNIT:,} C</dd></div>'
                 f'<div><dt>{icon("percent")}이자율</dt>'
@@ -71,4 +84,7 @@ def draw_loan(coins: int, loan: int) -> None:
                 "대출 신청하기", key="bank-borrow-submit", icon=":material/account_balance:",
                 type="primary", width="stretch", disabled=amount == 0,
             ):
-                _save_balances(coins + amount, loan + amount, f"{amount:,} C를 대출받았습니다.")
+                _save_balances(
+                    coins + amount, loan + amount, f"{amount:,} C를 대출받았습니다.",
+                    success_state_key=BORROW_SUCCESS_KEY,
+                )

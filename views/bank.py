@@ -13,7 +13,7 @@ from views.bank_scene import bank_home, opening_scene
 def _navigate(destination: str) -> None:
     # A widget callback runs before Streamlit redraws the selected page.
     st.session_state.bank_open_letter = (
-        st.session_state.page == "bank" and destination in ("draw_loan", "pay_loan")
+        st.session_state.page == "bank" and destination == "draw_loan"
     )
     st.session_state.page = destination
 
