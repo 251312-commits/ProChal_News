@@ -161,12 +161,41 @@ class PredictionPickerTests(unittest.TestCase):
         self.assertIn('bet_podium.png', source)
         self.assertTrue((root / "assets" / "bet_podium.png").exists())
         self.assertIn('.st-key-game1-prediction-reels [data-testid="stHorizontalBlock"]', css)
-        self.assertIn('grid-template-columns:minmax(0,.67fr)', css)
+        self.assertIn('grid-template-columns:minmax(0,.78fr)', css)
         self.assertIn('.st-key-game1-prediction-nav [data-testid="stHorizontalBlock"]', css)
         self.assertIn('minmax(0,1fr)', css)
-        self.assertIn('max-height:640px', css)
-        self.assertIn('env(safe-area-inset-bottom)', css)
+        self.assertIn('position:fixed !important', css)
+        self.assertIn('height:100dvh !important', css)
+        self.assertIn('max-height:100dvh !important', css)
+        self.assertIn('overflow:hidden !important', css)
+        self.assertIn('env(safe-area-inset-top)', css)
         self.assertEqual(css.count("{"), css.count("}"))
+
+    def test_fixed_stage_sections_fit_without_a_page_scroll(self):
+        root = Path(__file__).resolve().parents[1]
+        css = (root / "games" / "game1_prediction_ui.css").read_text(encoding="utf-8")
+        # The parent is the viewport rather than a growing min-height container.
+        self.assertIn("position:fixed !important", css)
+        self.assertIn("height:100dvh !important", css)
+        self.assertNotIn("min-height:100svh", css)
+        # Check the explicit screen fractions used for each independent section.
+        # They are intentionally allowed to overlap at the news tag/podium edge.
+        placements = {
+            "heading": (6.5, 19.5),
+            "news": (25.8, 11.3),
+            "machine": (38.0, 35.8),
+            "podium": (71.7, 13.0),
+            "submit": (85.0, 8.3),
+        }
+        for name, (top, height) in placements.items():
+            with self.subTest(name=name):
+                self.assertGreaterEqual(top, 0)
+                self.assertLessEqual(top + height, 100)
+                self.assertIn(f"top:{top:g}% !important", css)
+                self.assertIn(f"height:{height:g}% !important", css)
+        self.assertIn("max-height:680px", css)
+        self.assertIn("max-width:340px", css)
+        self.assertIn("orientation:landscape", css)
 
     def test_artwork_and_styles_are_checked_into_the_repository(self):
         root = Path(__file__).resolve().parents[1]
