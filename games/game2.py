@@ -172,10 +172,7 @@ def show_game_2():
         return
 
     st.title("🎮 게임 2: 뉴스 유사도 HIGH / LOW 게임")
-
-def show_game_2():
-    st.title("🎮 게임 2: 뉴스 유사도 HIGH / LOW 게임")
-
+    
     # [1단계] 베팅 금액 선택
     if "game_2_bet" not in st.session_state:
         current_coins = int(st.session_state.current_user_data.get('코인', 0))
