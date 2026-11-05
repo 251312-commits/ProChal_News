@@ -13,6 +13,167 @@ ws = init_gspread()
 ws_news = init_news_sheet()
 
 def show_game_2():
+    # [0단계] 튜토리얼 화면 (최초 1회 노출)
+    if "game_2_tutorial_done" not in st.session_state:
+        # 튜토리얼 커스텀 CSS 스타일 적용
+        st.markdown(
+            """
+            <style>
+            .tutorial-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 10px 5px 20px 5px;
+            }
+            .tutorial-nav-btn {
+                color: #aaaaaa;
+                font-size: 0.9rem;
+                cursor: pointer;
+                text-decoration: none;
+            }
+            .tutorial-title-section {
+                text-align: center;
+                margin-bottom: 25px;
+            }
+            .tutorial-game-badge {
+                font-family: 'Press Start 2P', monospace;
+                font-size: 0.85rem;
+                color: #00e5ff;
+                letter-spacing: 1px;
+            }
+            .tutorial-main-title {
+                font-size: 1.8rem;
+                font-weight: 900;
+                color: #ffffff;
+                margin-top: 4px;
+            }
+            .tutorial-sub-title {
+                font-size: 0.95rem;
+                color: #a0a0a0;
+                margin-top: 2px;
+            }
+            
+            /* 튜토리얼 플로우 Grid */
+            .tutorial-grid {
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+                max-width: 500px;
+                margin: 0 auto 30px auto;
+                position: relative;
+            }
+            .tutorial-step-card {
+                background: rgba(15, 23, 42, 0.75);
+                border: 1px solid rgba(0, 229, 255, 0.3);
+                border-radius: 16px;
+                padding: 18px;
+                text-align: center;
+                position: relative;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            }
+            .step-num {
+                font-family: 'Press Start 2P', monospace;
+                font-size: 0.9rem;
+                color: #00e5ff;
+                font-style: italic;
+                margin-bottom: 4px;
+            }
+            .step-title {
+                font-size: 1.25rem;
+                font-weight: 800;
+                color: #ffffff;
+                margin-bottom: 8px;
+            }
+            .step-icon {
+                font-size: 2.8rem;
+                margin: 8px 0;
+            }
+            .step-desc {
+                font-size: 0.88rem;
+                color: #cccccc;
+                line-height: 1.4;
+            }
+            .arrow-down {
+                text-align: center;
+                font-size: 1.5rem;
+                color: #00e5ff;
+                margin: -10px 0;
+                text-shadow: 0 0 8px #00e5ff;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # 상단 내비게이션 (메인으로 / 건너뛰기)
+        col_nav1, col_nav2 = st.columns([1, 1])
+        with col_nav1:
+            if st.button("⬅️ 메인으로", key="tut_nav_main"):
+                change_page('main')
+                return
+        with col_nav2:
+            if st.button("건너뛰기 ➔", key="tut_nav_skip"):
+                st.session_state.game_2_tutorial_done = True
+                st.rerun()
+
+        # 튜토리얼 제목 세션
+        st.markdown(
+            """
+            <div class="tutorial-title-section">
+                <div class="tutorial-game-badge">GAME 02</div>
+                <div class="tutorial-main-title">뉴스 유사도 HIGH / LOW</div>
+                <div class="tutorial-sub-title">기사 실제 유사도 점수는 기준 점수보다 높을까 낮을까?</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # 튜토리얼 4단계 플로우
+        st.markdown(
+            """
+            <div class="tutorial-grid">
+                <div class="tutorial-step-card">
+                    <div class="step-num">01</div>
+                    <div class="step-title">코인 베팅</div>
+                    <div class="step-icon">🪙</div>
+                    <div class="step-desc">금액을 정해 베팅한다.<br><b>최소 1,000 C</b></div>
+                </div>
+                <div class="arrow-down">⤵</div>
+                <div class="tutorial-step-card">
+                    <div class="step-num">02</div>
+                    <div class="step-title">기사 확인</div>
+                    <div class="step-icon">🎰</div>
+                    <div class="step-desc">뉴스 기사의 제목과<br>본문 내용을 살펴본다.</div>
+                </div>
+                <div class="arrow-down">↩</div>
+                <div class="tutorial-step-card">
+                    <div class="step-num">03</div>
+                    <div class="step-title">HIGH / LOW 선택</div>
+                    <div class="step-icon">🎲</div>
+                    <div class="step-desc">랜덤 생성된 <b>기준 점수(0~100점)</b>보다<br>실제 점수가 높은지(HIGH) 낮은지(LOW) 선택</div>
+                </div>
+                <div class="arrow-down">⤵</div>
+                <div class="tutorial-step-card">
+                    <div class="step-num">04</div>
+                    <div class="step-title">결과 확인</div>
+                    <div class="step-icon">🏅</div>
+                    <div class="step-desc">적중 <b>+베팅액의 2배수 (실익 1배)</b><br>실패 <b>-베팅액</b></div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # 하단 베팅하러 가기 버튼
+        if st.button("베팅하러 가기", use_container_width=True, type="primary"):
+            st.session_state.game_2_tutorial_done = True
+            st.rerun()
+
+        return
+
+    st.title("🎮 게임 2: 뉴스 유사도 HIGH / LOW 게임")
+
+def show_game_2():
     st.title("🎮 게임 2: 뉴스 유사도 HIGH / LOW 게임")
 
     # [1단계] 베팅 금액 선택
