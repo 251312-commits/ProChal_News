@@ -32,12 +32,11 @@ def draw_loan(coins: int, loan: int) -> None:
     rate = int(INTEREST_RATE * 100)
     # The confirmation animation runs only on the rerun after Sheets saves.
     approved = bool(st.session_state.pop(BORROW_SUCCESS_KEY, False))
-    stamp_effect = (
-        '<span class="bank-borrow-stamp-effect" aria-hidden="true">'
-        '<span class="bank-borrow-approval-mark">승인</span>'
-        '<span class="bank-borrow-stamp-object"></span>'
-        '</span>'
-        if approved else ""
+    # Use the real stamp already beside the submit button; no second stamp
+    # is rendered at the top of the application.
+    title_class = (
+        "bank-draw-document-title bank-borrow-approved"
+        if approved else "bank-draw-document-title"
     )
 
     with st.container(key="bank-draw-screen", gap=None):
@@ -47,9 +46,8 @@ def draw_loan(coins: int, loan: int) -> None:
         )
         with st.container(key="bank-draw-parchment", gap=None):
             st.html(
-                '<div class="bank-draw-document-title"><h2>대출 신청서</h2>'
-                '<span lang="en">LOAN APPLICATION</span>'
-                f'{stamp_effect}</div>'
+                f'<div class="{title_class}"><h2>대출 신청서</h2>'
+                '<span lang="en">LOAN APPLICATION</span></div>'
                 '<dl class="bank-draw-terms" aria-label="대출 조건">'
                 f'<div><dt>{icon("bag")}대출 단위</dt><dd>{UNIT:,} C</dd></div>'
                 f'<div><dt>{icon("percent")}이자율</dt>'

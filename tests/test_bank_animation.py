@@ -91,7 +91,17 @@ class BankAnimationTests(unittest.TestCase):
         self.assertIn('BORROW_SUCCESS_KEY = "bank_borrow_success"', source)
         self.assertIn('st.session_state.pop(BORROW_SUCCESS_KEY, False)', source)
         self.assertIn('success_state_key=BORROW_SUCCESS_KEY', source)
-        self.assertIn('bank-borrow-stamp-effect', source)
+        self.assertIn('bank-borrow-approved', source)
+        self.assertNotIn('bank-borrow-stamp-object', source)
+
+    def test_existing_button_stamp_moves_and_ink_is_below(self):
+        css = (ROOT / "views/bank_draw.css").read_text(encoding="utf-8")
+        self.assertIn(".st-key-bank-borrow-submit::after", css)
+        self.assertIn("bank-borrow-button-stamp-press", css)
+        self.assertIn("bank-borrow-button-ink", css)
+        self.assertIn("bottom: -2.6cqw", css)
+        self.assertIn(":has(.bank-borrow-approved)", css)
+        self.assertNotIn(".bank-draw-document-title:has(.bank-borrow-stamp-effect)", css)
 
 
 if __name__ == "__main__":

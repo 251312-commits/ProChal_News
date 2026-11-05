@@ -272,84 +272,77 @@
   .st-key-bank-draw-screen .st-key-bank-borrow-submit::after { width: 46px; height: 46px; right: -17px; }
 }
 
-
-/* A successful application stamps its parchment once, after persistence. */
-.bank-draw-document-title:has(.bank-borrow-stamp-effect)::after {
-  opacity: 0; /* The ordinary BANK postmark makes way for the approval seal. */
-}
-.bank-borrow-stamp-effect {
-  position: absolute;
+/* Borrow approval: animate the SAME stamp already next to the bottom button.
+   An invisible state class on the document title enables the bottom effect,
+   but no stamp is drawn near the title. Keep the original decorative stamp
+   in .st-key-bank-borrow-submit::after visible before and after the press. */
+.st-key-bank-draw-screen:has(.bank-borrow-approved) .st-key-bank-borrow-submit::after {
   z-index: 5;
-  right: -1.8cqw;
-  top: 0;
-  width: 25cqw;
-  height: 27cqw;
-  pointer-events: none;
-  isolation: isolate;
+  transform-origin: 52% 70%;
+  animation: bank-borrow-button-stamp-press 1.3s cubic-bezier(.24,.66,.31,1) both;
 }
-.bank-borrow-approval-mark {
+.st-key-bank-draw-screen:has(.bank-borrow-approved) .st-key-bank-borrow-submit::before {
+  content: "승인";
   position: absolute;
+  z-index: 4;
+  right: -3.8cqw;
+  bottom: -2.6cqw;
   display: grid;
   place-items: center;
-  top: 12cqw;
-  right: 3.3cqw;
-  width: 16cqw;
-  height: 16cqw;
-  border: .68cqw double #98374fe0;
+  width: 14cqw;
+  height: 14cqw;
+  border: .64cqw double #933952;
   border-radius: 50%;
-  color: #932e4c;
-  background: #c75e7824;
-  box-shadow: inset 0 0 0 .85cqw #f5e2dd8a;
-  font: 800 4.6cqw/1 "AppleMyungjo", "Batang", serif;
+  background: #af3d5822;
+  box-shadow: inset 0 0 0 .8cqw #f5dfdbb5;
+  color: #96344e;
+  font: 800 4cqw/1 "AppleMyungjo", "Batang", serif;
+  pointer-events: none;
   opacity: 0;
-  transform: rotate(-17deg) scale(1.45);
-  animation: bank-borrow-ink-appear 1.35s ease-out both;
+  transform: rotate(-17deg) scale(1.22);
+  animation: bank-borrow-button-ink 1.3s ease-out both;
 }
-.bank-borrow-stamp-object {
-  position: absolute;
-  z-index: 2;
-  top: -9cqw;
-  right: -7cqw;
-  width: 25cqw;
-  height: 25cqw;
-  background: var(--stamp) center / contain no-repeat;
-  filter: drop-shadow(1cqw 1.5cqw 1.4cqw #3a112a80);
-  transform-origin: 60% 76%;
-  animation: bank-borrow-stamp-press 1.35s cubic-bezier(.2,.62,.25,1) both;
+@keyframes bank-borrow-button-stamp-press {
+  0%, 12%   { transform: translateY(0) rotate(0) scale(1); }
+  25%      { transform: translateY(-3cqw) rotate(7deg) scale(1.07); }
+  49%, 56% { transform: translateY(6cqw) rotate(-13deg) scale(.88); }
+  77%      { transform: translateY(-1.5cqw) rotate(4deg) scale(1.06); }
+  100%     { transform: translateY(0) rotate(0) scale(1); }
 }
-@keyframes bank-borrow-stamp-press {
-  0%   { opacity: 0; transform: translate(11cqw, -13cqw) rotate(-24deg) scale(1.25); }
-  15%  { opacity: 1; transform: translate(7cqw, -8cqw) rotate(-18deg) scale(1.15); }
-  37%  { opacity: 1; transform: translate(-2cqw, 16cqw) rotate(-14deg) scale(.92); }
-  44%  { opacity: 1; transform: translate(-2cqw, 17cqw) rotate(-14deg) scale(.86); }
-  65%  { opacity: 1; transform: translate(1cqw, 2cqw) rotate(-12deg) scale(1); }
-  90%, 100% { opacity: 0; transform: translate(11cqw, -12cqw) rotate(11deg) scale(1.18); }
-}
-@keyframes bank-borrow-ink-appear {
-  0%, 39% { opacity: 0; transform: rotate(-17deg) scale(1.45); }
-  46% { opacity: .95; transform: rotate(-17deg) scale(.80); }
-  60% { opacity: .78; transform: rotate(-17deg) scale(1.04); }
-  76%, 100% { opacity: .92; transform: rotate(-17deg) scale(1); }
+@keyframes bank-borrow-button-ink {
+  0%, 48%  { opacity: 0; transform: rotate(-17deg) scale(1.24); }
+  56%      { opacity: .95; transform: rotate(-17deg) scale(.82); }
+  73%      { opacity: .8; transform: rotate(-17deg) scale(1.04); }
+  100%     { opacity: .9; transform: rotate(-17deg) scale(1); }
 }
 @media (orientation: landscape) and (max-height: 560px) {
-  .bank-borrow-stamp-effect { right: -5px; top: 0; width: 82px; height: 82px; }
-  .bank-borrow-approval-mark {
-    width: 45px; height: 45px; right: 15px; top: 22px;
-    font-size: 13px; border-width: 2px; box-shadow: inset 0 0 0 3px #f5e2dd8a;
+  .st-key-bank-draw-screen:has(.bank-borrow-approved) .st-key-bank-borrow-submit::after {
+    animation-name: bank-borrow-button-stamp-press-compact;
   }
-  .bank-borrow-stamp-object {
-    width: 70px; height: 70px; right: -20px; top: -25px;
-    animation-name: bank-borrow-stamp-press-compact;
+  .st-key-bank-draw-screen:has(.bank-borrow-approved) .st-key-bank-borrow-submit::before {
+    right: -12px;
+    bottom: -8px;
+    width: 42px;
+    height: 42px;
+    border-width: 2px;
+    box-shadow: inset 0 0 0 3px #f5dfdbb5;
+    font-size: 13px;
   }
 }
-@keyframes bank-borrow-stamp-press-compact {
-  0%   { opacity: 0; transform: translate(30px, -36px) rotate(-24deg) scale(1.25); }
-  15%  { opacity: 1; transform: translate(19px, -24px) rotate(-18deg) scale(1.15); }
-  37%, 44% { opacity: 1; transform: translate(-5px, 45px) rotate(-14deg) scale(.88); }
-  65%  { opacity: 1; transform: translate(3px, 6px) rotate(-12deg) scale(1); }
-  90%,100% { opacity: 0; transform: translate(30px, -34px) rotate(11deg) scale(1.18); }
+@keyframes bank-borrow-button-stamp-press-compact {
+  0%, 12%   { transform: translateY(0) rotate(0) scale(1); }
+  25%      { transform: translateY(-7px) rotate(7deg) scale(1.07); }
+  49%, 56% { transform: translateY(16px) rotate(-13deg) scale(.88); }
+  77%      { transform: translateY(-4px) rotate(4deg) scale(1.06); }
+  100%     { transform: translateY(0) rotate(0) scale(1); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .bank-borrow-approval-mark { animation: none; opacity: .92; transform: rotate(-17deg); }
-  .bank-borrow-stamp-object { animation: none; display: none; }
+  .st-key-bank-draw-screen:has(.bank-borrow-approved) .st-key-bank-borrow-submit::after {
+    animation: none;
+  }
+  .st-key-bank-draw-screen:has(.bank-borrow-approved) .st-key-bank-borrow-submit::before {
+    animation: none;
+    opacity: .9;
+    transform: rotate(-17deg) scale(1);
+  }
 }
