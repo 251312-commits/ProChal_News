@@ -1,377 +1,380 @@
-/* Game 1: mobile-first prediction dial. Scoped to this screen only.
-   The nav and reels use ordinary vertical Streamlit containers as explicit CSS
-   grids; horizontal=True adds internal flex wrappers which break on phones. */
+/* Game 1 prediction screen.  Streamlit 1.55: style the actual layout blocks,
+   not just the outer keyed container.  Every selector is scoped to this page. */
 .stApp:has(.st-key-game1-prediction) {
-  --pred-safe-top: max(8px, env(safe-area-inset-top));
-  --pred-safe-bottom: max(12px, env(safe-area-inset-bottom));
-  background-color:#11051e !important;
+  --pred-top:max(8px, env(safe-area-inset-top));
+  --pred-bottom:max(10px, env(safe-area-inset-bottom));
   color:#fff3ff;
-  overflow-x:hidden;
+  background-color:#13051e !important;
+  overflow-x:clip;
 }
 .stApp:has(.st-key-game1-prediction) [data-testid="stHeader"] {
   display:none !important;
 }
-.stApp:has(.st-key-game1-prediction) [data-testid="stAppViewContainer"] {
-  overflow-x:hidden !important;
-}
 .stApp:has(.st-key-game1-prediction) .block-container {
-  width:100%; max-width:540px !important; min-height:100svh;
-  box-sizing:border-box !important; margin:0 auto !important;
-  padding:var(--pred-safe-top) max(12px, env(safe-area-inset-right))
-    var(--pred-safe-bottom) max(12px, env(safe-area-inset-left)) !important;
+  width:100%; max-width:550px !important;
+  min-height:100svh; margin:0 auto !important;
+  padding:var(--pred-top) max(12px,env(safe-area-inset-right))
+    var(--pred-bottom) max(12px,env(safe-area-inset-left)) !important;
+  box-sizing:border-box;
 }
 .stApp:has(.st-key-game1-prediction) .block-container > [data-testid="stVerticalBlock"] {
   gap:0 !important;
 }
-.st-key-game1-prediction, .st-key-game1-prediction * {
-  box-sizing:border-box;
-}
+.st-key-game1-prediction,
+.st-key-game1-prediction * { box-sizing:border-box; }
 .st-key-game1-prediction {
-  width:100%; max-width:500px; min-width:0;
-  min-height:calc(100svh - var(--pred-safe-top) - var(--pred-safe-bottom));
-  margin:0 auto !important;
-  display:flex !important; flex-direction:column !important;
-  align-items:stretch !important; justify-content:space-between !important;
-  gap:clamp(4px, .8svh, 12px) !important;
-  color:#fff3ff;
+  width:100% !important; max-width:500px !important;
+  min-width:0 !important; margin:0 auto !important;
   font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
 }
-.st-key-game1-prediction > * { flex-shrink:0; min-width:0 !important; margin:0 !important; }
+.st-key-game1-prediction:is([data-testid="stVerticalBlock"]),
+.st-key-game1-prediction > [data-testid="stVerticalBlock"],
+.st-key-game1-prediction > div > [data-testid="stVerticalBlock"] {
+  display:flex !important; flex-direction:column !important;
+  justify-content:space-between !important;
+  gap:clamp(5px,.8svh,11px) !important;
+  min-height:calc(100svh - var(--pred-top) - var(--pred-bottom));
+  width:100% !important;
+}
 .st-key-game1-prediction button {
-  font-family:inherit !important;
+  touch-action:manipulation; cursor:pointer;
   -webkit-tap-highlight-color:transparent;
-  touch-action:manipulation;
-  cursor:pointer;
+  font-family:inherit !important;
 }
 .st-key-game1-prediction button:focus-visible {
-  outline:3px solid #ffe2a4 !important; outline-offset:2px;
+  outline:3px solid #ffe6a9 !important; outline-offset:2px;
 }
 
-/* The balance and the bank shortcut occupy a single fixed-height row.
-   Rendering as a CSS grid avoids the mobile flex-wrap from st.container(horizontal=True). */
+/* Navigation: native st.columns are laid out in one non-wrapping row.
+   The wallet is permitted to shrink but not force a fourth column. */
 .st-key-game1-prediction-nav {
-  width:100%; min-width:0; min-height:clamp(36px, 5.6svh, 48px);
+  width:100% !important; min-width:0 !important;
+}
+.st-key-game1-prediction-nav [data-testid="stHorizontalBlock"] {
   display:grid !important;
-  grid-template-columns:clamp(36px, 5.6svh, 48px) minmax(0,1fr) clamp(36px, 5.6svh, 48px);
-  grid-template-rows:clamp(36px, 5.6svh, 48px);
-  align-items:center !important; gap:0 !important;
+  grid-template-columns:clamp(36px,5.8svh,46px) minmax(0,1fr) clamp(36px,5.8svh,46px);
+  grid-template-rows:clamp(36px,5.8svh,46px);
+  align-items:center !important;
+  width:100% !important; gap:0 !important;
 }
-.st-key-game1-prediction-nav > [data-testid="stVerticalBlock"] {
-  display:contents !important;
+.st-key-game1-prediction-nav [data-testid="stColumn"] {
+  width:100% !important; min-width:0 !important;
+  height:100%; flex:initial !important;
 }
-.st-key-game1-prediction-nav > * {
-  min-width:0 !important; width:100%; height:100%;
-  margin:0 !important; padding:0 !important;
+.st-key-game1-prediction-nav [data-testid="stColumn"] > [data-testid="stVerticalBlock"] {
+  width:100% !important; min-width:0 !important; height:100%;
+  justify-content:center;
+  gap:0 !important;
 }
-.st-key-game1-prediction-nav > :has(.game1-pred-wallet) {
-  justify-self:end; width:max-content !important; max-width:100%;
-}
-.st-key-game1-pred-back, .st-key-game1-pred-bank,
-.st-key-game1-pred-back [data-testid="stButton"],
-.st-key-game1-pred-bank [data-testid="stButton"] {
-  width:100% !important; height:100% !important;
+.st-key-game1-pred-back button,
+.st-key-game1-pred-bank button {
+  display:grid !important; place-items:center;
+  width:100% !important; height:clamp(36px,5.8svh,46px) !important;
+  min-height:0 !important; margin:0 !important; padding:0 !important;
+  line-height:1 !important; font-weight:700 !important;
 }
 .st-key-game1-pred-back button {
-  width:100% !important; height:100% !important; min-height:0 !important;
-  padding:0 !important; background:none !important; border:0 !important;
-  box-shadow:none !important; color:#ffe6fa !important;
-  font-size:clamp(24px, 6vw, 32px) !important;
-  line-height:1 !important;
+  border:0 !important; background:transparent !important;
+  box-shadow:none !important; color:#f5d6ff !important;
+  font-size:clamp(23px,6vw,32px) !important;
+}
+.st-key-game1-pred-bank button {
+  border:1px solid #aa44ee !important; border-radius:50% !important;
+  background:radial-gradient(circle at 30% 20%,#7b35ac,#2c0d4d 80%) !important;
+  box-shadow:0 0 11px #ae43f3b0,inset 0 0 6px #d57cff88 !important;
+  color:#fff4ff !important; font-size:clamp(23px,5.6vw,29px) !important;
 }
 .game1-pred-wallet {
   display:flex; align-items:center; justify-content:flex-end;
-  width:max-content; max-width:100%; height:100%;
-  min-width:0; padding:2px 7px 2px 3px;
-  border:1px solid #b947f2; border-right:0;
-  border-radius:100px 0 0 100px;
-  background:linear-gradient(100deg,#2d1040ee,#190920ed);
-  color:#fff2f7; font-size:clamp(13px, 4.25vw, 20px);
+  margin-left:auto; width:max-content; max-width:100%;
+  height:clamp(36px,5.8svh,46px); min-width:0;
+  overflow:hidden; white-space:nowrap;
+  border:1px solid #ac48e5; border-right:0;
+  border-radius:99px 0 0 99px;
+  padding:2px 8px 2px 3px;
+  background:linear-gradient(105deg,#301041f0,#160620ec);
+  color:#fff2fc;
+  box-shadow:0 0 12px #c63dff80;
+  font-size:clamp(12px,3.8vw,19px);
   font-weight:850; font-variant-numeric:tabular-nums;
-  white-space:nowrap; box-shadow:0 0 12px #b421ee55;
 }
 .game1-pred-wallet-coin {
-  display:inline-grid; place-items:center; flex:none;
-  width:clamp(29px, 5svh, 40px); height:clamp(29px, 5svh, 40px);
-  margin-right:7px; border-radius:50%; border:2px solid #ffdf69;
-  background:radial-gradient(circle at 29% 20%,#fff8aa 0,#ffca3e 32%,#e78609 75%,#ad4e0a);
-  color:#ffeed0; font-size:clamp(16px,3.8vw,21px); font-weight:900;
-  text-shadow:0 1px 2px #7d3700;
-  box-shadow:inset 0 1px 2px #fff1a0,0 0 10px #ffb6349c;
+  display:grid; place-items:center; flex:none;
+  width:clamp(28px,4.8svh,39px);
+  height:clamp(28px,4.8svh,39px);
+  margin-right:clamp(3px,1vw,8px);
+  border:2px solid #ffe185; border-radius:50%;
+  color:#fff6ce; font-weight:900;
+  background:radial-gradient(circle at 30% 20%,#fff7a4,#ffcc3f 31%,#db7f0a 76%,#ad500d);
+  box-shadow:inset 0 1px 2px #fff6ae,0 0 9px #ffb42c9b;
+  text-shadow:0 1px 2px #8c4500;
+  font-size:clamp(15px,3.8vw,20px);
 }
-.st-key-game1-pred-bank button {
-  display:grid !important; place-items:center;
-  width:100% !important; height:100% !important; min-height:0 !important;
-  padding:0 !important; border:1px solid #b947f2 !important;
-  border-radius:50% !important;
-  background:radial-gradient(circle at 36% 25%,#7d38a1,#3a1657 70%) !important;
-  color:#fff4ff !important; font-size:clamp(23px, 5vw, 30px) !important;
-  font-weight:500 !important; line-height:1 !important;
-  box-shadow:0 0 12px #a930ef7a, inset 0 0 5px #e578fa65 !important;
+.game1-pred-wallet-amount {
+  min-width:0; max-width:100%; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis;
 }
 
-/* The supplied pred_header contains the crowned title ornament. */
+/* Crest, heading and explanation are one self-contained HTML element. */
 .game1-pred-heading {width:100%; min-width:0; text-align:center;}
 .game1-pred-banner {
-  display:block; width:88%; height:clamp(43px, 8.2svh, 87px);
+  display:block; width:90%; height:clamp(42px,8svh,86px);
   margin:0 auto; object-fit:contain;
-  filter:drop-shadow(0 0 9px #ae35ff77);
+  filter:drop-shadow(0 0 9px #b33cf58c);
 }
 .game1-pred-banner-fallback {
-  display:block; padding:10px 3px 4px;
-  color:#f5c47b; font:700 clamp(13px,3.4vw,18px)/1.2 Georgia,serif;
-  letter-spacing:.12em;
+  display:block; color:#f5c278; font:700 clamp(13px,3.8vw,19px)/1.3 Georgia,serif;
+  letter-spacing:.09em;
 }
 .game1-pred-heading h1 {
   margin:0 !important; padding:0 !important;
-  font-size:clamp(25px, 7vw, 43px) !important;
-  line-height:1.06 !important; letter-spacing:-.04em;
-  font-weight:900 !important; text-align:center;
-  color:#fff3ff !important;
-  text-shadow:0 2px 0 #42134f,0 0 13px #ab32fdbe !important;
+  color:#fff0ff !important; font-size:clamp(24px,6.7vw,40px) !important;
+  font-weight:900 !important; line-height:1.1 !important;
+  letter-spacing:-.04em; text-align:center;
+  text-shadow:0 2px 0 #4f195b,0 0 12px #c542ffad !important;
 }
 .game1-pred-heading p {
-  margin:clamp(4px,.55svh,8px) 0 0 !important;
-  color:#ead3ef; font-size:clamp(11px,3.35vw,16px);
-  line-height:1.35; font-weight:480;
-  text-align:center; word-break:keep-all;
+  margin:clamp(2px,.55svh,7px) 0 0 !important;
+  font-size:clamp(11px,3.25vw,16px);
+  line-height:1.3; color:#e8cfed; text-align:center;
+  word-break:keep-all;
 }
 
-/* News ornament is decorative; title remains dynamic, escaped HTML. */
+/* News illustration contains the newspaper icon; text is always real HTML. */
 .game1-pred-news-wrap {
-  position:relative; width:100%; height:clamp(70px,11svh,116px);
-  margin:0 !important; isolation:isolate;
-  border:1px solid #d47af9; border-radius:16px;
-  background:linear-gradient(180deg,#fff1f3,#e7acd8 75%,#bd70ad);
-  background-repeat:no-repeat; background-position:center;
-  background-size:100% 100%;
-  box-shadow:0 0 16px #c42dff5e;
+  position:relative; isolation:isolate;
+  width:100%; height:clamp(65px,11.5svh,117px);
+  min-width:0; overflow:visible;
+  border:1px solid #d588ed; border-radius:16px;
+  background:linear-gradient(#ffeff5,#e4a2cd);
+  background-position:center; background-size:100% 100%;
+  background-repeat:no-repeat;
+  box-shadow:0 0 15px #c83bea9b;
 }
 .game1-pred-news-tag {
-  position:absolute; z-index:1; left:50%; top:-5%;
-  display:block; transform:translateX(-50%);
-  width:min(44%,215px); height:39%; object-fit:contain;
-  filter:drop-shadow(0 0 8px #f05cff77);
+  position:absolute; left:50%; top:-6%; z-index:1;
+  transform:translateX(-50%); display:block;
+  width:min(45%,215px); height:40%; object-fit:contain;
+  filter:drop-shadow(0 0 6px #cb39f7a1);
+  pointer-events:none;
 }
 .game1-pred-news-tag-fallback {
-  position:absolute; z-index:1; top:-11%; left:50%;
-  transform:translateX(-50%); padding:3px 14px;
-  color:#ffe6b7; font-size:clamp(12px,3.3vw,17px); font-weight:850;
-  white-space:nowrap; border:2px solid #edb36b; border-radius:13px;
-  background:linear-gradient(#84288b,#2c103c);
+  position:absolute; left:50%; top:-9%; z-index:1; transform:translateX(-50%);
+  background:linear-gradient(#771d85,#280e36); border:1px solid #e0a56c;
+  border-radius:10px; padding:2px 12px; color:#ffe3a1;
+  white-space:nowrap; font-size:clamp(12px,3.1vw,16px);font-weight:850;
 }
 .game1-pred-news-title {
-  position:absolute; left:28%; right:5%; top:54%;
-  transform:translateY(-35%); max-height:60%;
+  position:absolute; left:27%; right:5%; top:53%; transform:translateY(-32%);
+  max-height:61%; min-width:0;
   display:-webkit-box; -webkit-box-orient:vertical;
-  -webkit-line-clamp:2; line-clamp:2; overflow:hidden;
-  color:#321040; font-size:clamp(12px,3.8vw,21px);
-  line-height:1.2; font-weight:900; letter-spacing:-.035em;
-  text-align:center; word-break:keep-all; overflow-wrap:anywhere;
+  -webkit-line-clamp:2; line-clamp:2;
+  overflow:hidden; text-align:center;
+  color:#361342; font-size:clamp(12px,3.65vw,21px);
+  font-weight:900; line-height:1.18; letter-spacing:-.035em;
+  word-break:keep-all; overflow-wrap:anywhere;
 }
 
-/* The frame asset supplies the rounded gold casing and upper crown.
-   Explicitly place the three Streamlit child wrappers inside it: otherwise
-   they participate in the normal vertical flow and break on small screens. */
+/* Machine: use normal document flow instead of absolute overlays, so the
+   arrow hit targets remain clickable and visible at every phone size. */
 .st-key-game1-prediction-machine {
-  position:relative !important; flex:none !important;
-  width:100% !important; height:clamp(210px,37svh,355px) !important;
-  min-width:0; min-height:0; overflow:visible;
-  display:block !important; padding:0 !important; margin:0 !important;
-  border:3px solid #e9af69; border-radius:12% / 15%;
-  background:linear-gradient(170deg,#39104b,#170a26 50%,#3d124e);
-  background-size:100% 100%; background-position:center; background-repeat:no-repeat;
-  box-shadow:0 0 23px #b223ea7a;
+  position:relative; width:100% !important; min-width:0 !important;
+  height:clamp(223px,36svh,355px) !important;
+  padding:clamp(36px,6svh,58px) clamp(14px,5vw,26px)
+    clamp(12px,2.3svh,23px) !important;
+  margin:0 !important; border:2px solid #e4a85f;
+  border-radius:10% / 13%;
+  background:linear-gradient(175deg,#45105f,#1a0a26 55%,#481361);
+  background-position:center; background-size:100% 100%; background-repeat:no-repeat;
+  box-shadow:0 0 19px #a72bee8a;
 }
-.st-key-game1-prediction-machine > * {margin:0 !important; padding:0 !important;}
-.st-key-game1-prediction-machine > :has(.game1-pred-machine-title) {
-  position:absolute !important; z-index:2;
-  top:16.5%; left:0; width:100% !important;
-  height:auto !important; pointer-events:none;
+.st-key-game1-prediction-machine:is([data-testid="stVerticalBlock"]),
+.st-key-game1-prediction-machine > [data-testid="stVerticalBlock"],
+.st-key-game1-prediction-machine > div > [data-testid="stVerticalBlock"] {
+  display:grid !important; grid-template-rows:clamp(18px,3svh,27px) minmax(0,1fr) clamp(19px,2.9svh,27px);
+  width:100% !important; height:100% !important;
+  min-width:0 !important; min-height:0 !important; gap:0 !important;
+  align-items:stretch !important;
+}
+.st-key-game1-prediction-machine [data-testid="stElementContainer"] {
+  min-width:0 !important;
 }
 .game1-pred-machine-title {
-  width:100%; text-align:center; white-space:nowrap;
-  font-size:clamp(12px,3.6vw,20px); line-height:1.2;
-  color:#fff0ff; font-weight:900;
-  text-shadow:0 0 10px #d135ffb8;
+  width:100%; margin:0 !important;
+  color:#fbe4fb; text-align:center;
+  white-space:nowrap; font-size:clamp(12px,3.45vw,19px);
+  font-weight:900; line-height:1.3;
+  text-shadow:0 0 7px #dc48ff;
+  pointer-events:none;
 }
-.st-key-game1-prediction-machine > :has(.st-key-game1-prediction-reels) {
-  position:absolute !important; z-index:2;
-  top:29%; left:10%; width:80% !important; height:52% !important;
-  min-height:0 !important;
-}
+
+/* Three actual st.columns: fixed 0. / first digit / second digit.
+   Grid overrides Streamlit's small-screen column wrapping. */
 .st-key-game1-prediction-reels {
-  display:grid !important; grid-template-columns:minmax(0,.77fr) repeat(2,minmax(0,1fr));
-  grid-template-rows:minmax(0,1fr); align-items:stretch !important;
-  width:100% !important; height:100% !important; min-width:0; min-height:0;
-  gap:clamp(5px,1.6vw,12px) !important; padding:0 !important; margin:0 !important;
+  width:100% !important; height:100% !important;
+  min-width:0 !important; min-height:0 !important;
+  margin:0 !important; padding:0 !important;
 }
-.st-key-game1-prediction-reels > [data-testid="stVerticalBlock"] {
-  display:contents !important;
+.st-key-game1-prediction-reels [data-testid="stHorizontalBlock"] {
+  display:grid !important;
+  grid-template-columns:minmax(0,.67fr) repeat(2,minmax(0,1fr));
+  grid-template-rows:minmax(0,1fr);
+  width:100% !important; height:100% !important;
+  min-width:0 !important; min-height:0 !important;
+  align-items:stretch !important; gap:clamp(4px,1.8vw,12px) !important;
+  flex-wrap:nowrap !important;
 }
-.st-key-game1-prediction-reels > * {
-  min-width:0 !important; width:100% !important; height:100% !important;
-  min-height:0 !important; margin:0 !important; padding:0 !important;
+.st-key-game1-prediction-reels [data-testid="stColumn"] {
+  width:100% !important; min-width:0 !important;
+  height:100% !important; min-height:0 !important;
+  flex:initial !important;
 }
-.st-key-game1-prediction-reels > :has(.game1-pred-zero) {
-  display:flex !important; align-items:center; justify-content:center;
+.st-key-game1-prediction-reels [data-testid="stColumn"] > [data-testid="stVerticalBlock"] {
+  display:flex !important; flex-direction:column !important;
+  justify-content:center !important;
+  width:100% !important; height:100% !important;
+  min-width:0 !important; min-height:0 !important; gap:0 !important;
 }
 .game1-pred-zero {
   display:grid; place-items:center;
-  width:100%; height:100%; min-width:0;
-  color:#fff0ff;
-  font:900 clamp(40px,12.5vw,85px)/1 Georgia,"Times New Roman",serif;
+  width:100%; height:100%; margin:0;
+  color:#fff4ff;
+  font:900 clamp(36px,11.5vw,80px)/1 Georgia,"Times New Roman",serif;
   font-variant-numeric:tabular-nums; letter-spacing:-.1em;
-  text-shadow:0 0 9px #d46fff,0 0 24px #a946ffab;
+  text-shadow:0 0 10px #dc7aff,0 0 20px #bd46f7a3;
+  pointer-events:none; user-select:none;
 }
-.st-key-game1-pred-reel-tens, .st-key-game1-pred-reel-ones {
-  display:grid !important; grid-template-rows:24% 52% 24%;
-  align-items:stretch !important; gap:0 !important;
-  position:relative; width:100% !important; height:100% !important;
-  min-width:0 !important; min-height:0 !important;
+.st-key-game1-pred-reel-tens,
+.st-key-game1-pred-reel-ones {
+  position:relative; width:100% !important;
+  height:100% !important; min-width:0 !important;
+  min-height:0 !important; margin:0 !important;
   overflow:hidden;
-  border:2px solid #ecadf5; border-radius:27% / 20%;
-  background:linear-gradient(180deg,#4e1067 0%,#3a0e5d 32%,#c13ef0 52%,#27083f 100%);
-  background-position:center; background-size:100% 100%; background-repeat:no-repeat;
-  box-shadow:inset 0 0 16px #1b0626,0 0 12px #df31f9a6;
+  border:1px solid #ffcbdb; border-radius:25% / 19%;
+  background:linear-gradient(#4d1267,#9b2ce0 52%,#23043f);
+  background-size:100% 100%; background-position:center; background-repeat:no-repeat;
+  box-shadow:inset 0 0 9px #310a38,0 0 10px #d940ff8f;
 }
-.st-key-game1-pred-reel-tens > *, .st-key-game1-pred-reel-ones > * {
-  min-width:0 !important; min-height:0 !important;
+.st-key-game1-pred-reel-tens:is([data-testid="stVerticalBlock"]),
+.st-key-game1-pred-reel-ones:is([data-testid="stVerticalBlock"]),
+.st-key-game1-pred-reel-tens > [data-testid="stVerticalBlock"],
+.st-key-game1-pred-reel-ones > [data-testid="stVerticalBlock"],
+.st-key-game1-pred-reel-tens > div > [data-testid="stVerticalBlock"],
+.st-key-game1-pred-reel-ones > div > [data-testid="stVerticalBlock"] {
+  display:grid !important; grid-template-rows:24% 52% 24%;
   width:100% !important; height:100% !important;
-  margin:0 !important; padding:0 !important;
+  min-width:0 !important; min-height:0 !important; gap:0 !important;
+  align-items:stretch !important;
 }
+.st-key-game1-pred-reel-tens [data-testid="stElementContainer"],
+.st-key-game1-pred-reel-ones [data-testid="stElementContainer"],
 .st-key-game1-pred-reel-tens [data-testid="stButton"],
 .st-key-game1-pred-reel-ones [data-testid="stButton"] {
-  width:100% !important; height:100% !important; min-height:0 !important;
+  width:100% !important; height:100% !important;
+  min-height:0 !important; min-width:0 !important;
+  padding:0 !important; margin:0 !important;
 }
 .st-key-game1-pred-reel-tens button,
 .st-key-game1-pred-reel-ones button {
-  display:grid !important; place-items:center;
-  width:100% !important; height:100% !important; min-height:0 !important;
-  margin:0 !important; padding:0 !important;
+  display:grid !important; place-items:center !important;
+  width:100% !important; height:100% !important;
+  min-height:0 !important; min-width:0 !important;
+  padding:0 !important; margin:0 !important;
   border:0 !important; border-radius:0 !important;
+  color:#ffde8a !important; opacity:1 !important;
   background:transparent !important; box-shadow:none !important;
-  color:#ffe0a1 !important; font-size:clamp(13px,3.8vw,21px) !important;
-  line-height:1 !important;
+  text-shadow:0 0 6px #e6a44e !important;
+  font-size:clamp(14px,3.6vw,21px) !important;
+  font-weight:900 !important; line-height:1 !important;
+  position:relative; z-index:5; cursor:pointer;
 }
+.st-key-game1-pred-reel-tens button:hover,
+.st-key-game1-pred-reel-ones button:hover,
 .st-key-game1-pred-reel-tens button:active,
 .st-key-game1-pred-reel-ones button:active {
-  background:#e9a2fc28 !important;
+  background:#f19afb35 !important;
 }
 .game1-pred-digit {
   display:grid; place-items:center;
   width:100%; height:100%; margin:0;
-  color:#fff0c5; font:900 clamp(43px,12.5vw,88px)/1 Georgia,"Times New Roman",serif;
+  color:#fff0b8;
+  font:900 clamp(39px,11.5vw,81px)/1 Georgia,"Times New Roman",serif;
   font-variant-numeric:tabular-nums;
-  text-shadow:0 2px 2px #471236,0 0 10px #ed9ffa;
+  text-shadow:0 1px 3px #571035,0 0 10px #ffb4f5;
   pointer-events:none; user-select:none;
 }
-.st-key-game1-prediction-machine > :has(.game1-pred-range) {
-  position:absolute !important; z-index:2;
-  left:20%; bottom:10%; width:60% !important; height:auto !important;
-}
 .game1-pred-range {
-  width:100%; margin:0 !important; padding:clamp(3px,.6svh,6px) 4px;
-  border:1px solid #ad37d3; border-radius:100px;
-  background:#48115fbc; box-shadow:inset 0 0 8px #a132c59a;
-  color:#f5dbfa; font-size:clamp(10px,2.75vw,14px);
-  font-weight:650; line-height:1.15; text-align:center; white-space:nowrap;
+  width:min(82%,380px); margin:0 auto !important;
+  padding:clamp(2px,.4svh,5px) 5px;
+  color:#f2dcf8; text-align:center;
+  font-size:clamp(10px,2.7vw,14px); font-weight:650;
+  line-height:1.25; white-space:nowrap;
+  border:1px solid #ae3ae0; border-radius:100px;
+  background:#45125bda;
+  box-shadow:inset 0 0 8px #b842f27c;
+  pointer-events:none;
 }
-.game1-pred-range span {color:#ffedff;}
+.game1-pred-range span { color:#fff4ff; }
 
-/* A lightweight CSS podium sits behind the existing bet_coin_stack artwork. */
-.game1-pred-coins {
-  position:relative; display:flex; justify-content:center; align-items:center;
-  width:100%; height:clamp(42px,7.4svh,80px);
-  margin:clamp(-14px,-1.4svh,-4px) 0 0 !important;
-  isolation:isolate;
+/* Use existing bet_podium.png exclusively, not bet_coin_stack.png. */
+.game1-pred-podium {
+  display:flex; align-items:center; justify-content:center;
+  width:100%; height:clamp(43px,8svh,87px);
+  min-width:0; margin:0 !important;
+  pointer-events:none;
 }
-.game1-pred-coins::before {
-  content:""; position:absolute; z-index:-1;
-  left:5%; width:90%; height:43%; bottom:1%;
-  border:2px solid #ffa9d5; border-radius:50%;
-  background:radial-gradient(ellipse,#7710af68 12%,#4210639e 63%,#21083140 78%);
-  box-shadow:0 0 18px #dd31fba9,0 0 27px #ffaf5559,
-    inset 0 0 14px #d124ffaf;
+.game1-pred-podium img {
+  display:block; width:100%; height:100%;
+  object-fit:contain; object-position:center;
+  filter:drop-shadow(0 5px 8px #a92ff0aa);
 }
-.game1-pred-coins img {
-  display:block; width:64%; max-width:280px;
-  height:100%; object-fit:contain;
-  filter:drop-shadow(0 4px 9px #b02aeaab);
-}
-.game1-pred-coins > span {font-size:40px;color:#ffd36e;}
+.game1-pred-podium > span {color:#ffd67f;font-size:38px;}
 .st-key-game1-pred-submit {width:100%; min-width:0;}
 .st-key-game1-pred-submit button {
-  display:flex !important; justify-content:center; align-items:center;
-  width:100% !important; height:clamp(50px,8svh,78px) !important;
-  min-height:0 !important; margin:0 auto !important; padding:0 12px !important;
-  border:2px solid #ffb9f6 !important; border-radius:100px !important;
-  background:linear-gradient(180deg,#cf5afa 0%,#8e22d8 35%,#6612ba 78%,#921de8 100%) !important;
-  color:#fff6ff !important; font-size:clamp(19px,5.3vw,27px) !important;
-  font-weight:900 !important; line-height:1.1 !important;
-  text-shadow:0 0 6px #f5bcff;
-  box-shadow:inset 0 2px 8px #f6c6ffb0,0 0 17px #dd43f2,0 6px 18px #6f1293b0 !important;
+  display:flex !important; align-items:center;justify-content:center;
+  width:100% !important; height:clamp(48px,7.6svh,75px) !important;
+  min-height:0 !important; margin:0 !important; padding:0 10px !important;
+  border:2px solid #ffc6f5 !important; border-radius:100px !important;
+  color:#fff5ff !important; font-size:clamp(19px,5vw,27px) !important;
+  font-weight:900 !important; line-height:1.15 !important;
+  background:linear-gradient(180deg,#ce4ef7,#8d1fe0 45%,#6411b9) !important;
+  box-shadow:inset 0 2px 8px #f7c8febb,0 0 16px #d73affb0,0 5px 16px #5d0a92c5 !important;
+  text-shadow:0 0 5px #ecc6fb;
 }
-.st-key-game1-pred-submit button:hover {filter:brightness(1.1);}
 
-/* Keep the entire selector, news, machine and CTA on a short portrait screen. */
-@media (max-height:620px) and (orientation:portrait) {
+/* Short screens need smaller art, but still preserve visible click targets. */
+@media (max-height:640px) and (orientation:portrait) {
   .stApp:has(.st-key-game1-prediction) {
-    --pred-safe-top:max(5px,env(safe-area-inset-top));
-    --pred-safe-bottom:max(6px,env(safe-area-inset-bottom));
+    --pred-top:max(5px,env(safe-area-inset-top));
+    --pred-bottom:max(5px,env(safe-area-inset-bottom));
   }
-  .st-key-game1-prediction {gap:3px !important;}
-  .st-key-game1-prediction-nav {
-    min-height:34px; grid-template-columns:34px minmax(0,1fr) 34px;
-    grid-template-rows:34px;
+  .st-key-game1-prediction:is([data-testid="stVerticalBlock"]),
+  .st-key-game1-prediction > [data-testid="stVerticalBlock"] {gap:3px !important;}
+  .game1-pred-banner {height:clamp(31px,6.4svh,45px);}
+  .game1-pred-heading h1 {font-size:clamp(22px,6.1vw,29px) !important;}
+  .game1-pred-heading p {font-size:10px;line-height:1.23;margin-top:2px !important;}
+  .game1-pred-news-wrap {height:clamp(58px,10.3svh,78px);}
+  .st-key-game1-prediction-machine {
+    height:clamp(197px,35svh,235px) !important;
+    padding-top:clamp(32px,5.4svh,43px) !important;
+    padding-bottom:12px !important;
   }
-  .game1-pred-wallet {font-size:13px;}
-  .game1-pred-wallet-coin {width:27px;height:27px;}
-  .game1-pred-banner {height:clamp(35px,7svh,49px);}
-  .game1-pred-heading h1 {font-size:clamp(22px,6.5vw,28px) !important;}
-  .game1-pred-heading p {font-size:10.5px;line-height:1.2;margin-top:2px !important;}
-  .game1-pred-news-wrap {height:clamp(59px,11svh,72px);}
-  .st-key-game1-prediction-machine {height:clamp(188px,35svh,220px) !important;}
-  .game1-pred-coins {height:clamp(31px,5.7svh,40px);}
-  .st-key-game1-pred-submit button {height:clamp(44px,8svh,51px) !important;}
+  .game1-pred-podium {height:clamp(33px,6.5svh,48px);}
+  .st-key-game1-pred-submit button {height:clamp(45px,8svh,53px) !important;}
 }
 
-/* Landscape phones: text/news on the left, dial on the right. */
+/* Landscape: keep controls side-by-side, allow vertical scrolling as needed.
+   Never use the previous overlapping absolute-positioned two-column layout. */
 @media (orientation:landscape) and (max-height:590px) {
   .stApp:has(.st-key-game1-prediction) .block-container {
-    max-width:930px !important; padding:6px 12px !important;
+    max-width:540px !important;
   }
-  .st-key-game1-prediction {
-    width:100%; max-width:910px;
-    height:calc(100svh - 12px); min-height:0;
-    display:grid !important;
-    grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);
-    grid-template-rows:clamp(34px,10svh,44px) minmax(0,1fr) clamp(43px,13svh,59px);
-    column-gap:clamp(12px,3vw,28px) !important;
-    row-gap:4px !important; align-items:stretch;
+  .st-key-game1-prediction:is([data-testid="stVerticalBlock"]),
+  .st-key-game1-prediction > [data-testid="stVerticalBlock"] {
+    min-height:0 !important;
   }
-  .st-key-game1-prediction > :is(.st-key-game1-prediction-nav,:has(.st-key-game1-prediction-nav)) {
-    grid-column:1/-1; grid-row:1;
-  }
-  .st-key-game1-prediction > :has(.game1-pred-heading) {
-    grid-column:1;grid-row:2;align-self:start;
-  }
-  .st-key-game1-prediction > :has(.game1-pred-news-wrap) {
-    grid-column:1;grid-row:2;align-self:end;
-  }
-  .st-key-game1-prediction > :is(.st-key-game1-prediction-machine,:has(.st-key-game1-prediction-machine)) {
-    grid-column:2;grid-row:2/4;height:100% !important;
-    align-self:stretch;
-  }
-  .st-key-game1-prediction-machine {height:100% !important;}
-  .st-key-game1-prediction > :has(.game1-pred-coins) {display:none !important;}
-  .st-key-game1-prediction > :is(.st-key-game1-pred-submit,:has(.st-key-game1-pred-submit)) {
-    grid-column:1;grid-row:3;align-self:end;
-  }
-  .game1-pred-banner {height:clamp(30px,12svh,55px);}
-  .game1-pred-heading h1 {font-size:clamp(20px,6svh,30px) !important;}
-  .game1-pred-heading p {font-size:clamp(10px,2.9svh,13px);line-height:1.2;}
-  .game1-pred-news-wrap {height:clamp(50px,17svh,80px);}
-  .st-key-game1-pred-submit button {height:clamp(40px,12svh,58px) !important;}
+  .game1-pred-banner {height:45px;}
+  .st-key-game1-prediction-machine {height:260px !important;}
 }
 @media (prefers-reduced-motion:reduce) {
   .st-key-game1-prediction button {transition:none !important;}
