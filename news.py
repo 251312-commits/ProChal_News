@@ -18,6 +18,7 @@ from games.game2 import show_game_2
 from games.game3 import show_game_3
 from games.game4 import show_game_4
 from games.game5 import show_game_5
+from games.game5_tutorial import show_game_5_tutorial
 
 ws = init_gspread()
 ws_news = init_news_sheet()
@@ -69,3 +70,5 @@ else:
         show_game_4()
     elif st.session_state.page == 'game_5':
         show_game_5()
+    elif st.session_state.page == 'game_5_tutorial':
+        show_game_5_tutorial()

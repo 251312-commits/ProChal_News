@@ -64,11 +64,15 @@ def _load_candidates() -> list[dict]:
     return loaded
 
 
-def _calculate_score(article: dict) -> int:
+def _calculate_score(article: dict) -> float:
     summary_text = asyncio.run(summary(article["text"]))
     if not summary_text:
         raise ValueError("뉴스 본문 요약 결과가 비어 있습니다.")
-    return similarity_check(summary_text, article["title"])
+    score_details = similarity_check(summary_text, article["title"])
+    score = score_details.get("score")
+    if not isinstance(score, (int, float)) or isinstance(score, bool):
+        raise ValueError("뉴스 일치율 결과가 올바른 숫자가 아닙니다.")
+    return float(score)
 
 
 def _build_exclusive_range(candidates: list[dict], answer_index: int) -> tuple[int, int]:
@@ -93,6 +97,12 @@ def _build_exclusive_range(candidates: list[dict], answer_index: int) -> tuple[i
 
 def show_game_5():
     st.title("🎮 게임 5: 일치율 구간 뉴스 맞히기")
+    if st.button(
+        "📖 게임 5 튜토리얼 다시 보기",
+        key="game_5_show_tutorial",
+        help="게임 진행 방법을 다시 확인합니다.",
+    ):
+        change_page("game_5_tutorial")
 
     if "game_5_bet" not in st.session_state:
         if not check_user_coins_or_pop_bank(GAME_5_MIN_BET):
