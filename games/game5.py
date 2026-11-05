@@ -1,6 +1,8 @@
 """제시된 일치율 구간에 해당하는 뉴스를 고르는 게임."""
 
 import asyncio
+from decimal import Decimal, ROUND_HALF_UP
+import html
 import random
 
 import streamlit as st
@@ -27,6 +29,7 @@ def _reset_game_5_state() -> None:
         "game_5_candidates",
         "game_5_selected_index",
         "game_5_result",
+        "game_5_article_index",
         "bet_slider_val",
     ):
         st.session_state.pop(key, None)
@@ -75,8 +78,8 @@ def _calculate_score(article: dict) -> float:
     return float(score)
 
 
-def _build_exclusive_range(candidates: list[dict], answer_index: int) -> tuple[int, int]:
-    """Build the widest integer range containing only the selected score."""
+def _build_exclusive_range(candidates: list[dict], answer_index: int) -> tuple[float, float]:
+    """Build a narrow score range containing only the selected score."""
     answer_score = candidates[answer_index]["score"]
     other_scores = {
         candidate["score"]
@@ -86,13 +89,78 @@ def _build_exclusive_range(candidates: list[dict], answer_index: int) -> tuple[i
     if answer_score in other_scores:
         raise ValueError("후보 뉴스의 일치율이 같아 정답 구간을 분리할 수 없습니다.")
 
-    lower_scores = [score for score in other_scores if score < answer_score]
-    upper_scores = [score for score in other_scores if score > answer_score]
-    lower = max(lower_scores, default=0) + (1 if lower_scores else 0)
-    upper = min(upper_scores, default=100) - (1 if upper_scores else 0)
+    nearest_gap = min(abs(answer_score - score) for score in other_scores)
+    if nearest_gap <= 0:
+        raise ValueError("후보 뉴스의 일치율로 정답 구간을 만들 수 없습니다.")
+
+    # Keep a generous margin from the neighboring score without falling back
+    # to the impractically wide 0~100% range at the ends of the scale.
+    half_width = nearest_gap * (2 / 3)
+    lower = max(0.0, answer_score - half_width)
+    upper = min(100.0, answer_score + half_width)
+    quantizer = Decimal("0.01")
+    lower = float(Decimal(str(lower)).quantize(quantizer, rounding=ROUND_HALF_UP))
+    upper = float(Decimal(str(upper)).quantize(quantizer, rounding=ROUND_HALF_UP))
+    lower = max(
+        lower,
+        *(score + 0.01 for score in other_scores if score < answer_score),
+    )
+    upper = min(
+        upper,
+        *(score - 0.01 for score in other_scores if score > answer_score),
+    )
     if lower > answer_score or answer_score > upper:
         raise ValueError("후보 뉴스의 일치율로 정답 구간을 만들 수 없습니다.")
     return lower, upper
+
+
+def _format_score_range(score_range: tuple[float, float]) -> str:
+    return f"{score_range[0]:.2f}~{score_range[1]:.2f}%"
+
+
+def _show_article_detail() -> None:
+    candidates = st.session_state.get("game_5_candidates", [])
+    article_index = st.session_state.get("game_5_article_index")
+    if not isinstance(article_index, int) or not 0 <= article_index < len(candidates):
+        st.error("열람할 뉴스 정보를 찾을 수 없습니다.")
+        if st.button("게임으로 돌아가기"):
+            change_page("game_5")
+        return
+
+    article = candidates[article_index]
+    st.title(f"📰 후보 {article_index + 1} 본문")
+    st.subheader(article["title"])
+    st.markdown(article["text"])
+    if st.button("⬅️ 후보 목록으로 돌아가기", use_container_width=True):
+        change_page("game_5")
+
+
+def _show_result() -> None:
+    result = st.session_state.get("game_5_result")
+    if not result:
+        change_page("game_5")
+        return
+
+    st.title("🏆 게임 5 최종 결과")
+    if result["is_win"]:
+        st.balloons()
+        st.success(f"🎉 정답입니다! +{result['reward']:,} C")
+    else:
+        st.error(f"❌ 틀렸습니다! {result['reward']:,} C")
+    st.metric("선택한 뉴스의 실제 일치율", f"{result['actual_score']:.2f}%")
+    st.info(f"정답 구간: {result['target_range']}")
+    st.write(f"현재 보유 코인: **{result['new_coins']:,} C**")
+    st.write(f"현재 연승 기록: **{result['new_streak']} 연승**")
+
+    col_retry, col_main = st.columns(2)
+    with col_retry:
+        if st.button("🔄 다시 도전하기", use_container_width=True):
+            _reset_game_5_state()
+            change_page("game_5")
+    with col_main:
+        if st.button("⬅️ 메인으로 돌아가기", use_container_width=True):
+            _reset_game_5_state()
+            change_page("main")
 
 
 def show_game_5():
@@ -150,14 +218,26 @@ def show_game_5():
     candidates = st.session_state.game_5_candidates
     target_range = st.session_state.game_5_target_range
     st.info(
-        f"🎯 정답 일치율 구간: **{target_range[0]}~{target_range[1]}%**\n\n"
+        f"🎯 정답 일치율 구간: **{_format_score_range(target_range)}**\n\n"
         "아래 뉴스 중 이 구간에 해당하는 뉴스 하나를 선택하세요."
     )
 
     for index, article in enumerate(candidates):
         with st.container(border=True):
             st.subheader(f"📰 후보 {index + 1}: {article['title']}")
-            st.write(article["text"])
+            preview = html.escape(article["text"].replace("\n", " ").strip())
+            st.markdown(
+                f'<div style="height:120px; overflow-y:auto; padding:8px; '
+                f'border:1px solid #663399; border-radius:6px;">{preview}</div>',
+                unsafe_allow_html=True,
+            )
+            if st.button(
+                f"📖 후보 {index + 1} 본문 보기",
+                key=f"game_5_article_{index}",
+                use_container_width=True,
+            ):
+                st.session_state.game_5_article_index = index
+                change_page("game_5_article")
             if st.button(
                 f"후보 {index + 1} 선택",
                 key=f"game_5_select_{index}",
@@ -206,32 +286,10 @@ def show_game_5():
         st.session_state.current_user_data["연승"] = new_streak
         st.session_state.game_5_result = {
             "actual_score": actual_score,
-            "target_range": f"{target_range[0]}~{target_range[1]}%",
+            "target_range": _format_score_range(target_range),
             "reward": reward,
             "is_win": is_win,
             "new_coins": new_coins,
             "new_streak": new_streak,
         }
-
-    result = st.session_state.game_5_result
-    st.markdown("---")
-    st.subheader("🏆 최종 결과")
-    if result["is_win"]:
-        st.balloons()
-        st.success(f"🎉 정답입니다! +{result['reward']:,} C")
-    else:
-        st.error(f"❌ 틀렸습니다! {result['reward']:,} C")
-    st.metric("선택한 뉴스의 실제 일치율", f"{result['actual_score']}%")
-    st.info(f"정답 구간: {result['target_range']}")
-    st.write(f"현재 보유 코인: **{result['new_coins']:,} C**")
-    st.write(f"현재 연승 기록: **{result['new_streak']} 연승**")
-
-    col_retry, col_main = st.columns(2)
-    with col_retry:
-        if st.button("🔄 다시 도전하기", use_container_width=True):
-            _reset_game_5_state()
-            st.rerun()
-    with col_main:
-        if st.button("⬅️ 메인으로 돌아가기", use_container_width=True):
-            _reset_game_5_state()
-            change_page("main")
+        change_page("game_5_result")
