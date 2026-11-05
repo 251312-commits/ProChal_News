@@ -2,6 +2,7 @@ import streamlit as st
 from streamlit_autorefresh import st_autorefresh  # 1. 모듈 import 추가
 from modules.db_handler import init_gspread
 from modules.ui_components import change_page
+from views.ranking_display import select_ranking_rows
 
 @st.cache_data(ttl=10) # 10초 동안 캐싱하여 화면 진입 속도 0초 구현
 def fetch_ranking_data():
@@ -152,7 +153,7 @@ def show_ranking():
         .banner-nickname {
             font-size: 0.88rem;
             font-weight: 900;
-            margin: 4px 0;
+            margin: 0;
             text-shadow: 1px 1px 4px rgba(0,0,0,0.9);
             width: 100%;
             overflow: hidden;
@@ -179,6 +180,8 @@ def show_ranking():
             width: 100%;
         }
         .rank-item {
+            height: 48px;
+            min-height: 48px;
             background: rgba(255, 255, 255, 0.07);
             backdrop-filter: blur(5px);
             border-radius: 12px;
@@ -228,7 +231,16 @@ def show_ranking():
             white-space: nowrap;
             box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
         }
+        .rank-placeholder {
+            opacity: 0.35;
+            border-style: dashed;
+        }
         .ellipsis-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 48px;
+            min-height: 48px;
             text-align: center;
             color: #ff00ff;
             font-size: 1.1rem;
@@ -289,29 +301,19 @@ def show_ranking():
     top1_html = f'<div class="banner-box banner-gold"><div class="crown-icon crown-gold">👑</div><div class="banner-nickname">{top1["nickname"]}</div><div class="banner-coin-tag">🪙 {top1["coins"]:,}</div></div>' if top1 else '<div class="banner-box banner-gold" style="opacity:0.3;"><div class="crown-icon crown-gold">👑</div>-</div>'
     top3_html = f'<div class="banner-box banner-bronze"><div class="crown-icon">🥉</div><div class="banner-nickname">{top3["nickname"]}</div><div class="banner-coin-tag">🪙 {top3["coins"]:,}</div></div>' if top3 else '<div class="banner-box banner-bronze" style="opacity:0.3;"><div class="crown-icon">🥉</div>-</div>'
 
+    # The lower panel always has six slots (rank, ellipsis, or empty row).
     list_items_html = ""
-    display_ranks = set()
-    for r in [4, 5]:
-        if r <= len(sorted_users):
-            display_ranks.add(r)
-    if my_rank > 0:
-        for r in range(my_rank - 1, my_rank + 2):
-            if 4 <= r <= len(sorted_users):
-                display_ranks.add(r)
-
-    sorted_ranks = sorted(list(display_ranks))
-    if sorted_ranks:
-        prev_r = 3
-        for r in sorted_ranks:
-            if r > prev_r + 1:
-                list_items_html += '<div class="ellipsis-divider">• • •</div>'
-            row = next((u for u in sorted_users if u['rank'] == r), None)
-            if row:
-                is_me = (my_info and row['id'] == my_info['id'])
-                is_me_class = "is-me" if is_me else ""
-                me_label = " (나)" if is_me else ""
-                list_items_html += f'<div class="rank-item {is_me_class}"><div class="rank-number">{r}</div><div class="rank-nickname">{row["nickname"]}{me_label}</div><div class="coin-box">🪙 {row["coins"]:,}</div></div>'
-            prev_r = r
+    for r in select_ranking_rows(len(sorted_users), my_rank):
+        if r == "...":
+            list_items_html += '<div class="ellipsis-divider" aria-label="생략된 순위">• • •</div>'
+        elif r is None:
+            list_items_html += '<div class="rank-item rank-placeholder" aria-hidden="true"><div class="rank-number">—</div></div>'
+        else:
+            row = sorted_users[r - 1]
+            is_me = (my_info and row['id'] == my_info['id'])
+            is_me_class = "is-me" if is_me else ""
+            me_label = " (나)" if is_me else ""
+            list_items_html += f'<div class="rank-item {is_me_class}"><div class="rank-number">{r}</div><div class="rank-nickname">{row["nickname"]}{me_label}</div><div class="coin-box">🪙 {row["coins"]:,}</div></div>'
 
     full_ranking_html = f'''
     <div class="ranking-container">
