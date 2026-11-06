@@ -1,338 +1,177 @@
-import streamlit as st
-import streamlit.components.v1 as components
+"""뉴스 제목과 본문의 일치율 구간을 맞히는 게임."""
 
-# 구간 맞히기 (중) 확률: ⅓ (3배)
+import asyncio
+
+import streamlit as st
+
+from games.common import (
+    check_user_coins_or_pop_bank,
+    get_game_news_selection,
+    render_betting_ui,
+)
+from modules.db_handler import init_gspread
+from modules.news_ai import similarity_check, summary
+from modules.ui_components import change_page
+from views.ranking import fetch_ranking_data
+
+
+GAME_4_WIN_MULTIPLIER = 2.0
+GAME_4_MIN_BET = 1_000
+
+
+def _reset_game_4_state() -> None:
+    for key in (
+        "game_4_bet",
+        "selected_news_game_4",
+        "candidates_game_4",
+        "read_done_game_4",
+        "game_4_range",
+        "game_4_range_picker",
+        "game_4_result",
+        "bet_slider_val",
+    ):
+        st.session_state.pop(key, None)
+
+
+def _get_score_range(score: float) -> tuple[int, str]:
+    if score <= 33:
+        return 1, "1~33%"
+    if score <= 66:
+        return 2, "34~66%"
+    return 3, "67~100%"
+
+
+def _settle_game_4(
+    *,
+    actual_score: float,
+    selected_range: int,
+    bet_coin: int,
+) -> dict:
+    answer_range, answer_label = _get_score_range(actual_score)
+    is_win = selected_range == answer_range
+    reward = int(bet_coin * GAME_4_WIN_MULTIPLIER) if is_win else -bet_coin
+
+    ws = init_gspread()
+    current_sid = str(st.session_state.get("current_user", "")).strip().replace(".0", "")
+    user_row_idx = None
+    user_info = None
+    for index, user in enumerate(ws.get_all_records()):
+        sid = str(user.get("학번", "")).strip().replace(".0", "")
+        if sid == current_sid:
+            user_row_idx = index + 2
+            user_info = user
+            break
+
+    if user_info is None or user_row_idx is None:
+        raise ValueError("사용자 정보를 찾을 수 없어 정산할 수 없습니다.")
+
+    current_coins = int(user_info.get("코인", 0))
+    current_streak = int(user_info.get("연승", 0))
+    new_coins = max(0, current_coins + reward)
+    new_streak = current_streak + 1 if is_win else 0
+    ws.update_cell(user_row_idx, 3, new_coins)
+    ws.update_cell(user_row_idx, 4, new_streak)
+    st.session_state.current_user_data["코인"] = new_coins
+    st.session_state.current_user_data["연승"] = new_streak
+
+    return {
+        "actual_score": actual_score,
+        "selected_range": _get_score_range(actual_score)[0],
+        "target_range": answer_label,
+        "reward": reward,
+        "is_win": is_win,
+        "new_coins": new_coins,
+        "new_streak": new_streak,
+    }
+
+
+def _show_game_4_result() -> None:
+    result = st.session_state.game_4_result
+    st.subheader("🏆 최종 결과")
+    if result["is_win"]:
+        st.balloons()
+        st.success(f"🎉 정답입니다! +{result['reward']:,} C")
+    else:
+        st.error(f"❌ 틀렸습니다! {result['reward']:,} C")
+
+    st.metric("실제 일치율", f"{result['actual_score']:.2f}%")
+    st.write(f"선택한 구간: **{result['selected_range']}번**")
+    st.info(f"정답 구간: **{result['target_range']}**")
+    st.write(f"현재 보유 코인: **{result['new_coins']:,} C**")
+    st.write(f"현재 연승 기록: **{result['new_streak']} 연승**")
+
+    col_retry, col_main = st.columns(2)
+    with col_retry:
+        if st.button("🔄 다시 도전하기", use_container_width=True):
+            _reset_game_4_state()
+            st.rerun()
+    with col_main:
+        if st.button("⬅️ 메인으로 돌아가기", use_container_width=True):
+            _reset_game_4_state()
+            change_page("main")
+
 
 def show_game_4():
-    html_code = """
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>기사 일치율 배팅 게임</title>
-<style>
-* { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  padding: 25px 15px;
-  background: #111827;
-  color: white;
-  font-family: Arial, sans-serif;
-}
-
-.container {
-  max-width: 750px;
-  margin: auto;
-}
-
-h1 {
-  text-align: center;
-  color: #facc15;
-}
-
-.card {
-  background: #1f2937;
-  border-radius: 15px;
-  padding: 22px;
-  margin: 18px 0;
-}
-
-h2 { color: #facc15; }
-
-input, textarea {
-  width: 100%;
-  padding: 12px;
-  margin: 8px 0 15px;
-  border: 1px solid #4b5563;
-  border-radius: 8px;
-  background: #374151;
-  color: white;
-  font-size: 16px;
-}
-
-textarea {
-  min-height: 130px;
-  resize: vertical;
-}
-
-button {
-  padding: 13px 18px;
-  border: none;
-  border-radius: 9px;
-  background: #eab308;
-  color: #111827;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-button:hover { background: #facc15; }
-
-.score {
-  text-align: center;
-  font-size: 25px;
-  color: #4ade80;
-  font-weight: bold;
-}
-
-.range-list {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-
-.range {
-  padding: 20px 5px;
-  background: #374151;
-  border: 2px solid transparent;
-  border-radius: 10px;
-  text-align: center;
-  cursor: pointer;
-  font-size: 17px;
-  font-weight: bold;
-}
-
-.range.selected {
-  border-color: #facc15;
-  background: #713f12;
-}
-
-.range input { display: none; }
-
-.result {
-  text-align: center;
-  font-size: 23px;
-  font-weight: bold;
-  margin-top: 20px;
-}
-
-.small {
-  color: #9ca3af;
-  font-size: 13px;
-}
-
-.article-title {
-  font-size: 23px;
-  font-weight: bold;
-  line-height: 1.5;
-}
-
-#game { display: none; }
-
-@media(max-width: 450px) {
-  .range { font-size: 14px; }
-}
-</style>
-</head>
-
-<body>
-<div class="container">
-
-<h1>🎯 기사 일치율 배팅 게임</h1>
-
-<div class="card">
-  <h2>💰 나의 보유 점수</h2>
-  <div class="score" id="balance">1,000점</div>
-</div>
-
-<!-- 기사 입력 -->
-<div class="card" id="admin">
-  <h2>📝 기사 설정</h2>
-
-  <label>기사 제목</label>
-  <input id="articleTitle" placeholder="기사 제목을 입력하세요">
-
-  <label>기사 본문</label>
-  <textarea id="articleBody" placeholder="기사 본문을 입력하세요"></textarea>
-
-  <label>정답 일치율 (1~100)</label>
-  <input id="correctAnswer" type="number" min="1" max="100"
-         placeholder="관리자만 아는 정답을 입력하세요">
-
-  <button onclick="startGame()">게임 시작</button>
-  <p class="small">※ 정답은 게임 중 공개되지 않습니다.</p>
-</div>
-
-<!-- 게임 화면 -->
-<div id="game">
-
-  <div class="card">
-    <h2>📰 오늘의 기사</h2>
-    <div class="article-title" id="showTitle"></div>
-    <hr>
-    <p id="showBody" style="line-height:1.8; white-space:pre-wrap;"></p>
-  </div>
-
-  <div class="card">
-    <h2>🎯 예상 일치율을 선택하세요</h2>
-    <p class="small">제목과 본문의 일치율은 어느 구간일까요?</p>
-
-    <div class="range-list">
-      <label class="range">
-        <input type="radio" name="range" value="1">
-        1~33%
-      </label>
-
-      <label class="range">
-        <input type="radio" name="range" value="2">
-        34~66%
-      </label>
-
-      <label class="range">
-        <input type="radio" name="range" value="3">
-        67~100%
-      </label>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2>💸 배팅 점수</h2>
-    <input id="bet" type="number" min="1"
-           placeholder="배팅할 점수를 입력하세요">
-
-    <p class="small">
-      정답: 배팅 점수의 3배 지급<br>
-      오답: 배팅 점수 전액 차감
-    </p>
-
-    <button id="betButton" onclick="playGame()" style="width:100%">
-      배팅하기
-    </button>
-
-    <div class="result" id="result"></div>
-  </div>
-
-  <button onclick="newRound()" style="width:100%">
-    다음 기사 설정하기
-  </button>
-
-</div>
-</div>
-
-<script>
-let balance = 1000;
-let answer = 0;
-let played = false;
-
-function updateBalance() {
-  document.getElementById("balance").textContent =
-    balance.toLocaleString() + "점";
-}
-
-function startGame() {
-  const title = document.getElementById("articleTitle").value.trim();
-  const body = document.getElementById("articleBody").value.trim();
-  const correct = Number(document.getElementById("correctAnswer").value);
-
-  if (!title || !body) {
-    alert("기사 제목과 본문을 입력해주세요.");
-    return;
-  }
-
-  if (!Number.isInteger(correct) || correct < 1 || correct > 100) {
-    alert("정답 일치율을 1~100 사이의 정수로 입력해주세요.");
-    return;
-  }
-
-  answer = correct;
-
-  document.getElementById("showTitle").textContent = title;
-  document.getElementById("showBody").textContent = body;
-
-  document.getElementById("admin").style.display = "none";
-  document.getElementById("game").style.display = "block";
-  document.getElementById("result").textContent = "";
-
-  played = false;
-  document.getElementById("betButton").disabled = false;
-  document.getElementById("betButton").textContent = "배팅하기";
-
-  document.querySelectorAll('input[name="range"]').forEach(r => {
-    r.checked = false;
-    r.parentElement.classList.remove("selected");
-  });
-
-  document.getElementById("bet").value = "";
-}
-
-document.querySelectorAll('input[name="range"]').forEach(radio => {
-  radio.addEventListener("change", function() {
-    document.querySelectorAll(".range").forEach(el => {
-      el.classList.remove("selected");
-    });
-    this.parentElement.classList.add("selected");
-  });
-});
-
-function playGame() {
-  if (played) return;
-
-  const selected = document.querySelector(
-    'input[name="range"]:checked'
-  );
-
-  const bet = Number(document.getElementById("bet").value);
-
-  if (!selected) {
-    alert("일치율 구간을 선택해주세요.");
-    return;
-  }
-
-  if (!Number.isInteger(bet) || bet < 1 || bet > balance) {
-    alert("보유 점수 내에서 배팅 점수를 입력해주세요.");
-    return;
-  }
-
-  const range = Number(selected.value);
-
-  let correctRange;
-
-  if (answer <= 33) {
-    correctRange = 1;
-  } else if (answer <= 66) {
-    correctRange = 2;
-  } else {
-    correctRange = 3;
-  }
-
-  played = true;
-
-  if (range === correctRange) {
-    balance = balance - bet + (bet * 3);
-
-    document.getElementById("result").innerHTML =
-      "🎉 정답입니다!<br>" +
-      "실제 일치율: " + answer + "%<br>" +
-      "+" + (bet * 3).toLocaleString() + "점 지급!";
-  } else {
-    balance -= bet;
-
-    document.getElementById("result").innerHTML =
-      "❌ 틀렸습니다!<br>" +
-      "실제 일치율: " + answer + "%<br>" +
-      "-" + bet.toLocaleString() + "점";
-  }
-
-  updateBalance();
-
-  document.getElementById("betButton").disabled = true;
-  document.getElementById("betButton").textContent = "배팅 완료";
-}
-
-function newRound() {
-  document.getElementById("game").style.display = "none";
-  document.getElementById("admin").style.display = "block";
-
-  document.getElementById("articleTitle").value = "";
-  document.getElementById("articleBody").value = "";
-  document.getElementById("correctAnswer").value = "";
-}
-
-updateBalance();
-</script>
-</body>
-</html>
-"""
-    components.html(html_code, height=900, scrolling=True)
+    if "game_4_bet" not in st.session_state:
+        if not check_user_coins_or_pop_bank(GAME_4_MIN_BET):
+            return
+
+        user_data = st.session_state.get("current_user_data", {})
+        confirmed_bet = render_betting_ui(
+            current_coins=int(user_data.get("코인", 0)),
+            users_data=fetch_ranking_data(),
+            current_sid=str(st.session_state.get("current_user", "")),
+            current_nickname=str(user_data.get("아이디", "")),
+            min_bet=GAME_4_MIN_BET,
+            payout_multiplier=GAME_4_WIN_MULTIPLIER,
+            title="게임 4: 일치율 구간 뉴스 맞히기",
+        )
+        if confirmed_bet is not None:
+            st.session_state.game_4_bet = confirmed_bet
+            st.rerun()
+        return
+
+    title, article_text, _ = get_game_news_selection("game_4")
+    if not title:
+        return
+
+    st.title("🎮 게임 4: 일치율 구간 뉴스 맞히기")
+    st.caption("뉴스 제목과 본문의 일치율이 어느 구간에 속하는지 선택하세요.")
+
+    if "game_4_range" not in st.session_state:
+        st.subheader("🎯 예상 일치율 구간")
+        selected_range = st.radio(
+            "일치율 구간을 선택하세요.",
+            options=(1, 2, 3),
+            format_func=lambda value: {
+                1: "1번: 1~33%",
+                2: "2번: 34~66%",
+                3: "3번: 67~100%",
+            }[value],
+            key="game_4_range_picker",
+            horizontal=True,
+        )
+        if st.button("🎯 이 구간에 배팅하기", use_container_width=True):
+            st.session_state.game_4_range = selected_range
+            st.rerun()
+        return
+
+    if "game_4_result" not in st.session_state:
+        with st.spinner("🤖 AI가 뉴스 일치율을 분석 중입니다..."):
+            try:
+                summary_text = asyncio.run(summary(article_text))
+                if not summary_text:
+                    st.error("뉴스 본문 요약에 실패해 일치율을 계산할 수 없습니다.")
+                    return
+                actual_score = float(similarity_check(summary_text, title)["score"])
+                result = _settle_game_4(
+                    actual_score=actual_score,
+                    selected_range=st.session_state.game_4_range,
+                    bet_coin=int(st.session_state.game_4_bet),
+                )
+            except (RuntimeError, ValueError, TypeError, KeyError) as exc:
+                st.error(f"게임 결과를 처리하지 못했습니다: {exc}")
+                return
+        st.session_state.game_4_result = result
+
+    _show_game_4_result()
