@@ -1,152 +1,121 @@
-"""Mobile-first two-digit similarity prediction for Game 1.
+"""Single-screen, asset-proportional Game 1 fractional prediction component.
 
-Buttons are ordinary Streamlit widgets so they work with touch, mouse and
-keyboard. Only the 00-99 fractional digits are submitted to the game logic.
+The previous Streamlit grid/absolute-position CSS could be rewrapped on narrow
+phones. This implementation uses the existing news-slot iframe architecture:
+a single 100dvh document owns the full layout and native browser buttons.
+Only 00-99 are submitted; Game 1's betting and scoring logic are unchanged.
 """
-from html import escape
 from pathlib import Path
+from uuid import uuid4
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 from modules.ui_components import change_page, load_local_image_as_base64
 
 
-_ASSETS = Path(__file__).resolve().parents[1] / "assets"
+_HERE = Path(__file__).resolve().parent
+_ASSETS = _HERE.parent / "assets"
+_SCREEN = components.declare_component(
+    "game1_prediction_screen", path=str(_HERE / "prediction_screen")
+)
+
+_ART = {
+    "background": "bet_background.jpg",
+    "header": "game1_prediction/pred_header.avif",
+    "news": "game1_prediction/pred_news.avif",
+    "tag": "game1_prediction/pred_tag.avif",
+    "frame": "game1_prediction/pred_frame.avif",
+    "reel": "game1_prediction/pred_reel.avif",
+    "podium": "bet_podium.png",
+}
 
 
-def _asset(relative_name: str) -> str:
-    path = _ASSETS / relative_name
-    if not path.is_file():
-        return ""
-    return load_local_image_as_base64(str(path))
+def _artwork() -> dict[str, str]:
+    """Use the same cached local asset loader as the news selection screen."""
+    return {
+        key: load_local_image_as_base64(str(_ASSETS / filename))
+        for key, filename in _ART.items()
+    }
 
 
-def _change_digit(name: str, delta: int) -> None:
-    """Cycle exactly one fractional digit without submitting the prediction."""
-    if name not in ("tens", "ones"):
-        raise ValueError("Unknown Game 1 digit")
-    key = f"game1_pred_{name}"
-    next_value = (int(st.session_state.get(key, 0)) + delta) % 10
-    st.session_state[key] = next_value
-    # Keep the legacy keys synchronized for resumed rounds and the result flow.
-    st.session_state[f"{name}_val"] = next_value
+def _save_digits(values: object) -> bool:
+    """Validate data from the iframe before updating the existing session keys."""
+    if not isinstance(values, list) or len(values) != 2:
+        return False
+    if any(type(value) is not int or value < 0 or value > 9 for value in values):
+        return False
+
+    tens, ones = values
+    st.session_state.game1_pred_tens = tens
+    st.session_state.game1_pred_ones = ones
+    st.session_state.tens_val = tens
+    st.session_state.ones_val = ones
+    return True
 
 
 @st.fragment
 def render_game1_prediction_picker(article_title: str) -> None:
-    """Show the accessible two-reel selector; only confirmation commits a score."""
-    if "game1_pred_tens" not in st.session_state:
-        st.session_state.game1_pred_tens = int(st.session_state.get("tens_val", 0)) % 10
-    if "game1_pred_ones" not in st.session_state:
-        st.session_state.game1_pred_ones = int(st.session_state.get("ones_val", 4)) % 10
+    """Render the one-page UI. Confirm alone commits the prediction."""
+    state = st.session_state
+    if "game1_pred_tens" not in state:
+        state.game1_pred_tens = int(state.get("tens_val", 0)) % 10
+    if "game1_pred_ones" not in state:
+        state.game1_pred_ones = int(state.get("ones_val", 4)) % 10
+    if "game1_pred_round_id" not in state:
+        state.game1_pred_round_id = uuid4().hex
 
-    tens = int(st.session_state.game1_pred_tens) % 10
-    ones = int(st.session_state.game1_pred_ones) % 10
-    st.session_state.tens_val = tens
-    st.session_state.ones_val = ones
+    round_id = state.game1_pred_round_id
+    user = state.get("current_user_data") or {}
 
-    user = st.session_state.get("current_user_data") or {}
-    balance = int(user.get("코인", 0) or 0)
-    headline = escape(str(article_title or "선택된 뉴스가 없습니다"), quote=True)
-
-    banner = _asset("game1_prediction/pred_header.avif")
-    tag = _asset("game1_prediction/pred_tag.avif")
-    news_plate = _asset("game1_prediction/pred_news.avif")
-    frame = _asset("game1_prediction/pred_frame.avif")
-    reel = _asset("game1_prediction/pred_reel.avif")
-    podium = _asset("bet_podium.png")
-    background = _asset("bet_background.jpg")
-
-    # Only decorative art goes in backgrounds. NEVER hide arrow button text:
-    # these are real clickable buttons, not part of the reel illustration.
-    asset_css = [
-        (".stApp:has(.st-key-game1-prediction) {"
-         f"background:#13051e url('{background}') center center/cover no-repeat !important;"
-         "}") if background else "",
-        f".st-key-game1-prediction-machine {{ background-image:url('{frame}') !important; }}" if frame else "",
-        f".game1-pred-news-wrap {{ background-image:url('{news_plate}') !important; }}" if news_plate else "",
-        (".st-key-game1-pred-reel-tens,.st-key-game1-pred-reel-ones {"
-         f"background-image:url('{reel}') !important;"
-         "}") if reel else "",
-    ]
-
-    with st.container(key="game1-prediction", gap=None):
-        st.html(Path(__file__).with_suffix(".css"))
-        st.html("<style>" + "\n".join(asset_css) + "</style>")
-
-        # Native Streamlit columns provide three real, stable hit targets.
-        # CSS keeps them side by side even on narrow mobile viewports.
-        with st.container(key="game1-prediction-nav", gap=None):
-            back_col, wallet_col, bank_col = st.columns([1, 5, 1], gap=None, vertical_alignment="center")
-            with back_col:
-                if st.button("❮", key="game1-pred-back", help="메인으로 돌아가기"):
-                    change_page("main")
-            with wallet_col:
-                st.html(
-                    '<div class="game1-pred-wallet" aria-label="보유 코인 '
-                    f'{balance:,} C">'
-                    '<span class="game1-pred-wallet-coin" aria-hidden="true">₵</span>'
-                    f'<span class="game1-pred-wallet-amount">{balance:,} C</span></div>'
-                )
-            with bank_col:
-                if st.button("+", key="game1-pred-bank", help="은행으로 이동"):
-                    change_page("bank")
-
-        st.html(
-            '<section class="game1-pred-heading" aria-label="유사도 예측">'
-            + (f'<img class="game1-pred-banner" src="{banner}" alt="SIMILARITY PREDICT">'
-               if banner else '<span class="game1-pred-banner-fallback">♛ SIMILARITY PREDICT</span>')
-            + '<h1>유사도 예측</h1>'
-            + '<p>선택한 기사 제목과 AI 요약문의<br>유사도 점수 소수 두 자리를 예측하세요.</p>'
-            + '</section>'
+    # Same full-viewport iframe shell already used in games/news_roulette.py.
+    with st.container(key="game1-prediction-screen", gap=None):
+        st.html("""
+        <style>
+        .st-key-game1-prediction-screen {
+          position:fixed !important; inset:0 !important; z-index:1000 !important;
+          width:100% !important; height:100vh !important; height:100dvh !important;
+          overflow:hidden !important; background:#170824;
+        }
+        .st-key-game1-prediction-screen iframe {
+          display:block !important; border:0 !important;
+          width:100% !important; height:100vh !important; height:100dvh !important;
+        }
+        [data-testid="stAppViewContainer"]:has(.st-key-game1-prediction-screen) [data-testid="stHeader"],
+        [data-testid="stApp"]:has(.st-key-game1-prediction-screen) [data-testid="stHeader"] {
+          display:none !important;
+        }
+        [data-testid="stMain"]:has(.st-key-game1-prediction-screen) {overflow:hidden !important;}
+        </style>
+        """)
+        event = _SCREEN(
+            key=f"game1-prediction-{round_id}",
+            round_id=round_id,
+            title=str(article_title or "선택된 뉴스가 없습니다"),
+            coins=int(user.get("코인", 0) or 0),
+            digits=[int(state.game1_pred_tens), int(state.game1_pred_ones)],
+            art=_artwork(),
+            default=None,
         )
 
-        st.html(
-            '<section class="game1-pred-news-wrap" aria-label="선택한 뉴스">'
-            + (f'<img class="game1-pred-news-tag" src="{tag}" alt="선택한 뉴스">'
-               if tag else '<span class="game1-pred-news-tag-fallback">선택한 뉴스</span>')
-            + f'<div class="game1-pred-news-title" title="{headline}">{headline}</div>'
-            + '</section>'
+    # Ignore stale or malformed messages (e.g. from an earlier round).
+    if not isinstance(event, dict) or event.get("round_id") != round_id:
+        return
+    action = event.get("action")
+    if action not in ("change", "confirm", "back", "bank"):
+        return
+    if not _save_digits(event.get("digits")):
+        return
+
+    if action == "confirm":
+        state.game_1_predicted_digits = (
+            int(state.game1_pred_tens) * 10 + int(state.game1_pred_ones)
         )
-
-        with st.container(key="game1-prediction-machine", gap=None):
-            st.html('<div class="game1-pred-machine-title">✦ 예측하는 유사도 점수 ✦</div>')
-            with st.container(key="game1-prediction-reels", gap=None):
-                zero_col, tens_col, ones_col = st.columns([0.7, 1, 1], gap=None, vertical_alignment="center")
-                with zero_col:
-                    st.html('<span class="game1-pred-zero" aria-hidden="true">0.</span>')
-                for name, value, label, column in (
-                    ("tens", tens, "첫째 자리", tens_col),
-                    ("ones", ones, "둘째 자리", ones_col),
-                ):
-                    with column:
-                        with st.container(key=f"game1-pred-reel-{name}", gap=None):
-                            st.button(
-                                "▲", key=f"game1-pred-{name}-up", help=f"소수 {label} 증가",
-                                width="stretch", on_click=_change_digit, args=(name, 1),
-                            )
-                            st.html(
-                                f'<div class="game1-pred-digit" aria-label="소수 {label} {value}">'
-                                f'{value}</div>'
-                            )
-                            st.button(
-                                "▼", key=f"game1-pred-{name}-down", help=f"소수 {label} 감소",
-                                width="stretch", on_click=_change_digit, args=(name, -1),
-                            )
-            st.html(
-                '<p class="game1-pred-range">'
-                '유사도 점수 범위&nbsp; 0.00 – 0.99 '
-                '<span aria-hidden="true">ⓘ</span></p>'
-            )
-
-        st.html(
-            '<div class="game1-pred-podium" aria-hidden="true">'
-            + (f'<img src="{podium}" alt="">' if podium else '<span>♛</span>')
-            + '</div>'
-        )
-
-        if st.button("✓  예측 확정", key="game1-pred-submit", type="primary", width="stretch"):
-            st.session_state.game_1_predicted_digits = (
-                int(st.session_state.game1_pred_tens) * 10 + int(st.session_state.game1_pred_ones)
-            )
-            st.rerun()
+        state.pop("game1_pred_round_id", None)
+        st.rerun()
+    elif action == "back":
+        change_page("main")
+    elif action == "bank":
+        change_page("bank")
+    # 'change' is a lightweight synchronization event. Streamlit automatically
+    # rerenders the fragment; the iframe keeps the local digits while doing so.
