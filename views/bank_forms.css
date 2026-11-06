@@ -21,7 +21,7 @@
   position: absolute;
   z-index: -1;
   inset: 0;
-  background: var(--bank-paper, linear-gradient(135deg, #f3d6c9, #dfb9bd)) center / 100% 100% no-repeat;
+  background: var(--bank-paper, linear-gradient(135deg, #f3d6c9, #dfb9bd)) center / cover no-repeat;
   filter: drop-shadow(0 14px 16px #12041ba6);
   pointer-events: none;
 }
