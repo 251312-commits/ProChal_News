@@ -53,8 +53,24 @@ class SharedScreenStructureTests(unittest.TestCase):
     def test_game_ui_assets_remain_resolvable(self):
         self.assertTrue((SHARED / "low_balance.css").is_file())
         self.assertTrue((SHARED / "similarity_loading.css").is_file())
-        self.assertTrue((GAMES / "news_slot" / "slot.js").is_file())
-        self.assertTrue((GAMES / "article_reader" / "reader.js").is_file())
+        self.assertTrue((SHARED / "news_slot" / "slot.js").is_file())
+        self.assertTrue((SHARED / "article_reader" / "reader.js").is_file())
+        for frontend, scripts in {
+            "article_reader": ("index.html", "reader.css", "reader.js"),
+            "news_slot": ("index.html", "slot.css", "slot.js"),
+        }.items():
+            for filename in scripts:
+                with self.subTest(frontend=frontend, filename=filename):
+                    self.assertTrue((SHARED / frontend / filename).is_file())
+            self.assertFalse((GAMES / frontend).exists(), frontend)
+        reader = (SHARED / "article_reader.py").read_text(encoding="utf-8")
+        roulette = (SHARED / "roulette.py").read_text(encoding="utf-8")
+        self.assertIn('HERE = Path(__file__).resolve().parent', reader)
+        self.assertIn('HERE = Path(__file__).resolve().parent', roulette)
+        self.assertIn('path=str(HERE / "article_reader")', reader)
+        self.assertIn('path=str(HERE / "news_slot")', roulette)
+        self.assertIn('ASSETS = HERE.parents[1] / "assets"', reader)
+        self.assertIn('ASSETS = HERE.parents[1] / "assets"', roulette)
         self.assertTrue((GAMES / "prediction_screen" / "prediction.js").is_file())
         for obsolete in ("common.py", "betting_math.py", "result_reveal.py", "score_stage.py"):
             self.assertFalse((GAMES / obsolete).exists(), obsolete)

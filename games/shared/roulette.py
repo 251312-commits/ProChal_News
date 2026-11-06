@@ -14,8 +14,8 @@ from modules.news_preprocessing import SUPPORTED_NEWS_SITES, supported_news_site
 from modules.ui_components import change_page, load_local_image_as_base64
 
 
-HERE = Path(__file__).resolve().parents[1]
-ASSETS = HERE.parent / "assets"
+HERE = Path(__file__).resolve().parent
+ASSETS = HERE.parents[1] / "assets"
 _news_slot = components.declare_component("shared_news_slot", path=str(HERE / "news_slot"))
 
 ART = {

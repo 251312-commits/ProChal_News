@@ -9,8 +9,8 @@ import streamlit.components.v1 as components
 from modules.ui_components import load_local_image_as_base64
 
 
-HERE = Path(__file__).resolve().parents[1]
-ASSETS = HERE.parent / "assets"
+HERE = Path(__file__).resolve().parent
+ASSETS = HERE.parents[1] / "assets"
 _reader = components.declare_component("shared_article_reader", path=str(HERE / "article_reader"))
 
 ART = {
