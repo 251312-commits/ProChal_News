@@ -56,7 +56,7 @@ def _get_news_candidates(candidates_key):
     return st.session_state[candidates_key]
 
 
-def _open_chosen_article(item, news_key, candidates_key, *, keep_candidates=False):
+def _open_chosen_article(item, news_key, candidates_key):
     new_count = item['count'] + 1
     ws_news.update_cell(item['row_idx'], 2, new_count)
 
@@ -72,10 +72,7 @@ def _open_chosen_article(item, news_key, candidates_key, *, keep_candidates=Fals
         'text': clean_text,
         'url': item['url']
     }
-    if keep_candidates:
-        item['count'] = new_count
-    else:
-        del st.session_state[candidates_key]
+    del st.session_state[candidates_key]
     st.rerun()
 
 
@@ -95,7 +92,7 @@ def get_game_news_selection(game_id: str, *, win_multiplier=None):
             if candidates:
                 index = render_news_slot(candidates)
                 if index is not None:
-                    _open_chosen_article(candidates[index], news_key, candidates_key, keep_candidates=True)
+                    _open_chosen_article(candidates[index], news_key, candidates_key)
             return None, None, None
 
         reward = None
@@ -104,10 +101,6 @@ def get_game_news_selection(game_id: str, *, win_multiplier=None):
         action = render_game1_article(chosen, reward=reward)
         if action == "predict":
             st.session_state[read_done_key] = True
-            st.session_state.pop(candidates_key, None)
-            st.rerun()
-        elif action == "back":
-            del st.session_state[news_key]
             st.rerun()
         elif action == "bank":
             change_page("bank")

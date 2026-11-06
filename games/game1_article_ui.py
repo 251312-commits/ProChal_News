@@ -18,10 +18,10 @@ ART = {
     "news": "game1_guide/news.webp",
 }
 for folder, names in {
-    "art": ("bet-header", "chip-left", "chip-right", "stage-ring", "sparkle-gold", "article-ai-copyright"),
-    "chrome": ("article-divider", "guidance-panel", "predict-button", "read-button",
+    "art": ("bet-header", "chip-left", "chip-right", "sparkle-gold", "article-ai-copyright"),
+    "chrome": ("article-divider", "guidance-panel", "predict-button",
                "news-label", "balance-pill", "reward-pill", "progress-track", "progress-fill"),
-    "icons": ("back", "coin", "add-balance", "die", "clipboard", "target", "book", "reward-crown"),
+    "icons": ("coin", "add-balance", "die", "clipboard", "target", "reward-crown"),
 }.items():
     ART.update({name: f"game1_article/{folder}/{name}.png" for name in names})
 
@@ -75,7 +75,7 @@ def render_game1_article(chosen, *, reward):
 
     if isinstance(event, dict) and event.get("round_id") == round_id:
         action = event.get("action")
-        if action in ("predict", "back", "bank"):
+        if action in ("predict", "bank"):
             del state["game1_reader_round"]
             return action
     return None

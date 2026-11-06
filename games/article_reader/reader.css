@@ -24,7 +24,7 @@ img { display: block; max-width: 100%; }
   padding: max(4px, env(safe-area-inset-top)) max(3%, env(safe-area-inset-right))
            max(6px, env(safe-area-inset-bottom)) max(3%, env(safe-area-inset-left));
   display: grid;
-  grid-template-rows: clamp(75px, 13.8vh, 120px) minmax(0, 1fr) auto auto auto;
+  grid-template-rows: clamp(75px, 13.8vh, 120px) minmax(0, 1fr) auto auto;
   gap: clamp(2px, .45vh, 6px);
 }
 .mast { position: relative; min-width: 0; display: flex; justify-content: center; align-items: end; }
@@ -33,16 +33,14 @@ img { display: block; max-width: 100%; }
 .chip.left { top: 44%; left: 3%; transform: rotate(-7deg); }
 .chip.right { bottom: 2%; right: 0; }
 .sparkle { position: absolute; width: 6%; left: 19%; bottom: 2%; z-index: -1; }
-.mast nav { position: absolute; inset: 0 0 auto; display: flex; align-items: start; justify-content: space-between; }
-.back, .bank { width: 44px; height: 44px; flex-shrink: 0; background: transparent; }
-.back img { height: 26px; }
+.mast nav { position: absolute; inset: 0 0 auto; display: flex; align-items: start; justify-content: flex-end; }
 .wallet {
   display: flex; align-items: center; gap: 4px; padding: 0 2px 0 7px; min-height: 34px; max-width: 45%;
   background: var(--balance-pill) center / 100% 100% no-repeat;
   font-weight: 650; font-size: clamp(.83rem, 2.9vw, 1.05rem); font-variant-numeric: tabular-nums;
 }
 .wallet > img, .bank img { width: 23px; }
-.bank { width: 34px; height: 34px; position: relative; }
+.bank { width: 34px; height: 34px; position: relative; flex-shrink: 0; background: transparent; }
 .bank::after { content: ""; position: absolute; inset: -5px; }
 #coins { min-width: 0; overflow-wrap: anywhere; }
 .label {
@@ -118,9 +116,6 @@ progress::-moz-progress-bar { background: var(--progress-fill) center / 100% 100
   font-size: clamp(1.12rem, 4.4vw, 1.65rem); font-weight: 780; letter-spacing: -.035em;
 }
 .predict img { width: 1.55em; }
-footer { display: grid; justify-items: center; align-content: center; min-height: 40px; padding-bottom: 2px; background: var(--stage-ring) center 82% / 100% 48% no-repeat; }
-.keep { min-height: 36px; min-width: 40%; padding: 0 1.5em; gap: .5em; background: var(--read-button) center / 100% 100% no-repeat; font-size: .94rem; }
-.keep img { width: 1.2em; }
 @media (min-width: 600px) {
   .scene { padding-inline: 18px; }
 }
@@ -132,12 +127,11 @@ footer { display: grid; justify-items: center; align-content: center; min-height
 @media (min-width: 480px) and (orientation: landscape) and (max-height: 530px) {
   .scene {
     width: min(100%, 950px); min-height: 300px; padding: 6px max(12px, env(safe-area-inset-right)) 6px max(12px, env(safe-area-inset-left));
-    grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); grid-template-rows: 1fr auto auto auto;
-    grid-template-areas: "card mast" "card guide" "card predict" "card foot"; gap: 4px 10px;
+    grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); grid-template-rows: 1fr auto auto;
+    grid-template-areas: "card mast" "card guide" "card predict"; gap: 4px 10px;
   }
   .card { grid-area: card; }
   .mast { grid-area: mast; }
   .guidance { grid-area: guide; }
   .predict { grid-area: predict; }
-  footer { grid-area: foot; }
 }

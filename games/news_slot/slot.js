@@ -1,6 +1,7 @@
 "use strict";
 
 const scene = document.querySelector(".scene");
+const back = scene.querySelector(".back");
 const lever = scene.querySelector(".lever");
 const reels = scene.querySelector(".window");
 const hint = scene.querySelector(".hint");
@@ -209,7 +210,7 @@ lever.addEventListener("click", event => { if (event.detail === 0) spin(); });
 confirmBtn.addEventListener("click", () => {
   if (scene.dataset.phase === "ready" && selected >= 0) finish("choose", selected);
 });
-scene.querySelector(".back").addEventListener("click", () => finish("back"));
+back.addEventListener("click", () => { if (!back.hidden) finish("back"); });
 scene.querySelector(".bank").addEventListener("click", () => finish("bank"));
 
 window.addEventListener("message", event => {
@@ -224,6 +225,7 @@ window.addEventListener("message", event => {
   }
   document.body.style.setProperty("--backdrop", 'url("' + art.background + '")');
   document.body.style.setProperty("--paper", 'url("' + art.paper + '")');
+  back.hidden = args.allow_back === false;
   const coins = scene.querySelector(".coins");
   coins.textContent = Number(args.coins).toLocaleString("ko-KR");
   coins.setAttribute("aria-label", "보유 코인 " + coins.textContent);

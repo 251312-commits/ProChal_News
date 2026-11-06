@@ -40,6 +40,7 @@ class NewsSlotTests(unittest.TestCase):
         args = self.component.call_args.kwargs
         self.assertEqual(args["titles"], ["첫 기사", "둘째 기사"])
         self.assertIs(args["continuous_reel"], True)
+        self.assertIs(args["allow_back"], False)
         round_id = args["round_id"]
         for token, index in [("stale", 0), (round_id, -1), (round_id, 2), (round_id, True)]:
             with self.subTest(token=token, index=index):
@@ -84,19 +85,16 @@ class NewsSlotTests(unittest.TestCase):
         self.assertEqual(self.st.session_state.selected_news_game_1["url"], url)
         self.component.return_value = {"action": "back", "round_id": next_round}
         self.select("game_1")
-        self.assertNotIn("selected_news_game_1", self.st.session_state)
-        self.select("game_1")  # Same candidates for this bet.
-        self.assertEqual(self.component.call_args.kwargs["titles"], ["첫 기사", "둘째 기사"])
+        self.select("game_1")
+        self.assertEqual(self.component.call_args.kwargs["round_id"], next_round)
+        self.assertEqual(self.component.call_args.kwargs["url"], url)
         self.assertEqual(self.st.session_state.game_1_bet, 1000)
+        self.component.return_value = {"action": "predict", "round_id": next_round}
+        self.select("game_1")
+        self.assertEqual(self.select("game_1"), ("첫 기사", "본문", url))
         self.sheet.update_cell.assert_called_once_with(2, 2, 5)
         self.ai.bring_article.assert_called_once_with(url)
         self.ai.pick_3_lowest_count_news.assert_called_once()
-
-        slot_round = self.component.call_args.kwargs["round_id"]
-        self.component.return_value = {"action": "choose", "round_id": slot_round, "index": 0}
-        self.select("game_1")
-        self.sheet.update_cell.assert_called_with(2, 2, 6)
-        self.assertEqual(self.sheet.update_cell.call_count, 2)
 
     def test_other_games_still_use_their_existing_reader(self):
         self.st.session_state.selected_news_game_2 = {
@@ -121,6 +119,23 @@ class NewsSlotTests(unittest.TestCase):
         self.ui.change_page.assert_called_once()
         self.component.return_value = {"action": "back", "round_id": new_round}
         self.select("game_1")
-        self.assertNotIn("game_1_bet", self.st.session_state)
+        self.select("game_1")
+        self.assertEqual(self.component.call_args.kwargs["round_id"], new_round)
+        self.assertEqual(self.component.call_args.kwargs["titles"], ["첫 기사", "둘째 기사"])
+        self.assertEqual(self.st.session_state.game_1_bet, 1000)
+        self.ai.pick_3_lowest_count_news.assert_called_once()
         self.sheet.get_all_records.assert_called_once()
         self.sheet.update_cell.assert_not_called()
+
+    def test_game2_slot_still_returns_to_betting(self):
+        render_slot = run_module("games.news_roulette2")["render_news_slot"]
+        self.st.session_state.game_2_bet = 500
+        candidates = [("기사", "url-2")]
+        render_slot(candidates)
+        args = self.component.call_args.kwargs
+        self.assertIs(args.get("allow_back", True), True)
+        self.component.return_value = {"action": "back", "round_id": args["round_id"]}
+        render_slot(candidates)
+        self.assertNotIn("game_2_bet", self.st.session_state)
+        self.assertNotIn("game_2_slot_round", self.st.session_state)
+        self.st.rerun.assert_called_once()

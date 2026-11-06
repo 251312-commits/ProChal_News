@@ -9,19 +9,19 @@ button { color: inherit; font: inherit; cursor: pointer; -webkit-tap-highlight-c
 button:disabled { cursor: default; }
 button:focus-visible { outline: 3px solid #fff1ac; outline-offset: 2px; }
 img { display: block; pointer-events: none; user-select: none; }
-.scene[hidden] { display: none; }
+.scene[hidden], .back[hidden] { display: none; }
 .scene {
   height: 100%; height: 100dvh; width: min(100%, 630px); margin-inline: auto;
   display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto;
   padding: max(6px, env(safe-area-inset-top)) max(7px, env(safe-area-inset-right))
            max(10px, 2.5vh, env(safe-area-inset-bottom)) max(7px, env(safe-area-inset-left));
 }
-nav { display: flex; align-items: center; justify-content: space-between; padding: 0 1.5%; z-index: 1; }
+nav { display: flex; align-items: center; padding: 0 1.5%; z-index: 1; }
 .back, .bank { display: grid; place-items: center; border: 0; background: transparent; }
 .back { width: 44px; height: 44px; color: #f6ceff; }
 .back svg { width: 21px; fill: none; stroke: currentColor; stroke-width: 2.6; }
 .balance {
-  display: flex; align-items: center; gap: .45em; padding-left: .45em;
+  margin-inline-start: auto; display: flex; align-items: center; gap: .45em; padding-left: .45em;
   height: 34px; border: 1px solid #9f58bf; border-radius: 30px;
   background: #180720df; font-weight: 750; font-variant-numeric: tabular-nums;
 }
