@@ -64,13 +64,13 @@ async def _generate_summary(news_text):
 # 요청 처리 Worker
 # ==========================================
 
-async def _worker():
+async def _worker(queue):
 
     global last_request_time
 
     while True:
 
-        request = await request_queue.get()
+        request = await queue.get()
 
         try:
 
@@ -133,7 +133,7 @@ async def _worker():
                         break
 
         finally:
-            request_queue.task_done()
+            queue.task_done()
 
 
 # ==========================================
@@ -143,6 +143,7 @@ async def _worker():
 async def summarize_news(news_text: str) -> str:
 
     global worker_task
+    global request_queue
 
     if closing:
         raise RuntimeError("뉴스 요약 서비스가 종료되었습니다.")
@@ -151,8 +152,14 @@ async def summarize_news(news_text: str) -> str:
         raise ValueError("뉴스 전문이 비어 있습니다.")
 
     # Worker가 실행 중이지 않으면 시작
-    if worker_task is None or worker_task.done():
-        worker_task = asyncio.create_task(_worker())
+    current_loop = asyncio.get_running_loop()
+    if (
+        worker_task is None
+        or worker_task.done()
+        or worker_task.get_loop() is not current_loop
+    ):
+        request_queue = asyncio.Queue(maxsize=MAX_QUEUE_SIZE)
+        worker_task = asyncio.create_task(_worker(request_queue))
 
     # 결과를 전달받을 Future 생성
     future = asyncio.get_running_loop().create_future()
