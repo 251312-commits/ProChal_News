@@ -13,6 +13,8 @@ UI_WORDS = {
     "url 복사", "북마크 공유 댓글 글자크기 프린트 제보",
     "제보하기", "관련기사", "관련 기사", "추천 기사", "함께 보면 좋은 기사",
     "많이 본 기사", "함께 읽기 좋은 콘텐츠", "좋아요 슬퍼요 화나요 후속요청",
+    "닫기", "기사 표시하기", "동영상 표시하기", "광고 영역", "원문 기사 보기",
+    "글자 크기 설정 닫기", "해당 기사를 북마크했습니다.", "내 북마크 보기",
 }
 
 _EMAIL = r"[\w.%+-]+@[\w.-]+\.[A-Za-z]{2,}"
@@ -43,9 +45,40 @@ _YONHAP_FOOTER = re.compile(
     re.IGNORECASE,
 )
 
+_PLAYER_SENTENCE = (
+    r"(?:"
+    r"브라우저가 (?:video|audio|비디오|오디오) 태그를 지원하지 않습니다"
+    r"|죄송하지만 다른 브라우저를 사용하여 주십시오"
+    r"|기사 읽어주기 서비스는 크롬 *기반의 브라우저에서만 사용하실 수 있습니다"
+    r")(?:\.(?= |$|브라우저가 |죄송하지만 |닫기)|(?= 닫기(?: |$))|$)"
+)
+_PLAYER_BLOCK = re.compile(
+    rf"(?:{_PUBLICATION_TIME.pattern})?(?:{_PLAYER_SENTENCE} *)+(?P<close>닫기(?!\S)(?! 버튼))? *",
+    re.IGNORECASE,
+)
+
+# Contacts are specific to each newsroom. Ordinary addresses in the story stay intact.
+_BROADCAST_FOOTER_PARTS = (
+    r"연합뉴스 *TV 기사 *문의 및 제보 *[:：] *(?:카톡|카카오톡) */ *라인 +jebo23",
+    r"연합뉴스 *TV 제보 *[:：] *02-398-4409, *yjebo@yna\.co\.kr",
+    r"연합뉴스 *TV *[:：] *02-398-4409\(제보\) 4441\(기사문의\), *카톡/라인 jebo23",
+    r"\(끝\)",
+    r"당신이 담은 순간이 뉴스입니다[!.]?",
+    r"(?:라인|카카오톡) 앱에서 ['‘’\"]?jebo23['‘’\"]? 친구 추가",
+    r"jebo23(?:@yna\.co\.kr)?",
+    r"MBC 뉴스는 24시간 여러분의 제보를 기다립니다\.?",
+    r"▷ *(?:전화 *[:：]? *02-784-4000|이메일 *[:：]? *mbcjebo@mbc\.co\.kr|카카오톡 *[:：]? *@mbc제보)",
+    r"※ *['‘]당신의 제보가 뉴스가 됩니다[’']",
+    r"\[카카오톡\] YTN 검색해 채널 추가|\[전화\] 02-398-8585|\[메일\] social@ytn\.co\.kr",
+    r"\[저작권자\(c\) YTN 무단전재, 재배포 및 AI 데이터 활용 금지\]",
+    rf"(?:YTN )?[가-힣]{{2,4}} *(?:기자 *)?\( *{_EMAIL} *\)",
+)
+_BROADCAST_FOOTER = "|".join(_BROADCAST_FOOTER_PARTS)
+_SENTENCE_ENDS = (". ", "! ", "? ", "… ", ".” ", "!” ", "?” ", '." ', '!" ', '?" ')
+
 _RIGHTS = (
     r"\*?(?:무단\s*(?:전재|복제)\s*(?:및|[-·,])?\s*재배포|재판매\s*및\s*DB)"
-    r"(?:,\s*AI\s*학습\s*(?:및\s*활용|이용))?\s*금지\.?"
+    r"(?:(?:,\s*|\s+및\s+)AI\s*학습\s*(?:및\s*활용|이용))?\s*금지\.?"
 )
 _COPYRIGHT = (
     r"(?:(?:저작권자\s*[:：]?\s*|copyright\s*)?(?:©|ⓒ|\(c\))\s*|저작권자\s*[:：]\s*)"
@@ -67,7 +100,7 @@ _PREFIX = re.compile(rf"^(?:(?:{_WIRE_BYLINE}|{_CREDIT_TAG})\s*)+", re.IGNORECAS
 # separate notice (line start, after punctuation, or following a marked credit).
 _NOTICE = rf"(?:{_COPYRIGHT}(?:\s*{_RIGHTS})?|{_RIGHTS})(?:\s+{_RIGHTS})*"
 _METADATA = re.compile(
-    rf"(?:{_CREDIT_TAG}(?:\s*{_NOTICE})?|(?:^|(?<=[.!?])\s+){_NOTICE})\s*",
+    rf"(?:{_CREDIT_TAG}(?:\s*{_NOTICE})?|(?<!\S)(?P<footer>{_NOTICE}|{_BROADCAST_FOOTER})(?!\S))\s*",
     re.IGNORECASE,
 )
 
@@ -87,13 +120,24 @@ def remove_duplicate_and_ui_lines(text: str) -> str:
     return _join_paragraphs(line.strip() for line in text.splitlines())
 
 
+def _remove_player(match: re.Match) -> str:
+    # Inside a paragraph require a player with its close button; a news story
+    # may itself discuss a browser error or quote the same wording.
+    if match.start() == 0 or (match["close"] and match.string.endswith(_SENTENCE_ENDS, 0, match.start())):
+        return ""
+    return match[0]
+
+
 def _clean_line(raw: str) -> str:
     line = " ".join(raw.replace("\u200b", "").replace("\ufeff", "").split())
+    line = _PLAYER_BLOCK.sub(_remove_player, line).strip()
     line = _PREFIX.sub("", line)
     # Remove only a contiguous run at the end. A quoted credit inside prose stays intact.
     start, end = 0, -1
     for match in _METADATA.finditer(line):
         if match.start() != end:
+            if match["footer"] and match.start() and not line.endswith(_SENTENCE_ENDS, 0, match.start()):
+                continue
             start = match.start()
         end = match.end()
     if end == len(line):

@@ -95,6 +95,87 @@ class NewsPreprocessingTests(unittest.TestCase):
             with self.subTest(text=text):
                 self.assertEqual(clean_common_text(text), "")
 
+    def test_yonhap_tv_report_with_player_and_footer(self):
+        lead = "도서관이 야간 열람을 시작했다."
+        detail = "토요일에도 저녁까지 이용할 수 있다."
+        player = [
+            "브라우저가 video 태그를 지원하지 않습니다.",
+            "죄송하지만 다른 브라우저를 사용하여 주십시오.",
+            "브라우저가 오디오 태그를 지원하지 않습니다.", "닫기",
+        ]
+        footer = [
+            "연합뉴스TV 기사문의 및 제보 : 카톡/라인 jebo23",
+            "김종성(goldbell@yna.co.kr)", "당신이 담은 순간이 뉴스입니다!",
+        ]
+        for raw, expected in [
+            ("\n".join([*player, lead, detail, *footer]), f"{lead}\n\n{detail}"),
+            (" ".join([*player, lead, detail, *footer]), f"{lead} {detail}"),
+            ("\n".join([player[0], " ".join(player[1:]), "", *footer]), ""),
+        ]:
+            with self.subTest(raw=raw):
+                cleaned = clean_common_text(raw)
+                self.assertEqual(cleaned, expected)
+                self.assertEqual(clean_common_text(cleaned), cleaned)
+
+    def test_reporter_signatures_with_parenthesized_addresses(self):
+        body = "주민 신청은 다음 주에 시작한다."
+        for suffix in [
+            "\n김가람(reporter@example.org)",
+            " 김가람(reporter@example.org)",
+            "\n김가람(reporter@example.org)\n이보람(editor@example.net)",
+        ]:
+            with self.subTest(suffix=suffix):
+                self.assertEqual(clean_common_text(body + suffix), body)
+
+    def test_player_boundaries_when_html_elements_have_no_line_breaks(self):
+        player = (
+            "브라우저가 video 태그를 지원하지 않습니다.죄송하지만 다른 브라우저를 사용하여 주십시오."
+            "브라우저가 오디오 태그를 지원하지 않습니다.닫기"
+        )
+        first, last = "자막을 공개했다.", "대본도 제공한다."
+        for raw, expected in [
+            (f"{first} {player} {last}", f"{first} {last}"),
+            (f"입력 2026-01-26 17:42:49 {player} {last}", last),
+            ("기사 읽어주기 서비스는 크롬기반의 브라우저에서만 사용하실 수 있습니다.", ""),
+        ]:
+            with self.subTest(raw=raw):
+                self.assertEqual(clean_common_text(raw), expected)
+
+    def test_newsroom_footers_split_or_flattened(self):
+        body = "시민이 보내온 영상으로 당시 상황을 확인했다."
+        footers = [
+            ["연합뉴스TV 기사문의 및 제보 : 카톡/라인 jebo23", "김가람(reporter@example.org)",
+             "당신이 담은 순간이 뉴스입니다!", "jebo23", "라인 앱에서 'jebo23' 친구 추가",
+             "jebo23@yna.co.kr", "ⓒ연합뉴스TV, 무단 전재-재배포, AI 학습 및 활용 금지"],
+            ["연합뉴스TV 제보:02-398-4409, yjebo@yna.co.kr", "(끝)"],
+            ["MBC 뉴스는 24시간 여러분의 제보를 기다립니다.", "▷ 전화 02-784-4000",
+             "▷ 이메일 mbcjebo@mbc.co.kr", "▷ 카카오톡 @mbc제보"],
+            ["YTN 김가람 (reporter@example.org)", "※ '당신의 제보가 뉴스가 됩니다'",
+             "[카카오톡] YTN 검색해 채널 추가", "[전화] 02-398-8585", "[메일] social@ytn.co.kr",
+             "[저작권자(c) YTN 무단전재, 재배포 및 AI 데이터 활용 금지]"],
+            ["Copyright Ⓒ SBS. All rights reserved.", "무단 전재, 재배포 및 AI학습 이용 금지"],
+        ]
+        for footer in footers:
+            for separator in ("\n", " "):
+                with self.subTest(footer=footer[0], separator=separator):
+                    self.assertEqual(clean_common_text(separator.join([body, *footer])), body)
+
+    def test_preserves_browser_reporting_quoted_slogans_and_contact_details(self):
+        for line in [
+            "일부 브라우저가 video 태그를 지원하지 않습니다.",
+            "화면에는 “브라우저가 오디오 태그를 지원하지 않습니다.”라고 표시됐다.",
+            "공모전은 ‘당신이 담은 순간이 뉴스입니다!’를 주제로 삼았다.",
+            "김가람(reporter@example.org)은 주민에게 의견을 보냈다.",
+            "담당자는 김가람(reporter@example.org)이다.",
+            "닫기 버튼의 위치가 바뀌었다.",
+            "그는 “경고가 떴다. 브라우저가 video 태그를 지원하지 않습니다. 안내는 여기까지였다.”라고 말했다.",
+            "신고처는 카카오톡 @mbc제보와 이메일 help@example.org라고 설명했다.",
+            "공개 질의 담당자 김가람(reporter@example.org)",
+            "취재진은 [전화] 02-398-8585로 연락했다.",
+        ]:
+            with self.subTest(line=line):
+                self.assertEqual(clean_common_text(line), line)
+
 
 if __name__ == "__main__":
     unittest.main()
