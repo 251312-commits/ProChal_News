@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>선택한 뉴스 · BET</title>
+  <link rel="stylesheet" href="reader.css">
+  <script defer src="reader.js"></script>
+</head>
+<body>
+  <main class="scene" hidden>
+    <header class="mast">
+      <img class="crest" data-art="bet-header" alt="BET">
+      <img class="chip left" data-art="chip-left" alt="">
+      <img class="chip right" data-art="chip-right" alt="">
+      <img class="sparkle" data-art="sparkle-gold" alt="">
+      <nav aria-label="게임 메뉴">
+        <button class="back" type="button" aria-label="기사 선택으로 돌아가기"><img data-art="back" alt=""></button>
+        <div class="wallet">
+          <img data-art="coin" alt=""><span id="coins" aria-label="보유 코인"></span>
+          <button class="bank" type="button" aria-label="은행으로 이동"><img data-art="add-balance" alt=""></button>
+        </div>
+      </nav>
+      <div class="label"><img data-art="die" alt="">선택한 뉴스</div>
+    </header>
+
+    <article class="card" aria-labelledby="headline">
+      <div class="pages" tabindex="0" role="region" aria-label="기사 읽기 영역">
+        <div class="hero">
+          <img class="illustration" data-art="article-ai-copyright" alt="" hidden>
+          <div class="edition" aria-hidden="true">
+            <div><small>BET NEWSROOM</small><span>뉴스 브리핑</span></div>
+            <img data-art="news" alt="">
+          </div>
+        </div>
+        <h1 id="headline"></h1>
+        <div class="byline"><a id="source" target="_blank" rel="noopener noreferrer" hidden></a><span id="duration"></span></div>
+        <div class="divider" aria-hidden="true"></div>
+        <div id="copy"></div>
+      </div>
+      <div class="reading">
+        <label for="progress">읽은 분량</label><progress id="progress" max="100" value="0"></progress><span id="percent">0%</span>
+      </div>
+    </article>
+
+    <aside class="guidance" aria-label="게임 안내">
+      <img class="clipboard" data-art="clipboard" alt="">
+      <p>기사를 읽고 제목과 본문의 유사도를 예측하세요.</p>
+      <div class="reward" hidden>
+        <span><img data-art="reward-crown" alt="">적중 보상</span>
+        <strong id="reward"></strong>
+      </div>
+    </aside>
+    <button class="predict" type="button"><img data-art="target" alt="">유사도 예측하러 가기</button>
+    <footer>
+      <button class="keep" type="button"><img data-art="book" alt=""><span>계속 읽기</span></button>
+      <small id="timer"></small>
+    </footer>
+  </main>
+</body>
+</html>

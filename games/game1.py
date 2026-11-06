@@ -53,7 +53,7 @@ def show_game_1():
         return
 
     # [2단계 & 3단계] 기사 선택 / 30초 읽기
-    title, article_text, url = get_game_news_selection("game_1")
+    title, article_text, url = get_game_news_selection("game_1", win_multiplier=GAME_1_WIN_MULTIPLIER)
     if not title:
         return
 
