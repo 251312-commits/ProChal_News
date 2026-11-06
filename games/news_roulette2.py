@@ -32,7 +32,7 @@ def render_news_slot(candidates):
     titles_list = []
     for item in candidates:
         if isinstance(item, (list, tuple)):
-            titles_list.append(item[0])
+            titles_list.append(item[0] if len(item) > 0 else "")
         elif isinstance(item, dict):
             titles_list.append(item.get("title", ""))
         else:
