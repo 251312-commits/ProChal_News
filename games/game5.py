@@ -311,38 +311,122 @@ def show_game_5():
         unsafe_allow_html=True,
     )
 
-    for index, article in enumerate(candidates):
-        with st.container(border=True):
-            st.markdown(
-                f'<div style="display:flex; align-items:center; gap:10px; '
-                f'margin-bottom:8px;"><span style="display:grid; place-items:center; '
-                f'width:32px; height:32px; border-radius:50%; background:#ffda39; '
-                f'color:#25132f; font-weight:900;">{index + 1}</span>'
-                f'<strong style="font-size:1.05rem;">{html.escape(article["title"])}</strong></div>',
-                unsafe_allow_html=True,
-            )
-            read_col, select_col = st.columns(2)
-            with read_col:
-                if st.button("📖 본문 보기", key=f"game_5_article_{index}", use_container_width=True):
-                    if not article.get("text"):
-                        with st.spinner("뉴스 본문을 불러오는 중..."):
-                            try:
-                                _load_article(article)
-                            except (RuntimeError, ValueError) as exc:
-                                try:
-                                    _replace_candidate(candidates, index)
-                                except ValueError as replacement_exc:
-                                    st.error(f"뉴스 본문을 불러오지 못했고 교체할 후보도 없습니다: {replacement_exc}")
-                                    continue
-                                st.warning(f"실패한 기사를 교체했습니다: {exc}")
+    st.markdown(
+        """
+        <style>
+        .st-key-game5-candidates [data-testid="stHorizontalBlock"] {
+            gap: 6px;
+            align-items: stretch;
+        }
+        .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] {
+            height: 100%;
+            min-height: 190px;
+            border: 2px solid #6f3690;
+            border-radius: 22px;
+            background: linear-gradient(160deg, #28103d, #130a20);
+            box-shadow: 0 5px 14px #12001d80;
+            padding: 14px 12px 12px;
+        }
+        .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"]:hover {
+            border-color: #d78cff;
+            box-shadow: 0 0 14px #b840e66e;
+        }
+        .st-key-game5-candidates .game5-card-title {
+            min-height: 70px;
+            color: #fff3ff;
+            font-size: clamp(14px, 3.8vw, 18px);
+            font-weight: 800;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+        }
+        .st-key-game5-candidates .game5-card-number {
+            display: grid;
+            place-items: center;
+            width: 34px;
+            height: 34px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            background: #ffda39;
+            color: #25132f;
+            font-weight: 900;
+        }
+        .st-key-game5-candidates [data-testid="stButton"] button {
+            min-height: 40px;
+            border-radius: 12px;
+            font-size: 13px;
+        }
+        @media (max-width: 430px) {
+            .st-key-game5-candidates [data-testid="stHorizontalBlock"] {
+                gap: 4px;
+            }
+            .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] {
+                min-height: 178px;
+                padding: 11px 9px 10px;
+                border-radius: 18px;
+            }
+            .st-key-game5-candidates .game5-card-title {
+                min-height: 76px;
+                font-size: 13px;
+            }
+            .st-key-game5-candidates [data-testid="stButton"] button {
+                padding-inline: 4px;
+                font-size: 12px;
+            }
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    with st.container(key="game5-candidates"):
+        rows = ((None, 0, None, 1, None), (2, None, 3, None, 4))
+        for row in rows:
+            columns = st.columns(5)
+            for column, index in zip(columns, row):
+                if index is None:
+                    continue
+                article = candidates[index]
+                with column:
+                    with st.container(border=True):
+                        st.markdown(
+                            f'<div class="game5-card-number">{index + 1}</div>'
+                            f'<div class="game5-card-title">'
+                            f'{html.escape(article["title"])}</div>',
+                            unsafe_allow_html=True,
+                        )
+                        read_col, select_col = st.columns(2)
+                        with read_col:
+                            if st.button(
+                                "📖 본문",
+                                key=f"game_5_article_{index}",
+                                use_container_width=True,
+                            ):
+                                if not article.get("text"):
+                                    with st.spinner("뉴스 본문을 불러오는 중..."):
+                                        try:
+                                            _load_article(article)
+                                        except (RuntimeError, ValueError) as exc:
+                                            try:
+                                                _replace_candidate(candidates, index)
+                                            except ValueError as replacement_exc:
+                                                st.error(
+                                                    "뉴스 본문을 불러오지 못했고 "
+                                                    f"교체할 후보도 없습니다: {replacement_exc}"
+                                                )
+                                                continue
+                                            st.warning(f"실패한 기사를 교체했습니다: {exc}")
+                                            st.rerun()
+                                            continue
+                                st.session_state.game_5_article_index = index
+                                change_page("game_5_article")
+                        with select_col:
+                            if st.button(
+                                "✅ 선택",
+                                key=f"game_5_select_{index}",
+                                use_container_width=True,
+                            ):
+                                st.session_state.game_5_selected_index = index
                                 st.rerun()
-                                continue
-                    st.session_state.game_5_article_index = index
-                    change_page("game_5_article")
-            with select_col:
-                if st.button("✅ 선택", key=f"game_5_select_{index}", use_container_width=True):
-                    st.session_state.game_5_selected_index = index
-                    st.rerun()
 
     if "game_5_selected_index" not in st.session_state:
         return
@@ -441,7 +525,7 @@ def show_game_5_tutorial():
                     <li>
                         <h2><span>03</span>뉴스 선택</h2>
                         <div class="game5-guide-icon">?</div>
-                        <p>후보 뉴스 다섯 편을 읽고<br>구간에 해당하는 한 편을 고른다.</p>
+                        <p>후보 뉴스 <b>5개</b>를 읽고<br>구간에 해당하는 한 편을 고른다.</p>
                     </li>
                     <li>
                         <h2><span>04</span>결과 확인</h2>
