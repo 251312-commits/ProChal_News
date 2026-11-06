@@ -35,7 +35,7 @@ def show_game_1():
         except Exception:
             users_data = None
 
-        # The existing background is assets/bet_background.jpg (not bg.png).
+        # Use the checked-in betting background from the assets directory.
         confirmed_bet = render_betting_ui(
             current_coins=current_coins,
             users_data=users_data,
