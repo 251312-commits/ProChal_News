@@ -11,7 +11,7 @@ from games.shared.betting import check_user_coins_or_pop_bank
 from games.shared.news_flow import get_game_news_selection
 from games.shared.betting import render_betting_ui
 from games.shared.loading import similarity_analysis_loading
-from modules.db_handler import init_gspread
+from modules.transactions import BalanceChanged, TransactionError, settle_game_round, update_session_balances
 from modules.news_ai import similarity_check, summary
 from modules.ui_components import change_page
 from views.ranking import fetch_ranking_data
@@ -27,6 +27,7 @@ GAME_4_RANGE_COUNT = 3
 def _reset_game_4_state() -> None:
     for key in (
         "game_4_bet",
+        "game_4_round_id",
         "selected_news_game_4",
         "candidates_game_4",
         "read_done_game_4",
@@ -105,28 +106,10 @@ def _settle_game_4(
     is_win = selected_range == answer_index
     reward = int(bet_coin * GAME_4_WIN_MULTIPLIER) if is_win else -bet_coin
 
-    ws = init_gspread()
-    current_sid = str(st.session_state.get("current_user", "")).strip().replace(".0", "")
-    user_row_idx = None
-    user_info = None
-    for index, user in enumerate(ws.get_all_records()):
-        sid = str(user.get("학번", "")).strip().replace(".0", "")
-        if sid == current_sid:
-            user_row_idx = index + 2
-            user_info = user
-            break
-
-    if user_info is None or user_row_idx is None:
-        raise ValueError("사용자 정보를 찾을 수 없어 정산할 수 없습니다.")
-
-    current_coins = int(user_info.get("코인", 0))
-    current_streak = int(user_info.get("연승", 0))
-    new_coins = max(0, current_coins + reward)
-    new_streak = current_streak + 1 if is_win else 0
-    ws.update_cell(user_row_idx, 3, new_coins)
-    ws.update_cell(user_row_idx, 4, new_streak)
-    st.session_state.current_user_data["코인"] = new_coins
-    st.session_state.current_user_data["연승"] = new_streak
+    settled = settle_game_round("game_4", int(bet_coin), is_win)
+    reward = settled["reward"]
+    new_coins = settled["new_coins"]
+    new_streak = settled["new_streak"]
 
     return {
         "actual_score": actual_score,
@@ -234,7 +217,11 @@ def show_game_4():
                 answer_index=st.session_state.game_4_answer_index,
                 bet_coin=int(st.session_state.game_4_bet),
             )
-        except (RuntimeError, ValueError, TypeError, KeyError) as exc:
+        except BalanceChanged as changed:
+            update_session_balances(changed.balances)
+            st.error(str(changed))
+            return
+        except (TransactionError, RuntimeError, ValueError, TypeError, KeyError) as exc:
             st.error(f"게임 결과를 처리하지 못했습니다: {exc}")
             return
         st.session_state.game_4_result = result
