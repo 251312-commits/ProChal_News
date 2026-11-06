@@ -46,7 +46,7 @@ def show_game_1():
             users_data=users_data,
             current_sid=current_sid,
             current_nickname=current_nickname,
-            bg_image_path=str(Path(__file__).resolve().parents[1] / "assets" / "bet_background.jpg"),
+            bg_image_path=str(Path(__file__).resolve().parents[2] / "assets" / "bet_background.jpg"),
             payout_multiplier=GAME_1_WIN_MULTIPLIER,
             title="title",  # 나중에 실제 게임 제목으로 교체
             state_key="game_1",
@@ -193,7 +193,7 @@ def show_game_1():
 
 # ===== Game 1-only prediction screen =====
 _HERE = Path(__file__).resolve().parent
-_ASSETS = _HERE.parent / "assets"
+_ASSETS = _HERE.parents[1] / "assets"
 _SCREEN = components.declare_component(
     "game1_prediction_screen", path=str(_HERE / "prediction_screen")
 )
@@ -301,7 +301,7 @@ def render_game1_prediction_picker(article_title: str) -> None:
 
 # ===== Game 1-only tutorial screen =====
 def show_game_1_tutorial():
-    art = Path(__file__).resolve().parents[1] / "assets" / "game1_guide"
+    art = Path(__file__).resolve().parents[2] / "assets" / "game1_guide"
     steps = (
         ("bet", "코인 베팅", "금액을 정해 베팅한다.<br>최소 <b>1,000 C</b>"),
         ("news", "기사 선택", "레버를 내린 뒤<br>기사 한 편을 골라 읽는다."),

@@ -14,7 +14,7 @@ class GameOneEntryTests(unittest.TestCase):
             "modules.db_handler": MagicMock(), "games.common": MagicMock(),
             "games.result_reveal": MagicMock(), "views.ranking": MagicMock(),
         }):
-            show_guide = run_module("games.game1")["show_game_1_tutorial"]
+            show_guide = run_module("games.game1.game1")["show_game_1_tutorial"]
             for action, destination in (
                 (None, None), ("메인으로", "main"), ("건너뛰기", "game_1"), ("베팅하러 가기", "game_1"),
             ):

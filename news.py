@@ -12,7 +12,7 @@ from views.main import show_main_page
 from views.ranking import show_ranking
 from views.bank import show_bank
 
-from games.game1 import show_game_1, show_game_1_tutorial
+from games.game1.game1 import show_game_1, show_game_1_tutorial
 from games.game2 import show_game_2
 from games.game3 import show_game_3
 from games.game4 import show_game_4
