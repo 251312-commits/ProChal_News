@@ -1,13 +1,15 @@
 # 업다운 (하) ½
+# 업다운 (하) ½
 
 import asyncio
 import random
 import streamlit as st
 from modules.news_ai import summary, similarity_check
 from modules.db_handler import init_gspread, init_news_sheet
-from modules.ui_components import change_page  # show_placeholder_page 대신 change_page 사용
+from modules.ui_components import change_page
 from games.result_reveal import show_summary_before_score
 from games.common import get_game_news_selection
+from games.news_roulette2 import render_news_slot  # 💡 룰렛 모듈 불러오기
 
 ws = init_gspread()
 ws_news = init_news_sheet()
@@ -15,7 +17,6 @@ ws_news = init_news_sheet()
 def show_game_2():
     # [0단계] 튜토리얼 화면 (최초 1회 노출)
     if "game_2_tutorial_done" not in st.session_state:
-        # 튜토리얼 커스텀 CSS 스타일 적용
         st.markdown(
             """
             <style>
@@ -53,7 +54,6 @@ def show_game_2():
                 margin-top: 2px;
             }
             
-            /* 튜토리얼 플로우 Grid */
             .tutorial-grid {
                 display: flex;
                 flex-direction: column;
@@ -105,7 +105,6 @@ def show_game_2():
             unsafe_allow_html=True
         )
 
-        # 상단 내비게이션 (메인으로 / 건너뛰기)
         col_nav1, col_nav2 = st.columns([1, 1])
         with col_nav1:
             if st.button("⬅️ 메인으로", key="tut_nav_main"):
@@ -116,7 +115,6 @@ def show_game_2():
                 st.session_state.game_2_tutorial_done = True
                 st.rerun()
 
-        # 튜토리얼 제목 세션
         st.markdown(
             """
             <div class="tutorial-title-section">
@@ -128,7 +126,6 @@ def show_game_2():
             unsafe_allow_html=True
         )
 
-        # 튜토리얼 4단계 플로우
         st.markdown(
             """
             <div class="tutorial-grid">
@@ -164,7 +161,6 @@ def show_game_2():
             unsafe_allow_html=True
         )
 
-        # 하단 베팅하러 가기 버튼
         if st.button("베팅하러 가기", use_container_width=True, type="primary"):
             st.session_state.game_2_tutorial_done = True
             st.rerun()
@@ -509,8 +505,22 @@ def show_game_2():
 
         return
 
-    # [2단계] 뉴스 불러오기 및 제시
-    title, article_text, url = get_game_news_selection("game_2")
+    # 💡 [2단계] 뉴스 룰렛 렌더링 및 선택 로직 적용
+    if "candidates_game_2" not in st.session_state:
+        st.session_state.candidates_game_2 = [
+            get_game_news_selection("game_2"),
+            get_game_news_selection("game_2"),
+            get_game_news_selection("game_2")
+        ]
+
+    if "selected_news_game_2" not in st.session_state:
+        selected_idx = render_news_slot(st.session_state.candidates_game_2)
+        if selected_idx is None:
+            return
+        st.session_state.selected_news_game_2 = st.session_state.candidates_game_2[selected_idx]
+        st.rerun()
+
+    title, article_text, url = st.session_state.selected_news_game_2
     if not title:
         return
 
