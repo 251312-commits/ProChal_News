@@ -1,6 +1,7 @@
 import streamlit as st
 import base64
 from html import escape
+from pathlib import Path
 from games.news_roulette import render_news_slot
 from games.betting_math import calculate_expected_gain, format_payout_multiplier, project_rank_change
 import streamlit.components.v1 as components
@@ -11,6 +12,8 @@ from modules.ui_components import change_page, load_local_image_as_base64
 ws_news = init_news_sheet()
 
 MIN_BET = 1_000
+_ASSET_ROOT = Path(__file__).resolve().parents[1] / "assets"
+_REPO_ROOT = _ASSET_ROOT.parent
 
 
 def _get_news_candidates(candidates_key):
@@ -593,7 +596,7 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
 
     def asset(filename):
         try:
-            return load_local_image_as_base64(f"assets/{filename}")
+            return load_local_image_as_base64(str(_ASSET_ROOT / filename))
         except (OSError, ValueError):
             return None
 
@@ -604,7 +607,11 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
     background_img = asset("bet_background.jpg")
     if not background_img and bg_image_path:
         try:
-            background_img = load_local_image_as_base64(bg_image_path)
+            # Keep optional paths relative to the repository, not the process cwd.
+            background_path = Path(bg_image_path)
+            if not background_path.is_absolute():
+                background_path = _REPO_ROOT / background_path
+            background_img = load_local_image_as_base64(str(background_path))
         except (OSError, ValueError):
             pass
 
