@@ -39,6 +39,7 @@ class NewsSlotTests(unittest.TestCase):
         self.assertEqual(self.select("game_1"), waiting)
         args = self.component.call_args.kwargs
         self.assertEqual(args["titles"], ["첫 기사", "둘째 기사"])
+        self.assertIs(args["continuous_reel"], True)
         round_id = args["round_id"]
         for token, index in [("stale", 0), (round_id, -1), (round_id, 2), (round_id, True)]:
             with self.subTest(token=token, index=index):

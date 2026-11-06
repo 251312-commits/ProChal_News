@@ -5,6 +5,7 @@ const pages = document.querySelector(".pages");
 const bodyCopy = document.querySelector("#copy");
 const keep = document.querySelector(".keep");
 const timer = document.querySelector("#timer");
+const timerLabel = document.querySelector("#timer-label");
 const progress = document.querySelector("#progress");
 const number = new Intl.NumberFormat("ko-KR");
 let roundId, hostOrigin = "*", interval, deadline, sent = false;
@@ -23,7 +24,7 @@ function finish(action) {
 
 function tick() {
   const seconds = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
-  timer.textContent = seconds + "초 후 예측 화면으로 자동 이동";
+  timer.textContent = seconds + "초";
   if (seconds === 0) finish("predict");
 }
 
@@ -75,6 +76,7 @@ function showArticle(args) {
   reward.hidden = !Number.isFinite(args.reward);
   document.querySelector("#reward").textContent = reward.hidden ? "" : "+" + number.format(args.reward) + " C";
   keep.querySelector("span").textContent = "계속 읽기";
+  timerLabel.textContent = "예측 화면 자동 이동까지";
   scene.hidden = false;
   pages.scrollTop = 0;
   progress.value = 0;
@@ -95,7 +97,8 @@ keep.addEventListener("click", () => {
   } else {
     deadline = null;
     keep.querySelector("span").textContent = "이어서 읽기";
-    timer.textContent = "시간 제한 없이 읽는 중";
+    timerLabel.textContent = "기사 읽기";
+    timer.textContent = "무제한";
   }
   pages.focus({preventScroll: true});
 });

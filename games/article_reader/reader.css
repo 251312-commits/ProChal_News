@@ -52,13 +52,24 @@ img { display: block; max-width: 100%; }
 }
 .label img { width: 1.4em; }
 .card {
-  position: relative; display: grid; grid-template-rows: minmax(0, 1fr) auto;
+  position: relative; display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
   min-width: 0; min-height: 0; padding: clamp(16px, 3.1vh, 30px) clamp(18px, 4.8vw, 35px) clamp(14px, 2.6vh, 24px);
 }
 .card::before {
   content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   border: 23px solid transparent;
   border-image: var(--frame) 133 fill / 23px stretch;
+}
+.countdown {
+  display: flex; align-items: center; justify-content: center; gap: .75rem;
+  margin-bottom: .45rem; padding: .22rem .5rem;
+  border: 1px solid #946b77; border-radius: 8px; background: #26122f;
+  color: #f0dfef; font-size: .87rem;
+}
+#timer {
+  min-width: 2.5em; text-align: center; color: #ffdc88;
+  font-size: clamp(1.9rem, 5vh, 2.65rem); line-height: 1.1;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 .pages {
   min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin;
@@ -107,10 +118,9 @@ progress::-moz-progress-bar { background: var(--progress-fill) center / 100% 100
   font-size: clamp(1.12rem, 4.4vw, 1.65rem); font-weight: 780; letter-spacing: -.035em;
 }
 .predict img { width: 1.55em; }
-footer { display: grid; justify-items: center; align-content: center; min-height: 51px; gap: 2px; padding-bottom: 2px; background: var(--stage-ring) center 82% / 100% 48% no-repeat; }
+footer { display: grid; justify-items: center; align-content: center; min-height: 40px; padding-bottom: 2px; background: var(--stage-ring) center 82% / 100% 48% no-repeat; }
 .keep { min-height: 36px; min-width: 40%; padding: 0 1.5em; gap: .5em; background: var(--read-button) center / 100% 100% no-repeat; font-size: .94rem; }
 .keep img { width: 1.2em; }
-#timer { border-radius: 10px; padding: 0 .5em; background: #190a25dc; color: #e3cfe9; font-size: .69rem; line-height: 1.45; }
 @media (min-width: 600px) {
   .scene { padding-inline: 18px; }
 }

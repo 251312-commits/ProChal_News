@@ -6,7 +6,7 @@ const reels = scene.querySelector(".window");
 const hint = scene.querySelector(".hint");
 const confirmBtn = scene.querySelector(".confirm");
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
-let roundId, titles = [], selected = -1, drag = null;
+let roundId, titles = [], selected = -1, drag = null, continuousReel = false;
 let timers = [], audio, hostOrigin = "*";
 
 function send(type, payload) {
@@ -108,6 +108,44 @@ function sound(durations) {
   } catch (_) { /* Audio is optional when the browser blocks playback. */ }
 }
 
+function revealRow(row, i) {
+  row.firstElementChild.replaceChildren(paper(titles[i] || "—"));
+  row.setAttribute("aria-label", titles[i] || "등록된 후보 없음");
+}
+
+function enableChoices(rows) {
+  scene.dataset.phase = "ready";
+  rows.forEach((row, i) => { row.disabled = i >= titles.length; });
+  hint.textContent = titles.length === 3 ? "세 개의 뉴스 중 하나를 선택하세요." : "읽을 뉴스를 선택하세요.";
+}
+
+function spinContinuousReel(rows) {
+  rows.forEach(revealRow);
+  if (reduceMotion.matches) {
+    enableChoices(rows);
+    return;
+  }
+  const strip = document.createElement("div");
+  strip.className = "continuous-reel";
+  strip.setAttribute("aria-hidden", "true");
+  for (let i = 0; i < rows.length; i++) strip.append(paper("• • •", true));
+  for (let i = 0; i < rows.length * 2; i++) strip.append(paper(titles[i % titles.length]));
+  strip.style.setProperty("--travel", -(strip.childElementCount / rows.length) * 100 + "%");
+  const duration = 2070;
+  strip.style.setProperty("--time", duration + "ms");
+  strip.append(...rows);
+  function settle() {
+    if (scene.dataset.phase !== "spinning" || strip.parentNode !== reels) return;
+    reels.replaceChildren(...rows);
+    enableChoices(rows);
+  }
+  strip.addEventListener("animationend", settle, {once: true});
+  reels.replaceChildren(strip);
+  // A browser or user stylesheet can suppress the animation event.
+  timers.push(setTimeout(settle, duration + 150));
+  sound([duration]);
+}
+
 function spin() {
   if (scene.dataset.phase !== "idle" || !titles.length) return;
   scene.dataset.phase = "spinning";
@@ -116,9 +154,13 @@ function spin() {
   lever.disabled = true;
   hint.textContent = "뉴스를 뽑는 중…";
   const rows = Array.from(reels.children);
+  timers.push(setTimeout(() => lever.style.removeProperty("--tilt"), 280));
+  if (continuousReel) {
+    spinContinuousReel(rows);
+    return;
+  }
   const durations = rows.map((_, i) => reduceMotion.matches ? 50 : 1450 + 310 * i);
   sound(durations);
-  timers.push(setTimeout(() => lever.style.removeProperty("--tilt"), 280));
   rows.forEach((row, i) => {
     const finalTitle = titles[i] || "—";
     const tape = row.firstElementChild;
@@ -130,13 +172,8 @@ function spin() {
     row.classList.add("rolling");
     timers.push(setTimeout(() => {
       row.classList.remove("rolling");
-      tape.replaceChildren(paper(finalTitle));
-      row.setAttribute("aria-label", titles[i] || "등록된 후보 없음");
-      if (i === rows.length - 1) {
-        scene.dataset.phase = "ready";
-        rows.forEach((r, j) => { r.disabled = j >= titles.length; });
-        hint.textContent = titles.length === 3 ? "세 개의 뉴스 중 하나를 선택하세요." : "읽을 뉴스를 선택하세요.";
-      }
+      revealRow(row, i);
+      if (i === rows.length - 1) enableChoices(rows);
     }, durations[i]));
   });
 }
@@ -190,7 +227,10 @@ window.addEventListener("message", event => {
   const coins = scene.querySelector(".coins");
   coins.textContent = Number(args.coins).toLocaleString("ko-KR");
   coins.setAttribute("aria-label", "보유 코인 " + coins.textContent);
-  if (roundId !== args.round_id) reset(args.round_id, args.titles);
+  if (roundId !== args.round_id) {
+    continuousReel = args.continuous_reel === true;
+    reset(args.round_id, args.titles);
+  }
   scene.hidden = false;
   send("streamlit:setFrameHeight", {height: window.innerHeight || 620});
 });

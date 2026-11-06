@@ -50,6 +50,7 @@ def render_news_slot(candidates):
         event = _news_slot(
             key=f"game_1_slot_{round_id}",
             round_id=round_id,
+            continuous_reel=True,
             titles=[item["title"] for item in candidates],
             coins=int((state.get("current_user_data") or {}).get("코인", 0)),
             art={name: load_local_image_as_base64(str(ASSETS / path)) for name, path in ART.items()},

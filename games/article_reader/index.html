@@ -25,6 +25,10 @@
     </header>
 
     <article class="card" aria-labelledby="headline">
+      <div class="countdown" role="timer" aria-label="기사 읽기 타이머">
+        <span id="timer-label">예측 화면 자동 이동까지</span>
+        <strong id="timer"></strong>
+      </div>
       <div class="pages" tabindex="0" role="region" aria-label="기사 읽기 영역">
         <div class="hero">
           <img class="illustration" data-art="article-ai-copyright" alt="" hidden>
@@ -54,7 +58,6 @@
     <button class="predict" type="button"><img data-art="target" alt="">유사도 예측하러 가기</button>
     <footer>
       <button class="keep" type="button"><img data-art="book" alt=""><span>계속 읽기</span></button>
-      <small id="timer"></small>
     </footer>
   </main>
 </body>
