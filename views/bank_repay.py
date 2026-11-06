@@ -14,13 +14,15 @@ REPAY_SUCCESS_KEY = "bank_repay_success"
 
 def _repayment_limit(coins: int, loan: int) -> int:
     """Never let a repayment exceed either the wallet or the loan balance."""
+    if 0 < loan < UNIT and coins >= loan:
+        return loan
     return max(0, min(coins, loan)) // UNIT * UNIT
 
 
 def _selected_repayment(limit: int, selected: int | None) -> int:
     """Bound a previous selection when coins or debt have changed."""
     if limit < UNIT:
-        return 0
+        return limit
     try:
         selected = int(selected) if selected is not None else UNIT
     except (TypeError, ValueError):
@@ -45,7 +47,7 @@ def pay_loan(coins: int, loan: int) -> None:
 
     limit = _repayment_limit(coins, loan)
     amount = _selected_repayment(limit, st.session_state.get(REPAY_AMOUNT_KEY))
-    if limit >= UNIT:
+    if limit:
         # Set this before rendering widgets, as required by Streamlit's state API.
         st.session_state[REPAY_AMOUNT_KEY] = amount
     else:
@@ -71,7 +73,7 @@ def pay_loan(coins: int, loan: int) -> None:
 
         with st.container(key="bank-repay-panel", gap=None):
             st.html('<h2 class="bank-repay-label">상환 금액</h2>')
-            if limit >= UNIT:
+            if limit:
                 with st.container(key="bank-repay-stepper", horizontal=True,
                                   vertical_alignment="center", gap=None):
                     st.button(
@@ -87,7 +89,7 @@ def pay_loan(coins: int, loan: int) -> None:
                     )
             else:
                 reason = "상환할 대출금이 없습니다." if loan <= 0 else (
-                    f"상환하려면 대출금과 보유 코인이 각각 {UNIT:,} C 이상 필요합니다."
+                    f"상환하려면 보유 코인이 {min(UNIT, loan):,} C 이상 필요합니다."
                 )
                 st.html(f'<p class="bank-repay-unavailable" role="status">{reason}</p>')
 

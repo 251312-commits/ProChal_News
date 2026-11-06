@@ -5,7 +5,8 @@ from pathlib import Path
 
 import streamlit as st
 
-from modules.db_handler import init_gspread
+from modules.account_math import account_amount
+from modules.db_handler import BankBalancesChanged, init_gspread, save_bank_balances
 from .bank_scene import asset_uri
 
 UNIT = 1_000
@@ -15,16 +16,21 @@ INTEREST_RATE = 0.20
 
 def _save_balances(coins: int, loan: int, message: str, *, success_state_key: str | None = None) -> None:
     user = st.session_state.current_user_data
-    student_id = str(user.get("학번", "")).strip()
+    student_id = st.session_state.get("current_user") or user.get("학번")
     try:
-        if not student_id:
-            raise ValueError("Missing student ID")
-        worksheet = init_gspread()
-        # Column A identifies the student. C and D must be written together.
-        student = worksheet.find(student_id, in_column=1)
-        if student is None:
-            raise LookupError("Student row unavailable")
-        worksheet.update(range_name=f"C{student.row}:D{student.row}", values=[[coins, loan]])
+        save_bank_balances(
+            init_gspread(), student_id, coins, loan,
+            expected_coins=account_amount(user.get("코인")),
+            expected_loan=account_amount(user.get("대출금")),
+        )
+    except BankBalancesChanged as changed:
+        user.update({"코인": changed.coins, "대출금": changed.loan})
+        st.toast("잔액이 변경되었습니다. 새 잔액을 확인한 뒤 다시 신청하세요.")
+        st.rerun()
+        return
+    except ValueError:
+        st.error("시트의 코인(C열)과 대출금(G열)에 올바른 숫자가 입력되어 있는지 확인하세요.")
+        return
     except Exception:
         st.error("거래를 저장하지 못했습니다. 잠시 후 다시 시도하세요.")
         return

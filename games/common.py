@@ -594,7 +594,8 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
     expected_payout = calculate_expected_gain(bet_val, payout_multiplier)
     multiplier_label = format_payout_multiplier(payout_multiplier)
     curr_rank, sim_rank = project_rank_change(
-        users_data, current_coins, current_sid, current_nickname, expected_payout
+        users_data, current_coins, current_sid, current_nickname, expected_payout,
+        current_loan=(st.session_state.get("current_user_data") or {}).get("대출금"),
     )
     safe_title = escape(str(title))
 
@@ -1005,7 +1006,7 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
                 <div class="cb-pill">배율 {multiplier_label}</div>
               </div>
               <div class="cb-stat">
-                <div class="cb-stat-label"><span aria-hidden="true">🏆</span><span>예상 랭킹 변동 ⓘ</span></div>
+                <div class="cb-stat-label"><span aria-hidden="true">🏆</span><span title="보유 코인에서 대출금을 뺀 금액 기준">예상 랭킹 변동 ⓘ</span></div>
                 <div class="cb-up">{up_display}</div>
                 <div class="cb-rank">{rank_display}</div>
               </div>

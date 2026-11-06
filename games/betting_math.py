@@ -1,17 +1,9 @@
 """Pure calculations for shared betting UI (independent of Streamlit)."""
 
 from decimal import Decimal, InvalidOperation
+from operator import itemgetter
 
-
-def _as_int(value):
-    """Parse Google Sheets coin values without changing an invalid row to a crash."""
-    try:
-        return int(str(value).strip().replace(",", ""))
-    except (ValueError, TypeError):
-        try:
-            return int(float(str(value).strip().replace(",", "")))
-        except (ValueError, TypeError, OverflowError):
-            return 0
+from modules.account_math import account_amount, net_coins
 
 
 def calculate_expected_gain(bet_amount, payout_multiplier):
@@ -36,46 +28,53 @@ def format_payout_multiplier(payout_multiplier):
     return f"{Decimal(str(payout_multiplier)).normalize():f}x"
 
 
-def project_rank_change(users_data, current_coins, current_sid, current_nickname, net_gain):
-    """Return (current_rank, projected_win_rank), using ranking page's ordinal order.
+def ranking_entries(users_data):
+    """Build fresh entries in sheet order so ties stay stable across projections."""
+    entries = []
+    for user in users_data or []:
+        if isinstance(user, dict):
+            loan = user.get("대출금", 0)
+            entries.append({
+                "id": str(user.get("학번", user.get("id", "")) or "").strip().removesuffix(".0"),
+                "nickname": str(user.get("아이디", user.get("nickname", "")) or "").strip(),
+                "coins": net_coins(user.get("코인"), loan),
+                "loan": loan,
+            })
+    return entries
 
-    If the current user cannot be identified uniquely, return (None, None)
-    instead of inventing rank 1. Match student ID first; nickname only when
-    unique. Ties are resolved by the original sheet order, as in ranking.py.
-    The active user's session coin balance overrides stale cached sheet data.
-    """
-    if not users_data:
-        return None, None
 
+def rank_by_coins(entries):
+    return sorted(entries, key=itemgetter("coins"), reverse=True)
+
+
+def find_player(entries, current_sid, current_nickname):
     sid = str(current_sid or "").strip().removesuffix(".0")
     nickname = str(current_nickname or "").strip()
-    normalized = []
-    for user in users_data:
-        if not isinstance(user, dict):
-            continue
-        user_sid = str(user.get("학번", user.get("id", "")) or "").strip().removesuffix(".0")
-        user_nickname = str(user.get("아이디", user.get("nickname", "")) or "").strip()
-        normalized.append({
-            "sid": user_sid,
-            "nickname": user_nickname,
-            "coins": _as_int(user.get("코인", 0)),
-        })
-
-    if not normalized:
-        return None, None
-
-    matches = [i for i, user in enumerate(normalized) if sid and user["sid"] == sid]
+    matches = [user for user in entries if sid and user["id"] == sid]
     if len(matches) != 1:
-        matches = [i for i, user in enumerate(normalized) if nickname and user["nickname"] == nickname]
-    if len(matches) != 1:
-        return None, None
+        matches = [user for user in entries if nickname and user["nickname"] == nickname]
+    return matches[0] if len(matches) == 1 else None
 
-    my_index = matches[0]
-    normalized[my_index]["coins"] = _as_int(current_coins)
-    before_order = sorted(range(len(normalized)), key=lambda idx: normalized[idx]["coins"], reverse=True)
-    current_rank = before_order.index(my_index) + 1
 
-    normalized[my_index]["coins"] += _as_int(net_gain)
-    after_order = sorted(range(len(normalized)), key=lambda idx: normalized[idx]["coins"], reverse=True)
-    projected_rank = after_order.index(my_index) + 1
+def project_standings(users_data, current_coins, current_sid, current_nickname, net_gain, *, current_loan=None):
+    """Return both ranks and the projected leaderboard, including the player's rivals."""
+    entries = ranking_entries(users_data)
+    player = find_player(entries, current_sid, current_nickname)
+    if player is None:
+        return None, None, []
+
+    # Pair the live wallet with live debt when a bank transaction is newer than the cache.
+    loan = player["loan"] if current_loan is None else current_loan
+    player["coins"] = net_coins(current_coins, loan)
+    current_rank = rank_by_coins(entries).index(player) + 1
+
+    player["coins"] += account_amount(net_gain)
+    projected = rank_by_coins(entries)
+    return current_rank, projected.index(player) + 1, projected
+
+
+def project_rank_change(users_data, current_coins, current_sid, current_nickname, net_gain, *, current_loan=None):
+    current_rank, projected_rank, _ = project_standings(
+        users_data, current_coins, current_sid, current_nickname, net_gain, current_loan=current_loan
+    )
     return current_rank, projected_rank
