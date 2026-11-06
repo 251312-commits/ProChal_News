@@ -12,6 +12,7 @@ from games.shared.news_flow import get_game_news_selection
 from games.shared.loading import similarity_analysis_loading
 from games.shared.betting import render_betting_ui
 from games.shared.result import show_summary_before_score
+from modules.transactions import BalanceChanged, TransactionError, settle_game_round, update_session_balances
 
 
 # ==========================================
@@ -86,6 +87,7 @@ def reset_game_3_state():
         "game_3_choice_deadline",
         "game_3_choice_timeout",
         "game_3_bet",
+        "game_3_round_id",
         "game_3_result",
         "game_3_summary_revealed",
         "game_3_screen",
@@ -346,6 +348,7 @@ def show_bet_screen(ws):
         payout_multiplier=1.0,
         title="게임 3: 홀짝 예측",
         state_key=f"game_3_{round_number}",
+        round_key="game_3",
     )
     if confirmed_bet is not None:
         st.session_state.game_3_bet = confirmed_bet
@@ -476,47 +479,10 @@ def analyze_game_3(ws):
                 else:
                     reward = -(bet_coin // 2)
 
-                # 최신 사용자 정보 가져오기
-                users_data = ws.get_all_records()
-
-                user_row_idx = None
-                user_info = None
-
-                for idx, user in enumerate(users_data):
-
-                    sid = str(
-                        user.get("학번", "")
-                    ).strip().replace(".0", "")
-
-                    if sid == current_sid:
-
-                        user_row_idx = idx + 2
-                        user_info = user
-                        break
-
-                if user_info is None:
-                    raise ValueError("사용자 정보를 다시 찾을 수 없습니다.")
-
-                current_balance = int(user_info.get("코인", 0))
-                current_streak = int(user_info.get("연승", 0))
-
-                if current_balance < bet_coin:
-                    raise ValueError("현재 보유 코인이 부족합니다.")
-
-                new_balance = max(0, current_balance + reward)
-
-                new_streak = (
-                    current_streak + 1 if is_win else 0
-                )
-
-                # Google Sheets 업데이트
-                ws.update_cell(user_row_idx, 3, new_balance)
-                ws.update_cell(user_row_idx, 4, new_streak)
-
-                if "current_user_data" in st.session_state:
-
-                    st.session_state.current_user_data["코인"] = new_balance
-                    st.session_state.current_user_data["연승"] = new_streak
+                settled = settle_game_round("game_3", int(bet_coin), is_win)
+                reward = settled["reward"]
+                new_balance = settled["new_coins"]
+                new_streak = settled["new_streak"]
 
                 # 결과 저장
                 st.session_state.game_3_result = {
@@ -546,6 +512,11 @@ def analyze_game_3(ws):
 
                 st.rerun()
 
+            except BalanceChanged as changed:
+                update_session_balances(changed.balances)
+                st.error(str(changed))
+            except TransactionError as exc:
+                st.error(str(exc))
             except Exception as e:
 
                 st.error(f"게임 진행 중 오류가 발생했습니다: {e}")
