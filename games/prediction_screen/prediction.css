@@ -1,0 +1,228 @@
+/* Mirrors the working game1 news-slot: one responsive iframe and a joined coin pill.
+   Art proportions: header 540:166, news 540:128, frame 520:340,
+   reels 258:360, podium 1160:566. */
+* { box-sizing:border-box; }
+html, body { width:100%; height:100%; margin:0; overflow:hidden; }
+body {
+  background:#160920 var(--background,none) center/cover no-repeat;
+  color:#fff4ff;
+  font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+}
+button { font:inherit; color:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+button:focus-visible { outline:3px solid #fff0ab; outline-offset:1px; }
+button:disabled { cursor:default; opacity:.6; }
+img { display:block; pointer-events:none; user-select:none; }
+.prediction[hidden] { display:none; }
+.prediction {
+  width:min(100%,560px); height:100vh; height:100dvh;
+  margin:0 auto; overflow:hidden;
+  display:grid;
+  grid-template-rows:minmax(38px,6%) minmax(103px,20%) minmax(63px,12%) minmax(0,1fr) minmax(53px,10%);
+  row-gap:clamp(2px,.55dvh,7px);
+  padding:max(6px,env(safe-area-inset-top)) max(9px,env(safe-area-inset-right))
+    max(10px,env(safe-area-inset-bottom)) max(9px,env(safe-area-inset-left));
+}
+/* Navigation borrowed from games/news_slot/slot.css: one pill encloses
+   the coin medallion, the amount and the bank + shortcut. */
+.topbar {
+  display:flex; align-items:center; justify-content:space-between;
+  min-width:0; padding:0 2%; z-index:5;
+}
+.back {
+  display:grid; place-items:center; flex:none;
+  width:clamp(35px,6.5dvh,48px); height:100%;
+  border:0; background:transparent;
+}
+.back svg { width:clamp(22px,3.7dvh,29px); fill:none; stroke:currentColor; stroke-width:2.6; }
+.balance {
+  display:flex; align-items:center; justify-content:flex-end;
+  gap:clamp(5px,1.4vw,9px);
+  min-width:0; max-width:min(76%,320px);
+  height:clamp(34px,5.4dvh,48px);
+  border:1px solid #ab52d8; border-radius:100px;
+  padding:0 3px 0 5px; background:#1b092be8;
+  box-shadow:0 0 10px #ae38f080;
+  font-weight:800; font-variant-numeric:tabular-nums;
+}
+.coin {
+  display:grid; place-items:center; flex:none;
+  width:clamp(25px,4.6dvh,37px); height:clamp(25px,4.6dvh,37px);
+  border:2px solid #ffd56d; border-radius:50%;
+  background:radial-gradient(circle at 30% 25%,#fff8b5,#ffcf42 36%,#d47707 82%);
+  color:#9a5100; font-size:clamp(16px,3.5vw,20px); font-weight:900;
+  box-shadow:inset 0 1px 2px #fffad1,0 0 8px #ffd75880;
+}
+.coins {
+  flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis;
+  white-space:nowrap; font-size:clamp(13px,3.8vw,20px); text-align:right;
+}
+.bank {
+  display:grid; place-items:center; flex:none;
+  width:clamp(30px,5.1dvh,42px); height:clamp(30px,5.1dvh,42px);
+  border:1px solid #ae52d8; border-radius:50%;
+  font-size:clamp(22px,5vw,30px); line-height:1;
+  background:radial-gradient(circle at 30% 23%,#773b9c,#270c40 78%);
+  box-shadow:inset 0 0 5px #d077ef80,0 0 7px #ac38fc9c;
+}
+/* The crest includes the crown; don't stretch its 540:166 image. */
+.hero {
+  display:flex; flex-direction:column; justify-content:center; align-items:center;
+  gap:clamp(0px,.45dvh,5px);
+  min-width:0; min-height:0; overflow:hidden; text-align:center;
+}
+.crest {
+  height:clamp(38px,8.4dvh,83px); width:min(85%,320px);
+  object-fit:contain; flex-shrink:1; min-height:0;
+}
+h1 {
+  flex:none; margin:0; padding:0; color:#fff3ff;
+  font-size:clamp(22px,min(7.2vw,4.7dvh),41px);
+  font-weight:900; letter-spacing:-.045em; line-height:1.07;
+  text-shadow:0 0 13px #c55affb6;
+}
+.hero p {
+  flex:none; margin:0; padding:0; color:#e8d1ee;
+  font-size:clamp(10px,min(3.5vw,2.3dvh),17px);
+  line-height:1.35; word-break:keep-all;
+}
+/* The news card is sized by the intrinsic 540:128 plate ratio. */
+.news-space {
+  min-width:0; min-height:0; container-type:size;
+  display:grid; place-items:center;
+}
+.news-card { position:relative; width:min(92cqw,420cqh); aspect-ratio:540/128; }
+.news-art { width:100%; height:100%; object-fit:contain; }
+.news-tag {
+  position:absolute; top:-12%; left:50%; transform:translateX(-50%);
+  width:40%; height:40%; object-fit:contain;
+  filter:drop-shadow(0 0 7px #c62cf5);
+}
+.news-title {
+  position:absolute; display:-webkit-box; -webkit-box-orient:vertical;
+  -webkit-line-clamp:2; line-clamp:2;
+  top:52%; left:27%; right:5%; max-height:58%; transform:translateY(-32%);
+  overflow:hidden; margin:0; text-align:center;
+  word-break:keep-all; overflow-wrap:anywhere;
+  color:#331041; font-size:clamp(11px,3.6cqw,21px);
+  font-weight:900; letter-spacing:-.04em; line-height:1.12;
+}
+/* Container queries scale the frame AND podium as one unit, without cropping
+   either image or forcing a tall screen to scroll. */
+.stage-space {
+  min-width:0; min-height:0; container-type:size;
+  display:grid; place-items:center;
+}
+.stage { position:relative; width:min(93cqw,94cqh); aspect-ratio:.94; }
+.machine {
+  position:absolute; top:0; left:0; width:100%; aspect-ratio:520/340;
+  container-type:inline-size;
+}
+.machine-art { position:absolute; inset:0; width:100%; height:100%; }
+.machine h2 {
+  position:absolute; top:17.5%; left:8%; width:84%; margin:0;
+  color:#ffe8fe; font-size:clamp(11px,3.8cqw,20px);
+  font-weight:850; line-height:1.15; text-shadow:0 0 10px #e148ff;
+  text-align:center; white-space:nowrap;
+}
+.digits {
+  position:absolute; top:30%; left:12%; width:76%; height:54%;
+  display:grid;
+  grid-template-columns:minmax(0,.69fr) minmax(0,1fr) minmax(0,1fr);
+  align-items:center; justify-items:center; gap:1.7%; min-width:0;
+}
+.prefix {
+  justify-self:center; color:#fff0ff;
+  font:900 clamp(35px,17cqw,95px)/1 Georgia,serif;
+  letter-spacing:-.1em; text-shadow:0 0 11px #d369fc;
+}
+.reel {
+  position:relative; height:100%; aspect-ratio:258/360;
+  max-width:100%; overflow:hidden; border-radius:23%;
+}
+.reel-art { position:absolute; inset:0; width:100%; height:100%; object-fit:fill; }
+.reel button {
+  position:absolute; z-index:2; left:5%; width:90%; height:25%;
+  padding:0; margin:0; border:0; background:transparent;
+  color:#ffd58d; font-size:clamp(12px,5cqw,23px);
+  font-weight:900; line-height:1;
+}
+.reel button span { filter:drop-shadow(0 0 3px #f7c35e); }
+.reel button:active { background:rgba(255,209,144,.13); }
+.reel .up { top:0; }
+.reel .down { bottom:0; }
+.reel output {
+  position:absolute; top:27%; left:2%; width:96%; height:46%;
+  display:grid; place-items:center; color:#fff0c3;
+  font:900 clamp(36px,17.5cqw,100px)/1 Georgia,serif;
+  font-variant-numeric:tabular-nums; text-shadow:0 0 10px #f3a2ed;
+  pointer-events:none;
+}
+.range {
+  position:absolute; bottom:7.3%; left:21%; width:58%; margin:0;
+  display:flex; justify-content:center; align-items:center; gap:.35em;
+  padding:2px 4px; border:1px solid #a842c5; border-radius:999px;
+  background:#431258dc; color:#f2d8f2;
+  font-size:clamp(8px,2.85cqw,14px);
+  white-space:nowrap; font-weight:550; line-height:1.25;
+}
+.range strong { color:#fff0ff; font-weight:800; }
+.range span { margin-left:.2em; }
+.podium {
+  position:absolute; top:51.5%; left:-5%; width:110%;
+  height:auto; aspect-ratio:1160/566; object-fit:contain;
+  filter:drop-shadow(0 3px 10px #a630f3a3);
+}
+/* Confirm always fits in the final grid row. */
+.actions {
+  display:flex; align-items:center; justify-content:center;
+  min-height:0; padding-bottom:clamp(0px,.7dvh,7px); z-index:6;
+}
+.confirm {
+  width:92%; height:min(100%,clamp(47px,8.3dvh,82px));
+  display:flex; align-items:center; justify-content:center;
+  gap:clamp(8px,2vw,13px); padding:0 8px;
+  border:2px solid #ffc7fa; border-radius:100px;
+  background:linear-gradient(180deg,#d24ffe,#8520d7 48%,#7111bd);
+  box-shadow:0 0 15px #dd44f9d0,inset 0 2px 10px #ffc5ff99;
+  color:#fff6ff; font-size:clamp(18px,min(5.5vw,3.5dvh),29px);
+  font-weight:900; line-height:1; text-shadow:0 0 7px #d489fd;
+}
+.check {
+  display:grid; place-items:center; width:1.37em; height:1.37em;
+  border-radius:50%; color:#681ba9; background:#f9c8ff;
+  font-size:1em; text-shadow:none;
+}
+@media (max-height:680px) and (orientation:portrait) {
+  .prediction {
+    grid-template-rows:minmax(36px,6%) minmax(100px,20%) minmax(58px,12%) minmax(0,1fr) minmax(47px,10%);
+    row-gap:2px;
+  }
+  .hero { gap:0; }
+  .crest { height:8dvh; }
+  h1 {font-size:clamp(21px,6.7vw,30px);}
+  .hero p {font-size:clamp(9px,3.1vw,13px);}
+  .range {font-size:clamp(7px,2.75cqw,12px);}
+}
+@media (orientation:landscape) and (max-height:600px) {
+  .prediction {
+    width:min(100%,950px);
+    grid-template:
+      "nav stage" minmax(40px,14%)
+      "hero stage" minmax(0,1fr)
+      "news stage" minmax(0,1fr)
+      "actions stage" minmax(45px,17%)
+      / minmax(0,44%) minmax(0,56%);
+    gap:2px 10px;
+  }
+  .topbar {grid-area:nav;} .hero{grid-area:hero;}
+  .news-space{grid-area:news;} .stage-space{grid-area:stage;}
+  .actions{grid-area:actions;}
+  .crest {height:16dvh;}
+  h1{font-size:clamp(20px,5dvh,32px);}
+  .hero p {font-size:clamp(10px,2.8dvh,14px);}
+  .news-card {width:min(90cqw,420cqh);}
+  .confirm{height:100%;font-size:clamp(16px,5dvh,23px);}
+}
+@media (prefers-reduced-motion:reduce) {
+  * { animation:none !important; transition:none !important; }
+}
