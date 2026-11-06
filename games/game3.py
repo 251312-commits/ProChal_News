@@ -1,4 +1,8 @@
-                        current_balance + reward
+def show_game3():
+  show_placeholder_page(title_name)
+
+
+current_balance + reward
                     )
 
                     new_streak = (
