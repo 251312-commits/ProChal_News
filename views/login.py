@@ -1,6 +1,7 @@
 import streamlit as st
 from modules.account_math import account_amount
 from modules.db_handler import init_gspread
+from modules.transactions import TransactionError, register_player, transaction_id
 from modules.ui_components import change_page
 
 ws = init_gspread()
@@ -104,30 +105,28 @@ def show_login_page():
                         else:
                             clean_id = st.session_state.temp_student_id
                             final_username = username.strip()
-                            initial_coins = 5000
-                            users_data = ws.get_all_records()
-
-                            if referral.strip():
-                                clean_ref = referral.strip()
-                                ref_info = next((item for item in users_data if str(item.get('학번', '')).split('.')[0] == clean_ref), None)
-                                if ref_info:
-                                    row_idx = users_data.index(ref_info) + 2
-                                    new_coins = int(ref_info.get('코인', 0)) + 3000
-                                    ws.update_cell(row_idx, 3, new_coins)
-                                    initial_coins += 1000
-                                    st.toast("🎉 추천인 보상 코인이 지급되었습니다!")
-
-                            new_row = [clean_id, final_username, initial_coins, 0, referral.strip(), password, 0]
-                            ws.append_row(new_row)
-
+                            # A stable request ID makes a timed-out registration
+                            # and both referral bonuses safe to retry.
+                            key = "registration_pending_id"
+                            if not st.session_state.get(key):
+                                st.session_state[key] = transaction_id("register")
+                            try:
+                                balances = register_player(
+                                    clean_id, final_username, password, referral.strip(),
+                                    st.session_state[key],
+                                )
+                            except TransactionError as exc:
+                                st.error(str(exc))
+                                return
+                            st.session_state.pop(key, None)
                             st.session_state.current_user = clean_id
                             st.session_state.current_user_data = {
                                 "학번": clean_id,
                                 "아이디": final_username,
-                                "코인": initial_coins,
-                                "대출금": 0,
-                                "연승": 0,
-                                "비밀번호": password
+                                "코인": balances["coins"],
+                                "대출금": balances["loan"],
+                                "연승": balances["streak"],
+                                "비밀번호": password,
                             }
                             st.session_state.login_step = 1
                             change_page('main')
