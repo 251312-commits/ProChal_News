@@ -61,7 +61,7 @@ h1::before, h1::after {
 }
 .row {
   position: relative; display: block; width: 100%; min-height: 0; border: 0; padding: 0;
-  overflow: hidden; background: #f3dadd; color: #30122c; text-align: left;
+  overflow: hidden; background: #f3dadd; text-align: left;
 }
 .row:focus-visible { outline-offset: -4px; z-index: 1; }
 .row[aria-pressed="true"]::after {
@@ -72,7 +72,7 @@ h1::before, h1::after {
 .tape, .paper { width: 100%; height: 100%; }
 .tape { display: block; }
 .paper {
-  display: flex; align-items: center; padding: 2% 6% 2% 31%;
+  display: flex; align-items: center; padding: 2% 6% 2% 31%; color: #30122c;
   background: #f3dadd var(--paper) center / 100% 100% no-repeat;
 }
 .headline {
@@ -81,8 +81,11 @@ h1::before, h1::after {
   letter-spacing: -.035em; word-break: keep-all; overflow-wrap: anywhere;
 }
 .pending { color: #764260; font-weight: 650; letter-spacing: .1em; }
-.row.rolling .tape { animation: spin var(--time) cubic-bezier(.28, .05, .18, 1) both; }
-@keyframes spin { to { transform: translateY(-700%); } }
+.continuous-reel {
+  position: absolute; inset: 0; display: grid; grid-auto-rows: calc(100% / 3);
+}
+.continuous-reel, .row.rolling .tape { animation: spin var(--time) cubic-bezier(.28, .05, .18, 1) both; }
+@keyframes spin { to { transform: translateY(var(--travel, -700%)); } }
 .lever {
   position: absolute; z-index: 2; left: 97%; top: 50%; width: 15.5%; aspect-ratio: 220 / 604;
   padding: 0; border: 0; background: transparent; transform: translate(-43%, -89%);
@@ -124,5 +127,5 @@ footer { padding: .35em 0 0; text-align: center; }
   footer { grid-area: footer; padding-bottom: 3vh; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .arm, .row.rolling .tape { transition-duration: .01ms; animation-duration: .01ms; }
+  .arm, .continuous-reel, .row.rolling .tape { transition-duration: .01ms; animation-duration: .01ms; }
 }
