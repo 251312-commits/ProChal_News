@@ -10,6 +10,9 @@ from games.betting_math import (
     calculate_expected_gain,
     format_payout_multiplier,
     project_rank_change,
+    project_standings,
+    rank_by_coins,
+    ranking_entries,
 )
 
 
@@ -35,6 +38,31 @@ class BettingMathTests(unittest.TestCase):
         ]
         self.assertEqual(project_rank_change(rows, 1000, "103", "third", 950), (3, 2))
         self.assertEqual(project_rank_change(rows, 1000, "103", "third", 1001), (3, 1))
+
+    def test_leaderboard_and_bet_rivals_use_net_coins(self):
+        rows = [
+            {"학번": "1", "코인": "8,500", "대출금": "6,000"},
+            {"학번": "2", "코인": 1500, "대출금": ""},
+            {"학번": "3", "코인": 1000, "대출금": 1200},
+        ]
+        leaderboard = rank_by_coins(ranking_entries(rows))
+        self.assertEqual([u["coins"] for u in leaderboard], [2500, 1500, -200])
+        before, after, rivals = project_standings(rows, 1000, "3", "", 2000)
+        self.assertEqual((before, after), (3, 2))
+        self.assertEqual([u["coins"] for u in rivals], [2500, 1800, 1500])
+        self.assertEqual(rows[2]["코인"], 1000)
+
+    def test_borrow_and_repay_do_not_move_a_players_rank(self):
+        rows = [
+            {"학번": "1", "코인": 1000},
+            {"학번": "2", "코인": 5000, "대출금": 4500},
+        ]
+        for wallet, loan in ((500, 0), (5000, 4500), (1500, 1000)):
+            with self.subTest(wallet=wallet, loan=loan):
+                self.assertEqual(
+                    project_rank_change(rows, wallet, "2", "", 600, current_loan=loan),
+                    (2, 1),
+                )
 
     def test_session_balance_overrides_cached_sheet_row(self):
         rows = [

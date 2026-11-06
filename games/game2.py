@@ -7,8 +7,10 @@ from modules.news_ai import summary, similarity_check
 from modules.db_handler import init_gspread
 from modules.ui_components import change_page
 from games.result_reveal import show_summary_before_score
+from games.betting_math import project_standings
 from games.common import get_game_news_selection
 from games.news_roulette2 import render_news_slot  # 룰렛 모듈 불러오기
+from views.ranking import fetch_ranking_data
 
 ws = init_gspread()
 
@@ -206,13 +208,10 @@ def show_game_2():
                 change_page('main')
             return
 
-        if "ranking_users_cache" not in st.session_state:
-            try:
-                st.session_state.ranking_users_cache = ws.get_all_records()
-            except Exception:
-                st.session_state.ranking_users_cache = []
-
-        users_data = st.session_state.ranking_users_cache
+        try:
+            users_data = fetch_ranking_data()
+        except Exception:
+            users_data = []
 
         default_bet = max(min_bet, ((current_coins // 2) // 50) * 50)
         if "bet_slider_key_2" not in st.session_state:
@@ -456,71 +455,39 @@ def show_game_2():
         )
 
         max_reward = bet_val
-        simulated_total_coins = current_coins + max_reward
-
-        processed_users = []
-        for u in users_data:
-            try: c_val = int(u.get('코인', 0))
-            except Exception: c_val = 0
-            processed_users.append({
-                'id': str(u.get('학번', '')).strip().replace('.0', ''),
-                'nickname': str(u.get('아이디', '익명')).strip(),
-                'coins': c_val
-            })
-
-        me_sid = current_sid
-        me_nickname = st.session_state.current_user_data.get('아이디', '')
-
-        def is_me(user):
-            return user.get('id') == me_sid or user.get('nickname') == me_nickname
-
-        curr_sorted = sorted(processed_users, key=lambda x: x['coins'], reverse=True)
-        curr_rank = next(
-            (idx + 1 for idx, u in enumerate(curr_sorted) if is_me(u)),
-            len(curr_sorted) + 1
+        user_data = st.session_state.current_user_data
+        curr_rank, sim_rank, projected = project_standings(
+            users_data, current_coins, current_sid, user_data.get("아이디"), max_reward,
+            current_loan=user_data.get("대출금"),
         )
 
-        sim_list = []
-        for u in processed_users:
-            sim_list.append({
-                'id': u['id'],
-                'nickname': u['nickname'],
-                'coins': simulated_total_coins if is_me(u) else u['coins'],
-                'is_me': is_me(u)
-            })
-
-        sim_sorted = sorted(sim_list, key=lambda x: x['coins'], reverse=True)
-        sim_me_idx = next((idx for idx, u in enumerate(sim_sorted) if u['is_me']), None)
-        sim_rank = sim_me_idx + 1 if sim_me_idx is not None else len(sim_sorted) + 1
-
-        rank_climb = curr_rank - sim_rank if curr_rank else 0
-
-        above_user = None
-        below_user = None
-
-        if sim_me_idx is not None:
-            if sim_me_idx > 0:
-                above_user = sim_sorted[sim_me_idx - 1]
-            if sim_me_idx < len(sim_sorted) - 1:
-                below_user = sim_sorted[sim_me_idx + 1]
-
-        if above_user is not None:
-            above_gap = max(0, int(above_user.get('coins', 0)) - int(simulated_total_coins))
-            above_str = (
-                f"🔺 <b>위:</b> {above_user.get('nickname', '익명')} "
-                f"<span style='color:#ff9999;'>({above_gap:,} C 부족)</span>"
+        rank_display = "랭킹 데이터 없음"
+        above_str = below_str = ""
+        if sim_rank is not None:
+            climb = curr_rank - sim_rank
+            climb_text = f"▲ {climb}등 상승!" if climb else "순위 유지"
+            rank_display = (
+                f'{curr_rank}위 ➔ <span style="color:#00e5ff;">{sim_rank}위</span> '
+                f'<span class="rank-up-badge">({climb_text})</span>'
             )
-        else:
-            above_str = "👑 <b>예상 랭킹 1위 달성!</b>"
+            score = projected[sim_rank - 1]["coins"]
+            if sim_rank > 1:
+                above = projected[sim_rank - 2]
+                above_str = (
+                    f"🔺 <b>위:</b> {above['nickname']} "
+                    f"<span style='color:#ff9999;'>({above['coins'] - score:,} C 부족)</span>"
+                )
+            else:
+                above_str = "👑 <b>예상 랭킹 1위 달성!</b>"
 
-        if below_user is not None:
-            below_gap = max(0, int(simulated_total_coins) - int(below_user.get('coins', 0)))
-            below_str = (
-                f"🔻 <b>아래:</b> {below_user.get('nickname', '익명')} "
-                f"<span style='color:#00ff88;'>({below_gap:,} C 제침)</span>"
-            )
-        else:
-            below_str = "🛡️ <b>최하위 라이벌 없음</b>"
+            if sim_rank < len(projected):
+                below = projected[sim_rank]
+                below_str = (
+                    f"🔻 <b>아래:</b> {below['nickname']} "
+                    f"<span style='color:#00ff88;'>({score - below['coins']:,} C 제침)</span>"
+                )
+            else:
+                below_str = "🛡️ <b>최하위 라이벌 없음</b>"
 
         col_card1, col_card2 = st.columns(2)
         with col_card1:
@@ -536,15 +503,13 @@ def show_game_2():
             )
 
         with col_card2:
-            rank_climb_text = f"▲ {rank_climb}등 상승!" if rank_climb > 0 else "순위 유지"
             st.markdown(
                 f"""
                 <div class="rank-sim-card {allin_class}">
                     <div>
                         <div style="font-size:0.78rem; color:#aaa; font-weight:bold;">🏆 승리 시 예상 랭킹</div>
                         <div style="font-size:1.1rem; font-weight:900; color:#fff;">
-                            {curr_rank}위 ➔ <span style="color:#00e5ff;">{sim_rank}위</span>
-                            <span class="rank-up-badge">({rank_climb_text})</span>
+                            {rank_display}
                         </div>
                     </div>
                     <div style="margin-top:6px;">

@@ -4,6 +4,9 @@ import ast
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
+from unittest.mock import Mock
+
+from modules.account_math import account_amount
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -46,45 +49,42 @@ class BankAnimationTests(unittest.TestCase):
         self.assertFalse(session.bank_open_letter)
 
     def test_stamp_flag_is_set_only_after_successful_persistence(self):
-        saved = []
-        class Worksheet:
-            def find(self, student_id, in_column):
-                self_id = (student_id, in_column)
-                saved.append(self_id)
-                return SimpleNamespace(row=3)
-            def update(self, range_name, values):
-                saved.append((range_name, values))
+        class Changed(Exception):
+            coins = 2_000
+            loan = 1_000
 
-        session = State(current_user_data={"학번": "student01", "코인": 1_250, "대출금": 3_000})
-        notices = []
-        st = SimpleNamespace(session_state=session,
-                             toast=lambda message: notices.append(message),
-                             rerun=lambda: notices.append("rerun"),
-                             error=lambda message: notices.append("error"))
-        save = function_from("views/bank_forms.py", "_save_balances",
-                             {"st": st, "init_gspread": Worksheet})
-        save(6_250, 8_000, "saved", success_state_key="bank_borrow_success")
+        worksheet = object()
+        persist = Mock()
+        user = {"학번": 1234, "코인": "1,250", "대출금": ""}
+        session = State(current_user="01234", current_user_data=user)
+        st = Mock(session_state=session)
+        save = function_from("views/bank_forms.py", "_save_balances", {
+            "st": st, "init_gspread": lambda: worksheet,
+            "save_bank_balances": persist, "BankBalancesChanged": Changed,
+            "account_amount": account_amount,
+        })
+
+        persist.side_effect = RuntimeError("not saved")
+        save(6_250, 5_000, "failed", success_state_key="bank_borrow_success")
+        self.assertNotIn("bank_borrow_success", session)
+        self.assertEqual((user["코인"], user["대출금"]), ("1,250", ""))
+        st.error.assert_called_once()
+        st.toast.assert_not_called()
+        st.rerun.assert_not_called()
+
+        persist.side_effect = Changed()
+        save(6_250, 5_000, "stale", success_state_key="bank_borrow_success")
+        self.assertNotIn("bank_borrow_success", session)
+        self.assertEqual((user["코인"], user["대출금"]), (2_000, 1_000))
+        st.rerun.assert_called_once()
+
+        persist.side_effect = None
+        save(7_000, 6_000, "saved", success_state_key="bank_borrow_success")
+        persist.assert_called_with(worksheet, "01234", 7_000, 6_000,
+                                   expected_coins=2_000, expected_loan=1_000)
         self.assertTrue(session.bank_borrow_success)
-        self.assertEqual(session.current_user_data["코인"], 6_250)
-        self.assertEqual(saved[-1], ("C3:D3", [[6_250, 8_000]]))
-        self.assertEqual(notices, ["saved", "rerun"])
-
-        class BrokenWorksheet(Worksheet):
-            def update(self, range_name, values):
-                raise RuntimeError("not saved")
-
-        failed_state = State(current_user_data={"학번": "student01", "코인": 1_250, "대출금": 3_000})
-        failures = []
-        failed_st = SimpleNamespace(session_state=failed_state,
-                                    toast=lambda _: failures.append("toast"),
-                                    rerun=lambda: failures.append("rerun"),
-                                    error=lambda _: failures.append("error"))
-        failed_save = function_from("views/bank_forms.py", "_save_balances",
-                                    {"st": failed_st, "init_gspread": BrokenWorksheet})
-        failed_save(6_250, 8_000, "not saved", success_state_key="bank_borrow_success")
-        self.assertNotIn("bank_borrow_success", failed_state)
-        self.assertEqual(failed_state.current_user_data["코인"], 1_250)
-        self.assertEqual(failures, ["error"])
+        self.assertEqual((user["코인"], user["대출금"]), (7_000, 6_000))
+        st.toast.assert_called_with("saved")
 
     def test_borrow_submit_sets_the_animation_key(self):
         source = (ROOT / "views/bank_draw.py").read_text(encoding="utf-8")
@@ -93,6 +93,13 @@ class BankAnimationTests(unittest.TestCase):
         self.assertIn('success_state_key=BORROW_SUCCESS_KEY', source)
         self.assertIn('bank-borrow-approved', source)
         self.assertNotIn('bank-borrow-stamp-object', source)
+
+    def test_final_repayment_can_clear_a_subunit_balance(self):
+        limit = function_from("views/bank_repay.py", "_repayment_limit", {"UNIT": 1_000})
+        select = function_from("views/bank_repay.py", "_selected_repayment", {"UNIT": 1_000})
+        self.assertEqual(select(limit(900, 650), 1_000), 650)
+        self.assertEqual(select(limit(600, 650), 1_000), 0)
+        self.assertEqual(select(limit(1_300, 2_000), 2_000), 1_000)
 
     def test_existing_button_stamp_moves_and_ink_is_below(self):
         css = (ROOT / "views/bank_draw.css").read_text(encoding="utf-8")

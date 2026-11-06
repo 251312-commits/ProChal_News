@@ -1,5 +1,6 @@
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh  # 1. 모듈 import 추가
+from games.betting_math import find_player, rank_by_coins, ranking_entries
 from modules.db_handler import init_gspread
 from modules.ui_components import change_page
 from views.ranking_display import select_ranking_rows
@@ -255,6 +256,7 @@ def show_ranking():
     )
 
     st.title("🏆 실시간 랭킹 전광판")
+    st.caption("순위는 보유 코인에서 미상환 대출금을 뺀 금액으로 정합니다.")
     st_autorefresh(interval=10000, limit=None, key="ranking_autorefresh")
 
     # 2. ws.get_all_records() 대신 미리 정의된 fetch_ranking_data() 호출로 수정
@@ -264,31 +266,15 @@ def show_ranking():
         if st.button("⬅️ 메인으로 돌아가기"): change_page('main')
         return
 
-    processed_users = []
-    for u in users_data:
-        try:
-            coin_val = int(u.get('코인', 0))
-        except:
-            coin_val = 0
-        processed_users.append({
-            'id': str(u.get('학번', '')).strip().replace('.0', ''),
-            'nickname': str(u.get('아이디', '익명')).strip(),
-            'coins': coin_val
-        })
-    
-    sorted_users = sorted(processed_users, key=lambda x: x['coins'], reverse=True)
+    sorted_users = rank_by_coins(ranking_entries(users_data))
     for idx, u in enumerate(sorted_users):
         u['rank'] = idx + 1
 
     current_sid = st.session_state.get('current_user', '')
-    my_info = next((u for u in sorted_users if u['id'] == current_sid), None)
-    
-    if not my_info and st.session_state.get('current_user_data'):
-        my_nick = st.session_state.current_user_data.get('아이디', '')
-        my_info = next((u for u in sorted_users if u['nickname'] == my_nick), None)
-
+    current_nickname = (st.session_state.get('current_user_data') or {}).get('아이디', '')
+    my_info = find_player(sorted_users, current_sid, current_nickname)
     my_rank = my_info['rank'] if my_info else 0
-    my_nickname = my_info['nickname'] if my_info else (st.session_state.current_user_data.get('아이디', '나') if st.session_state.get('current_user_data') else '나')
+    my_nickname = my_info['nickname'] if my_info else current_nickname or '나'
     my_coins = my_info['coins'] if my_info else 0
 
     rank_str = f"{my_rank}위" if my_rank > 0 else "순위 밖"
@@ -310,7 +296,7 @@ def show_ranking():
             list_items_html += '<div class="rank-item rank-placeholder" aria-hidden="true"><div class="rank-number">—</div></div>'
         else:
             row = sorted_users[r - 1]
-            is_me = (my_info and row['id'] == my_info['id'])
+            is_me = row is my_info
             is_me_class = "is-me" if is_me else ""
             me_label = " (나)" if is_me else ""
             list_items_html += f'<div class="rank-item {is_me_class}"><div class="rank-number">{r}</div><div class="rank-nickname">{row["nickname"]}{me_label}</div><div class="coin-box">🪙 {row["coins"]:,}</div></div>'

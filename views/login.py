@@ -1,4 +1,5 @@
 import streamlit as st
+from modules.account_math import account_amount
 from modules.db_handler import init_gspread
 from modules.ui_components import change_page
 
@@ -41,6 +42,7 @@ def show_login_page():
                         st.session_state.temp_student_id = clean_id
                         
                         if user_info:
+                            user_info["대출금"] = account_amount(user_info.get("대출금"))
                             st.session_state.temp_user_data = user_info
                             st.session_state.login_step = '2_exist'
                         else:
@@ -115,7 +117,7 @@ def show_login_page():
                                     initial_coins += 1000
                                     st.toast("🎉 추천인 보상 코인이 지급되었습니다!")
 
-                            new_row = [clean_id, final_username, initial_coins, 0, referral.strip(), password]
+                            new_row = [clean_id, final_username, initial_coins, 0, referral.strip(), password, 0]
                             ws.append_row(new_row)
 
                             st.session_state.current_user = clean_id
@@ -123,6 +125,7 @@ def show_login_page():
                                 "학번": clean_id,
                                 "아이디": final_username,
                                 "코인": initial_coins,
+                                "대출금": 0,
                                 "연승": 0,
                                 "비밀번호": password
                             }

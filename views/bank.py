@@ -4,6 +4,7 @@ from pathlib import Path
 
 import streamlit as st
 
+from modules.account_math import account_amount
 from modules.ui_components import change_page, load_local_image_as_base64
 from views.bank_draw import draw_loan
 from views.bank_forms import pay_loan
@@ -52,7 +53,8 @@ def show_bank() -> None:
     st.html(view_dir / "bank_scene.css")
 
     page = st.session_state.page
-    coins, loan = int(user.get("코인", 0)), int(user.get("대출금", 0))
+    coins = account_amount(user.get("코인"))
+    loan = account_amount(user.get("대출금"))
     with st.container(key="bank-page", gap=None):
         _navigation(page, coins)
         with st.container(key="bank-body", gap=None):
