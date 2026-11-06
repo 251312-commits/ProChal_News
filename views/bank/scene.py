@@ -7,7 +7,7 @@ import streamlit as st
 from modules.ui_components import load_local_image_as_base64
 
 
-BANK_ART = Path(__file__).resolve().parents[1] / "assets" / "bank"
+BANK_ART = Path(__file__).resolve().parents[2] / "assets" / "bank"
 
 
 def asset_uri(stem: str) -> str:

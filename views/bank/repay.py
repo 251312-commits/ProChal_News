@@ -4,8 +4,8 @@ from pathlib import Path
 
 import streamlit as st
 
-from .bank_forms import UNIT, _change_amount, _save_balances
-from .bank_scene import asset_uri
+from .forms import UNIT, _change_amount, _save_balances
+from .scene import asset_uri
 
 
 REPAY_AMOUNT_KEY = "bank_repay_amount"

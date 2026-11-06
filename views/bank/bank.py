@@ -6,9 +6,9 @@ import streamlit as st
 
 from modules.account_math import account_amount
 from modules.ui_components import change_page, load_local_image_as_base64
-from views.bank_draw import draw_loan
-from views.bank_forms import pay_loan
-from views.bank_scene import bank_home, opening_scene
+from .draw import draw_loan
+from .repay import pay_loan
+from .scene import bank_home, opening_scene
 
 
 def _navigate(destination: str) -> None:
@@ -47,7 +47,7 @@ def show_bank() -> None:
         return
 
     view_dir = Path(__file__).resolve().parent
-    backdrop = load_local_image_as_base64(str(view_dir.parent / "assets" / "bet_background.jpg"))
+    backdrop = load_local_image_as_base64(str(view_dir.parents[1] / "assets" / "bet_background.jpg"))
     st.html(f'<style>.stApp:has(.st-key-bank-page) {{ --bank-backdrop: url("{backdrop}"); }}</style>')
     st.html(view_dir / "bank.css")
     st.html(view_dir / "bank_scene.css")
