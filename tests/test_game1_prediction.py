@@ -24,7 +24,8 @@ class GameOneTests(unittest.TestCase):
             "streamlit": st, "modules.news_ai": ai, "modules.db_handler": db,
             "modules.ui_components": MagicMock(), "views.ranking": MagicMock(),
             "games.common": common, "games.result_reveal": MagicMock(),
-            "games.game1_prediction_ui": MagicMock(),
+            "streamlit.components": st.components,
+            "streamlit.components.v1": st.components.v1,
         }
         with patch.dict(sys.modules, dependencies):
             play_round = run_module("games.game1")["show_game_1"]

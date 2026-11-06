@@ -70,8 +70,13 @@ class PredictionScreenTests(unittest.TestCase):
             "streamlit.components": self.parent,
             "streamlit.components.v1": self.v1,
             "modules.ui_components": self.ui,
+            "modules.news_ai": MagicMock(),
+            "modules.db_handler": MagicMock(),
+            "games.common": MagicMock(),
+            "games.result_reveal": MagicMock(),
+            "views.ranking": MagicMock(),
         }):
-            source = run_module("games.game1_prediction_ui")
+            source = run_module("games.game1")
         self.picker = source["render_game1_prediction_picker"]
         self.save_digits = source["_save_digits"]
 

@@ -42,10 +42,10 @@ class RasterAssetPathTests(unittest.TestCase):
                     )
 
     def test_image_call_sites_do_not_depend_on_current_working_directory(self):
-        common = (ROOT / "games/common.py").read_text(encoding="utf-8")
+        common = (ROOT / "games/shared/betting.py").read_text(encoding="utf-8")
         main = (ROOT / "views/main.py").read_text(encoding="utf-8")
         game1 = (ROOT / "games/game1.py").read_text(encoding="utf-8")
-        self.assertIn('Path(__file__).resolve().parents[1] / "assets"', common)
+        self.assertIn('Path(__file__).resolve().parents[2] / "assets"', common)
         self.assertIn('str(_ASSET_ROOT / filename)', common)
         self.assertIn('Path(__file__).resolve().parents[1] / "assets"', main)
         self.assertIn('str(assets_dir / f"banner{index}.png")', main)

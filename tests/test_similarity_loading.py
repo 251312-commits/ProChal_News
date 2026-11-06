@@ -8,8 +8,8 @@ from unittest.mock import MagicMock
 
 
 ROOT = Path(__file__).resolve().parents[1]
-COMMON = ROOT / "games" / "common.py"
-CSS = ROOT / "games" / "similarity_loading.css"
+COMMON = ROOT / "games" / "shared" / "loading.py"
+CSS = ROOT / "games" / "shared" / "similarity_loading.css"
 
 
 class SimilarityLoadingTests(TestCase):
