@@ -8,7 +8,7 @@ from modules.db_handler import init_gspread, init_news_sheet
 from modules.ui_components import change_page
 from games.result_reveal import show_summary_before_score
 from games.common import get_game_news_selection
-from games.news_roulette2 import render_news_slot
+from games.news_roulette2 import render_news_slot  # 룰렛 모듈 불러오기
 
 ws = init_gspread()
 ws_news = init_news_sheet()
@@ -446,36 +446,37 @@ def show_game_2():
         max_reward = bet_val
         simulated_total_coins = current_coins + max_reward
 
-        # UnboundLocalError 수정한 랭킹 가공 로직
         processed_users = []
-        for user_row in users_data:
-            try: c_val = int(user_row.get('코인', 0))
+        for u in users_data:
+            try: c_val = int(u.get('코인', 0))
             except Exception: c_val = 0
             processed_users.append({
-                'id': str(user_row.get('학번', '')).strip().replace('.0', ''),
-                'nickname': str(user_row.get('아이디', '익명')).strip(),
+                'id': str(u.get('학번', '')).strip().replace('.0', ''),
+                'nickname': str(u.get('아이디', '익명')).strip(),
                 'coins': c_val
             })
 
         curr_sorted = sorted(processed_users, key=lambda x: x['coins'], reverse=True)
-        curr_rank = next((idx + 1 for idx, user_obj in enumerate(curr_sorted) if user_obj['id'] == current_sid or user_obj['nickname'] == st.session_state.current_user_data.get('아이디', '')), len(curr_sorted) + 1)
+        curr_rank = next((idx + 1 for idx, u in enumerate(curr_sorted) if u['id'] == current_sid or u['nickname'] == st.session_state.current_user_data.get('아이디', '')), len(curr_sorted) + 1)
 
         sim_list = [{
-            'id': user_obj['id'], 'nickname': user_obj['nickname'],
-            'coins': simulated_total_coins if (user_obj['id'] == current_sid or user_obj['nickname'] == st.session_state.current_user_data.get('아이디', '')) else user_obj['coins'],
-            'is_me': (user_obj['id'] == current_sid or user_obj['nickname'] == st.session_state.current_user_data.get('아이디', ''))
-        } for user_obj in processed_users]
+            'id': u['id'], 'nickname': u['nickname'],
+            'coins': simulated_total_coins if (u['id'] == current_sid or u['nickname'] == st.session_state.current_user_data.get('아이디', '')) else u['coins'],
+            'is_me': (u['id'] == current_sid or u['nickname'] == st.session_state.current_user_data.get('아이디', ''))
+        } for u in processed_users]
 
         sim_sorted = sorted(sim_list, key=lambda x: x['coins'], reverse=True)
-        sim_me_idx = next((idx for idx, user_obj in enumerate(sim_sorted) if user_obj['is_me']), None)
+        sim_me_idx = next((idx for idx, u in enumerate(sim_sorted) if u['is_me']), None)
         sim_rank = sim_me_idx + 1 if sim_me_idx is not None else len(sim_sorted) + 1
 
         rank_climb = curr_rank - sim_rank if curr_rank else 0
-        above_user = sim_sorted[sim_me_idx - 1] if sim_me_idx and sim_me_idx > 0 else None
-        below_user = sim_sorted[sim_me_idx + 1] if sim_me_idx is not None and sim_me_idx < len(sim_sorted) - 1 else None
+        
+        # 💡 UnboundLocalError 예방: 미리 None으로 설정 후 안전 검사
+        above_user = sim_sorted[sim_me_idx - 1] if (sim_me_idx is not None and sim_me_idx > 0) else None
+        below_user = sim_sorted[sim_me_idx + 1] if (sim_me_idx is not None and sim_me_idx < len(sim_sorted) - 1) else None
 
         above_str = f"🔺 <b>위:</b> {above_user['nickname']} <span style='color:#ff9999;'>({above_user['coins'] - simulated_total_coins:,} C 부족)</span>" if above_user else "👑 <b>예상 랭킹 1위 달성!</b>"
-        below_str = f"🔻 <b>아래:</b> {below_user['nickname']} <span style='color:#00ff88;'>({simulated_total_coins - below_user['coins']:,} C 제침)</span>" if below_str else "🛡️ <b>최하위 라이벌 없음</b>"
+        below_str = f"🔻 <b>아래:</b> {below_user['nickname']} <span style='color:#00ff88;'>({simulated_total_coins - below_user['coins']:,} C 제침)</span>" if below_user else "🛡️ <b>최하위 라이벌 없음</b>"
 
         col_card1, col_card2 = st.columns(2)
         with col_card1:
@@ -527,6 +528,7 @@ def show_game_2():
             _parse_news_item(get_game_news_selection("game_2"))
         ]
 
+    # 룰렛에서 기사를 선택하지 않았으면 룰렛 전용 화면을 출력
     if "selected_news_game_2" not in st.session_state:
         selected_idx = render_news_slot(st.session_state.candidates_game_2)
         if selected_idx is None:
@@ -538,7 +540,7 @@ def show_game_2():
     if not title:
         return
 
-    # [3단계] HIGH / LOW 예측 선택 (룰렛에서 선택 완료 시 즉시 진입)
+    # [3단계] HIGH / LOW 예측 선택 (룰렛 완료 직후 곧바로 진행)
     if "game_2_target_num" not in st.session_state:
         st.session_state.game_2_target_num = random.randint(0, 100)
 
@@ -607,11 +609,11 @@ def show_game_2():
             user_row_idx = None
             user_info = None
 
-            for idx, user_row in enumerate(users_data):
-                sid = str(user_row.get('학번', '')).strip().replace('.0', '')
+            for idx, u in enumerate(users_data):
+                sid = str(u.get('학번', '')).strip().replace('.0', '')
                 if sid == current_sid:
                     user_row_idx = idx + 2
-                    user_info = user_row
+                    user_info = u
                     break
 
             current_coins = int(user_info.get('코인', 0)) if user_info else 0
