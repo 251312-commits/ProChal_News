@@ -17,7 +17,7 @@ img { display:block; pointer-events:none; user-select:none; }
   width:min(100%,560px); height:100vh; height:100dvh;
   margin:0 auto; overflow:hidden;
   display:grid;
-  grid-template-rows:minmax(38px,6%) minmax(103px,20%) minmax(63px,12%) minmax(0,1fr) minmax(53px,10%);
+  grid-template-rows:minmax(38px,6%) minmax(103px,18%) minmax(63px,12%) minmax(0,1fr) minmax(53px,10%);
   row-gap:clamp(2px,.55dvh,7px);
   padding:max(6px,env(safe-area-inset-top)) max(9px,env(safe-area-inset-right))
     max(10px,env(safe-area-inset-bottom)) max(9px,env(safe-area-inset-left));
@@ -194,7 +194,7 @@ h1 {
 }
 @media (max-height:680px) and (orientation:portrait) {
   .prediction {
-    grid-template-rows:minmax(36px,6%) minmax(100px,20%) minmax(58px,12%) minmax(0,1fr) minmax(47px,10%);
+    grid-template-rows:minmax(36px,6%) minmax(100px,18%) minmax(58px,12%) minmax(0,1fr) minmax(47px,10%);
     row-gap:2px;
   }
   .hero { gap:0; }
