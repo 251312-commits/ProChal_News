@@ -8,7 +8,7 @@ from modules.db_handler import init_gspread, init_news_sheet
 from modules.ui_components import change_page
 from games.result_reveal import show_summary_before_score
 from games.common import get_game_news_selection
-from games.news_roulette2 import render_news_slot  # 💡 news_roulette2.py 매칭 완료
+from games.news_roulette2 import render_news_slot  # 룰렛 모듈 불러오기
 
 ws = init_gspread()
 ws_news = init_news_sheet()
@@ -460,7 +460,7 @@ def show_game_2():
         below_user = sim_sorted[sim_me_idx + 1] if sim_me_idx is not None and sim_me_idx < len(sim_sorted) - 1 else None
 
         above_str = f"🔺 <b>위:</b> {above_user['nickname']} <span style='color:#ff9999;'>({above_user['coins'] - simulated_total_coins:,} C 부족)</span>" if above_user else "👑 <b>예상 랭킹 1위 달성!</b>"
-        below_str = f"🔻 <b>아래:</b> {below_user['nickname']} <span style='color:#00ff88;'>({simulated_total_coins - below_user['coins']:,} C 제침)</span>" if below_user else "🛡️ <b>최하위 라이벌 없음</b>"
+        below_str = f"🔻 <b>아래:</b> {below_user['nickname']} <span style='color:#00ff88;'>({simulated_total_coins - below_user['coins']:,} C 제침)</span>" if below_str else "🛡️ <b>최하위 라이벌 없음</b>"
 
         col_card1, col_card2 = st.columns(2)
         with col_card1:
@@ -504,7 +504,7 @@ def show_game_2():
 
         return
 
-    # [2단계] 뉴스 룰렛 렌더링 및 선택
+    # [2단계] 뉴스 슬롯 룰렛으로 기사 선택 (단일 선택 방식)
     if "candidates_game_2" not in st.session_state:
         st.session_state.candidates_game_2 = [
             get_game_news_selection("game_2"),
@@ -519,31 +519,37 @@ def show_game_2():
         st.session_state.selected_news_game_2 = st.session_state.candidates_game_2[selected_idx]
         st.rerun()
 
-    title, article_text, url = st.session_state.selected_news_game_2
+    # 안전하게 기사 정보 가공 (언패킹 에러 완전 방지)
+    chosen_news = st.session_state.selected_news_game_2
+    if isinstance(chosen_news, (tuple, list)):
+        title = chosen_news[0] if len(chosen_news) > 0 else ""
+        article_text = chosen_news[1] if len(chosen_news) > 1 else ""
+        url = chosen_news[2] if len(chosen_news) > 2 else ""
+    elif isinstance(chosen_news, dict):
+        title = chosen_news.get("title", "")
+        article_text = chosen_news.get("article", "")
+        url = chosen_news.get("url", "")
+    else:
+        title = str(chosen_news)
+        article_text = ""
+        url = ""
+
     if not title:
         return
 
-    # [3단계] '다음으로' 버튼 클릭 전
+    # [3단계] 임의의 기준 점수 생성 및 HIGH / LOW 예측
     if "game_2_target_num" not in st.session_state:
-        st.markdown("---")
-        st.markdown("### 📰 뉴스 기사 확인")
-        st.markdown(f"#### **제목: {title}**")
-        with st.expander("📄 뉴스 본문 전체보기", expanded=True):
-            st.write(article_text)
+        st.session_state.game_2_target_num = random.randint(0, 100)
 
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("▶️ 다음으로 (기준 점수 뽑기)", use_container_width=True):
-            st.session_state.game_2_target_num = random.randint(0, 100)
-            st.rerun()
-        return
-
-    # [4단계] 임의의 숫자 제시 및 HIGH / LOW 선택 UI
     target_num = st.session_state.game_2_target_num
 
     if "game_2_user_choice" not in st.session_state:
         st.markdown("---")
         st.markdown("### 🎯 HIGH / LOW 예측 선택")
-        st.info(f"📌 기사 제목: **{title}**")
+        st.info(f"📌 선택된 기사 제목: **{title}**")
+
+        with st.expander("📄 선택한 뉴스 본문 보기", expanded=False):
+            st.write(article_text)
 
         st.markdown(
             f"""
@@ -570,7 +576,7 @@ def show_game_2():
 
         return
 
-    # [5단계] AI 측정 및 결과 판정
+    # [4단계] AI 측정 및 결과 판정
     bet_coin = st.session_state.game_2_bet
     user_choice = st.session_state.game_2_user_choice
 
@@ -636,7 +642,7 @@ def show_game_2():
                 "new_streak": new_streak
             }
 
-    # [6단계] 최종 결과 출력
+    # [5단계] 최종 결과 출력
     res = st.session_state.game_2_result
     show_summary_before_score(
         res.get("summary", ""), "game_2_summary_revealed",
@@ -644,7 +650,7 @@ def show_game_2():
         details=res.get("score_details"),
     )
     st.markdown("---")
-    st.markdown("### 🏆 6단계: 최종 결과")
+    st.markdown("### 🏆 최종 결과")
 
     if res["is_win"]:
         st.balloons()
