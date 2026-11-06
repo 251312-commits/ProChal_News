@@ -3,6 +3,7 @@
 import asyncio
 from decimal import Decimal, ROUND_HALF_UP
 import html
+import math
 import random
 
 import streamlit as st
@@ -16,6 +17,8 @@ from views.ranking import fetch_ranking_data
 
 GAME_5_WIN_MULTIPLIER = 5.0
 GAME_5_MIN_BET = 1000
+GAME_5_SCORE_MAX = 99.99
+GAME_5_MAX_RANGE_WIDTH = 10.0
 
 ws = init_gspread()
 ws_news = init_news_sheet()
@@ -73,9 +76,17 @@ def _calculate_score(article: dict) -> float:
         raise ValueError("뉴스 본문 요약 결과가 비어 있습니다.")
     score_details = similarity_check(summary_text, article["title"])
     score = score_details.get("score")
-    if not isinstance(score, (int, float)) or isinstance(score, bool):
+    if (
+        not isinstance(score, (int, float))
+        or isinstance(score, bool)
+        or not math.isfinite(float(score))
+    ):
         raise ValueError("뉴스 일치율 결과가 올바른 숫자가 아닙니다.")
-    return float(score)
+    normalized_score = Decimal(str(score)).quantize(
+        Decimal("0.01"),
+        rounding=ROUND_HALF_UP,
+    )
+    return max(0.0, min(float(normalized_score), GAME_5_SCORE_MAX))
 
 
 def _build_exclusive_range(candidates: list[dict], answer_index: int) -> tuple[float, float]:
@@ -95,9 +106,12 @@ def _build_exclusive_range(candidates: list[dict], answer_index: int) -> tuple[f
 
     # Keep a generous margin from the neighboring score without falling back
     # to the impractically wide 0~100% range at the ends of the scale.
-    half_width = nearest_gap * (2 / 3)
+    half_width = min(
+        nearest_gap * (2 / 3),
+        GAME_5_MAX_RANGE_WIDTH / 2,
+    )
     lower = max(0.0, answer_score - half_width)
-    upper = min(100.0, answer_score + half_width)
+    upper = min(GAME_5_SCORE_MAX, answer_score + half_width)
     quantizer = Decimal("0.01")
     lower = float(Decimal(str(lower)).quantize(quantizer, rounding=ROUND_HALF_UP))
     upper = float(Decimal(str(upper)).quantize(quantizer, rounding=ROUND_HALF_UP))
@@ -111,6 +125,7 @@ def _build_exclusive_range(candidates: list[dict], answer_index: int) -> tuple[f
     ]
     lower = max(lower_candidates)
     upper = min(upper_candidates)
+    upper = min(upper, lower + GAME_5_MAX_RANGE_WIDTH)
     if lower > answer_score or answer_score > upper:
         raise ValueError("후보 뉴스의 일치율로 정답 구간을 만들 수 없습니다.")
     return lower, upper
@@ -220,8 +235,24 @@ def show_game_5():
     candidates = st.session_state.game_5_candidates
     target_range = st.session_state.game_5_target_range
     st.info(
-        f"🎯 정답 일치율 구간: **{_format_score_range(target_range)}**\n\n"
         "아래 뉴스 중 이 구간에 해당하는 뉴스 하나를 선택하세요."
+    )
+    st.markdown(
+        f"""
+        <div style="background:linear-gradient(135deg, #260044, #110022);
+                    border:3px solid #ff00ff; border-radius:14px;
+                    box-shadow:0 0 18px rgba(255,0,255,.65);
+                    padding:18px 16px; margin:12px 0 24px; text-align:center;">
+            <div style="color:#ffd700; font-size:1.15rem; font-weight:800;">
+                🎯 정답 일치율 구간
+            </div>
+            <div style="color:#ffffff; font-size:2.25rem; font-weight:900;
+                        letter-spacing:1px; margin-top:4px;">
+                {_format_score_range(target_range)}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
     for index, article in enumerate(candidates):
@@ -254,12 +285,7 @@ def show_game_5():
     if "game_5_result" not in st.session_state:
         selected_index = st.session_state.game_5_selected_index
         selected_article = candidates[selected_index]
-        with st.spinner("🤖 선택한 뉴스의 일치율을 분석 중입니다..."):
-            try:
-                actual_score = _calculate_score(selected_article)
-            except (RuntimeError, ValueError, TypeError) as exc:
-                st.error(f"일치율을 계산하지 못했습니다: {exc}")
-                return
+        actual_score = selected_article["score"]
 
         is_win = target_range[0] <= actual_score <= target_range[1]
         bet_coin = int(st.session_state.game_5_bet)
