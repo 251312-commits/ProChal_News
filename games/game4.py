@@ -7,12 +7,10 @@ import random
 
 import streamlit as st
 
-from games.shared import (
-    check_user_coins_or_pop_bank,
-    get_game_news_selection,
-    render_betting_ui,
-    similarity_analysis_loading,
-)
+from games.shared.betting import check_user_coins_or_pop_bank
+from games.shared.news_flow import get_game_news_selection
+from games.shared.betting import render_betting_ui
+from games.shared.loading import similarity_analysis_loading
 from modules.db_handler import init_gspread
 from modules.news_ai import similarity_check, summary
 from modules.ui_components import change_page
