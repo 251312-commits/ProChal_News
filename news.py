@@ -11,7 +11,6 @@ from views.login import show_login_page
 from views.main import show_main_page
 from views.ranking import show_ranking
 from views.bank import show_bank
-from modules.runtime_diagnostics import show_runtime_identity
 
 from games.game1.game1 import show_game_1, show_game_1_tutorial
 from games.game2 import show_game_2
@@ -22,7 +21,6 @@ from games.game5 import show_game_5_tutorial
 
 ws = init_gspread()
 ws_news = init_news_sheet()
-show_runtime_identity()
 
 # ==========================================
 # 4. Streamlit 앱 라우팅 및 상태 관리
