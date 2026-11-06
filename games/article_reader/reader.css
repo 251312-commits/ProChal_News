@@ -75,16 +75,7 @@ img { display: block; max-width: 100%; }
   overflow-wrap: anywhere;
 }
 .hero { width: 100%; aspect-ratio: 3.23; max-height: 15vh; border-radius: 9px; overflow: hidden; }
-.illustration { width: 100%; height: 100%; object-fit: cover; }
-.edition {
-  height: 100%; padding: 0 9%; display: flex; align-items: center; justify-content: space-between;
-  border: 1px solid #87539d; border-radius: inherit; background:
-    linear-gradient(105deg, #250d46ee, #421263a8 56%, #28113db5),
-    var(--background) center 66% / cover;
-}
-.edition small { display: block; color: #ffe1a5; font-size: .62rem; font-weight: 750; letter-spacing: .22em; }
-.edition span { display: block; margin-top: .18em; font-size: clamp(1.15rem, 4vw, 1.7rem); font-weight: 750; }
-.edition img { height: 83%; width: 38%; object-fit: contain; }
+.hero img { width: 100%; height: 100%; object-fit: cover; }
 h1 { margin: .42em 0 .23em; font-size: clamp(1.16rem, 4.55vw, 1.65rem); line-height: 1.27; letter-spacing: -.035em; word-break: keep-all; }
 .byline { display: flex; align-items: baseline; flex-wrap: wrap; gap: .18em .65em; color: #ddcce6; font-size: .78rem; }
 .byline a { text-underline-offset: .18em; }

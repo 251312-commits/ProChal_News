@@ -1,7 +1,7 @@
 import streamlit as st
 from newspaper import Article
 import random
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
@@ -53,13 +53,37 @@ def get_clean_title(article_obj, domain: str) -> str:
             title = title[:-len(suffix)].strip()
     return title
 
-def bring_article(url: str):
+def _article_image_url(article_obj, url: str) -> str:
+    metadata = article_obj.meta_data
+    og = metadata.get('og') if isinstance(metadata, dict) else None
+    image = og.get('image') if isinstance(og, dict) else None
+    # newspaper3k nests the original URL under 'identifier' when og:image has subproperties.
+    if isinstance(image, dict):
+        candidates = (image.get('secure_url'), image.get('identifier'), image.get('url'))
+    else:
+        candidates = (image,)
+    for candidate in (*candidates, article_obj.top_image):
+        if not isinstance(candidate, str) or not candidate.strip():
+            continue
+        try:
+            image_url = urljoin(url, candidate.strip())
+            parsed = urlparse(image_url)
+            if parsed.scheme in ('http', 'https') and parsed.hostname:
+                return image_url
+        except ValueError:
+            continue
+    return ''
+
+
+def bring_article(url: str, *, include_image=False):
     article_obj = Article(url, language='ko')
     article_obj.download()
     article_obj.parse()
     domain = urlparse(url).netloc
     title = get_clean_title(article_obj, domain)
     clean_article = clean_common_text(article_obj.text)
+    if include_image:
+        return title, clean_article, _article_image_url(article_obj, url)
     return title, clean_article
     
 async def summary(article):

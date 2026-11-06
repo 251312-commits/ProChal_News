@@ -56,14 +56,18 @@ def _get_news_candidates(candidates_key):
     return st.session_state[candidates_key]
 
 
-def _open_chosen_article(item, news_key, candidates_key):
+def _open_chosen_article(item, news_key, candidates_key, *, include_image=False):
     new_count = item['count'] + 1
     ws_news.update_cell(item['row_idx'], 2, new_count)
 
+    image_url = ''
     with st.spinner("선택 기사 읽어오는 중..."):
         try:
-            title, clean_text = bring_article(item['url'])
-        except:
+            if include_image:
+                title, clean_text, image_url = bring_article(item['url'], include_image=True)
+            else:
+                title, clean_text = bring_article(item['url'])
+        except Exception:
             title = item['title']
             clean_text = "본문 내용을 가져오는 데 실패했습니다."
 
@@ -72,6 +76,8 @@ def _open_chosen_article(item, news_key, candidates_key):
         'text': clean_text,
         'url': item['url']
     }
+    if include_image:
+        st.session_state[news_key]['image_url'] = image_url
     del st.session_state[candidates_key]
     st.rerun()
 
@@ -92,7 +98,7 @@ def get_game_news_selection(game_id: str, *, win_multiplier=None):
             if candidates:
                 index = render_news_slot(candidates)
                 if index is not None:
-                    _open_chosen_article(candidates[index], news_key, candidates_key)
+                    _open_chosen_article(candidates[index], news_key, candidates_key, include_image=True)
             return None, None, None
 
         reward = None
