@@ -5,9 +5,9 @@ from pathlib import Path
 import streamlit as st
 
 from modules.ui_components import load_local_image_as_base64
-from .bank_draw_icons import icon
-from .bank_forms import INTEREST_RATE, MAX_LOAN, UNIT, _amount_selector, _save_balances
-from .bank_scene import BANK_ART, asset_uri
+from .draw_icons import icon
+from .forms import INTEREST_RATE, MAX_LOAN, UNIT, _amount_selector, _save_balances
+from .scene import BANK_ART, asset_uri
 
 
 BORROW_SUCCESS_KEY = "bank_borrow_success"

@@ -2,10 +2,10 @@ name: Bank animation regression
 on:
   pull_request:
     paths:
-      - "views/bank.py"
-      - "views/bank_draw.py"
-      - "views/bank_draw.css"
-      - "views/bank_forms.py"
+      - "views/bank/bank.py"
+      - "views/bank/draw.py"
+      - "views/bank/draw.css"
+      - "views/bank/forms.py"
       - "tests/test_bank_animation.py"
       - ".github/workflows/bank-animation.yml"
   workflow_dispatch:
@@ -21,5 +21,5 @@ jobs:
           python-version: '3.12'
       - name: Parse edited views and check the bank transaction animation
         run: |
-          python -m compileall -q views/bank.py views/bank_draw.py views/bank_forms.py
+          python -m compileall -q views/bank/bank.py views/bank/draw.py views/bank/forms.py
           python -m unittest discover -s tests -p test_bank_animation.py -v

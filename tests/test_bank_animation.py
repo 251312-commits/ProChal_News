@@ -36,7 +36,7 @@ def function_from(path, name, namespace):
 class BankAnimationTests(unittest.TestCase):
     def test_letter_only_opens_for_borrowing(self):
         session = State(page="bank")
-        navigate = function_from("views/bank.py", "_navigate",
+        navigate = function_from("views/bank/bank.py", "_navigate",
                                  {"st": SimpleNamespace(session_state=session)})
         navigate("pay_loan")
         self.assertEqual(session.page, "pay_loan")
@@ -58,7 +58,7 @@ class BankAnimationTests(unittest.TestCase):
         user = {"학번": 1234, "코인": "1,250", "대출금": ""}
         session = State(current_user="01234", current_user_data=user)
         st = Mock(session_state=session)
-        save = function_from("views/bank_forms.py", "_save_balances", {
+        save = function_from("views/bank/forms.py", "_save_balances", {
             "st": st, "init_gspread": lambda: worksheet,
             "save_bank_balances": persist, "BankBalancesChanged": Changed,
             "account_amount": account_amount,
@@ -87,7 +87,7 @@ class BankAnimationTests(unittest.TestCase):
         st.toast.assert_called_with("saved")
 
     def test_borrow_submit_sets_the_animation_key(self):
-        source = (ROOT / "views/bank_draw.py").read_text(encoding="utf-8")
+        source = (ROOT / "views/bank/draw.py").read_text(encoding="utf-8")
         self.assertIn('BORROW_SUCCESS_KEY = "bank_borrow_success"', source)
         self.assertIn('st.session_state.pop(BORROW_SUCCESS_KEY, False)', source)
         self.assertIn('success_state_key=BORROW_SUCCESS_KEY', source)
@@ -95,14 +95,14 @@ class BankAnimationTests(unittest.TestCase):
         self.assertNotIn('bank-borrow-stamp-object', source)
 
     def test_final_repayment_can_clear_a_subunit_balance(self):
-        limit = function_from("views/bank_repay.py", "_repayment_limit", {"UNIT": 1_000})
-        select = function_from("views/bank_repay.py", "_selected_repayment", {"UNIT": 1_000})
+        limit = function_from("views/bank/repay.py", "_repayment_limit", {"UNIT": 1_000})
+        select = function_from("views/bank/repay.py", "_selected_repayment", {"UNIT": 1_000})
         self.assertEqual(select(limit(900, 650), 1_000), 650)
         self.assertEqual(select(limit(600, 650), 1_000), 0)
         self.assertEqual(select(limit(1_300, 2_000), 2_000), 1_000)
 
     def test_existing_button_stamp_moves_and_ink_is_below(self):
-        css = (ROOT / "views/bank_draw.css").read_text(encoding="utf-8")
+        css = (ROOT / "views/bank/draw.css").read_text(encoding="utf-8")
         self.assertIn(".st-key-bank-borrow-submit::after", css)
         self.assertIn("bank-borrow-button-stamp-press", css)
         self.assertIn("bank-borrow-button-ink", css)
