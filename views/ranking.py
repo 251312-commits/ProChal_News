@@ -1,6 +1,6 @@
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh  # 1. 모듈 import 추가
-from games.betting_math import find_player, rank_by_coins, ranking_entries
+from games.shared.betting import find_player, rank_by_coins, ranking_entries
 from modules.db_handler import init_gspread
 from modules.ui_components import change_page
 from views.ranking_display import select_ranking_rows
