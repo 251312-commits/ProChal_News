@@ -61,7 +61,7 @@ class DirectGameOneUrlTests(unittest.TestCase):
         })
         modules.start()
         self.addCleanup(modules.stop)
-        self.render = run_module("games.news_roulette")["render_news_slot"]
+        self.render = run_module("games.shared.roulette")["render_news_slot"]
 
     def _round(self):
         candidates = self.st.session_state["candidates_game_1"]

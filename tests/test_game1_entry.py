@@ -7,8 +7,14 @@ from unittest.mock import MagicMock, patch
 class GameOneEntryTests(unittest.TestCase):
     def test_guide_only_navigates_when_a_button_is_pressed(self):
         st, ui = MagicMock(), MagicMock()
-        with patch.dict(sys.modules, {"streamlit": st, "modules.ui_components": ui}):
-            show_guide = run_module("games.game1_tutorial")["show_game_1_tutorial"]
+        with patch.dict(sys.modules, {
+            "streamlit": st, "streamlit.components": st.components,
+            "streamlit.components.v1": st.components.v1,
+            "modules.ui_components": ui, "modules.news_ai": MagicMock(),
+            "modules.db_handler": MagicMock(), "games.common": MagicMock(),
+            "games.result_reveal": MagicMock(), "views.ranking": MagicMock(),
+        }):
+            show_guide = run_module("games.game1")["show_game_1_tutorial"]
             for action, destination in (
                 (None, None), ("메인으로", "main"), ("건너뛰기", "game_1"), ("베팅하러 가기", "game_1"),
             ):

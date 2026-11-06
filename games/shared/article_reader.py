@@ -1,3 +1,4 @@
+"""Reusable full-screen article reader with a server-validated round event."""
 from pathlib import Path
 from urllib.parse import urlsplit
 from uuid import uuid4
@@ -8,9 +9,9 @@ import streamlit.components.v1 as components
 from modules.ui_components import load_local_image_as_base64
 
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(__file__).resolve().parents[1]
 ASSETS = HERE.parent / "assets"
-_reader = components.declare_component("game1_article_reader", path=str(HERE / "article_reader"))
+_reader = components.declare_component("shared_article_reader", path=str(HERE / "article_reader"))
 
 ART = {
     "background": "bet_background.jpg",
@@ -36,31 +37,32 @@ def _article_source(raw_url):
     return "", ""
 
 
-def render_game1_article(chosen, *, reward):
+def render_article_reader(chosen, *, game_id="game_1", reward=None):
     """Render the current article and consume at most one navigation event."""
     state = st.session_state
-    if "game1_reader_round" not in state:
-        state.game1_reader_round = uuid4().hex
-    round_id = state.game1_reader_round
+    round_key = f"{game_id}_reader_round"
+    if round_key not in state:
+        state[round_key] = uuid4().hex
+    round_id = state[round_key]
     url, source = _article_source(chosen.get("url"))
     user = state.get("current_user_data") or {}
 
-    with st.container(key="game1-article-reader", gap=None):
+    with st.container(key="shared-article-reader", gap=None):
         st.html("""
         <style>
-        .st-key-game1-article-reader {
+        .st-key-shared-article-reader {
           position:fixed; inset:0; z-index:1000; width:100%; height:100vh;
           height:100dvh; overflow:hidden; background:#170824;
         }
-        .st-key-game1-article-reader iframe {
+        .st-key-shared-article-reader iframe {
           display:block; border:0; width:100%; height:100vh !important; height:100dvh !important;
         }
-        [data-testid="stApp"]:has(.st-key-game1-article-reader) [data-testid="stHeader"] {display:none;}
-        [data-testid="stMain"]:has(.st-key-game1-article-reader) {overflow:hidden;}
+        [data-testid="stApp"]:has(.st-key-shared-article-reader) [data-testid="stHeader"] {display:none;}
+        [data-testid="stMain"]:has(.st-key-shared-article-reader) {overflow:hidden;}
         </style>
         """)
         event = _reader(
-            key=f"game1-reader-{round_id}",
+            key=f"{game_id}-reader-{round_id}",
             round_id=round_id,
             title=chosen.get("title") or "제목 없는 기사",
             text=chosen.get("text") or "본문 내용을 가져올 수 없습니다.",
@@ -76,6 +78,11 @@ def render_game1_article(chosen, *, reward):
     if isinstance(event, dict) and event.get("round_id") == round_id:
         action = event.get("action")
         if action in ("predict", "bank"):
-            del state["game1_reader_round"]
+            del state[round_key]
             return action
     return None
+
+
+def render_game1_article(chosen, *, reward):
+    """Legacy entrypoint retained for imports of games.game1_article_ui."""
+    return render_article_reader(chosen, game_id="game_1", reward=reward)

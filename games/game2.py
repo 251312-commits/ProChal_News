@@ -7,39 +7,10 @@ from modules.news_ai import summary, similarity_check
 from modules.db_handler import init_gspread
 from modules.ui_components import change_page
 from games.result_reveal import show_summary_before_score
-from games.betting_math import project_standings
-from games.common import get_game_news_selection, similarity_analysis_loading
-from games.news_roulette2 import render_news_slot  # 룰렛 모듈 불러오기
+from games.common import get_game_news_selection, similarity_analysis_loading, render_betting_ui, check_user_coins_or_pop_bank
 from views.ranking import fetch_ranking_data
 
 ws = init_gspread()
-
-def _parse_news_item(raw_news):
-    """뉴스 데이터(튜플/리스트/딕셔너리)에서 제목, 본문, URL을 정확히 파싱하여 (title, article, url) 튜플로 반환"""
-    if isinstance(raw_news, (tuple, list)):
-        t = str(raw_news[0]) if len(raw_news) > 0 and raw_news[0] else ""
-        a = str(raw_news[1]) if len(raw_news) > 1 and raw_news[1] else ""
-        u = str(raw_news[2]) if len(raw_news) > 2 and raw_news[2] else ""
-        if not a and t:
-            a = t
-        return (t, a, u)
-    elif isinstance(raw_news, dict):
-        t = str(raw_news.get("title") or raw_news.get("제목") or "")
-        a = str(
-            raw_news.get("article") or 
-            raw_news.get("content") or 
-            raw_news.get("body") or 
-            raw_news.get("본문") or 
-            raw_news.get("text") or 
-            ""
-        )
-        u = str(raw_news.get("url") or raw_news.get("link") or "")
-        if not a and t:
-            a = t
-        return (t, a, u)
-    
-    val_str = str(raw_news) if raw_news else ""
-    return (val_str, val_str, "")
 
 def show_game_2():
     # [0단계] 튜토리얼 화면 (최초 1회 노출)
@@ -196,353 +167,49 @@ def show_game_2():
 
     st.title("🎮 게임 2: 뉴스 유사도 HIGH / LOW 게임")
     
-    # [1단계] 베팅 금액 및 랭킹 연출 화면
+    # [1단계] Shared wager screen: game 2 awards +1x net gain.
     if "game_2_bet" not in st.session_state:
-        current_coins = int(st.session_state.current_user_data.get('코인', 0))
-        current_sid = str(st.session_state.get('current_user', '')).strip().replace('.0', '')
-        min_bet = 1000
-        
-        if current_coins < min_bet:
-            st.error(f"⚠️ 베팅을 위한 코인이 부족합니다! (최소 베팅금: {min_bet:,} C / 보유: {current_coins:,} C)")
-            if st.button("⬅️ 메인으로 돌아가기", use_container_width=True):
-                change_page('main')
+        if not check_user_coins_or_pop_bank():
             return
-
+        user = st.session_state.get("current_user_data") or {}
         try:
             users_data = fetch_ranking_data()
         except Exception:
-            users_data = []
-
-        default_bet = max(min_bet, ((current_coins // 2) // 50) * 50)
-        if "bet_slider_key_2" not in st.session_state:
-            st.session_state["bet_slider_key_2"] = default_bet
-
-        bet_val = st.slider(
-            "💰 베팅할 금액을 선택하세요",
-            min_value=min_bet,
-            max_value=current_coins,
-            step=50,
-            key="bet_slider_key_2"
+            users_data = None
+        confirmed_bet = render_betting_ui(
+            current_coins=int(user.get("코인", 0)),
+            users_data=users_data,
+            current_sid=str(st.session_state.get("current_user", "")),
+            current_nickname=str(user.get("아이디", "")),
+            payout_multiplier=1.0,
+            title="게임 2: 뉴스 유사도 HIGH / LOW",
+            state_key="game_2",
         )
-
-        bet_ratio = (bet_val - min_bet) / max(1, (current_coins - min_bet)) if current_coins > min_bet else 1.0
-        is_all_in = (bet_val == current_coins)
-
-        pulse_speed = max(0.35, round(1.2 - bet_ratio * 0.85, 2))
-        heartbeat_interval = int(pulse_speed * 1000)
-        sound_vol = round(0.45 + bet_ratio * 1.15, 2)
-
-        glow_size = int(14 + bet_ratio * 46)
-        glow_opacity = round(0.4 + bet_ratio * 0.6, 2)
-        
-        if bet_ratio < 0.4:
-            primary_color = "#00e5ff"
-            border_color = "#0088ff"
-            card_bg_glow = f"rgba(0, 229, 255, {glow_opacity})"
-        elif bet_ratio < 0.8:
-            primary_color = "#00ff88"
-            border_color = "#00cc66"
-            card_bg_glow = f"rgba(0, 255, 136, {glow_opacity})"
-        else:
-            primary_color = "#ffd700"
-            border_color = "#ff3300"
-            card_bg_glow = f"rgba(255, 215, 0, {glow_opacity})"
-
-        allin_class = "allin-multi-glow" if is_all_in else ""
-
-        st.markdown(
-            f"""
-            <style>
-            .bet-card-container {{
-                background: linear-gradient(135deg, #001122 0%, #001a33 50%, #000d1a 100%);
-                border: 2px solid {border_color};
-                border-radius: 20px;
-                padding: 20px;
-                text-align: center;
-                box-shadow: 0 0 {glow_size}px {card_bg_glow};
-                margin-bottom: 15px;
-                transition: all 0.2s ease;
-            }}
-            .coin-pile-wrapper {{
-                display: flex;
-                justify-content: center;
-                align-items: flex-end;
-                gap: 12px;
-                min-height: 150px;
-                padding: 22px 10px 15px 10px;
-                background: radial-gradient(ellipse at bottom, rgba(0, 229, 255, {0.12 + bet_ratio * 0.38}) 0%, rgba(0, 10, 20, 0.85) 75%);
-                border-radius: 16px;
-                border: 1.5px dashed {border_color};
-                box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.9), 0 0 {glow_size}px {card_bg_glow};
-                margin: 15px 0;
-                transition: all 0.2s ease;
-                animation: pulseScale {pulse_speed}s infinite ease-in-out;
-            }}
-            .payout-card {{
-                background: linear-gradient(90deg, rgba(0,229,255,0.2) 0%, rgba(0,255,136,0.2) 100%);
-                border: 2px solid {border_color};
-                border-radius: 14px;
-                padding: 12px;
-                text-align: center;
-                box-shadow: 0 0 {glow_size}px {card_bg_glow};
-                height: 100%;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                transition: all 0.2s ease;
-                animation: pulseScale {pulse_speed}s infinite ease-in-out;
-            }}
-
-            @keyframes pulseScale {{
-                0% {{ transform: scale(1); }}
-                50% {{ transform: scale({1.0 + bet_ratio * 0.045:.3f}); }}
-                100% {{ transform: scale(1); }}
-            }}
-
-            .allin-multi-glow {{
-                animation: multiNeonCycle 0.6s infinite linear, pulseScale {pulse_speed}s infinite ease-in-out !important;
-            }}
-            @keyframes multiNeonCycle {{
-                0% {{ border-color: #00e5ff; box-shadow: 0 0 40px #00e5ff, inset 0 0 15px #00e5ff; }}
-                25% {{ border-color: #00ff88; box-shadow: 0 0 45px #00ff88, inset 0 0 15px #00ff88; }}
-                50% {{ border-color: #ffd700; box-shadow: 0 0 50px #ffd700, inset 0 0 20px #ffd700; }}
-                75% {{ border-color: #ff0055; box-shadow: 0 0 45px #ff0055, inset 0 0 15px #ff0055; }}
-                100% {{ border-color: #00e5ff; box-shadow: 0 0 40px #00e5ff, inset 0 0 15px #00e5ff; }}
-            }}
-
-            .bet-header-title {{
-                font-family: 'Press Start 2P', monospace;
-                font-size: 1.1rem;
-                color: #00e5ff;
-                text-shadow: 0 0 8px #0088ff, 0 0 15px #00ff88;
-                margin-bottom: 8px;
-            }}
-            .coin-stack-col {{ display: flex; flex-direction: column-reverse; align-items: center; }}
-            .gold-coin-item {{
-                width: 46px; height: 12px; border-radius: 50%;
-                background: linear-gradient(180deg, #FFE57F 0%, #FFC107 40%, #FF8F00 70%, #A76D00 100%);
-                border: 1px solid #FFF59D; box-shadow: 0 3px 0 #5D4037, inset 0 1px 2px rgba(255, 255, 255, 0.9);
-                margin-top: -6px;
-            }}
-            .gold-coin-item.top {{
-                background: radial-gradient(ellipse at 35% 35%, #FFFFFF 0%, #FFEE58 40%, #FFA000 85%);
-                border: 1.5px solid #FFFFFF; box-shadow: 0 3px 0 #5D4037, 0 0 12px rgba(255, 215, 0, 0.9);
-            }}
-            .payout-amount {{
-                font-size: 1.6rem; font-weight: 900; color: {primary_color}; text-shadow: 0 0 12px {primary_color};
-            }}
-            .rank-sim-card {{
-                background: linear-gradient(135deg, rgba(0, 20, 40, 0.9) 0%, rgba(0, 35, 60, 0.9) 100%);
-                border: 2px solid {border_color}; border-radius: 14px; padding: 12px 14px;
-                box-shadow: 0 0 {glow_size}px {card_bg_glow}; height: 100%;
-                display: flex; flex-direction: column; justify-content: space-between; transition: all 0.2s ease;
-            }}
-            .rank-up-badge {{ color: #00ff88; font-size: 1.05rem; font-weight: 900; text-shadow: 0 0 8px #00ff88; }}
-            .rival-row {{
-                font-size: 0.82rem; color: #ffffff; background: rgba(0, 0, 0, 0.4);
-                padding: 4px 8px; border-radius: 8px; margin-top: 4px; border-left: 3px solid #00e5ff;
-            }}
-            .target-num-card {{
-                background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 100%);
-                border: 3px solid #00e5ff; border-radius: 16px; padding: 20px;
-                text-align: center; box-shadow: 0 0 20px rgba(0, 229, 255, 0.5); margin: 20px 0;
-            }}
-            .target-digit {{
-                font-family: 'Press Start 2P', monospace, sans-serif;
-                font-size: 4rem; font-weight: 900; color: #00ff88;
-                text-shadow: 0 0 15px #00ff88, 0 0 25px #00e5ff;
-            }}
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
-
-        st.markdown(
-            f"""
-            <script>
-            (function() {{
-                if (window.heartbeatInterval) clearInterval(window.heartbeatInterval);
-                try {{
-                    const ctx = window.heartbeatAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
-                    window.heartbeatAudioCtx = ctx;
-                    const intervalMs = {heartbeat_interval};
-                    const vol = {sound_vol};
-                    function playBeat() {{
-                        if (ctx.state === 'suspended') ctx.resume();
-                        const now = ctx.currentTime;
-                        const osc1 = ctx.createOscillator();
-                        const gain1 = ctx.createGain();
-                        osc1.type = 'sine'; osc1.frequency.setValueAtTime(120, now);
-                        osc1.frequency.exponentialRampToValueAtTime(22, now + 0.18);
-                        gain1.gain.setValueAtTime(vol, now); gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-                        osc1.connect(gain1); gain1.connect(ctx.destination);
-                        osc1.start(now); osc1.stop(now + 0.18);
-
-                        const osc2 = ctx.createOscillator();
-                        const gain2 = ctx.createGain();
-                        osc2.type = 'sine'; osc2.frequency.setValueAtTime(95, now + 0.22);
-                        osc2.frequency.exponentialRampToValueAtTime(18, now + 0.42);
-                        gain2.gain.setValueAtTime(vol * 0.8, now + 0.22);
-                        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.42);
-                        osc2.connect(gain2); gain2.connect(ctx.destination);
-                        osc2.start(now + 0.22); osc2.stop(now + 0.42);
-                    }}
-                    window.heartbeatInterval = setInterval(playBeat, intervalMs);
-                    playBeat();
-                }} catch(e) {{}}
-            }})();
-            </script>
-            """,
-            unsafe_allow_html=True
-        )
-
-        if is_all_in:
-            st.markdown(
-                """
-                <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-                <script>
-                    if (typeof confetti === 'function') {
-                        confetti({
-                            particleCount: 120, spread: 125, origin: { y: 0.6 },
-                            colors: ['#00e5ff', '#00ff88', '#ffd700', '#ffffff', '#ff0055']
-                        });
-                    }
-                </script>
-                """,
-                unsafe_allow_html=True
-            )
-
-        st.markdown(
-            f"""
-            <div class="bet-card-container {allin_class}">
-                <div class="bet-header-title">🎰 STEP 1: BETTING PLACE</div>
-                <div style="font-size: 1rem; color: #ffffff; font-weight: bold;">
-                    현재 보유 코인: <span style="color:#ffd700;">🪙 {current_coins:,} C</span>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-        total_coins = int(4 + bet_ratio * 36)
-        num_cols = min(5, max(1, (total_coins + 7) // 8))
-        weights = [1.0] if num_cols == 1 else [1.0, 1.0] if num_cols == 2 else [1.0, 2.2, 1.0] if num_cols == 3 else [1.0, 2.2, 2.2, 1.0] if num_cols == 4 else [1.0, 2.0, 3.5, 2.0, 1.0]
-        sum_w = sum(weights)
-        raw_heights = [int(round(total_coins * (w / sum_w))) for w in weights]
-        diff = total_coins - sum(raw_heights)
-        center_idx = num_cols // 2
-        indices_order = sorted(range(num_cols), key=lambda x: abs(x - center_idx))
-        for i in range(abs(diff)):
-            idx = indices_order[i % num_cols]
-            if diff > 0: raw_heights[idx] += 1
-            elif diff < 0 and raw_heights[idx] > 1: raw_heights[idx] -= 1
-
-        cols_html = ""
-        for c, col_h in enumerate(raw_heights):
-            coins_in_col_html = "".join([f'<div class="gold-coin-item{" top" if h == col_h - 1 else ""}"></div>' for h in range(col_h)])
-            cols_html += f'<div class="coin-stack-col">{coins_in_col_html}</div>'
-
-        st.markdown(
-            f"""
-            <div class="coin-pile-wrapper {allin_class}">
-                {cols_html}
-            </div>
-            <div style="text-align:center; color:#00e5ff; font-size:0.95rem; font-weight:800; margin-top:-5px; margin-bottom:15px;">
-                현재 선택 칩: {bet_val:,} C {"(🔥 ALL-IN!)" if is_all_in else ""}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-        max_reward = bet_val
-        user_data = st.session_state.current_user_data
-        curr_rank, sim_rank, projected = project_standings(
-            users_data, current_coins, current_sid, user_data.get("아이디"), max_reward,
-            current_loan=user_data.get("대출금"),
-        )
-
-        rank_display = "랭킹 데이터 없음"
-        above_str = below_str = ""
-        if sim_rank is not None:
-            climb = curr_rank - sim_rank
-            climb_text = f"▲ {climb}등 상승!" if climb else "순위 유지"
-            rank_display = (
-                f'{curr_rank}위 ➔ <span style="color:#00e5ff;">{sim_rank}위</span> '
-                f'<span class="rank-up-badge">({climb_text})</span>'
-            )
-            score = projected[sim_rank - 1]["coins"]
-            if sim_rank > 1:
-                above = projected[sim_rank - 2]
-                above_str = (
-                    f"🔺 <b>위:</b> {above['nickname']} "
-                    f"<span style='color:#ff9999;'>({above['coins'] - score:,} C 부족)</span>"
-                )
-            else:
-                above_str = "👑 <b>예상 랭킹 1위 달성!</b>"
-
-            if sim_rank < len(projected):
-                below = projected[sim_rank]
-                below_str = (
-                    f"🔻 <b>아래:</b> {below['nickname']} "
-                    f"<span style='color:#00ff88;'>({score - below['coins']:,} C 제침)</span>"
-                )
-            else:
-                below_str = "🛡️ <b>최하위 라이벌 없음</b>"
-
-        col_card1, col_card2 = st.columns(2)
-        with col_card1:
-            st.markdown(
-                f"""
-                <div class="payout-card {allin_class}">
-                    <div style="font-size:0.8rem; color:#ffffff; font-weight:bold;">✨ 적중 시 보상금</div>
-                    <div class="payout-amount">+{max_reward:,} C</div>
-                    <div style="font-size:0.75rem; color:#00ff88; margin-top:4px;">(배팅 코인 2배 환급 / 실익 1배)</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-        with col_card2:
-            st.markdown(
-                f"""
-                <div class="rank-sim-card {allin_class}">
-                    <div>
-                        <div style="font-size:0.78rem; color:#aaa; font-weight:bold;">🏆 승리 시 예상 랭킹</div>
-                        <div style="font-size:1.1rem; font-weight:900; color:#fff;">
-                            {rank_display}
-                        </div>
-                    </div>
-                    <div style="margin-top:6px;">
-                        <div class="rival-row">{above_str}</div>
-                        <div class="rival-row">{below_str}</div>
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-        st.markdown("<div style='margin-bottom: 15px;'></div>", unsafe_allow_html=True)
-
-        if st.button("🎲 베팅 확정 & 게임 시작", use_container_width=True):
-            st.session_state.game_2_bet = bet_val
+        if confirmed_bet is not None:
+            st.session_state.game_2_bet = confirmed_bet
             st.rerun()
-
         return
 
-    # [2단계] 뉴스 룰렛을 통해 뉴스 1건 추출 및 최종 확정
-    if "selected_news_game_2" not in st.session_state:
-        # 뉴스 1건을 새로 호출하여 룰렛 구성 요소로 전달
-        raw_news = get_game_news_selection("game_2")
-        selected_idx = render_news_slot([raw_news])
-        
-        if selected_idx is None:
-            return  # 룰렛 애니메이션 중이거나 선택 전
-            
-        st.session_state.selected_news_game_2 = _parse_news_item(raw_news)
-        st.rerun()
+    # Game 2's target-number card is intentionally game-specific.
+    st.markdown("""
+        <style>
+        .target-num-card {
+            background:linear-gradient(135deg,#0d1b2a,#1b263b);
+            border:3px solid #00e5ff;border-radius:16px;padding:20px;
+            text-align:center;box-shadow:0 0 20px rgba(0,229,255,.5);margin:20px 0;
+        }
+        .target-digit {
+            font-family:'Press Start 2P',monospace,sans-serif;
+            font-size:4rem;font-weight:900;color:#00ff88;
+            text-shadow:0 0 15px #00ff88,0 0 25px #00e5ff;
+        }
+        </style>
+    """, unsafe_allow_html=True)
 
-    # 이미 추출된 뉴스를 변수에 바인딩
-    title, article_text, url = st.session_state.selected_news_game_2
+    # [2단계] Reuse the roulette -> article reader flow, without a second slot.
+    title, article_text, url = get_game_news_selection(
+        "game_2", win_multiplier=1.0, immersive_reader=True
+    )
     if not title:
         return
 
@@ -689,7 +356,8 @@ def show_game_2():
         keys_to_clear = [
             "game_2_bet", "selected_news_game_2", "candidates_game_2", 
             "game_2_target_num", "game_2_user_choice", "game_2_result",
-            "game_2_summary_revealed", "game_2_slot_round"
+            "game_2_summary_revealed", "game_2_slot_round",
+            "read_done_game_2", "game_2_reader_round", "game_2_direct_url_error"
         ]
         for k in keys_to_clear:
             if k in st.session_state:

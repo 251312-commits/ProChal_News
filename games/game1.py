@@ -1,13 +1,15 @@
 import asyncio
 from pathlib import Path
+from uuid import uuid4
+
+import streamlit.components.v1 as components
 
 import streamlit as st
 from modules.news_ai import summary, similarity_check
 from modules.db_handler import init_gspread, init_news_sheet
-from modules.ui_components import change_page
+from modules.ui_components import change_page, load_local_image_as_base64
 from views.ranking import fetch_ranking_data
 from games.result_reveal import show_summary_before_score
-from games.game1_prediction_ui import render_game1_prediction_picker
 from games.common import get_game_news_selection, check_user_coins_or_pop_bank, render_betting_ui, similarity_analysis_loading
 
 ws = init_gspread()
@@ -44,6 +46,7 @@ def show_game_1():
             bg_image_path=str(Path(__file__).resolve().parents[1] / "assets" / "bet_background.jpg"),
             payout_multiplier=GAME_1_WIN_MULTIPLIER,
             title="title",  # 나중에 실제 게임 제목으로 교체
+            state_key="game_1",
         )
 
         if confirmed_bet is not None:
@@ -183,3 +186,146 @@ def show_game_1():
         if st.button("⬅️ 메인으로 돌아가기", use_container_width=True):
             reset_game_1_state()
             change_page('main')
+
+
+# ===== Game 1-only prediction screen =====
+_HERE = Path(__file__).resolve().parent
+_ASSETS = _HERE.parent / "assets"
+_SCREEN = components.declare_component(
+    "game1_prediction_screen", path=str(_HERE / "prediction_screen")
+)
+
+_ART = {
+    "background": "bet_background.jpg",
+    "header": "game1_prediction/pred_header.avif",
+    "news": "game1_prediction/pred_news.avif",
+    "tag": "game1_prediction/pred_tag.avif",
+    "frame": "game1_prediction/pred_frame.avif",
+    "reel": "game1_prediction/pred_reel.avif",
+    "podium": "bet_podium.png",
+}
+
+
+def _artwork() -> dict[str, str]:
+    """Use the same cached local asset loader as the news selection screen."""
+    return {
+        key: load_local_image_as_base64(str(_ASSETS / filename))
+        for key, filename in _ART.items()
+    }
+
+
+def _save_digits(values: object) -> bool:
+    """Validate data from the iframe before updating the existing session keys."""
+    if not isinstance(values, list) or len(values) != 2:
+        return False
+    if any(type(value) is not int or value < 0 or value > 9 for value in values):
+        return False
+
+    tens, ones = values
+    st.session_state.game1_pred_tens = tens
+    st.session_state.game1_pred_ones = ones
+    st.session_state.tens_val = tens
+    st.session_state.ones_val = ones
+    return True
+
+
+@st.fragment
+def render_game1_prediction_picker(article_title: str) -> None:
+    """Render the one-page UI. Confirm alone commits the prediction."""
+    state = st.session_state
+    if "game1_pred_tens" not in state:
+        state.game1_pred_tens = int(state.get("tens_val", 0)) % 10
+    if "game1_pred_ones" not in state:
+        state.game1_pred_ones = int(state.get("ones_val", 4)) % 10
+    if "game1_pred_round_id" not in state:
+        state.game1_pred_round_id = uuid4().hex
+
+    round_id = state.game1_pred_round_id
+    user = state.get("current_user_data") or {}
+
+    # Same full-viewport iframe shell already used in games/news_roulette.py.
+    with st.container(key="game1-prediction-screen", gap=None):
+        st.html("""
+        <style>
+        .st-key-game1-prediction-screen {
+          position:fixed !important; inset:0 !important; z-index:1000 !important;
+          width:100% !important; height:100vh !important; height:100dvh !important;
+          overflow:hidden !important; background:#170824;
+        }
+        .st-key-game1-prediction-screen iframe {
+          display:block !important; border:0 !important;
+          width:100% !important; height:100vh !important; height:100dvh !important;
+        }
+        [data-testid="stAppViewContainer"]:has(.st-key-game1-prediction-screen) [data-testid="stHeader"],
+        [data-testid="stApp"]:has(.st-key-game1-prediction-screen) [data-testid="stHeader"] {
+          display:none !important;
+        }
+        [data-testid="stMain"]:has(.st-key-game1-prediction-screen) {overflow:hidden !important;}
+        </style>
+        """)
+        event = _SCREEN(
+            key=f"game1-prediction-{round_id}",
+            round_id=round_id,
+            title=str(article_title or "선택된 뉴스가 없습니다"),
+            coins=int(user.get("코인", 0) or 0),
+            digits=[int(state.game1_pred_tens), int(state.game1_pred_ones)],
+            art=_artwork(),
+            default=None,
+        )
+
+    # Ignore stale or malformed messages (e.g. from an earlier round).
+    if not isinstance(event, dict) or event.get("round_id") != round_id:
+        return
+    action = event.get("action")
+    if action not in ("change", "confirm", "back", "bank"):
+        return
+    if not _save_digits(event.get("digits")):
+        return
+
+    if action == "confirm":
+        state.game_1_predicted_digits = (
+            int(state.game1_pred_tens) * 10 + int(state.game1_pred_ones)
+        )
+        state.pop("game1_pred_round_id", None)
+        st.rerun()
+    elif action == "back":
+        change_page("main")
+    elif action == "bank":
+        change_page("bank")
+    # 'change' is a lightweight synchronization event. Streamlit automatically
+    # rerenders the fragment; the iframe keeps the local digits while doing so.
+
+
+# ===== Game 1-only tutorial screen =====
+def show_game_1_tutorial():
+    art = Path(__file__).resolve().parents[1] / "assets" / "game1_guide"
+    steps = (
+        ("bet", "코인 베팅", "금액을 정해 베팅한다.<br>최소 <b>1,000 C</b>"),
+        ("news", "기사 선택", "레버를 내린 뒤<br>기사 한 편을 골라 읽는다."),
+        ("digits", "두 자리 예측", "▲▼로 소수점 뒤 두 자리 선택<br>예시　87.04점 → <b>04</b>"),
+        ("result", "결과 확인", "적중　+베팅액의 <b>100배</b><br>실패　−베팅액"),
+    )
+    cards = "".join(
+        f'<li><h2><span>{number:02d}</span>{title}</h2>'
+        f'<img src="{load_local_image_as_base64(str(art / (name + ".webp")))}" alt="">'
+        f'<p>{caption}</p></li>'
+        for number, (name, title, caption) in enumerate(steps, 1)
+    )
+    with st.container(key="game1-guide", gap=None):
+        st.html(Path(__file__).with_name("game1_tutorial.css"))
+        with st.container(key="game1-guide-nav", horizontal=True, gap=None):
+            if st.button("메인으로", key="game1-guide-back"):
+                change_page("main")
+            if st.button("건너뛰기", key="game1-guide-skip"):
+                change_page("game_1")
+        st.html(f"""
+            <section class="game1-guide-sheet" aria-labelledby="game1-guide-title" lang="ko">
+                <header class="game1-guide-heading">
+                    <span>GAME 01</span><h1 id="game1-guide-title">뉴스 유사도 예측</h1>
+                    <p>기사 제목과 AI 요약문은 얼마나 비슷할까?</p>
+                </header>
+                <ol aria-label="게임 진행 순서" role="list">{cards}</ol>
+            </section>
+        """)
+        if st.button("베팅하러 가기", key="game1-guide-start", type="primary", width="stretch"):
+            change_page("game_1")
