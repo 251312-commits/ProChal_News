@@ -76,7 +76,7 @@ class PredictionScreenTests(unittest.TestCase):
             "games.result_reveal": MagicMock(),
             "views.ranking": MagicMock(),
         }):
-            source = run_module("games.game1")
+            source = run_module("games.game1.game1")
         self.picker = source["render_game1_prediction_picker"]
         self.save_digits = source["_save_digits"]
 
@@ -85,7 +85,7 @@ class PredictionScreenTests(unittest.TestCase):
         self.assertEqual(
             self.v1.declared[0], "game1_prediction_screen"
         )
-        self.assertTrue(self.v1.declared[1].endswith("games/prediction_screen"))
+        self.assertTrue(self.v1.declared[1].endswith("games/game1/prediction_screen"))
         call = self.v1.calls[-1]
         self.assertEqual(call["coins"], 1250)
         self.assertEqual(call["digits"], [0, 4])
@@ -167,14 +167,14 @@ class PredictionScreenTests(unittest.TestCase):
         self.assertEqual(self.v1.calls[-1]["title"], raw_title)
         self.assertNotIn(raw_title, "".join(self.st.markup))
         frontend = (
-            Path(__file__).resolve().parents[1] / "games/prediction_screen/prediction.js"
+            Path(__file__).resolve().parents[1] / "games/game1/prediction_screen/prediction.js"
         ).read_text(encoding="utf-8")
         self.assertIn("ui.title.textContent", frontend)
         self.assertNotIn(".innerHTML", frontend)
 
     def test_frontend_files_and_one_screen_layout(self):
         root = Path(__file__).resolve().parents[1]
-        ui = root / "games/prediction_screen"
+        ui = root / "games/game1/prediction_screen"
         for name in ("index.html", "prediction.css", "prediction.js"):
             self.assertTrue((ui / name).is_file(), name)
         html = (ui / "index.html").read_text(encoding="utf-8")
@@ -204,7 +204,7 @@ class PredictionScreenTests(unittest.TestCase):
 
 
     def test_long_news_titles_are_clipped_and_stage_positions_are_adjusted(self):
-        root = Path(__file__).resolve().parents[1] / "games/prediction_screen"
+        root = Path(__file__).resolve().parents[1] / "games/game1/prediction_screen"
         html = (root / "index.html").read_text(encoding="utf-8")
         css = (root / "prediction.css").read_text(encoding="utf-8")
 

@@ -17,7 +17,8 @@ class SharedScreenStructureTests(unittest.TestCase):
         ]
         for path in [
             *(SHARED / name for name in names),
-            *(GAMES / f"game{i}.py" for i in range(1, 6)),
+            GAMES / "game1" / "game1.py",
+            *(GAMES / f"game{i}.py" for i in range(2, 6)),
             SHARED / "result.py",
             ROOT / "news.py",
         ]:
@@ -26,7 +27,7 @@ class SharedScreenStructureTests(unittest.TestCase):
                 ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
 
     def test_game_one_only_screens_are_in_its_own_module(self):
-        source = (GAMES / "game1.py").read_text(encoding="utf-8")
+        source = (GAMES / "game1" / "game1.py").read_text(encoding="utf-8")
         self.assertIn("def render_game1_prediction_picker(", source)
         self.assertIn("def show_game_1_tutorial(", source)
         for obsolete in [
@@ -37,7 +38,8 @@ class SharedScreenStructureTests(unittest.TestCase):
 
     def test_game_specific_rules_reuse_betting_and_news_screens(self):
         for game in range(1, 6):
-            source = (GAMES / f"game{game}.py").read_text(encoding="utf-8")
+            game_file = GAMES / "game1" / "game1.py" if game == 1 else GAMES / f"game{game}.py"
+            source = game_file.read_text(encoding="utf-8")
             with self.subTest(game=game):
                 self.assertIn("render_betting_ui", source)
         source = (GAMES / "game2.py").read_text(encoding="utf-8")
@@ -71,7 +73,11 @@ class SharedScreenStructureTests(unittest.TestCase):
         self.assertIn('path=str(HERE / "news_slot")', roulette)
         self.assertIn('ASSETS = HERE.parents[1] / "assets"', reader)
         self.assertIn('ASSETS = HERE.parents[1] / "assets"', roulette)
-        self.assertTrue((GAMES / "prediction_screen" / "prediction.js").is_file())
+        self.assertTrue((GAMES / "game1" / "prediction_screen" / "prediction.js").is_file())
+        self.assertTrue((GAMES / "game1" / "game1_tutorial.css").is_file())
+        self.assertFalse((GAMES / "game1.py").exists())
+        self.assertFalse((GAMES / "game1_tutorial.css").exists())
+        self.assertFalse((GAMES / "prediction_screen").exists())
         for obsolete in ("common.py", "betting_math.py", "result_reveal.py", "score_stage.py"):
             self.assertFalse((GAMES / obsolete).exists(), obsolete)
 

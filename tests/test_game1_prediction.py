@@ -31,7 +31,7 @@ class GameOneTests(unittest.TestCase):
             "streamlit.components.v1": st.components.v1,
         }
         with patch.dict(sys.modules, dependencies):
-            play_round = run_module("games.game1")["show_game_1"]
+            play_round = run_module("games.game1.game1")["show_game_1"]
             for normalized, guess, wins in [
                 (0.8704, 4, True), (0.8704, 87, False), (0.99995, 0, True)
             ]:
