@@ -108,8 +108,9 @@ def show_login_page():
                             # A stable request ID makes a timed-out registration
                             # and both referral bonuses safe to retry.
                             key = "registration_pending_id"
-                            if not st.session_state.get(key):
+                            if st.session_state.get("registration_pending_student") != clean_id:
                                 st.session_state[key] = transaction_id("register")
+                                st.session_state["registration_pending_student"] = clean_id
                             try:
                                 balances = register_player(
                                     clean_id, final_username, password, referral.strip(),
@@ -119,6 +120,7 @@ def show_login_page():
                                 st.error(str(exc))
                                 return
                             st.session_state.pop(key, None)
+                            st.session_state.pop("registration_pending_student", None)
                             st.session_state.current_user = clean_id
                             st.session_state.current_user_data = {
                                 "학번": clean_id,
