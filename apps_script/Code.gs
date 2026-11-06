@@ -222,6 +222,13 @@ function process_(request) {
           (tx.kind === 'borrow' ? tx.amount : -tx.amount));
       if (!same) fail_('IDEMPOTENCY_CONFLICT', 'Transaction ID already used with different arguments');
       const current = findUser_(users, tx.student_id);
+      if (tx.kind === 'register' && (
+        String(current.values[1]) !== String(request.nickname || '').trim() ||
+        String(current.values[5]) !== String(request.password || '') ||
+        sid_(current.values[4]) !== sid_(request.referrer_id || '')
+      )) {
+        fail_('IDEMPOTENCY_CONFLICT', 'Registration retry details differ');
+      }
       return result_(balance_(current.values), previous, true);
     }
 
