@@ -1,6 +1,9 @@
 """뉴스 제목과 본문의 일치율 구간을 맞히는 게임."""
 
 import asyncio
+from decimal import Decimal, ROUND_HALF_UP
+import math
+import random
 
 import streamlit as st
 
@@ -17,6 +20,9 @@ from views.ranking import fetch_ranking_data
 
 GAME_4_WIN_MULTIPLIER = 2.0
 GAME_4_MIN_BET = 1_000
+GAME_4_SCORE_MAX = 99.99
+GAME_4_RANGE_WIDTH = 2.0
+GAME_4_RANGE_COUNT = 3
 
 
 def _reset_game_4_state() -> None:
@@ -27,28 +33,77 @@ def _reset_game_4_state() -> None:
         "read_done_game_4",
         "game_4_range",
         "game_4_range_picker",
+        "game_4_ranges",
+        "game_4_score",
+        "game_4_answer_index",
         "game_4_result",
         "bet_slider_val",
     ):
         st.session_state.pop(key, None)
 
 
-def _get_score_range(score: float) -> tuple[int, str]:
-    if score <= 33:
-        return 1, "1~33%"
-    if score <= 66:
-        return 2, "34~66%"
-    return 3, "67~100%"
+def _normalize_score(score: object) -> float:
+    if (
+        not isinstance(score, (int, float))
+        or isinstance(score, bool)
+        or not math.isfinite(float(score))
+    ):
+        raise ValueError("뉴스 일치율 결과가 올바른 숫자가 아닙니다.")
+    normalized_score = Decimal(str(score)).quantize(
+        Decimal("0.01"),
+        rounding=ROUND_HALF_UP,
+    )
+    return max(0.0, min(float(normalized_score), GAME_4_SCORE_MAX))
+
+
+def _format_range(lower: float, upper: float) -> str:
+    return f"{lower:.2f}~{upper:.2f}%"
+
+
+def _build_dynamic_ranges(score: float) -> tuple[list[str], int]:
+    """Create three narrow, adjacent ranges around the hidden score."""
+    total_width = GAME_4_RANGE_WIDTH * GAME_4_RANGE_COUNT
+    start = min(
+        max(0.0, score - total_width),
+        GAME_4_SCORE_MAX - total_width,
+    )
+    start = float(
+        Decimal(str(start)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    )
+
+    ranges = []
+    for index in range(GAME_4_RANGE_COUNT):
+        lower = start + index * GAME_4_RANGE_WIDTH
+        upper = min(
+            GAME_4_SCORE_MAX,
+            start + (index + 1) * GAME_4_RANGE_WIDTH - 0.01,
+        )
+        ranges.append(_format_range(lower, upper))
+
+    answer_index = next(
+        (
+            index
+            for index in range(GAME_4_RANGE_COUNT)
+            if start + index * GAME_4_RANGE_WIDTH <= score
+            <= start + (index + 1) * GAME_4_RANGE_WIDTH
+        ),
+        GAME_4_RANGE_COUNT - 1,
+    )
+    order = list(range(GAME_4_RANGE_COUNT))
+    random.shuffle(order)
+    shuffled_ranges = [ranges[index] for index in order]
+    return shuffled_ranges, order.index(answer_index)
 
 
 def _settle_game_4(
     *,
     actual_score: float,
     selected_range: int,
+    ranges: list[str],
+    answer_index: int,
     bet_coin: int,
 ) -> dict:
-    answer_range, answer_label = _get_score_range(actual_score)
-    is_win = selected_range == answer_range
+    is_win = selected_range == answer_index
     reward = int(bet_coin * GAME_4_WIN_MULTIPLIER) if is_win else -bet_coin
 
     ws = init_gspread()
@@ -76,8 +131,8 @@ def _settle_game_4(
 
     return {
         "actual_score": actual_score,
-        "selected_range": _get_score_range(actual_score)[0],
-        "target_range": answer_label,
+        "selected_range": ranges[selected_range],
+        "target_range": ranges[answer_index],
         "reward": reward,
         "is_win": is_win,
         "new_coins": new_coins,
@@ -95,7 +150,7 @@ def _show_game_4_result() -> None:
         st.error(f"❌ 틀렸습니다! {result['reward']:,} C")
 
     st.metric("실제 일치율", f"{result['actual_score']:.2f}%")
-    st.write(f"선택한 구간: **{result['selected_range']}번**")
+    st.write(f"선택한 구간: **{result['selected_range']}**")
     st.info(f"정답 구간: **{result['target_range']}**")
     st.write(f"현재 보유 코인: **{result['new_coins']:,} C**")
     st.write(f"현재 연승 기록: **{result['new_streak']} 연승**")
@@ -138,16 +193,30 @@ def show_game_4():
     st.title("🎮 게임 4: 일치율 구간 뉴스 맞히기")
     st.caption("뉴스 제목과 본문의 일치율이 어느 구간에 속하는지 선택하세요.")
 
+    if "game_4_score" not in st.session_state:
+        with st.spinner("🤖 AI가 뉴스 일치율 구간을 준비 중입니다..."):
+            try:
+                summary_text = asyncio.run(summary(article_text))
+                if not summary_text:
+                    st.error("뉴스 본문 요약에 실패해 일치율 구간을 만들 수 없습니다.")
+                    return
+                score = _normalize_score(similarity_check(summary_text, title)["score"])
+                ranges, answer_index = _build_dynamic_ranges(score)
+            except (RuntimeError, ValueError, TypeError, KeyError) as exc:
+                st.error(f"일치율 구간을 준비하지 못했습니다: {exc}")
+                return
+        st.session_state.game_4_score = score
+        st.session_state.game_4_ranges = ranges
+        st.session_state.game_4_answer_index = answer_index
+        st.rerun()
+
     if "game_4_range" not in st.session_state:
+        ranges = st.session_state.game_4_ranges
         st.subheader("🎯 예상 일치율 구간")
         selected_range = st.radio(
             "일치율 구간을 선택하세요.",
-            options=(1, 2, 3),
-            format_func=lambda value: {
-                1: "1번: 1~33%",
-                2: "2번: 34~66%",
-                3: "3번: 67~100%",
-            }[value],
+            options=range(len(ranges)),
+            format_func=lambda value: f"{value + 1}번: {ranges[value]}",
             key="game_4_range_picker",
             horizontal=True,
         )
@@ -157,21 +226,17 @@ def show_game_4():
         return
 
     if "game_4_result" not in st.session_state:
-        with st.spinner("🤖 AI가 뉴스 일치율을 분석 중입니다..."):
-            try:
-                summary_text = asyncio.run(summary(article_text))
-                if not summary_text:
-                    st.error("뉴스 본문 요약에 실패해 일치율을 계산할 수 없습니다.")
-                    return
-                actual_score = float(similarity_check(summary_text, title)["score"])
-                result = _settle_game_4(
-                    actual_score=actual_score,
-                    selected_range=st.session_state.game_4_range,
-                    bet_coin=int(st.session_state.game_4_bet),
-                )
-            except (RuntimeError, ValueError, TypeError, KeyError) as exc:
-                st.error(f"게임 결과를 처리하지 못했습니다: {exc}")
-                return
+        try:
+            result = _settle_game_4(
+                actual_score=st.session_state.game_4_score,
+                selected_range=st.session_state.game_4_range,
+                ranges=st.session_state.game_4_ranges,
+                answer_index=st.session_state.game_4_answer_index,
+                bet_coin=int(st.session_state.game_4_bet),
+            )
+        except (RuntimeError, ValueError, TypeError, KeyError) as exc:
+            st.error(f"게임 결과를 처리하지 못했습니다: {exc}")
+            return
         st.session_state.game_4_result = result
 
     _show_game_4_result()
