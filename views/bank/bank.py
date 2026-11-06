@@ -50,7 +50,7 @@ def show_bank() -> None:
     backdrop = load_local_image_as_base64(str(view_dir.parents[1] / "assets" / "bet_background.jpg"))
     st.html(f'<style>.stApp:has(.st-key-bank-page) {{ --bank-backdrop: url("{backdrop}"); }}</style>')
     st.html(view_dir / "bank.css")
-    st.html(view_dir / "bank_scene.css")
+    st.html(view_dir / "scene.css")
 
     page = st.session_state.page
     coins = account_amount(user.get("코인"))
