@@ -79,7 +79,7 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
     max_bet = min_bet + ((current_coins - min_bet) // step) * step
     stored_bet = int(st.session_state.get(slider_key, min_bet))
     stored_bet = min_bet + ((stored_bet - min_bet) // step) * step
-    st.session_state[slider_key] = max(min_bet), min(max_bet, stored_bet))
+    st.session_state[slider_key] = max(min_bet, min(max_bet, stored_bet))
     bet_val = st.session_state[slider_key]
 
     def asset(filename):
