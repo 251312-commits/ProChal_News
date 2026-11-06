@@ -5,9 +5,14 @@ only controls what the player sees, and never re-runs a wager or sheet update.
 """
 
 from base64 import b64encode
+from functools import lru_cache
 from html import escape
 from math import ceil, tanh
+from pathlib import Path
 import time
+from uuid import uuid4
+
+from games.score_stage import STAGE_CSS, score_stage
 
 
 _STYLE = """
@@ -32,23 +37,6 @@ _STYLE = """
 .st-key-news_comparison .score-diagram {
     display: block; width: 100%; max-width: 28rem; height: auto; margin: .35rem auto 0;
 }
-.st-key-news_comparison .score-ticket {
-    display: flex; align-items: center; justify-content: space-between;
-    flex-wrap: wrap; gap: .3rem .8rem; padding: .65rem .85rem;
-    background: #211927; color: #fff6ff; border: 1px solid #7a6447; border-radius: 10px;
-}
-.st-key-news_comparison .score-value {
-    font: 700 clamp(1.65rem, 6vw, 2.55rem)/1.2 ui-monospace, monospace;
-    font-variant-numeric: tabular-nums; white-space: nowrap;
-}
-.st-key-news_comparison .score-unit { font: 500 .9rem sans-serif; color: #decedf; }
-.st-key-news_comparison .score-fraction {
-    background: #f6d78e; color: #302013; padding: 0 .1em; border-radius: .14em;
-}
-.st-key-news_comparison .score-guess {
-    font-size: .92rem; color: #dfcde9; border-left: 2px solid #ab90bf; padding-left: .55rem;
-}
-.st-key-news_comparison .score-guess b { color: #fff6ff; font-variant-numeric: tabular-nums; }
 .st-key-news_comparison [data-testid="stCaptionContainer"] p { color: #e7def0; }
 .st-key-news_comparison .news-still { display: none; }
 @media (prefers-reduced-motion: reduce) {
@@ -57,6 +45,13 @@ _STYLE = """
 }
 </style>
 """
+
+
+@lru_cache(maxsize=1)
+def _theatre_style():
+    asset = Path(__file__).resolve().parents[1] / "assets/score_reveal/theatre.webp"
+    art = b64encode(asset.read_bytes()).decode("ascii")
+    return f"<style>.st-key-news_comparison{{--score-stage-art:url(data:image/webp;base64,{art})}}{STAGE_CSS}</style>"
 
 
 def type_summary_characters(summary_text: str):
@@ -161,7 +156,8 @@ def _score_diagram(details, animate):
 
 
 def show_summary_before_score(
-    summary_text: str, state_key: str, *, title: str, score: float, details=None, prediction=None
+    summary_text: str, state_key: str, *, title: str, score: float, details=None, prediction=None,
+    score_precision: int = 0,
 ) -> None:
     """Show stored model measurements and the score used to settle this round."""
     import streamlit as st
@@ -169,16 +165,18 @@ def show_summary_before_score(
     text = str(summary_text or "").strip()
     escaped_text = escape(text)
     reveal = (title, text, score)
-    animate = st.session_state.get(state_key) != reveal
+    previous = st.session_state.get(state_key)
+    seen = previous == reveal
+    pending = previous if isinstance(previous, dict) and previous.get("result") == reveal else None
 
     with st.container(key="news_comparison"):
-        st.html(_STYLE)
+        st.html(_STYLE + _theatre_style())
         st.html('<div class="news-label">기사 제목</div>')
         st.html(f'<div class="news-copy">{escape(title)}</div>')
         if text:
             st.html('<div class="news-label">AI 요약문</div>')
             message = st.empty()
-            if animate:
+            if not seen and pending is None:
                 partial = []
                 next_frame = 0.0
                 for letter in type_summary_characters(text):
@@ -193,18 +191,10 @@ def show_summary_before_score(
                         next_frame = now + 0.03
             message.html(f'<div class="news-copy news-message">{escaped_text}</div>')
 
-        if details is not None:
-            st.html(_score_diagram(details, animate))
-            if animate:
-                time.sleep(0.7)
-        else:
-            st.caption("이 라운드에는 최종 점수만 저장됐다.")
-
         hundredths = details.get("score_hundredths") if details else None
         guess = ""
         if hundredths is None:
-            score_label = digits = str(int(score))
-            scale = "저장된 게임 점수"
+            score_label = digits = f"{score:.{score_precision}f}"
         else:
             whole, fraction = divmod(hundredths, 100)
             score_label = f"{whole}.{fraction:02d}"
@@ -212,10 +202,26 @@ def show_summary_before_score(
             if prediction is not None:
                 digits = f'{whole}.<span class="score-fraction">{fraction:02d}</span>'
                 guess = f'<div class="score-guess">내 예측 <b>{prediction:02d}</b></div>'
-            scale = "시그모이드 × 100"
-        st.html(
-            f'<div class="score-ticket"><div><div class="news-label">{scale}</div>'
-            f'<div class="score-value" role="img" aria-label="AI 유사도 {score_label}점">'
-            f'{digits}<span class="score-unit"> 점</span></div></div>{guess}</div>'
-        )
+
+        stage = st.empty()
+        reveal_id = state_key
+        if not seen:
+            if pending is None:
+                pending = {"result": reveal, "id": uuid4().hex, "until": time.monotonic() + 2.6}
+                st.session_state[state_key] = pending
+            reveal_id = pending["id"]
+            remaining = pending["until"] - time.monotonic()
+            if remaining > 0:
+                stage.html(score_stage("rolling", reveal_id))
+                time.sleep(remaining)
+
+        stage.html(score_stage(
+            "settled" if seen else "landed", reveal_id, digits_html=digits,
+            score_label=score_label, guess_html=guess,
+        ))
         st.session_state[state_key] = reveal
+        # Even the sigmoid chart discloses the exact outcome. Send it after the unveiling.
+        if details is not None:
+            st.html(_score_diagram(details, not seen))
+        else:
+            st.caption("이 라운드에는 최종 점수만 저장됐다.")
