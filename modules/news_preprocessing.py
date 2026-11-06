@@ -58,12 +58,17 @@ _PLAYER_BLOCK = re.compile(
 )
 
 # Contacts are specific to each newsroom. Ordinary addresses in the story stay intact.
+_YONHAP_TV_TIP = r"연합뉴스 *TV 기사 *문의 및 제보 *[:：] *(?:카톡|카카오톡) */ *라인 +jebo23"
+_NAMED_EMAIL = rf"[가-힣]{{2,4}} *(?:기자 *)?\( *{_EMAIL} *\)"
+_YONHAP_TV_SLOGAN = r"당신이 담은 순간이 뉴스입니다[!.]?"
+# Adjacent HTML elements can join the tip, bylines and slogan without spaces.
+_SIGNED_YONHAP_TIP = rf"{_YONHAP_TV_TIP}(?: *{_NAMED_EMAIL})+(?: *{_YONHAP_TV_SLOGAN})?"
 _BROADCAST_FOOTER_PARTS = (
-    r"연합뉴스 *TV 기사 *문의 및 제보 *[:：] *(?:카톡|카카오톡) */ *라인 +jebo23",
+    _YONHAP_TV_TIP,
     r"연합뉴스 *TV 제보 *[:：] *02-398-4409, *yjebo@yna\.co\.kr",
     r"연합뉴스 *TV *[:：] *02-398-4409\(제보\) 4441\(기사문의\), *카톡/라인 jebo23",
     r"\(끝\)",
-    r"당신이 담은 순간이 뉴스입니다[!.]?",
+    _YONHAP_TV_SLOGAN,
     r"(?:라인|카카오톡) 앱에서 ['‘’\"]?jebo23['‘’\"]? 친구 추가",
     r"jebo23(?:@yna\.co\.kr)?",
     r"MBC 뉴스는 24시간 여러분의 제보를 기다립니다\.?",
@@ -71,7 +76,7 @@ _BROADCAST_FOOTER_PARTS = (
     r"※ *['‘]당신의 제보가 뉴스가 됩니다[’']",
     r"\[카카오톡\] YTN 검색해 채널 추가|\[전화\] 02-398-8585|\[메일\] social@ytn\.co\.kr",
     r"\[저작권자\(c\) YTN 무단전재, 재배포 및 AI 데이터 활용 금지\]",
-    rf"(?:YTN )?[가-힣]{{2,4}} *(?:기자 *)?\( *{_EMAIL} *\)",
+    rf"(?:YTN )?{_NAMED_EMAIL}",
 )
 _BROADCAST_FOOTER = "|".join(_BROADCAST_FOOTER_PARTS)
 _SENTENCE_ENDS = (". ", "! ", "? ", "… ", ".” ", "!” ", "?” ", '." ', '!" ', '?" ')
@@ -100,7 +105,8 @@ _PREFIX = re.compile(rf"^(?:(?:{_WIRE_BYLINE}|{_CREDIT_TAG})\s*)+", re.IGNORECAS
 # separate notice (line start, after punctuation, or following a marked credit).
 _NOTICE = rf"(?:{_COPYRIGHT}(?:\s*{_RIGHTS})?|{_RIGHTS})(?:\s+{_RIGHTS})*"
 _METADATA = re.compile(
-    rf"(?:{_CREDIT_TAG}(?:\s*{_NOTICE})?|(?<!\S)(?P<footer>{_NOTICE}|{_BROADCAST_FOOTER})(?!\S))\s*",
+    rf"(?:{_SIGNED_YONHAP_TIP}(?!\S)|{_CREDIT_TAG}(?:\s*{_NOTICE})?"
+    rf"|(?<!\S)(?P<footer>{_NOTICE}|{_BROADCAST_FOOTER})(?!\S))\s*",
     re.IGNORECASE,
 )
 
