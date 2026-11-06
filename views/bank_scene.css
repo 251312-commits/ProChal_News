@@ -169,7 +169,6 @@
 .st-key-bank-body .bank-opening .bank-unsealed {
   position: absolute;
   bottom: 1%; left: 1.2%; width: 94%;
-  transform-origin: center bottom;
   animation: bank-lift-flap 1.35s ease both;
 }
 .st-key-bank-body .bank-inside { display: block; width: 100%; }
@@ -187,9 +186,11 @@
 }
 @keyframes bank-break-seal { 0%,26% { opacity: 1; } 43%,100% { opacity: 0; } }
 @keyframes bank-lift-flap {
-  0%,26% { opacity: 0; transform: scaleY(.63); }
+  0%,26% { opacity: 0; clip-path: inset(37% 0 0); }
   40% { opacity: 1; }
-  55%,100% { opacity: 1; transform: scaleY(1); }
+  55% { clip-path: inset(0); }
+  /* Leave room above the flap as the sheet emerges. */
+  85%,100% { opacity: 1; clip-path: inset(-50% 0 0); }
 }
 @keyframes bank-sheet-lift {
   0%,45% { opacity: 0; transform: translateY(8%) scale(.6); }
