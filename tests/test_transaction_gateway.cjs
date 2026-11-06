@@ -171,6 +171,20 @@ test('failed batch leaves both Users and Transactions unchanged and releases loc
   assert.equal(e.state.locked, false);
 });
 
+test('legacy blank streak and debt columns behave as zero', () => {
+  const e = environment([['11011','Alice',5000,'','','pw','']]);
+  const id = hex('e');
+  const res = e.call({kind:'bet',transaction_id:'bet:'+id,
+    round_id:id,game:'game_2',bet:1000});
+  assert.equal(res.balances.streak, 0);
+  assert.equal(res.balances.loan, 0);
+  const won = e.call({kind:'settle',transaction_id:'settle:'+id,
+    round_id:id,game:'game_2',bet:1000,is_win:true});
+  assert.equal(won.balances.coins, 6000);
+  assert.equal(won.balances.streak, 1);
+  assert.equal(e.rows.users[1][6], 0);
+});
+
 test('settlement rejects a different player or unconfirmed round', () => {
   const e = environment([['11011','Alice',5000,1,'','pw',0], ['22022','Bob',5000,0,'','pw',0]]);
   const id = hex('f');
