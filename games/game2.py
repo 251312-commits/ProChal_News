@@ -1,5 +1,4 @@
 # 업다운 (하) ½
-# 업다운 (하) ½
 
 import asyncio
 import random
@@ -9,7 +8,7 @@ from modules.db_handler import init_gspread, init_news_sheet
 from modules.ui_components import change_page
 from games.result_reveal import show_summary_before_score
 from games.common import get_game_news_selection
-from games.news_roulette2 import render_news_slot  # 💡 룰렛 모듈 불러오기
+from games.news_roulette_2 import render_news_slot  # 💡 파일 이름(news_roulette_2) 매칭 수정!
 
 ws = init_gspread()
 ws_news = init_news_sheet()
@@ -461,7 +460,7 @@ def show_game_2():
         below_user = sim_sorted[sim_me_idx + 1] if sim_me_idx is not None and sim_me_idx < len(sim_sorted) - 1 else None
 
         above_str = f"🔺 <b>위:</b> {above_user['nickname']} <span style='color:#ff9999;'>({above_user['coins'] - simulated_total_coins:,} C 부족)</span>" if above_user else "👑 <b>예상 랭킹 1위 달성!</b>"
-        below_str = f"🔻 <b>아래:</b> {below_user['nickname']} <span style='color:#00ff88;'>({simulated_total_coins - below_user['coins']:,} C 제침)</span>" if below_user else "🛡️ <b>최하위 라이벌 없음</b>"
+        below_str = f"🔻 <b>아래:</b> {below_user['nickname']} <span style='color:#00ff88;'>({simulated_total_coins - below_user['coins']:,} C 제침)</span>" if below_str else "🛡️ <b>최하위 라이벌 없음</b>"
 
         col_card1, col_card2 = st.columns(2)
         with col_card1:
@@ -505,7 +504,7 @@ def show_game_2():
 
         return
 
-    # 💡 [2단계] 뉴스 룰렛 렌더링 및 선택 로직 적용
+    # [2단계] 뉴스 룰렛 렌더링 및 선택
     if "candidates_game_2" not in st.session_state:
         st.session_state.candidates_game_2 = [
             get_game_news_selection("game_2"),
