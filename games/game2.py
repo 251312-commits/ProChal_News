@@ -8,7 +8,7 @@ from modules.db_handler import init_gspread, init_news_sheet
 from modules.ui_components import change_page
 from games.result_reveal import show_summary_before_score
 from games.common import get_game_news_selection
-from games.news_roulette2 import render_news_slot  # 룰렛 모듈 불러오기
+from games.news_roulette_2 import render_news_slot  # 💡 파일 이름(news_roulette_2) 매칭 수정!
 
 ws = init_gspread()
 ws_news = init_news_sheet()
@@ -504,7 +504,7 @@ def show_game_2():
 
         return
 
-    # [2단계] 뉴스 슬롯 룰렛 단일 화면 (중복 뉴스 선택 화면 제거)
+    # [2단계] 뉴스 룰렛 렌더링 및 선택
     if "candidates_game_2" not in st.session_state:
         st.session_state.candidates_game_2 = [
             get_game_news_selection("game_2"),
@@ -519,34 +519,31 @@ def show_game_2():
         st.session_state.selected_news_game_2 = st.session_state.candidates_game_2[selected_idx]
         st.rerun()
 
-    # 기사 데이터 가공 (튜플/딕셔너리 예외 없이 안전 파싱)
-    chosen_news = st.session_state.selected_news_game_2
-    if isinstance(chosen_news, (tuple, list)):
-        title = chosen_news[0] if len(chosen_news) > 0 else ""
-        article_text = chosen_news[1] if len(chosen_news) > 1 else ""
-    elif isinstance(chosen_news, dict):
-        title = chosen_news.get("title", "")
-        article_text = chosen_news.get("article", "")
-    else:
-        title = str(chosen_news)
-        article_text = ""
-
+    title, article_text, url = st.session_state.selected_news_game_2
     if not title:
         return
 
-    # [3단계] HIGH / LOW 선택 단계 (룰렛 선택 완료 시 즉시 진입)
+    # [3단계] '다음으로' 버튼 클릭 전
     if "game_2_target_num" not in st.session_state:
-        st.session_state.game_2_target_num = random.randint(0, 100)
+        st.markdown("---")
+        st.markdown("### 📰 뉴스 기사 확인")
+        st.markdown(f"#### **제목: {title}**")
+        with st.expander("📄 뉴스 본문 전체보기", expanded=True):
+            st.write(article_text)
 
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("▶️ 다음으로 (기준 점수 뽑기)", use_container_width=True):
+            st.session_state.game_2_target_num = random.randint(0, 100)
+            st.rerun()
+        return
+
+    # [4단계] 임의의 숫자 제시 및 HIGH / LOW 선택 UI
     target_num = st.session_state.game_2_target_num
 
     if "game_2_user_choice" not in st.session_state:
         st.markdown("---")
         st.markdown("### 🎯 HIGH / LOW 예측 선택")
-        st.info(f"📌 선택된 기사 제목: **{title}**")
-
-        with st.expander("📄 선택한 뉴스 본문 보기", expanded=False):
-            st.write(article_text)
+        st.info(f"📌 기사 제목: **{title}**")
 
         st.markdown(
             f"""
@@ -573,7 +570,7 @@ def show_game_2():
 
         return
 
-    # [4단계] AI 유사도 판단 & 스코어 계체
+    # [5단계] AI 측정 및 결과 판정
     bet_coin = st.session_state.game_2_bet
     user_choice = st.session_state.game_2_user_choice
 
@@ -639,7 +636,7 @@ def show_game_2():
                 "new_streak": new_streak
             }
 
-    # [5단계] 최종 결과 출력
+    # [6단계] 최종 결과 출력
     res = st.session_state.game_2_result
     show_summary_before_score(
         res.get("summary", ""), "game_2_summary_revealed",
@@ -647,7 +644,7 @@ def show_game_2():
         details=res.get("score_details"),
     )
     st.markdown("---")
-    st.markdown("### 🏆 최종 결과")
+    st.markdown("### 🏆 6단계: 최종 결과")
 
     if res["is_win"]:
         st.balloons()
