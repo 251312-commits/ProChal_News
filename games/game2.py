@@ -13,18 +13,33 @@ from games.news_roulette2 import render_news_slot  # 룰렛 모듈 불러오기
 ws = init_gspread()
 
 def _parse_news_item(raw_news):
-    """뉴스 데이터를 무조건 (title, article, url) 튜플 3개 형태로 안전하게 반환"""
+    """뉴스 데이터(튜플/리스트/딕셔너리)에서 제목, 본문, URL을 정확히 파싱하여 (title, article, url) 튜플로 반환"""
     if isinstance(raw_news, (tuple, list)):
-        t = str(raw_news[0]) if len(raw_news) > 0 else ""
-        a = str(raw_news[1]) if len(raw_news) > 1 else ""
-        u = str(raw_news[2]) if len(raw_news) > 2 else ""
+        t = str(raw_news[0]) if len(raw_news) > 0 and raw_news[0] else ""
+        a = str(raw_news[1]) if len(raw_news) > 1 and raw_news[1] else ""
+        u = str(raw_news[2]) if len(raw_news) > 2 and raw_news[2] else ""
+        # 본문이 비어있고 제목만 있는 경우 제목을 본문 대체용으로 사용
+        if not a and t:
+            a = t
         return (t, a, u)
     elif isinstance(raw_news, dict):
-        t = str(raw_news.get("title", raw_news.get("제목", "")))
-        a = str(raw_news.get("article", raw_news.get("content", raw_news.get("본문", ""))))
-        u = str(raw_news.get("url", raw_news.get("link", "")))
+        t = str(raw_news.get("title") or raw_news.get("제목") or "")
+        # 본문 필드명이 다양한 경우(article, content, body, 본문, text) 모두 탐색
+        a = str(
+            raw_news.get("article") or 
+            raw_news.get("content") or 
+            raw_news.get("body") or 
+            raw_news.get("본문") or 
+            raw_news.get("text") or 
+            ""
+        )
+        u = str(raw_news.get("url") or raw_news.get("link") or "")
+        if not a and t:
+            a = t
         return (t, a, u)
-    return (str(raw_news), "", "")
+    
+    val_str = str(raw_news) if raw_news else ""
+    return (val_str, val_str, "")
 
 def show_game_2():
     # [0단계] 튜토리얼 화면 (최초 1회 노출)
@@ -482,7 +497,6 @@ def show_game_2():
 
         rank_climb = curr_rank - sim_rank if curr_rank else 0
 
-        # UnboundLocalError 완전 예방: 위/아래 유저는 항상 먼저 None으로 초기화
         above_user = None
         below_user = None
 
@@ -560,7 +574,6 @@ def show_game_2():
             _parse_news_item(get_game_news_selection("game_2"))
         ]
 
-    # 룰렛에서 기사를 선택하지 않았으면 룰렛 전용 화면을 출력
     if "selected_news_game_2" not in st.session_state:
         selected_idx = render_news_slot(st.session_state.candidates_game_2)
         if selected_idx is None:
@@ -572,7 +585,7 @@ def show_game_2():
     if not title:
         return
 
-    # [3단계] HIGH / LOW 예측 선택 (룰렛 완료 직후 곧바로 진행)
+    # [3단계] HIGH / LOW 예측 선택
     if "game_2_target_num" not in st.session_state:
         st.session_state.game_2_target_num = random.randint(0, 100)
 
@@ -584,7 +597,7 @@ def show_game_2():
         st.info(f"📌 선택된 기사 제목: **{title}**")
 
         with st.expander("📄 선택한 뉴스 본문 보기", expanded=False):
-            st.write(article_text)
+            st.write(article_text if article_text else title)
 
         st.markdown(
             f"""
@@ -617,10 +630,13 @@ def show_game_2():
 
     if "game_2_result" not in st.session_state:
         with st.spinner("🤖 AI가 유사도를 분석 중입니다..."):
-            summary_text = asyncio.run(summary(article_text))
+            # 본문 텍스트 유효성 안전 보장 (본문이 비어있으면 제목으로 요약 수행)
+            text_for_summary = article_text if (article_text and article_text.strip()) else title
+            summary_text = asyncio.run(summary(text_for_summary))
+            
             if not summary_text:
-                st.error("뉴스 본문 요약에 실패해 유사도 점수를 계산할 수 없습니다.")
-                return
+                summary_text = title  # 요약 실패 시 제목 자체를 요약문으로 대체
+
             score_details = similarity_check(summary_text, title)
             actual_score = score_details["score"]
 
