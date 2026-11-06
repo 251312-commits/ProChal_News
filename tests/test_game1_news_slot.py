@@ -23,7 +23,8 @@ class NewsSlotTests(unittest.TestCase):
             {"Title": "둘째 기사", "URL": "url-2", "Count": 7},
         ]
         self.ai.pick_3_lowest_count_news.side_effect = lambda items: items[:3]
-        self.ai.bring_article.return_value = ("첫 기사", "본문")
+        self.image_url = "https://images.press.example/story.jpg"
+        self.ai.bring_article.return_value = ("첫 기사", "본문", self.image_url)
         modules = patch.dict(sys.modules, {
             "streamlit": self.st, "streamlit.components": self.st.components,
             "streamlit.components.v1": self.st.components.v1,
@@ -60,7 +61,7 @@ class NewsSlotTests(unittest.TestCase):
         self.assertEqual(self.select("game_1"), ("첫 기사", "본문", "url-1"))
         self.assertNotIn("candidates_game_1", self.st.session_state)
         self.sheet.update_cell.assert_called_once_with(2, 2, 5)
-        self.ai.bring_article.assert_called_once_with("url-1")
+        self.ai.bring_article.assert_called_once_with("url-1", include_image=True)
 
     def test_reader_navigation_uses_live_data_and_preserves_the_stake(self):
         self.st.session_state.current_user_data = {"코인": 2300}
@@ -74,6 +75,7 @@ class NewsSlotTests(unittest.TestCase):
         args = self.component.call_args.kwargs
         self.assertEqual((args["title"], args["text"]), ("첫 기사", "본문"))
         self.assertEqual((args["url"], args["source"]), (url, "press.example"))
+        self.assertEqual(args["image_url"], self.image_url)
         self.assertEqual((args["coins"], args["reward"]), (2300, 100_000))
 
         self.component.return_value = {"action": "bank", "round_id": args["round_id"]}
@@ -93,7 +95,7 @@ class NewsSlotTests(unittest.TestCase):
         self.select("game_1")
         self.assertEqual(self.select("game_1"), ("첫 기사", "본문", url))
         self.sheet.update_cell.assert_called_once_with(2, 2, 5)
-        self.ai.bring_article.assert_called_once_with(url)
+        self.ai.bring_article.assert_called_once_with(url, include_image=True)
         self.ai.pick_3_lowest_count_news.assert_called_once()
 
     def test_other_games_still_use_their_existing_reader(self):

@@ -36,6 +36,26 @@ function updateProgress() {
   document.querySelector("#percent").textContent = percent + "%";
 }
 
+function setArticleImage(url) {
+  const hero = document.querySelector(".hero");
+  hero.replaceChildren();
+  hero.hidden = !/^https?:\/\//i.test(url);
+  if (hero.hidden) return;
+
+  const photo = new Image();
+  photo.alt = "기사 대표 이미지";
+  photo.referrerPolicy = "no-referrer";
+  photo.hidden = true;
+  photo.onload = () => { photo.hidden = false; };
+  photo.onerror = () => {
+    if (photo.parentElement !== hero) return;
+    hero.hidden = true;
+    updateProgress();
+  };
+  hero.append(photo);
+  photo.src = url;
+}
+
 function showArticle(args) {
   clearInterval(interval);
   roundId = args.round_id;
@@ -47,11 +67,8 @@ function showArticle(args) {
                      "guidance-panel", "reward-pill", "predict-button", "progress-track", "progress-fill"]) {
     document.body.style.setProperty("--" + key, 'url("' + args.art[key] + '")');
   }
-  const title = args.title;
-  const copyrightStory = /저작권|copyright/i.test(title) && /인공지능|생성형|\bai\b|AI(?=[가-힣])/i.test(title);
-  document.querySelector(".illustration").hidden = !copyrightStory;
-  document.querySelector(".edition").hidden = copyrightStory;
-  document.querySelector("#headline").textContent = title;
+  setArticleImage(args.image_url);
+  document.querySelector("#headline").textContent = args.title;
 
   const source = document.querySelector("#source");
   source.hidden = !(args.source && /^https?:\/\//i.test(args.url));

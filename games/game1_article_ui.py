@@ -15,10 +15,9 @@ _reader = components.declare_component("game1_article_reader", path=str(HERE / "
 ART = {
     "background": "bet_background.jpg",
     "frame": "game1_article/reader-frame.webp",
-    "news": "game1_guide/news.webp",
 }
 for folder, names in {
-    "art": ("bet-header", "chip-left", "chip-right", "sparkle-gold", "article-ai-copyright"),
+    "art": ("bet-header", "chip-left", "chip-right", "sparkle-gold"),
     "chrome": ("article-divider", "guidance-panel", "predict-button",
                "news-label", "balance-pill", "reward-pill", "progress-track", "progress-fill"),
     "icons": ("coin", "add-balance", "die", "clipboard", "target", "reward-crown"),
@@ -65,6 +64,7 @@ def render_game1_article(chosen, *, reward):
             round_id=round_id,
             title=chosen.get("title") or "제목 없는 기사",
             text=chosen.get("text") or "본문 내용을 가져올 수 없습니다.",
+            image_url=chosen.get("image_url") or "",
             url=url,
             source=source,
             coins=int(user.get("코인", 0) or 0),
