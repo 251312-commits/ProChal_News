@@ -1,4 +1,5 @@
-import base64
+from pathlib import Path
+
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 from st_clickable_images import clickable_images
@@ -49,19 +50,12 @@ def show_main_page():
         unsafe_allow_html=True
     )
 
-    # assets 폴더의 로컬 이미지를 Base64 데이터 스트링으로 로드
-    local_img_paths = [
-        "assets/banner1.png",
-        "assets/banner2.png",
-        "assets/banner3.png",
-        "assets/banner4.png",
-        "assets/banner5.png",
-        "assets/banner6.png",
-        "assets/banner7.png",
+    # Resolve all seven PNG banners from this module, independent of the cwd.
+    assets_dir = Path(__file__).resolve().parents[1] / "assets"
+    img_urls = [
+        load_local_image_as_base64(str(assets_dir / f"banner{index}.png"))
+        for index in range(1, 8)
     ]
-    
-    # 캐싱된 Base64 이미지 리스트 생성
-    img_urls = [load_local_image_as_base64(path) for path in local_img_paths]
 
     clicked_menu = clickable_images(
         img_urls,
