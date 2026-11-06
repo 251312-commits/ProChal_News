@@ -31,3 +31,9 @@
 
 ## 테스트
 프로젝트 루트에서 python -m unittest discover -s tests -v 실행.
+
+## 공통 모듈 추가 통합
+- `games/common.py` 대신 `games.shared`에서 UI 함수를 직접 가져온다.
+- `games/betting_math.py`와 베팅 UI는 `games/shared/betting.py`에 통합했다.
+- `games/result_reveal.py`, `games/score_stage.py`는 `games/shared/result.py`로 통합했다.
+- 게임 5 튜토리얼은 게임 전용 파일 `games/game5.py`에 포함한다.

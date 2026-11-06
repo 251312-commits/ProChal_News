@@ -6,7 +6,7 @@ Run from repository root:
 
 import unittest
 
-from games.betting_math import (
+from games.shared.betting import (
     calculate_expected_gain,
     format_payout_multiplier,
     project_rank_change,

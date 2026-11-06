@@ -6,7 +6,7 @@ Legacy Streamlit screens remain the default for existing games 2-4.
 import streamlit as st
 import streamlit.components.v1 as components
 
-from games.betting_math import calculate_expected_gain
+from games.shared.betting import calculate_expected_gain
 from games.shared.article_reader import render_article_reader
 from games.shared.roulette import render_news_slot
 from modules.news_ai import bring_article, pick_3_lowest_count_news

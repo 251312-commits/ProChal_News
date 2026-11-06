@@ -18,6 +18,7 @@ class SharedScreenStructureTests(unittest.TestCase):
         for path in [
             *(SHARED / name for name in names),
             *(GAMES / f"game{i}.py" for i in range(1, 6)),
+            SHARED / "result.py",
             ROOT / "news.py",
         ]:
             with self.subTest(path=path.name):
@@ -55,6 +56,8 @@ class SharedScreenStructureTests(unittest.TestCase):
         self.assertTrue((GAMES / "news_slot" / "slot.js").is_file())
         self.assertTrue((GAMES / "article_reader" / "reader.js").is_file())
         self.assertTrue((GAMES / "prediction_screen" / "prediction.js").is_file())
+        for obsolete in ("common.py", "betting_math.py", "result_reveal.py", "score_stage.py"):
+            self.assertFalse((GAMES / obsolete).exists(), obsolete)
 
 
 if __name__ == "__main__":
