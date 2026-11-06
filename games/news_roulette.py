@@ -51,6 +51,7 @@ def render_news_slot(candidates):
             key=f"game_1_slot_{round_id}",
             round_id=round_id,
             continuous_reel=True,
+            allow_back=False,
             titles=[item["title"] for item in candidates],
             coins=int((state.get("current_user_data") or {}).get("코인", 0)),
             art={name: load_local_image_as_base64(str(ASSETS / path)) for name, path in ART.items()},
@@ -65,12 +66,7 @@ def render_news_slot(candidates):
         if type(index) is int and 0 <= index < len(candidates):
             del state["game_1_slot_round"]
             return index
-    elif action in ("back", "bank"):
+    elif action == "bank":
         del state["game_1_slot_round"]
-        if action == "back":
-            # The stake is settled later. Returning to betting only reopens the form.
-            state.pop("game_1_bet", None)
-            st.rerun()
-        else:
-            change_page("bank")
+        change_page("bank")
     return None

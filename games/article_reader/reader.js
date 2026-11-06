@@ -3,9 +3,7 @@
 const scene = document.querySelector(".scene");
 const pages = document.querySelector(".pages");
 const bodyCopy = document.querySelector("#copy");
-const keep = document.querySelector(".keep");
 const timer = document.querySelector("#timer");
-const timerLabel = document.querySelector("#timer-label");
 const progress = document.querySelector("#progress");
 const number = new Intl.NumberFormat("ko-KR");
 let roundId, hostOrigin = "*", interval, deadline, sent = false;
@@ -46,7 +44,7 @@ function showArticle(args) {
 
   for (const img of scene.querySelectorAll("[data-art]")) img.src = args.art[img.dataset.art];
   for (const key of ["background", "frame", "news-label", "balance-pill", "article-divider",
-                     "guidance-panel", "reward-pill", "predict-button", "read-button", "stage-ring", "progress-track", "progress-fill"]) {
+                     "guidance-panel", "reward-pill", "predict-button", "progress-track", "progress-fill"]) {
     document.body.style.setProperty("--" + key, 'url("' + args.art[key] + '")');
   }
   const title = args.title;
@@ -75,8 +73,6 @@ function showArticle(args) {
   const reward = document.querySelector(".reward");
   reward.hidden = !Number.isFinite(args.reward);
   document.querySelector("#reward").textContent = reward.hidden ? "" : "+" + number.format(args.reward) + " C";
-  keep.querySelector("span").textContent = "계속 읽기";
-  timerLabel.textContent = "예측 화면 자동 이동까지";
   scene.hidden = false;
   pages.scrollTop = 0;
   progress.value = 0;
@@ -89,21 +85,7 @@ function showArticle(args) {
 pages.addEventListener("scroll", updateProgress, {passive: true});
 new ResizeObserver(updateProgress).observe(pages);
 new ResizeObserver(updateProgress).observe(bodyCopy);
-keep.addEventListener("click", () => {
-  if (sent) return;
-  clearInterval(interval);
-  if (deadline === null) {
-    pages.scrollBy({top: pages.clientHeight * .8, behavior: "instant"});
-  } else {
-    deadline = null;
-    keep.querySelector("span").textContent = "이어서 읽기";
-    timerLabel.textContent = "기사 읽기";
-    timer.textContent = "무제한";
-  }
-  pages.focus({preventScroll: true});
-});
 document.querySelector(".predict").addEventListener("click", () => finish("predict"));
-document.querySelector(".back").addEventListener("click", () => finish("back"));
 document.querySelector(".bank").addEventListener("click", () => finish("bank"));
 
 window.addEventListener("message", event => {
