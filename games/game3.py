@@ -8,7 +8,7 @@ from collections.abc import Mapping
 from modules.news_ai import summary, similarity_check, bring_article
 from modules.db_handler import init_gspread
 from modules.ui_components import change_page
-from games.common import get_game_news_selection, similarity_analysis_loading
+from games.common import get_game_news_selection, similarity_analysis_loading, render_betting_ui
 from games.result_reveal import show_summary_before_score
 
 
@@ -319,77 +319,38 @@ def show_choice_screen():
 # ==========================================
 
 def show_bet_screen(ws):
-
-    st.markdown("### 💰 STEP 2. 베팅 금액 선택")
-
-    current_sid = str(
-        st.session_state.current_user
-    ).strip().replace(".0", "")
-
+    """Use the shared wager UI; Game 3 retains its half-stake loss rule."""
+    current_sid = str(st.session_state.current_user).strip().replace(".0", "")
     users_data = ws.get_all_records()
-
-    user_info = None
-
-    for user in users_data:
-
-        sid = str(
-            user.get("학번", "")
-        ).strip().replace(".0", "")
-
-        if sid == current_sid:
-            user_info = user
-            break
-
+    user_info = next(
+        (user for user in users_data
+         if str(user.get("학번", "")).strip().replace(".0", "") == current_sid),
+        None,
+    )
     if user_info is None:
-
         st.error("사용자 정보를 찾을 수 없습니다.")
         return
 
-    current_coins = int(user_info.get("코인", 0))
-
-    st.metric("💰 현재 보유 코인", f"{current_coins:,} C")
-
     st.success(f"내 선택: {st.session_state.game_3_choice}")
-
-    if current_coins < MIN_BET:
-
-        st.error("최소 베팅 금액인 1,000코인이 부족합니다.")
-        return
-
+    st.caption("정답 시 순이익 +베팅액, 오답 시 손실 −베팅액의 절반")
     round_number = st.session_state.get("game_3_round", 0)
-
-    default_bet = max(
-        MIN_BET,
-        min(current_coins, (current_coins // 2 // 50) * 50)
+    user = st.session_state.get("current_user_data") or {}
+    confirmed_bet = render_betting_ui(
+        current_coins=int(user_info.get("코인", 0)),
+        users_data=users_data,
+        current_sid=current_sid,
+        current_nickname=str(user.get("아이디", user_info.get("아이디", ""))),
+        min_bet=MIN_BET,
+        payout_multiplier=1.0,
+        title="게임 3: 홀짝 예측",
+        state_key=f"game_3_{round_number}",
     )
-
-    bet_val = st.slider(
-        "베팅할 코인을 선택하세요.",
-        min_value=MIN_BET,
-        max_value=current_coins,
-        value=default_bet,
-        step=50,
-        key=f"game_3_bet_slider_{round_number}"
-    )
-
-    st.write(f"정답 시 순이익: +{bet_val:,} C")
-    st.write(f"오답 시 손실: -{bet_val // 2:,} C")
-
-    if st.button("🎲 베팅 확정", use_container_width=True):
-
-        if bet_val > current_coins:
-
-            st.error("보유 코인이 부족합니다.")
-
-        else:
-
-            st.session_state.game_3_bet = bet_val
-            st.session_state.game_3_screen = "news"
-
-            st.rerun()
+    if confirmed_bet is not None:
+        st.session_state.game_3_bet = confirmed_bet
+        st.session_state.game_3_screen = "news"
+        st.rerun()
 
     if st.button("🔄 홀짝 다시 선택하기", use_container_width=True):
-
         reset_game_3_state()
         st.rerun()
 

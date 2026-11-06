@@ -100,7 +100,12 @@ def get_game_news_selection(game_id: str, *, win_multiplier=None, immersive_read
         if not chosen:
             candidates = _get_news_candidates(candidates_key)
             if candidates:
-                index = render_news_slot(candidates, game_id=game_id, continuous_reel=True, allow_back=False, allow_direct_url=(game_id == "game_1"))
+                index = render_news_slot(
+                    candidates, game_id=game_id,
+                    continuous_reel=(game_id == "game_1"),
+                    allow_back=(game_id != "game_1"),
+                    allow_direct_url=(game_id == "game_1"),
+                )
                 if index is not None:
                     _open_chosen_article(candidates[index], news_key, candidates_key, include_image=True)
             return None, None, None

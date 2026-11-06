@@ -181,6 +181,7 @@ def show_game_4():
             min_bet=GAME_4_MIN_BET,
             payout_multiplier=GAME_4_WIN_MULTIPLIER,
             title="게임 4: 일치율 구간 뉴스 맞히기",
+            state_key="game_4",
         )
         if confirmed_bet is not None:
             st.session_state.game_4_bet = confirmed_bet

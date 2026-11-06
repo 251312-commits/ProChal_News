@@ -281,6 +281,7 @@ window.addEventListener("message", event => {
   document.body.style.setProperty("--backdrop", 'url("' + art.background + '")');
   document.body.style.setProperty("--paper", 'url("' + art.paper + '")');
   back.hidden = args.allow_back === false;
+  directBtn.hidden = args.allow_direct_url === false;
   const coins = scene.querySelector(".coins");
   coins.textContent = Number(args.coins).toLocaleString("ko-KR");
   coins.setAttribute("aria-label", "보유 코인 " + coins.textContent);
