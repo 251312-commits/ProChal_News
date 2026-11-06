@@ -1,4 +1,3 @@
-
 import streamlit as st
 import time
 import math
@@ -24,6 +23,7 @@ def reset_game_3_state():
         "game_3_choice_deadline",
         "game_3_choice_timeout",
         "game_3_bet",
+        "game_3_page",
         "game_3_result",
         "game_3_summary_revealed",
         "selected_news_game_3",
@@ -40,86 +40,61 @@ def reset_game_3_state():
 
 # ==========================================
 # 슬롯 애니메이션 CSS 수정
-# common.py는 수정하지 않음
 # ==========================================
-
 
 def fix_game_3_slot_animation():
 
     st.markdown(
         """
         <style>
-
-        /* 기사 버튼 기본 디자인 */
         .st-key-btn_game_3_0 button,
         .st-key-btn_game_3_1 button,
         .st-key-btn_game_3_2 button {
-
             position: relative !important;
             overflow: hidden !important;
-
             min-height: 85px !important;
-
             background-color: #ffffff !important;
             color: #2d1842 !important;
-
             border: 3px solid #2d1842 !important;
             border-radius: 8px !important;
-
             padding: 15px !important;
-
             font-size: 16px !important;
             font-weight: 900 !important;
-
             text-align: left !important;
             white-space: normal !important;
-
             box-shadow: 4px 4px 0px #2d1842 !important;
-
             transition: all 0.2s ease !important;
         }
 
-        /* 기사 제목 글씨 */
         .st-key-btn_game_3_0 button p,
         .st-key-btn_game_3_1 button p,
         .st-key-btn_game_3_2 button p {
-
             color: #2d1842 !important;
             font-weight: 900 !important;
             line-height: 1.5 !important;
             white-space: normal !important;
             word-break: keep-all !important;
-
         }
 
-        /* 마우스 오버 효과 */
         .st-key-btn_game_3_0 button:hover,
         .st-key-btn_game_3_1 button:hover,
         .st-key-btn_game_3_2 button:hover {
-
             background-color: #f3e8ff !important;
             border-color: #a855f7 !important;
-
             transform: translateY(-2px);
-
             box-shadow: 5px 5px 0px #2d1842 !important;
         }
 
-        /* 버튼 클릭 효과 */
         .st-key-btn_game_3_0 button:active,
         .st-key-btn_game_3_1 button:active,
         .st-key-btn_game_3_2 button:active {
-
             background-color: #e9d5ff !important;
             transform: scale(0.98);
-
         }
-
         </style>
         """,
         unsafe_allow_html=True
     )
-
 
 
 # ==========================================
@@ -128,7 +103,6 @@ def fix_game_3_slot_animation():
 
 def load_game_3_article():
 
-    # 이미 가져온 기사가 있으면 재사용
     saved_article = st.session_state.get("game_3_article_data")
 
     if saved_article:
@@ -141,44 +115,28 @@ def load_game_3_article():
 
     try:
 
-        # common.py의 뉴스 선택 기능 실행
         selection = get_game_news_selection("game_3")
-
-        # --------------------------------------
-        # 중요 수정:
-        # common.py에서 None을 반환하는 경우 처리
-        # --------------------------------------
 
         if selection is None:
             return None, None, None
 
-        # 반환값이 튜플 또는 리스트인지 확인
         if not isinstance(selection, (tuple, list)):
 
-            st.error(
-                "뉴스 선택 함수의 반환 형식이 올바르지 않습니다."
-            )
-
+            st.error("뉴스 선택 함수의 반환 형식이 올바르지 않습니다.")
             return None, None, None
 
-        # 반환값 개수 확인
         if len(selection) != 3:
 
-            st.error(
-                "뉴스 선택 함수에서 반환된 데이터가 올바르지 않습니다."
-            )
-
+            st.error("뉴스 선택 함수에서 반환된 데이터가 올바르지 않습니다.")
             return None, None, None
 
         title, article_text, url = selection
 
-        # common.py에서 기사 선택 또는 읽기가 진행 중인 경우
         if not title or not article_text or not url:
             return None, None, None
 
         url = str(url).strip()
 
-        # URL 유효성 검사
         if not url.startswith(("http://", "https://")):
 
             st.error("올바른 기사 URL이 아닙니다.")
@@ -186,7 +144,6 @@ def load_game_3_article():
 
             return None, None, None
 
-        # 본문이 비어 있으면 URL로 다시 추출
         if not article_text or not str(article_text).strip():
 
             with st.spinner("기사 URL에서 본문을 가져오는 중입니다..."):
@@ -198,7 +155,6 @@ def load_game_3_article():
 
                 article_text = extracted_text
 
-        # 본문 최종 확인
         if not article_text or not str(article_text).strip():
 
             st.error("기사 본문을 가져오지 못했습니다.")
@@ -209,7 +165,6 @@ def load_game_3_article():
         if not title:
             title = "제목을 가져오지 못한 기사"
 
-        # 기사 정보 저장
         st.session_state.game_3_article_data = {
             "title": title,
             "article_text": article_text,
@@ -238,187 +193,207 @@ def show_game_3():
         _show_game_3_result(st.session_state.game_3_result)
         return
 
+    show_news_page = st.session_state.get("game_3_page") == "news"
+
     ws = init_gspread()
-
-    # ======================================
-    # STEP 1. 홀짝 선택 (10초 제한)
-    # ======================================
-
-    if (
-        "game_3_choice" not in st.session_state
-        and not st.session_state.get("game_3_choice_timeout", False)
-    ):
-
-        if "game_3_choice_deadline" not in st.session_state:
-
-            st.session_state.game_3_choice_deadline = time.time() + 10
-
-    if st.session_state.get("game_3_choice_timeout", False):
-
-        st.error("⏰ 선택 시간이 초과되었습니다!")
-
-        if st.button("🔄 다시 도전하기"):
-
-            reset_game_3_state()
-            st.rerun()
-
-        if st.button("⬅️ 메인으로 돌아가기"):
-
-            reset_game_3_state()
-            change_page("main")
-
-        return
-
-    if "game_3_choice" not in st.session_state:
-
-        st.markdown("### 🎯 STEP 1. 홀짝 선택")
-        st.info("10초 안에 최종 점수의 정수 부분이 홀인지 짝인지 선택하세요. 예를 들어 87.04점은 87이므로 홀입니다.")
-
-        @st.fragment(run_every="1s")
-        def choice_screen():
-
-            remaining = max(
-                0,
-                math.ceil(
-                    st.session_state.game_3_choice_deadline - time.time()
-                )
-            )
-
-            st.markdown(f"## ⏳ 남은 시간: {remaining}초")
-
-            if remaining <= 0:
-
-                st.session_state.game_3_choice_timeout = True
-                st.rerun()
-                return
-
-            col1, col2 = st.columns(2)
-
-            with col1:
-
-                if st.button(
-                    "🔴 홀 (ODD)",
-                    key="game_3_odd",
-                    use_container_width=True
-                ):
-
-                    if time.time() <= st.session_state.game_3_choice_deadline:
-                        st.session_state.game_3_choice = "홀"
-                    else:
-                        st.session_state.game_3_choice_timeout = True
-
-                    st.rerun()
-
-            with col2:
-
-                if st.button(
-                    "🔵 짝 (EVEN)",
-                    key="game_3_even",
-                    use_container_width=True
-                ):
-
-                    if time.time() <= st.session_state.game_3_choice_deadline:
-                        st.session_state.game_3_choice = "짝"
-                    else:
-                        st.session_state.game_3_choice_timeout = True
-
-                    st.rerun()
-
-        choice_screen()
-        return
-
-    # ======================================
-    # STEP 2. 코인 확인 및 베팅
-    # ======================================
-
-    st.markdown("---")
-    st.markdown("### 💰 STEP 2. 베팅 금액 선택")
 
     current_sid = str(
         st.session_state.current_user
     ).strip().replace(".0", "")
 
-    users_data = ws.get_all_records()
+    if not show_news_page:
 
-    user_row_idx = None
-    user_info = None
+        # ======================================
+        # STEP 1. 홀짝 선택 (10초 제한)
+        # ======================================
 
-    for idx, user in enumerate(users_data):
+        if (
+            "game_3_choice" not in st.session_state
+            and not st.session_state.get("game_3_choice_timeout", False)
+        ):
 
-        sid = str(
-            user.get("학번", "")
-        ).strip().replace(".0", "")
+            if "game_3_choice_deadline" not in st.session_state:
 
-        if sid == current_sid:
+                st.session_state.game_3_choice_deadline = time.time() + 10
 
-            user_row_idx = idx + 2
-            user_info = user
+        if st.session_state.get("game_3_choice_timeout", False):
 
-            break
+            st.error("⏰ 선택 시간이 초과되었습니다!")
 
-    if user_info is None:
+            if st.button("🔄 다시 도전하기"):
 
-        st.error("사용자 정보를 찾을 수 없습니다.")
-        return
+                reset_game_3_state()
+                st.rerun()
 
-    current_coins = int(user_info.get("코인", 0))
+            if st.button("⬅️ 메인으로 돌아가기"):
 
-    st.metric("💰 현재 보유 코인", f"{current_coins:,} C")
+                reset_game_3_state()
+                change_page("main")
 
-    st.success(f"내 선택: {st.session_state.game_3_choice}")
-
-    MIN_BET = 500
-
-    if current_coins < MIN_BET:
-
-        st.error("최소 베팅 금액인 500코인이 부족합니다.")
-        return
-
-    round_number = st.session_state.get("game_3_round", 0)
-
-    default_bet = max(
-        MIN_BET,
-        min(current_coins, (current_coins // 2 // 50) * 50)
-    )
-
-    bet_val = st.slider(
-        "베팅할 코인을 선택하세요.",
-        min_value=MIN_BET,
-        max_value=current_coins,
-        value=default_bet,
-        step=50,
-        key=f"game_3_bet_slider_{round_number}"
-    )
-
-    st.write(f"정답 시 순이익: +{bet_val:,} C")
-    st.write(f"오답 시 손실: -{bet_val // 2:,} C")
-
-    if st.button("🎲 베팅 확정", use_container_width=True):
-
-        if bet_val > current_coins:
-
-            st.error("보유 코인이 부족합니다.")
             return
 
-        st.session_state.game_3_bet = bet_val
-        st.rerun()
+        if "game_3_choice" not in st.session_state:
 
-    if st.button("🔄 홀짝 다시 선택하기"):
+            st.markdown("### 🎯 STEP 1. 홀짝 선택")
 
-        reset_game_3_state()
-        st.rerun()
+            st.info(
+                "10초 안에 최종 점수의 정수 부분이 홀인지 짝인지 선택하세요. "
+                "예를 들어 87.04점은 87이므로 홀입니다."
+            )
 
-    if "game_3_bet" not in st.session_state:
-        return
+            @st.fragment(run_every="1s")
+            def choice_screen():
 
-    bet_coin = st.session_state.game_3_bet
+                remaining = max(
+                    0,
+                    math.ceil(
+                        st.session_state.game_3_choice_deadline - time.time()
+                    )
+                )
+
+                st.markdown(f"## ⏳ 남은 시간: {remaining}초")
+
+                if remaining <= 0:
+
+                    st.session_state.game_3_choice_timeout = True
+                    st.rerun()
+                    return
+
+                col1, col2 = st.columns(2)
+
+                with col1:
+
+                    if st.button(
+                        "🔴 홀 (ODD)",
+                        key="game_3_odd",
+                        use_container_width=True
+                    ):
+
+                        if time.time() <= st.session_state.game_3_choice_deadline:
+                            st.session_state.game_3_choice = "홀"
+                        else:
+                            st.session_state.game_3_choice_timeout = True
+
+                        st.rerun()
+
+                with col2:
+
+                    if st.button(
+                        "🔵 짝 (EVEN)",
+                        key="game_3_even",
+                        use_container_width=True
+                    ):
+
+                        if time.time() <= st.session_state.game_3_choice_deadline:
+                            st.session_state.game_3_choice = "짝"
+                        else:
+                            st.session_state.game_3_choice_timeout = True
+
+                        st.rerun()
+
+            choice_screen()
+            return
+
+        # ======================================
+        # STEP 2. 코인 확인 및 베팅
+        # ======================================
+
+        st.markdown("---")
+        st.markdown("### 💰 STEP 2. 베팅 금액 선택")
+
+        users_data = ws.get_all_records()
+
+        user_row_idx = None
+        user_info = None
+
+        for idx, user in enumerate(users_data):
+
+            sid = str(
+                user.get("학번", "")
+            ).strip().replace(".0", "")
+
+            if sid == current_sid:
+
+                user_row_idx = idx + 2
+                user_info = user
+                break
+
+        if user_info is None:
+
+            st.error("사용자 정보를 찾을 수 없습니다.")
+            return
+
+        current_coins = int(user_info.get("코인", 0))
+
+        st.metric("💰 현재 보유 코인", f"{current_coins:,} C")
+
+        st.success(f"내 선택: {st.session_state.game_3_choice}")
+
+        # 최소 베팅 금액 1,000코인
+        MIN_BET = 1000
+
+        if current_coins < MIN_BET:
+
+            st.error("최소 베팅 금액인 1,000코인이 부족합니다.")
+            return
+
+        round_number = st.session_state.get("game_3_round", 0)
+
+        default_bet = max(
+            MIN_BET,
+            min(current_coins, (current_coins // 2 // 50) * 50)
+        )
+
+        bet_val = st.slider(
+            "베팅할 코인을 선택하세요.",
+            min_value=MIN_BET,
+            max_value=current_coins,
+            value=default_bet,
+            step=50,
+            key=f"game_3_bet_slider_{round_number}"
+        )
+
+        st.write(f"정답 시 순이익: +{bet_val:,} C")
+        st.write(f"오답 시 손실: -{bet_val // 2:,} C")
+
+        if st.button("🎲 베팅 확정", use_container_width=True):
+
+            if bet_val > current_coins:
+
+                st.error("보유 코인이 부족합니다.")
+                return
+
+            st.session_state.game_3_bet = bet_val
+
+            # 베팅 확정 후 뉴스 페이지로 이동
+            st.session_state.game_3_page = "news"
+
+            st.rerun()
+
+        if st.button("🔄 홀짝 다시 선택하기"):
+
+            reset_game_3_state()
+            st.rerun()
+
+        if "game_3_bet" not in st.session_state:
+            return
+
+    bet_coin = st.session_state.get("game_3_bet")
 
     # ======================================
     # STEP 3. 뉴스 선택 및 기사 본문 가져오기
     # ======================================
 
     st.markdown("---")
-    st.markdown("### 📰 STEP 3. 뉴스 기사 선택")
+    st.title("📰 뉴스 선택 페이지")
+    st.markdown("### STEP 3. 뉴스 기사 선택")
+
+    if st.button("⬅️ 베팅 페이지로 돌아가기", key="game_3_back_to_bet"):
+
+        st.session_state.game_3_page = "bet"
+        st.session_state.pop("game_3_bet", None)
+
+        st.rerun()
 
     st.info(
         "분석할 뉴스 기사를 선택하세요. "
@@ -426,13 +401,11 @@ def show_game_3():
     )
 
     # 슬롯 애니메이션 CSS 적용
-    # common.py는 수정하지 않음
     fix_game_3_slot_animation()
 
     # 뉴스 선택 및 본문 가져오기
     title, article_text, url = load_game_3_article()
 
-    # 기사가 아직 선택되지 않았거나 읽는 중이면 대기
     if not title or not article_text or not url:
         return
 
@@ -534,7 +507,6 @@ def show_game_3():
 
                             user_row_idx = idx + 2
                             user_info = user
-
                             break
 
                     if user_info is None:
@@ -599,10 +571,17 @@ def show_game_3():
                     )
 
 
+# ==========================================
+# 게임 결과 페이지
+# ==========================================
+
 def _show_game_3_result(res):
+
     show_summary_before_score(
-        res["summary"], "game_3_summary_revealed",
-        title=res["title"], score=res["actual_score"],
+        res["summary"],
+        "game_3_summary_revealed",
+        title=res["title"],
+        score=res["actual_score"],
         details=res.get("score_details"),
     )
 
@@ -624,7 +603,10 @@ def _show_game_3_result(res):
         st.metric("내 선택", res["user_choice"])
 
     with col2:
-        st.metric("정수 부분의 홀짝", f"{res['integer_score']} · {res['ai_result']}")
+        st.metric(
+            "정수 부분의 홀짝",
+            f"{res['integer_score']} · {res['ai_result']}"
+        )
 
     with st.expander("분석한 뉴스 기사 정보"):
 
