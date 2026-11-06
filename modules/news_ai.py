@@ -1,11 +1,15 @@
 import streamlit as st
 from newspaper import Article
-import re
 import random
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from modules.news_preprocessing import (
+    clean_common_text,
+    is_ad_or_ui_line,
+    remove_duplicate_and_ui_lines,
+)
 from modules.news_summarizer import summarize_news
 from modules.score_math import score_hundredths
 
@@ -27,8 +31,6 @@ tokenizer, model = load_ai_model()
 # ==========================================
 # 2. 제공해주신 기사 전처리 함수들
 # ==========================================
-UI_WORDS = {'광고', '본문', '전체재생', '동영상 고정', '동영상 고정 취소', '이미지 확대', '사진 확대', '기사본문'}
-
 def get_clean_title(article_obj, domain: str) -> str:
     title = article_obj.title.strip()
     if 'kbs.co.kr' in domain or title in ['KBS', 'KBS 뉴스', 'KBS뉴스', 'KBS 기사', '']:
@@ -50,27 +52,6 @@ def get_clean_title(article_obj, domain: str) -> str:
         if title.endswith(suffix):
             title = title[:-len(suffix)].strip()
     return title
-
-def is_ad_or_ui_line(line: str) -> bool:
-    s = line.strip()
-    if not s: return True
-    if s in UI_WORDS or s in {'[광고]', '(광고)', 'AD', 'Advertisement'}: return True
-    if re.match(r'^(광고|AD)\s*[:\-\|\[\(]', s) or s.endswith('(광고)'): return True
-    if '광고' in s and len(s) <= 20 and not re.search(r'[다요함음]\s*[\.\!\?]?$', s): return True
-    return False
-
-def remove_duplicate_and_ui_lines(text: str) -> str:
-    lines = [line.strip() for line in text.split('\n') if line.strip()]
-    cleaned_lines = [line for line in lines if not is_ad_or_ui_line(line)]
-    return '\n\n'.join(list(dict.fromkeys(cleaned_lines)))
-
-def clean_common_text(text: str) -> str:
-    text = re.sub(r'【[^】]*】', '', text)
-    text = re.sub(r'(사진|이미지)\s*확대[^\n]*', '', text)
-    text = re.sub(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z2-9]{2,}', '', text)
-    text = re.sub(r'\[[^\]]*(제공|DB|재판매|캡처|사진)[^\]]*\]', '', text)
-    text = re.sub(r'무단\s*전재[^\n]*', '', text)
-    return remove_duplicate_and_ui_lines(text)
 
 def bring_article(url: str):
     article_obj = Article(url, language='ko')
