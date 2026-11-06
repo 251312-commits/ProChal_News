@@ -11,6 +11,7 @@ from games.common import (
     check_user_coins_or_pop_bank,
     get_game_news_selection,
     render_betting_ui,
+    similarity_analysis_loading,
 )
 from modules.db_handler import init_gspread
 from modules.news_ai import similarity_check, summary
@@ -194,7 +195,7 @@ def show_game_4():
     st.caption("뉴스 제목과 본문의 일치율이 어느 구간에 속하는지 선택하세요.")
 
     if "game_4_score" not in st.session_state:
-        with st.spinner("🤖 AI가 뉴스 일치율 구간을 준비 중입니다..."):
+        with similarity_analysis_loading():
             try:
                 summary_text = asyncio.run(summary(article_text))
                 if not summary_text:

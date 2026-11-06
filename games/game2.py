@@ -8,7 +8,7 @@ from modules.db_handler import init_gspread
 from modules.ui_components import change_page
 from games.result_reveal import show_summary_before_score
 from games.betting_math import project_standings
-from games.common import get_game_news_selection
+from games.common import get_game_news_selection, similarity_analysis_loading
 from games.news_roulette2 import render_news_slot  # 룰렛 모듈 불러오기
 from views.ranking import fetch_ranking_data
 
@@ -590,7 +590,7 @@ def show_game_2():
     user_choice = st.session_state.game_2_user_choice
 
     if "game_2_result" not in st.session_state:
-        with st.spinner("🤖 AI가 유사도를 분석 중입니다..."):
+        with similarity_analysis_loading():
             text_for_summary = article_text if (article_text and article_text.strip()) else title
             summary_text = asyncio.run(summary(text_for_summary))
             

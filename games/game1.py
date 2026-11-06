@@ -8,7 +8,7 @@ from modules.ui_components import change_page
 from views.ranking import fetch_ranking_data
 from games.result_reveal import show_summary_before_score
 from games.game1_prediction_ui import render_game1_prediction_picker
-from games.common import get_game_news_selection, check_user_coins_or_pop_bank, render_betting_ui
+from games.common import get_game_news_selection, check_user_coins_or_pop_bank, render_betting_ui, similarity_analysis_loading
 
 ws = init_gspread()
 ws_news = init_news_sheet()
@@ -70,7 +70,7 @@ def show_game_1():
 
     if "game_1_result" not in st.session_state:
         predicted_digits = st.session_state.game_1_predicted_digits
-        with st.spinner("🤖 AI가 유사도를 분석 중입니다..."):
+        with similarity_analysis_loading():
             summary_text = asyncio.run(summary(article_text))
             if not summary_text:
                 st.error("뉴스 본문 요약에 실패해 유사도 점수를 계산할 수 없습니다.")

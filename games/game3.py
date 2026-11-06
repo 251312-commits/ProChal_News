@@ -8,7 +8,7 @@ from collections.abc import Mapping
 from modules.news_ai import summary, similarity_check, bring_article
 from modules.db_handler import init_gspread
 from modules.ui_components import change_page
-from games.common import get_game_news_selection
+from games.common import get_game_news_selection, similarity_analysis_loading
 from games.result_reveal import show_summary_before_score
 
 
@@ -468,7 +468,7 @@ def analyze_game_3(ws):
         use_container_width=True
     ):
 
-        with st.spinner("AI가 뉴스 유사도를 분석하고 있습니다..."):
+        with similarity_analysis_loading():
 
             try:
 

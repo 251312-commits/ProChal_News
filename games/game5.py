@@ -8,7 +8,7 @@ import random
 
 import streamlit as st
 
-from games.common import check_user_coins_or_pop_bank, render_betting_ui
+from games.common import check_user_coins_or_pop_bank, render_betting_ui, similarity_analysis_loading
 from modules.db_handler import init_gspread, init_news_sheet
 from modules.news_ai import bring_article, pick_3_lowest_count_news, similarity_check, summary
 from modules.ui_components import change_page
@@ -209,7 +209,7 @@ def show_game_5():
         return
 
     if "game_5_candidates" not in st.session_state:
-        with st.spinner("📰 뉴스 후보를 준비하는 중입니다..."):
+        with similarity_analysis_loading():
             try:
                 candidates = _load_candidates()
                 unique_score_indices = [
