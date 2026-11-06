@@ -2,6 +2,7 @@ import streamlit as st
 import base64
 from html import escape
 from pathlib import Path
+from games.game1_article_ui import render_game1_article
 from games.news_roulette import render_news_slot
 from games.betting_math import calculate_expected_gain, format_payout_multiplier, project_rank_change
 import streamlit.components.v1 as components
@@ -55,7 +56,7 @@ def _get_news_candidates(candidates_key):
     return st.session_state[candidates_key]
 
 
-def _open_chosen_article(item, news_key, candidates_key):
+def _open_chosen_article(item, news_key, candidates_key, *, keep_candidates=False):
     new_count = item['count'] + 1
     ws_news.update_cell(item['row_idx'], 2, new_count)
 
@@ -71,11 +72,14 @@ def _open_chosen_article(item, news_key, candidates_key):
         'text': clean_text,
         'url': item['url']
     }
-    del st.session_state[candidates_key]
+    if keep_candidates:
+        item['count'] = new_count
+    else:
+        del st.session_state[candidates_key]
     st.rerun()
 
 
-def get_game_news_selection(game_id: str):
+def get_game_news_selection(game_id: str, *, win_multiplier=None):
     news_key = f"selected_news_{game_id}"
     candidates_key = f"candidates_{game_id}"
     read_done_key = f"read_done_{game_id}"
@@ -84,12 +88,29 @@ def get_game_news_selection(game_id: str):
         chosen = st.session_state[news_key]
         return chosen['title'], chosen['text'], chosen['url']
 
-    if game_id == "game_1" and not st.session_state.get(news_key):
-        candidates = _get_news_candidates(candidates_key)
-        if candidates:
-            index = render_news_slot(candidates)
-            if index is not None:
-                _open_chosen_article(candidates[index], news_key, candidates_key)
+    if game_id == "game_1":
+        chosen = st.session_state.get(news_key)
+        if not chosen:
+            candidates = _get_news_candidates(candidates_key)
+            if candidates:
+                index = render_news_slot(candidates)
+                if index is not None:
+                    _open_chosen_article(candidates[index], news_key, candidates_key, keep_candidates=True)
+            return None, None, None
+
+        reward = None
+        if win_multiplier is not None:
+            reward = calculate_expected_gain(st.session_state["game_1_bet"], win_multiplier)
+        action = render_game1_article(chosen, reward=reward)
+        if action == "predict":
+            st.session_state[read_done_key] = True
+            st.session_state.pop(candidates_key, None)
+            st.rerun()
+        elif action == "back":
+            del st.session_state[news_key]
+            st.rerun()
+        elif action == "bank":
+            change_page("bank")
         return None, None, None
 
     st.markdown(

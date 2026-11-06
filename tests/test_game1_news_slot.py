@@ -52,11 +52,59 @@ class NewsSlotTests(unittest.TestCase):
         self.component.return_value = {"action": "choose", "round_id": round_id, "index": 0}
         self.assertEqual(self.select("game_1"), waiting)
         self.assertEqual(self.select("game_1"), waiting)  # Replayed component value during reading.
-        self.st.button.return_value = True
+        reader_round = self.component.call_args.kwargs["round_id"]
+        self.component.return_value = {"action": "predict", "round_id": reader_round}
         self.assertEqual(self.select("game_1"), waiting)
         self.assertEqual(self.select("game_1"), ("첫 기사", "본문", "url-1"))
+        self.assertNotIn("candidates_game_1", self.st.session_state)
         self.sheet.update_cell.assert_called_once_with(2, 2, 5)
         self.ai.bring_article.assert_called_once_with("url-1")
+
+    def test_reader_navigation_uses_live_data_and_preserves_the_stake(self):
+        self.st.session_state.current_user_data = {"코인": 2300}
+        url = "https://www.press.example/story"
+        self.sheet.get_all_records.return_value[0]["URL"] = url
+        self.select("game_1")
+        slot_round = self.component.call_args.kwargs["round_id"]
+        self.component.return_value = {"action": "choose", "round_id": slot_round, "index": 0}
+        self.select("game_1")
+        self.select("game_1", win_multiplier=100)
+        args = self.component.call_args.kwargs
+        self.assertEqual((args["title"], args["text"]), ("첫 기사", "본문"))
+        self.assertEqual((args["url"], args["source"]), (url, "press.example"))
+        self.assertEqual((args["coins"], args["reward"]), (2300, 100_000))
+
+        self.component.return_value = {"action": "bank", "round_id": args["round_id"]}
+        self.select("game_1")
+        self.select("game_1")  # Replayed event when returning from the bank.
+        self.ui.change_page.assert_called_once_with("bank")
+        next_round = self.component.call_args.kwargs["round_id"]
+        self.assertNotEqual(args["round_id"], next_round)
+        self.assertEqual(self.st.session_state.selected_news_game_1["url"], url)
+        self.component.return_value = {"action": "back", "round_id": next_round}
+        self.select("game_1")
+        self.assertNotIn("selected_news_game_1", self.st.session_state)
+        self.select("game_1")  # Same candidates for this bet.
+        self.assertEqual(self.component.call_args.kwargs["titles"], ["첫 기사", "둘째 기사"])
+        self.assertEqual(self.st.session_state.game_1_bet, 1000)
+        self.sheet.update_cell.assert_called_once_with(2, 2, 5)
+        self.ai.bring_article.assert_called_once_with(url)
+        self.ai.pick_3_lowest_count_news.assert_called_once()
+
+        slot_round = self.component.call_args.kwargs["round_id"]
+        self.component.return_value = {"action": "choose", "round_id": slot_round, "index": 0}
+        self.select("game_1")
+        self.sheet.update_cell.assert_called_with(2, 2, 6)
+        self.assertEqual(self.sheet.update_cell.call_count, 2)
+
+    def test_other_games_still_use_their_existing_reader(self):
+        self.st.session_state.selected_news_game_2 = {
+            "title": "제목", "text": "본문", "url": "url-2",
+        }
+        self.st.button.return_value = True
+        self.assertEqual(self.select("game_2"), (None, None, None))
+        self.assertEqual(self.select("game_2"), ("제목", "본문", "url-2"))
+        self.component.assert_not_called()
 
     def test_navigation_preserves_candidates_without_counting_a_view(self):
         self.select("game_1")
