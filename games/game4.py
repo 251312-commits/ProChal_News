@@ -7,7 +7,7 @@ import random
 
 import streamlit as st
 
-from games.common import (
+from games.shared import (
     check_user_coins_or_pop_bank,
     get_game_news_selection,
     render_betting_ui,

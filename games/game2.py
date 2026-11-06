@@ -6,8 +6,8 @@ import streamlit as st
 from modules.news_ai import summary, similarity_check
 from modules.db_handler import init_gspread
 from modules.ui_components import change_page
-from games.result_reveal import show_summary_before_score
-from games.common import get_game_news_selection, similarity_analysis_loading, render_betting_ui, check_user_coins_or_pop_bank
+from games.shared.result import show_summary_before_score
+from games.shared import get_game_news_selection, similarity_analysis_loading, render_betting_ui, check_user_coins_or_pop_bank
 from views.ranking import fetch_ranking_data
 
 ws = init_gspread()

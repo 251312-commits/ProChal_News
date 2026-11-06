@@ -9,7 +9,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from games.common import check_user_coins_or_pop_bank, render_betting_ui, similarity_analysis_loading
+from games.shared import check_user_coins_or_pop_bank, render_betting_ui, similarity_analysis_loading
 from modules.db_handler import init_gspread, init_news_sheet
 from modules.news_ai import bring_article, pick_3_lowest_count_news, similarity_check, summary
 from modules.ui_components import change_page

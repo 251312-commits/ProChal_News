@@ -9,8 +9,8 @@ from modules.news_ai import summary, similarity_check
 from modules.db_handler import init_gspread, init_news_sheet
 from modules.ui_components import change_page, load_local_image_as_base64
 from views.ranking import fetch_ranking_data
-from games.result_reveal import show_summary_before_score
-from games.common import get_game_news_selection, check_user_coins_or_pop_bank, render_betting_ui, similarity_analysis_loading
+from games.shared.result import show_summary_before_score
+from games.shared import get_game_news_selection, check_user_coins_or_pop_bank, render_betting_ui, similarity_analysis_loading
 
 ws = init_gspread()
 ws_news = init_news_sheet()

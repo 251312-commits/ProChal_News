@@ -8,8 +8,8 @@ from collections.abc import Mapping
 from modules.news_ai import summary, similarity_check, bring_article
 from modules.db_handler import init_gspread
 from modules.ui_components import change_page
-from games.common import get_game_news_selection, similarity_analysis_loading, render_betting_ui
-from games.result_reveal import show_summary_before_score
+from games.shared import get_game_news_selection, similarity_analysis_loading, render_betting_ui
+from games.shared.result import show_summary_before_score
 
 
 # ==========================================
