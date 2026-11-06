@@ -117,6 +117,21 @@ class NewsPreprocessingTests(unittest.TestCase):
                 self.assertEqual(cleaned, expected)
                 self.assertEqual(clean_common_text(cleaned), cleaned)
 
+    def test_yonhap_tv_tip_joined_to_reporter_byline(self):
+        footer = "연합뉴스TV 기사문의 및 제보 : 카톡/라인 jebo23한채희(1ch@yna.co.kr)"
+        story = "도서관이 주말에도 문을 연다."
+        for raw, expected in [
+            (footer, ""),
+            (f"{story}\n{footer}\n다음 문단이다.", f"{story}\n\n다음 문단이다."),
+            (f"{story}{footer}", story),
+            ("주말 개관 안내 " + footer, "주말 개관 안내"),
+            (f"{story} {footer}김가람(editor@example.org)당신이 담은 순간이 뉴스입니다!", story),
+            (f"담당자는 ‘{footer}’라는 표기를 예로 들었다.", f"담당자는 ‘{footer}’라는 표기를 예로 들었다."),
+            ("제보 계정은 jebo23한채희", "제보 계정은 jebo23한채희"),
+        ]:
+            with self.subTest(raw=raw):
+                self.assertEqual(clean_common_text(raw), expected)
+
     def test_reporter_signatures_with_parenthesized_addresses(self):
         body = "주민 신청은 다음 주에 시작한다."
         for suffix in [
