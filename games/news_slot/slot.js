@@ -130,9 +130,9 @@ function spinContinuousReel(rows) {
   strip.className = "continuous-reel";
   strip.setAttribute("aria-hidden", "true");
   for (let i = 0; i < rows.length; i++) strip.append(paper("• • •", true));
-  for (let i = 0; i < rows.length * 2; i++) strip.append(paper(titles[i % titles.length]));
+  for (let i = 0; i < rows.length * 5; i++) strip.append(paper(titles[i % titles.length]));
   strip.style.setProperty("--travel", -(strip.childElementCount / rows.length) * 100 + "%");
-  const duration = 2070;
+  const duration = 2800;
   strip.style.setProperty("--time", duration + "ms");
   strip.append(...rows);
   function settle() {
