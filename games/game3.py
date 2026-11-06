@@ -3,6 +3,7 @@ import streamlit as st
 import time
 import math
 import asyncio
+from collections.abc import Mapping
 
 from modules.news_ai import summary, similarity_check, bring_article
 from modules.db_handler import init_gspread
@@ -22,62 +23,50 @@ MIN_BET = 1000
 # ==========================================
 
 def extract_similarity_score(result):
+    """Extract a 0~100 percentage from current or legacy AI responses."""
+    if isinstance(result, bool):
+        raise ValueError(f"유사도 결과가 숫자가 아닙니다: {result}")
 
     if isinstance(result, (int, float, str)):
-
         try:
-            return float(result)
-        except (ValueError, TypeError):
-            raise ValueError(f"유사도 결과가 숫자가 아닙니다: {result}")
+            value = float(result)
+        except (ValueError, TypeError) as exc:
+            raise ValueError(f"유사도 결과가 숫자가 아닙니다: {result}") from exc
+        return value * 100 if 0 <= value <= 1 else value
 
-    if isinstance(result, dict):
+    if not isinstance(result, Mapping):
+        raise ValueError(f"지원하지 않는 유사도 반환 형식입니다: {type(result)}")
 
-        possible_keys = [
-            "score",
-            "similarity",
-            "similarity_score",
-            "similarity_percentage",
-            "percentage",
-            "percent",
-            "유사도",
-            "유사도 점수",
-            "점수"
-        ]
+    if "score_hundredths" in result:
+        hundredths = result["score_hundredths"]
+        if isinstance(hundredths, Mapping):
+            return extract_similarity_score(hundredths)
+        return float(hundredths) / 100
 
-        for key in possible_keys:
+    for key in (
+        "score",
+        "similarity",
+        "similarity_score",
+        "similarity_percentage",
+        "percentage",
+        "percent",
+        "유사도",
+        "유사도 점수",
+        "점수",
+    ):
+        if key in result:
+            return extract_similarity_score(result[key])
 
-            if key in result:
-
-                value = result[key]
-
-                if isinstance(value, dict):
-                    return extract_similarity_score(value)
-
-                if isinstance(value, (int, float, str)):
-
-                    try:
-                        return float(value)
-                    except (ValueError, TypeError):
-                        continue
-
-        # 딕셔너리 내부에 숫자 값이 하나만 있는 경우
-        numeric_values = []
-
-        for value in result.values():
-
-            if isinstance(value, (int, float)):
-                numeric_values.append(float(value))
-
-        if len(numeric_values) == 1:
-            return numeric_values[0]
-
-        raise ValueError(
-            "유사도 딕셔너리에서 점수를 찾지 못했습니다. "
-            f"실제 반환값: {result}"
-        )
+    numeric_values = [
+        value for value in result.values()
+        if isinstance(value, (int, float)) and not isinstance(value, bool)
+    ]
+    if len(numeric_values) == 1:
+        return extract_similarity_score(numeric_values[0])
 
     raise ValueError(
-        f"지원하지 않는 유사도 반환 형식입니다: {type(result)}"
+        "유사도 딕셔너리에서 점수를 찾지 못했습니다. "
+        f"실제 반환값: {result}"
     )
 
 
