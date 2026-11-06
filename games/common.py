@@ -489,67 +489,28 @@ def get_game_news_selection(game_id: str):
     return None, None, None
 
 
-@st.dialog("🚨 잔액 부족!")
+@st.dialog("잔액 부족", dismissible=False)
 def _no_money_modal(min_required, current_coins):
-    """코인 부족 시 뜨는 네온 스타일 모달 팝업"""
-    st.markdown(
-        f"""
-        <style>
-        .bank-popup-container {{
-            text-align: center;
-            padding: 10px 5px;
-        }}
-        .bank-popup-icon {{
-            font-size: 3.5rem;
-            margin-bottom: 10px;
-            animation: bankBounce 1.5s infinite ease-in-out;
-        }}
-        @keyframes bankBounce {{
-            0%, 100% {{ transform: translateY(0); }}
-            50% {{ transform: translateY(-8px); }}
-        }}
-        .bank-popup-title {{
-            color: #ff0055;
-            font-size: 1.3rem;
-            font-weight: 900;
-            text-shadow: 0 0 10px rgba(255, 0, 85, 0.6);
-            margin-bottom: 12px;
-        }}
-        .bank-popup-desc {{
-            color: #e0e0e0;
-            font-size: 0.95rem;
-            line-height: 1.6;
-            margin-bottom: 18px;
-        }}
-        .bank-popup-highlight {{
-            color: #ffd700;
-            font-weight: bold;
-        }}
-        </style>
+    # This artwork includes the 1,000C minimum in its lettering.
+    use_art = min_required == 1_000
+    if use_art:
+        st.html(Path(__file__).with_name("low_balance.css"))
+    with st.container(key="low_balance_panel" if use_art else None):
+        if use_art:
+            art = load_local_image_as_base64(str(_ASSET_ROOT / "low_balance.webp"))
+            st.html(f"""
+                <div class="low-balance-art">
+                    <img src="{art}" alt="잔액 부족. 베팅하려면 {min_required:,}C가 필요합니다.">
+                    <output aria-label="현재 보유액">{current_coins:,}C</output>
+                </div>
+            """)
+        else:
+            st.write(f"최소 베팅액은 {min_required:,}C이며, 현재 보유액은 {current_coins:,}C입니다.")
 
-        <div class="bank-popup-container">
-            <div class="bank-popup-icon">🏦</div>
-            <div class="bank-popup-title">탕진잼! 코인이 부족합니다</div>
-            <div class="bank-popup-desc">
-                게임 참여에 최소 <span class="bank-popup-highlight">{min_required:,} C</span>가 필요하지만<br>
-                현재 보유 코인은 <span style="color:#ff9999; font-weight:bold;">{current_coins:,} C</span> 입니다.<br><br>
-                💡 <b>은행</b>에 들러 대출이나 충전을 진행하시겠습니까?
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("🏛️ 은행으로 가기", use_container_width=True, type="primary"):
-            change_page('bank')
-            st.rerun()
-
-    with col2:
-        if st.button("⬅️ 메인으로", use_container_width=True):
-            change_page('main')
-            st.rerun()
+        if st.button("은행으로 가기", key="low_balance_bank", width="stretch"):
+            change_page("bank")
+        if st.button("메인으로", key="low_balance_main", width="stretch"):
+            change_page("main")
 
 
 def check_user_coins_or_pop_bank(min_required=MIN_BET):
