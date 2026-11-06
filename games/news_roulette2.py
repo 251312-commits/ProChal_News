@@ -29,7 +29,6 @@ def render_news_slot(candidates):
         state.game_2_slot_round = uuid4().hex
     round_id = state.game_2_slot_round
 
-    # 튜플(제목, 본문, url)과 딕셔너리 모두 지원하도록 안전 처리
     titles_list = []
     for item in candidates:
         if isinstance(item, (list, tuple)):
@@ -69,7 +68,7 @@ def render_news_slot(candidates):
 
     if not isinstance(event, dict) or event.get("round_id") != round_id:
         return None
-        
+
     action = event.get("action")
     if action == "choose":
         index = event.get("index")
@@ -83,5 +82,5 @@ def render_news_slot(candidates):
             st.rerun()
         else:
             change_page("bank")
-            
+
     return None
