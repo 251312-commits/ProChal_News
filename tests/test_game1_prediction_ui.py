@@ -198,5 +198,26 @@ class PredictionScreenTests(unittest.TestCase):
             self.assertTrue((root / "assets" / path).is_file(), path)
 
 
+    def test_long_news_titles_are_clipped_and_stage_positions_are_adjusted(self):
+        root = Path(__file__).resolve().parents[1] / "games/prediction_screen"
+        html = (root / "index.html").read_text(encoding="utf-8")
+        css = (root / "prediction.css").read_text(encoding="utf-8")
+
+        self.assertIn('<div class="news-copy">', html)
+        self.assertIn('<p class="news-title"></p>', html)
+        clipping_area = css.split(".news-copy {", 1)[1].split("}", 1)[0]
+        headline = css.split(".news-title {", 1)[1].split("}", 1)[0]
+        heading = css.split(".machine h2 {", 1)[1].split("}", 1)[0]
+        podium = css.split(".podium {", 1)[1].split("}", 1)[0]
+
+        self.assertIn("inset:34% 7% 12% 26%", clipping_area)
+        self.assertIn("overflow:hidden", clipping_area)
+        self.assertIn("max-height:100%", headline)
+        self.assertIn("-webkit-line-clamp:2", headline)
+        self.assertIn("overflow:hidden", headline)
+        self.assertIn("top:12.5%", heading)
+        self.assertIn("top:55.5%", podium)
+
+
 if __name__ == "__main__":
     unittest.main()
