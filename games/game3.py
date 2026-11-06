@@ -6,12 +6,9 @@ import asyncio
 
 from modules.news_ai import summary, similarity_check, bring_article
 from modules.db_handler import init_gspread
-from modules.ui_components import change_page, show_placeholder_page
+from modules.ui_components import change_page
 from games.common import get_game_news_selection
 
-def show_game3():
-  show_placeholder_page(game3)
-  return
 
 # ==========================================
 # 게임 상태 초기화
