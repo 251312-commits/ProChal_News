@@ -6,9 +6,16 @@ const lever = scene.querySelector(".lever");
 const reels = scene.querySelector(".window");
 const hint = scene.querySelector(".hint");
 const confirmBtn = scene.querySelector(".confirm");
+const directBtn = scene.querySelector(".direct-link");
+const urlModal = scene.querySelector(".url-modal");
+const urlInput = scene.querySelector(".url-input");
+const urlSubmit = scene.querySelector(".url-submit");
+const urlClose = scene.querySelector(".url-close");
+const urlError = scene.querySelector(".url-error");
+const urlSources = scene.querySelector(".url-sources");
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 let roundId, titles = [], selected = -1, drag = null, continuousReel = false;
-let timers = [], audio, hostOrigin = "*";
+let timers = [], audio, hostOrigin = "*", lastErrorId = "";
 
 function send(type, payload) {
   window.parent.postMessage({isStreamlitMessage: true, type, ...payload}, hostOrigin);
@@ -18,12 +25,46 @@ function finish(action, index) {
   if (!roundId || scene.dataset.phase === "sent") return;
   scene.dataset.phase = "sent";
   confirmBtn.disabled = lever.disabled = true;
-  for (const button of scene.querySelectorAll(".row, nav button")) button.disabled = true;
+  for (const button of scene.querySelectorAll(".row, nav button, footer button, .url-dialog button")) button.disabled = true;
   stopTimers();
   if (audio) { audio.close().catch(() => {}); audio = null; }
   const value = {action, round_id: roundId};
   if (action === "choose") value.index = index;
   send("streamlit:setComponentValue", {value, dataType: "json"});
+}
+
+function setUrlMessage(message, kind = "error") {
+  urlError.textContent = message || "";
+  if (message && kind) urlError.dataset.kind = kind;
+  else urlError.removeAttribute("data-kind");
+}
+
+function openUrlModal() {
+  urlModal.hidden = false;
+  setTimeout(() => urlInput.focus(), 0);
+}
+
+function closeUrlModal() {
+  urlModal.hidden = true;
+  urlSubmit.disabled = false;
+  setUrlMessage("");
+}
+
+function submitDirectUrl() {
+  const url = urlInput.value.trim();
+  let parsed;
+  try { parsed = new URL(url); } catch (_) { parsed = null; }
+  if (!parsed || !["http:", "https:"].includes(parsed.protocol)) {
+    setUrlMessage("올바르지 않은 URL입니다. https:// 또는 http://로 시작하는 기사 URL을 입력해 주세요.");
+    return;
+  }
+  const requestId = (crypto.randomUUID?.() || (Date.now() + "-" + Math.random().toString(16).slice(2)));
+  urlSubmit.disabled = true;
+  setUrlMessage("기사를 확인하는 중…", "loading");
+  send("streamlit:setComponentValue", {
+    value: {action: "direct_url", round_id: roundId, url, request_id: requestId},
+    dataType: "json"
+  });
 }
 
 function stopTimers() {
@@ -53,6 +94,11 @@ function reset(id, options) {
   lever.style.removeProperty("--tilt");
   lever.disabled = !titles.length;
   confirmBtn.disabled = true;
+  directBtn.disabled = false;
+  urlSubmit.disabled = false;
+  urlModal.hidden = true;
+  urlInput.value = "";
+  setUrlMessage("");
   for (const button of scene.querySelectorAll("nav button")) button.disabled = false;
   hint.textContent = titles.length ? "레버를 아래로 당겨 뉴스를 뽑으세요." : "선택할 뉴스가 없습니다.";
   reels.replaceChildren();
@@ -210,6 +256,15 @@ lever.addEventListener("click", event => { if (event.detail === 0) spin(); });
 confirmBtn.addEventListener("click", () => {
   if (scene.dataset.phase === "ready" && selected >= 0) finish("choose", selected);
 });
+directBtn.addEventListener("click", openUrlModal);
+urlClose.addEventListener("click", closeUrlModal);
+urlModal.addEventListener("click", event => { if (event.target === urlModal) closeUrlModal(); });
+urlSubmit.addEventListener("click", submitDirectUrl);
+urlInput.addEventListener("input", () => { if (urlError.dataset.kind !== "loading") setUrlMessage(""); });
+urlInput.addEventListener("keydown", event => {
+  if (event.key === "Enter") { event.preventDefault(); submitDirectUrl(); }
+  else if (event.key === "Escape") closeUrlModal();
+});
 back.addEventListener("click", () => { if (!back.hidden) finish("back"); });
 scene.querySelector(".bank").addEventListener("click", () => finish("bank"));
 
@@ -232,6 +287,20 @@ window.addEventListener("message", event => {
   if (roundId !== args.round_id) {
     continuousReel = args.continuous_reel === true;
     reset(args.round_id, args.titles);
+  }
+  const supported = Array.isArray(args.supported_sources) ? args.supported_sources : [];
+  urlSources.textContent = supported.length ? "지원 언론사: " + supported.join(" · ") : "";
+  const errorId = String(args.direct_url_error_id || "");
+  const serverError = String(args.direct_url_error || "");
+  if (serverError && errorId && errorId !== lastErrorId) {
+    lastErrorId = errorId;
+    urlSubmit.disabled = false;
+    setUrlMessage(serverError);
+    openUrlModal();
+  } else if (!serverError) {
+    lastErrorId = "";
+    if (urlError.dataset.kind === "loading") setUrlMessage("");
+    urlSubmit.disabled = false;
   }
   scene.hidden = false;
   send("streamlit:setFrameHeight", {height: window.innerHeight || 620});

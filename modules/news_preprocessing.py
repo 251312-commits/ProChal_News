@@ -1,6 +1,36 @@
 """Plain-text filters for Korean articles extracted by newspaper3k."""
 
 import re
+from urllib.parse import urlparse
+
+
+SUPPORTED_NEWS_SITES = {
+    "연합뉴스": ("yna.co.kr",),
+    "연합뉴스TV": ("yonhapnewstv.co.kr",),
+    "뉴시스": ("newsis.com",),
+    "뉴스1": ("news1.kr",),
+    "KBS": ("kbs.co.kr",),
+    "MBC": ("imbc.com",),
+    "SBS": ("sbs.co.kr",),
+    "YTN": ("ytn.co.kr",),
+    "한겨레": ("hani.co.kr",),
+}
+
+
+def supported_news_site(url: str):
+    """Return the supported newsroom label for a valid HTTP(S) URL, or None."""
+    raw = str(url or "").strip()
+    try:
+        parsed = urlparse(raw)
+    except ValueError:
+        return None
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        return None
+    host = parsed.hostname.lower().rstrip(".")
+    for label, domains in SUPPORTED_NEWS_SITES.items():
+        if any(host == domain or host.endswith("." + domain) for domain in domains):
+            return label
+    return None
 
 
 UI_WORDS = {

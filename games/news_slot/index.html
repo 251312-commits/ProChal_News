@@ -45,7 +45,22 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="m7.5 12 3 3 6-6"/></svg>
         선택하기
       </button>
+      <button class="direct-link" type="button">기사 링크 직접 넣기</button>
     </footer>
+    <div class="url-modal" hidden>
+      <section class="url-dialog" role="dialog" aria-modal="true" aria-labelledby="url-dialog-title">
+        <button class="url-close" type="button" aria-label="닫기">×</button>
+        <h2 id="url-dialog-title">기사 링크 직접 넣기</h2>
+        <p class="url-help">전처리 함수가 적용된 언론사 기사만 입력할 수 있습니다.</p>
+        <p class="url-sources"></p>
+        <label for="direct-news-url">기사 URL</label>
+        <input id="direct-news-url" class="url-input" type="url" inputmode="url"
+               autocomplete="off" autocapitalize="off" spellcheck="false"
+               placeholder="https://..." />
+        <p class="url-error" aria-live="polite"></p>
+        <button class="url-submit" type="button">기사 불러오기</button>
+      </section>
+    </div>
   </main>
 </body>
 </html>
