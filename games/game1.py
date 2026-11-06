@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 
 import streamlit as st
 from modules.news_ai import summary, similarity_check
@@ -34,13 +35,13 @@ def show_game_1():
         except Exception:
             users_data = None
 
-        # 📌 assets/bg.png 로컬 이미지 경로 전달
+        # Use the checked-in betting background from the assets directory.
         confirmed_bet = render_betting_ui(
             current_coins=current_coins,
             users_data=users_data,
             current_sid=current_sid,
             current_nickname=current_nickname,
-            bg_image_path="assets/bg.png",
+            bg_image_path=str(Path(__file__).resolve().parents[1] / "assets" / "bet_background.jpg"),
             payout_multiplier=GAME_1_WIN_MULTIPLIER,
             title="title",  # 나중에 실제 게임 제목으로 교체
         )
