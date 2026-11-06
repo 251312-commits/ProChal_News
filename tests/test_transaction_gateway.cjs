@@ -155,6 +155,7 @@ test('registration and referrer bonuses commit in one batch and retry once', () 
   assert.equal(e.rows.ledger.length, 3);
   const replay = e.call(request);
   assert.equal(replay.replayed, true);
+  assert.throws(() => e.call({...request, password:'changed'}), /Registration retry details differ/);
   assert.equal(e.rows.ledger.length, 3);
   assert.equal(e.state.batches, 1);
 });
