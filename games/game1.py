@@ -166,7 +166,7 @@ def show_game_1():
         keys_to_clear = [
             "game_1_bet", "selected_news_game_1", "candidates_game_1", 
             "read_done_game_1", "game_1_predicted_digits", "game_1_predicted_score", "game_1_result",
-            "tens_val", "ones_val", "game1_pred_tens", "game1_pred_ones", "game_1_summary_revealed"
+            "tens_val", "ones_val", "game1_pred_tens", "game1_pred_ones", "game1_pred_round_id", "game_1_summary_revealed"
         ]
         for k in keys_to_clear:
             if k in st.session_state:
