@@ -1,6 +1,7 @@
 import sys
 import unittest
 from runpy import run_module
+from types import ModuleType
 from unittest.mock import MagicMock, patch
 
 
@@ -33,7 +34,19 @@ class NewsSlotTests(unittest.TestCase):
         })
         modules.start()
         self.addCleanup(modules.stop)
-        self.select = run_module("games.common")["get_game_news_selection"]
+        # Evaluate the shared components under this test's isolated Streamlit stubs.
+        # Do not rely on cached imports from another test case.
+        roulette = ModuleType("games.shared.roulette")
+        roulette.render_news_slot = run_module("games.shared.roulette")["render_news_slot"]
+        article = ModuleType("games.shared.article_reader")
+        article.render_article_reader = run_module("games.shared.article_reader")["render_article_reader"]
+        components_patch = patch.dict(sys.modules, {
+            "games.shared.roulette": roulette,
+            "games.shared.article_reader": article,
+        })
+        components_patch.start()
+        self.addCleanup(components_patch.stop)
+        self.select = run_module("games.shared.news_flow")["get_game_news_selection"]
 
     def test_only_a_current_valid_choice_opens_an_article_once(self):
         waiting = (None, None, None)
@@ -130,14 +143,14 @@ class NewsSlotTests(unittest.TestCase):
         self.sheet.update_cell.assert_not_called()
 
     def test_game2_slot_still_returns_to_betting(self):
-        render_slot = run_module("games.news_roulette2")["render_news_slot"]
+        render_slot = run_module("games.shared.roulette")["render_news_slot"]
         self.st.session_state.game_2_bet = 500
         candidates = [("기사", "url-2")]
-        render_slot(candidates)
+        render_slot(candidates, game_id="game_2")
         args = self.component.call_args.kwargs
         self.assertIs(args.get("allow_back", True), True)
         self.component.return_value = {"action": "back", "round_id": args["round_id"]}
-        render_slot(candidates)
+        render_slot(candidates, game_id="game_2")
         self.assertNotIn("game_2_bet", self.st.session_state)
         self.assertNotIn("game_2_slot_round", self.st.session_state)
         self.st.rerun.assert_called_once()
