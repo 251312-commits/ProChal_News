@@ -1,9 +1,9 @@
-"""Regression tests for the Game 1 casino-style prediction picker."""
+"""Regression tests for the standalone Game 1 prediction screen."""
 from contextlib import nullcontext
-from html import escape
 from pathlib import Path
 from runpy import run_module
 import sys
+import types
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -20,9 +20,7 @@ class RerunRequested(Exception):
 class FakeStreamlit:
     def __init__(self, **state):
         self.session_state = Session(state)
-        self.clicked = None
         self.markup = []
-        self.rerun_scope = None
 
     @staticmethod
     def fragment(fn):
@@ -32,179 +30,172 @@ class FakeStreamlit:
     def container(*args, **kwargs):
         return nullcontext()
 
-    def button(self, label, *, key, **kwargs):
-        # Real Streamlit callbacks run before the next fragment rerender.
-        if key == self.clicked:
-            self.clicked = None
-            callback = kwargs.get("on_click")
-            if callback:
-                callback(*kwargs.get("args", ()), **kwargs.get("kwargs", {}))
-            return True
-        return False
-
-    @staticmethod
-    def columns(spec, **kwargs):
-        return tuple(nullcontext() for _ in spec)
-
     def html(self, value):
         self.markup.append(str(value))
 
-    def rerun(self, scope=None):
-        self.rerun_scope = scope
+    @staticmethod
+    def rerun():
         raise RerunRequested()
 
 
-class PredictionPickerTests(unittest.TestCase):
+class FakeComponents:
+    def __init__(self):
+        self.event = None
+        self.calls = []
+        self.declared = None
+
+    def declare_component(self, name, *, path):
+        self.declared = (name, path)
+
+        def show_screen(**kwargs):
+            self.calls.append(kwargs)
+            return self.event
+
+        return show_screen
+
+
+class PredictionScreenTests(unittest.TestCase):
     def setUp(self):
-        self.st = FakeStreamlit(current_user_data={"코인": 1250})
+        self.st = FakeStreamlit(current_user_data={"코인": 1250}, game_1_bet=1000)
+        self.v1 = FakeComponents()
+        self.parent = types.ModuleType("streamlit.components")
+        self.parent.v1 = self.v1
+        self.st.components = self.parent
         self.ui = MagicMock()
+        self.ui.load_local_image_as_base64.side_effect = (
+            lambda path: "data:image/png;base64,AAAA"
+        )
         with patch.dict(sys.modules, {
-            "streamlit": self.st, "modules.ui_components": self.ui,
+            "streamlit": self.st,
+            "streamlit.components": self.parent,
+            "streamlit.components.v1": self.v1,
+            "modules.ui_components": self.ui,
         }):
-            env = run_module("games.game1_prediction_ui")
-        self.picker = env["render_game1_prediction_picker"]
-        self.change_digit = env["_change_digit"]
-        # Renderer works without disk access; physical image paths are tested separately.
-        self.picker.__globals__["_asset"] = lambda name: "data:image/avif;base64,AAAA"
+            source = run_module("games.game1_prediction_ui")
+        self.picker = source["render_game1_prediction_picker"]
+        self.save_digits = source["_save_digits"]
 
-    def test_digits_wrap_and_do_not_commit_before_confirmation(self):
-        self.st.session_state.game1_pred_tens = 9
-        self.st.session_state.game1_pred_ones = 0
-        self.change_digit("tens", 1)
-        self.change_digit("ones", -1)
-        self.assertEqual(self.st.session_state.game1_pred_tens, 0)
-        self.assertEqual(self.st.session_state.game1_pred_ones, 9)
+    def test_default_screen_uses_joined_wallet_component(self):
+        self.picker("AI, 일자리 지형을 다시 바꾸나")
+        self.assertEqual(
+            self.v1.declared[0], "game1_prediction_screen"
+        )
+        self.assertTrue(self.v1.declared[1].endswith("games/prediction_screen"))
+        call = self.v1.calls[-1]
+        self.assertEqual(call["coins"], 1250)
+        self.assertEqual(call["digits"], [0, 4])
+        self.assertEqual(call["title"], "AI, 일자리 지형을 다시 바꾸나")
+        self.assertTrue(call["round_id"])
+        self.assertIn("bet_podium.png", [
+            Path(path).name for path in self.ui.load_local_image_as_base64.call_args_list
+            for path in [path.args[0]]
+        ])
+        self.assertEqual(set(call["art"]), {
+            "background", "header", "news", "tag", "frame", "reel", "podium"
+        })
         self.assertNotIn("game_1_predicted_digits", self.st.session_state)
 
-    def test_default_pair_and_news_title_are_safe_markup(self):
-        title = '<img src=x onerror="alert(1)">'
-        self.picker(title)
-        page = "".join(self.st.markup)
-        self.assertEqual((self.st.session_state.tens_val, self.st.session_state.ones_val), (0, 4))
-        self.assertIn(escape(title, quote=True), page)
-        self.assertNotIn(title, page)
-        self.assertIn("1,250 C", page)
+    def test_change_updates_both_digit_keys_without_submitting(self):
+        self.picker("기사")
+        self.v1.event = {
+            "round_id": self.st.session_state.game1_pred_round_id,
+            "action": "change", "digits": [9, 3],
+        }
+        self.picker("기사")
+        self.assertEqual(
+            (self.st.session_state.game1_pred_tens, self.st.session_state.game1_pred_ones),
+            (9, 3),
+        )
+        self.assertEqual((self.st.session_state.tens_val, self.st.session_state.ones_val), (9, 3))
         self.assertNotIn("game_1_predicted_digits", self.st.session_state)
 
-    def test_arrow_callbacks_change_number_and_rerender_display(self):
-        # Pressing any arrow runs its callback; Streamlit then reruns the fragment.
-        for key, expected_tens, expected_ones in (
-            ("game1-pred-tens-up", 1, 4),
-            ("game1-pred-ones-down", 1, 3),
-            ("game1-pred-tens-down", 0, 3),
-            ("game1-pred-ones-up", 0, 4),
-        ):
-            with self.subTest(key=key):
-                self.st.clicked = key
-                self.picker("한 기사")
-                self.assertEqual(
-                    (self.st.session_state.game1_pred_tens,
-                     self.st.session_state.game1_pred_ones),
-                    (expected_tens, expected_ones),
-                )
-                self.st.markup.clear()
-                self.picker("한 기사")  # Simulate Streamlit's automatic fragment rerun.
-                page = "".join(self.st.markup)
-                self.assertIn(f'aria-label="소수 첫째 자리 {expected_tens}"', page)
-                self.assertIn(f'aria-label="소수 둘째 자리 {expected_ones}"', page)
-                self.assertEqual(
-                    (self.st.session_state.tens_val, self.st.session_state.ones_val),
-                    (expected_tens, expected_ones),
-                )
-                self.assertNotIn("game_1_predicted_digits", self.st.session_state)
-                self.assertIsNone(self.st.rerun_scope)
-
-    def test_arrows_wrap_zero_and_nine(self):
-        self.st.session_state.game1_pred_tens = 9
-        self.st.session_state.game1_pred_ones = 0
-        self.st.clicked = "game1-pred-tens-up"
+    def test_confirm_stores_00_99_protocol_and_preserves_bet(self):
         self.picker("기사")
-        self.assertEqual(self.st.session_state.game1_pred_tens, 0)
-        self.st.clicked = "game1-pred-ones-down"
-        self.picker("기사")
-        self.assertEqual(self.st.session_state.game1_pred_ones, 9)
-        self.picker("기사")
-        self.assertEqual((self.st.session_state.tens_val, self.st.session_state.ones_val), (0, 9))
-
-    def test_submit_commits_existing_score_protocol(self):
-        self.st.session_state.game1_pred_tens = 8
-        self.st.session_state.game1_pred_ones = 7
-        self.st.session_state.game_1_bet = 1000
-        self.st.clicked = "game1-pred-submit"
+        self.v1.event = {
+            "round_id": self.st.session_state.game1_pred_round_id,
+            "action": "confirm", "digits": [8, 7],
+        }
         with self.assertRaises(RerunRequested):
-            self.picker("한 기사")
+            self.picker("기사")
         self.assertEqual(self.st.session_state.game_1_predicted_digits, 87)
         self.assertEqual(self.st.session_state.game_1_bet, 1000)
-        self.assertIsNone(self.st.rerun_scope)
+        self.assertNotIn("game1_pred_round_id", self.st.session_state)
 
-    def test_bank_navigation_keeps_current_bet_and_digits(self):
-        self.st.session_state.game_1_bet = 1000
-        self.st.session_state.game1_pred_ones = 6
-        self.st.clicked = "game1-pred-bank"
+    def test_invalid_digits_or_stale_round_do_not_commit(self):
         self.picker("기사")
-        self.ui.change_page.assert_called_once_with("bank")
-        self.assertEqual(self.st.session_state.game_1_bet, 1000)
-        self.assertEqual(self.st.session_state.game1_pred_ones, 6)
-        self.assertNotIn("game_1_predicted_digits", self.st.session_state)
+        current = self.st.session_state.game1_pred_round_id
+        for event in [
+            {"round_id": "stale", "action": "confirm", "digits": [0, 4]},
+            {"round_id": current, "action": "confirm", "digits": [-1, 4]},
+            {"round_id": current, "action": "confirm", "digits": [10, 4]},
+            {"round_id": current, "action": "confirm", "digits": [True, 4]},
+            {"round_id": current, "action": "confirm", "digits": ["0", "4"]},
+            {"round_id": current, "action": "confirm", "digits": [4]},
+        ]:
+            with self.subTest(event=event):
+                self.v1.event = event
+                self.picker("기사")
+                self.assertNotIn("game_1_predicted_digits", self.st.session_state)
 
-    def test_mobile_grid_uses_native_columns_and_correct_assets(self):
+    def test_back_and_bank_keep_uncommitted_digits(self):
+        for action, page in [("back", "main"), ("bank", "bank")]:
+            with self.subTest(action=action):
+                self.v1.event = None
+                self.ui.change_page.reset_mock()
+                self.picker("기사")
+                self.v1.event = {
+                    "round_id": self.st.session_state.game1_pred_round_id,
+                    "action": action, "digits": [4, 6],
+                }
+                self.picker("기사")
+                self.ui.change_page.assert_called_once_with(page)
+                self.assertEqual(self.st.session_state.game_1_bet, 1000)
+                self.assertEqual(
+                    (self.st.session_state.game1_pred_tens, self.st.session_state.game1_pred_ones),
+                    (4, 6),
+                )
+                self.assertNotIn("game_1_predicted_digits", self.st.session_state)
+
+    def test_title_is_data_not_unsafe_html(self):
+        raw_title = '<img src=x onerror="alert(1)">'
+        self.picker(raw_title)
+        self.assertEqual(self.v1.calls[-1]["title"], raw_title)
+        self.assertNotIn(raw_title, "".join(self.st.markup))
+        frontend = (
+            Path(__file__).resolve().parents[1] / "games/prediction_screen/prediction.js"
+        ).read_text(encoding="utf-8")
+        self.assertIn("ui.title.textContent", frontend)
+        self.assertNotIn(".innerHTML", frontend)
+
+    def test_frontend_files_and_one_screen_layout(self):
         root = Path(__file__).resolve().parents[1]
-        source = (root / "games" / "game1_prediction_ui.py").read_text(encoding="utf-8")
-        css = (root / "games" / "game1_prediction_ui.css").read_text(encoding="utf-8")
-        self.assertIn('st.container(key="game1-prediction-nav", gap=None)', source)
-        self.assertIn('st.container(key="game1-prediction-reels", gap=None)', source)
-        self.assertIn("st.columns([1, 5, 1]", source)
-        self.assertIn("st.columns([0.7, 1, 1]", source)
-        self.assertIn("on_click=_change_digit", source)
-        self.assertNotIn('color:transparent !important', source)
-        self.assertNotIn('bet_coin_stack.png', source)
-        self.assertIn('bet_podium.png', source)
-        self.assertTrue((root / "assets" / "bet_podium.png").exists())
-        self.assertIn('.st-key-game1-prediction-reels [data-testid="stHorizontalBlock"]', css)
-        self.assertIn('grid-template-columns:minmax(0,.78fr)', css)
-        self.assertIn('.st-key-game1-prediction-nav [data-testid="stHorizontalBlock"]', css)
-        self.assertIn('minmax(0,1fr)', css)
-        self.assertIn('position:fixed !important', css)
-        self.assertIn('height:100dvh !important', css)
-        self.assertIn('max-height:100dvh !important', css)
-        self.assertIn('overflow:hidden !important', css)
-        self.assertIn('env(safe-area-inset-top)', css)
+        ui = root / "games/prediction_screen"
+        for name in ("index.html", "prediction.css", "prediction.js"):
+            self.assertTrue((ui / name).is_file(), name)
+        html = (ui / "index.html").read_text(encoding="utf-8")
+        css = (ui / "prediction.css").read_text(encoding="utf-8")
+        js = (ui / "prediction.js").read_text(encoding="utf-8")
+        self.assertIn('class="balance"', html)
+        self.assertIn('class="bank"', html)
+        self.assertIn('class="bank"', html.split('class="balance"')[1].split("</div>")[0])
+        self.assertIn("height:100dvh", css)
+        self.assertIn("grid-template-rows:", css)
+        self.assertIn("container-type:size", css)
+        self.assertIn("aspect-ratio:520/340", css)
+        self.assertIn("aspect-ratio:258/360", css)
+        self.assertIn("aspect-ratio:1160/566", css)
+        self.assertIn('sendValue("change")', js)
+        self.assertIn('sendValue(action)', js)
+        self.assertIn("streamlit:setComponentValue", js)
+        self.assertIn("streamlit:componentReady", js)
         self.assertEqual(css.count("{"), css.count("}"))
-
-    def test_fixed_stage_sections_fit_without_a_page_scroll(self):
-        root = Path(__file__).resolve().parents[1]
-        css = (root / "games" / "game1_prediction_ui.css").read_text(encoding="utf-8")
-        # The parent is the viewport rather than a growing min-height container.
-        self.assertIn("position:fixed !important", css)
-        self.assertIn("height:100dvh !important", css)
-        self.assertNotIn("min-height:100svh", css)
-        # Check the explicit screen fractions used for each independent section.
-        # They are intentionally allowed to overlap at the news tag/podium edge.
-        placements = {
-            "heading": (6.5, 19.5),
-            "news": (25.8, 11.3),
-            "machine": (38.0, 35.8),
-            "podium": (71.7, 13.0),
-            "submit": (85.0, 8.3),
-        }
-        for name, (top, height) in placements.items():
-            with self.subTest(name=name):
-                self.assertGreaterEqual(top, 0)
-                self.assertLessEqual(top + height, 100)
-                self.assertIn(f"top:{top:g}% !important", css)
-                self.assertIn(f"height:{height:g}% !important", css)
-        self.assertIn("max-height:680px", css)
-        self.assertIn("max-width:340px", css)
-        self.assertIn("orientation:landscape", css)
-
-    def test_artwork_and_styles_are_checked_into_the_repository(self):
-        root = Path(__file__).resolve().parents[1]
-        for name in ("pred_header", "pred_tag", "pred_news", "pred_frame", "pred_reel"):
-            with self.subTest(asset=name):
-                self.assertGreater((root / "assets" / "game1_prediction" / f"{name}.avif").stat().st_size, 500)
-        css = (root / "games" / "game1_prediction_ui.css").read_text(encoding="utf-8")
-        self.assertIn("game1-prediction-reels", css)
-        self.assertIn("orientation:landscape", css)
+        for path in (
+            "bet_background.jpg", "bet_podium.png",
+            "game1_prediction/pred_header.avif", "game1_prediction/pred_news.avif",
+            "game1_prediction/pred_tag.avif", "game1_prediction/pred_frame.avif",
+            "game1_prediction/pred_reel.avif",
+        ):
+            self.assertTrue((root / "assets" / path).is_file(), path)
 
 
 if __name__ == "__main__":

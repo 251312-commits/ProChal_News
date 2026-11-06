@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>유사도 예측</title>
+  <link rel="stylesheet" href="./prediction.css">
+  <script src="./prediction.js" defer></script>
+</head>
+<body>
+  <main class="prediction" aria-label="유사도 예측" hidden>
+    <nav class="topbar" aria-label="화면 이동 및 보유 코인">
+      <button type="button" class="back" aria-label="메인으로 돌아가기">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 3-9 9 9 9"/></svg>
+      </button>
+      <div class="balance" aria-label="보유 코인">
+        <span class="coin" aria-hidden="true">₵</span>
+        <span class="coins" aria-live="polite">0 C</span>
+        <button class="bank" type="button" aria-label="은행으로 이동">+</button>
+      </div>
+    </nav>
+    <header class="hero">
+      <img class="crest" alt="SIMILARITY PREDICT" draggable="false">
+      <h1>유사도 예측</h1>
+      <p>선택한 뉴스 제목과 AI 요약문의<br>유사도 점수 소수 두 자리를 예측하세요.</p>
+    </header>
+    <section class="news-space" aria-label="선택한 뉴스">
+      <div class="news-card">
+        <img class="news-art" alt="" draggable="false">
+        <img class="news-tag" alt="선택한 뉴스" draggable="false">
+        <p class="news-title"></p>
+      </div>
+    </section>
+    <section class="stage-space" aria-label="유사도 점수 입력">
+      <div class="stage">
+        <div class="machine">
+          <img class="machine-art" alt="" draggable="false">
+          <h2>✦ &nbsp;예측하는 유사도 점수&nbsp; ✦</h2>
+          <div class="digits" role="group" aria-label="유사도 점수 소수점 두 자리">
+            <span class="prefix" aria-hidden="true">0.</span>
+            <div class="reel" data-digit="tens">
+              <img class="reel-art" alt="" draggable="false">
+              <button class="up" type="button" aria-label="소수 첫째 자리 증가"><span>▲</span></button>
+              <output aria-label="소수 첫째 자리">0</output>
+              <button class="down" type="button" aria-label="소수 첫째 자리 감소"><span>▼</span></button>
+            </div>
+            <div class="reel" data-digit="ones">
+              <img class="reel-art" alt="" draggable="false">
+              <button class="up" type="button" aria-label="소수 둘째 자리 증가"><span>▲</span></button>
+              <output aria-label="소수 둘째 자리">4</output>
+              <button class="down" type="button" aria-label="소수 둘째 자리 감소"><span>▼</span></button>
+            </div>
+          </div>
+          <p class="range">유사도 점수 범위&nbsp; <strong>0.00 – 0.99</strong> <span aria-hidden="true">ⓘ</span></p>
+        </div>
+        <img class="podium" alt="" draggable="false">
+      </div>
+    </section>
+    <footer class="actions">
+      <button class="confirm" type="button"><span class="check" aria-hidden="true">✓</span><span>예측 확정</span></button>
+    </footer>
+  </main>
+</body>
+</html>
