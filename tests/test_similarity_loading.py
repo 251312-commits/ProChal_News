@@ -52,7 +52,8 @@ class SimilarityLoadingTests(TestCase):
     def test_all_similarity_games_use_shared_screen(self):
         for number in range(1, 6):
             with self.subTest(game=number):
-                source = (ROOT / "games" / f"game{number}.py").read_text(encoding="utf-8")
+                game_file = ROOT / "games" / "game1" / "game1.py" if number == 1 else ROOT / "games" / f"game{number}.py"
+                source = game_file.read_text(encoding="utf-8")
                 self.assertIn("with similarity_analysis_loading():", source)
 
     def test_css_supports_mobile_and_reduced_motion(self):
