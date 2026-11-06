@@ -93,10 +93,13 @@ function findTransaction_(ledger, id) {
 }
 
 function balance_(values) {
+  // Legacy Users rows may have an empty streak or the newly introduced G debt
+  // column. Keep the pre-existing account_amount(blank) == 0 behavior.
+  const sheetNumber = (raw, field) => number_(raw === '' || raw == null ? 0 : raw, field, 0);
   return {
-    coins: number_(values[2], 'coins', 0),
-    streak: number_(values[3], 'streak', 0),
-    loan: number_(values[6], 'loan', 0)
+    coins: sheetNumber(values[2], 'coins'),
+    streak: sheetNumber(values[3], 'streak'),
+    loan: sheetNumber(values[6], 'loan')
   };
 }
 
