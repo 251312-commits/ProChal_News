@@ -11,6 +11,77 @@ from games.common import get_game_news_selection
 
 
 # ==========================================
+# 공통 설정
+# ==========================================
+
+MIN_BET = 1000
+
+
+# ==========================================
+# 유사도 점수 추출
+# ==========================================
+
+def extract_similarity_score(result):
+
+    if isinstance(result, (int, float, str)):
+
+        try:
+            return float(result)
+        except (ValueError, TypeError):
+            raise ValueError(f"유사도 결과가 숫자가 아닙니다: {result}")
+
+    if isinstance(result, dict):
+
+        possible_keys = [
+            "score",
+            "similarity",
+            "similarity_score",
+            "similarity_percentage",
+            "percentage",
+            "percent",
+            "유사도",
+            "유사도 점수",
+            "점수"
+        ]
+
+        for key in possible_keys:
+
+            if key in result:
+
+                value = result[key]
+
+                if isinstance(value, dict):
+                    return extract_similarity_score(value)
+
+                if isinstance(value, (int, float, str)):
+
+                    try:
+                        return float(value)
+                    except (ValueError, TypeError):
+                        continue
+
+        # 딕셔너리 내부에 숫자 값이 하나만 있는 경우
+        numeric_values = []
+
+        for value in result.values():
+
+            if isinstance(value, (int, float)):
+                numeric_values.append(float(value))
+
+        if len(numeric_values) == 1:
+            return numeric_values[0]
+
+        raise ValueError(
+            "유사도 딕셔너리에서 점수를 찾지 못했습니다. "
+            f"실제 반환값: {result}"
+        )
+
+    raise ValueError(
+        f"지원하지 않는 유사도 반환 형식입니다: {type(result)}"
+    )
+
+
+# ==========================================
 # 게임 상태 초기화
 # ==========================================
 
@@ -39,8 +110,7 @@ def reset_game_3_state():
 
 
 # ==========================================
-# 슬롯 애니메이션 디자인
-# common.py의 애니메이션과 소리는 유지
+# 슬롯 디자인
 # ==========================================
 
 def fix_game_3_slot_animation():
@@ -86,7 +156,6 @@ def fix_game_3_slot_animation():
             line-height: 1.5 !important;
             white-space: normal !important;
             word-break: keep-all !important;
-
         }
 
         .st-key-btn_game_3_0 button:hover,
@@ -95,19 +164,8 @@ def fix_game_3_slot_animation():
 
             background-color: #f3e8ff !important;
             border-color: #a855f7 !important;
-
             transform: translateY(-2px);
-
             box-shadow: 5px 5px 0px #2d1842 !important;
-        }
-
-        .st-key-btn_game_3_0 button:active,
-        .st-key-btn_game_3_1 button:active,
-        .st-key-btn_game_3_2 button:active {
-
-            background-color: #e9d5ff !important;
-            transform: scale(0.98);
-
         }
 
         </style>
@@ -138,7 +196,6 @@ def load_game_3_article():
 
         selection = get_game_news_selection("game_3")
 
-        # common.py에서 아직 기사가 준비되지 않은 경우
         if selection is None:
             return None, None, None
 
@@ -159,10 +216,8 @@ def load_game_3_article():
 
         if not url.startswith(("http://", "https://")):
             st.error("올바른 기사 URL이 아닙니다.")
-            st.write(f"가져온 URL: {url}")
             return None, None, None
 
-        # 본문이 비어 있다면 URL에서 다시 가져오기
         if not article_text or not str(article_text).strip():
 
             with st.spinner("기사 본문을 가져오는 중입니다..."):
@@ -176,11 +231,7 @@ def load_game_3_article():
 
         if not article_text or not str(article_text).strip():
             st.error("기사 본문을 가져오지 못했습니다.")
-            st.caption(f"기사 URL: {url}")
             return None, None, None
-
-        if not title:
-            title = "제목을 가져오지 못한 기사"
 
         st.session_state.game_3_article_data = {
             "title": title,
@@ -199,16 +250,16 @@ def load_game_3_article():
 
 
 # ==========================================
-# STEP 1. 홀짝 선택 화면
+# STEP 1. 홀짝 선택
 # ==========================================
 
 def show_choice_screen():
 
     st.markdown("### 🎯 STEP 1. 홀짝 선택")
-
     st.info("10초 안에 홀 또는 짝을 선택하세요!")
 
     if "game_3_choice_deadline" not in st.session_state:
+
         st.session_state.game_3_choice_deadline = time.time() + 10
 
     @st.fragment(run_every="1s")
@@ -295,7 +346,6 @@ def show_bet_screen(ws):
         ).strip().replace(".0", "")
 
         if sid == current_sid:
-
             user_info = user
             break
 
@@ -306,16 +356,9 @@ def show_bet_screen(ws):
 
     current_coins = int(user_info.get("코인", 0))
 
-    MIN_BET = 1000
+    st.metric("💰 현재 보유 코인", f"{current_coins:,} C")
 
-    st.metric(
-        "💰 현재 보유 코인",
-        f"{current_coins:,} C"
-    )
-
-    st.success(
-        f"내 선택: {st.session_state.game_3_choice}"
-    )
+    st.success(f"내 선택: {st.session_state.game_3_choice}")
 
     if current_coins < MIN_BET:
 
@@ -341,10 +384,7 @@ def show_bet_screen(ws):
     st.write(f"정답 시 순이익: +{bet_val:,} C")
     st.write(f"오답 시 손실: -{bet_val // 2:,} C")
 
-    if st.button(
-        "🎲 베팅 확정",
-        use_container_width=True
-    ):
+    if st.button("🎲 베팅 확정", use_container_width=True):
 
         if bet_val > current_coins:
 
@@ -352,42 +392,31 @@ def show_bet_screen(ws):
 
         else:
 
-            # 베팅 금액 저장
             st.session_state.game_3_bet = bet_val
-
-            # 화면을 뉴스 선택 단계로 변경
             st.session_state.game_3_screen = "news"
 
-            # Streamlit 전체 화면 다시 렌더링
             st.rerun()
 
-    if st.button(
-        "🔄 홀짝 다시 선택하기",
-        use_container_width=True
-    ):
+    if st.button("🔄 홀짝 다시 선택하기", use_container_width=True):
 
         reset_game_3_state()
         st.rerun()
 
 
 # ==========================================
-# STEP 3. 뉴스 선택 화면
+# STEP 3. 뉴스 선택
 # ==========================================
 
 def show_news_screen():
 
     st.markdown("### 📰 STEP 3. 뉴스 기사 선택")
 
-    st.info(
-        "분석할 뉴스 기사를 선택하세요. "
-        "슬롯이 멈추면 원하는 기사를 선택할 수 있습니다."
-    )
+    st.info("슬롯이 멈추면 분석할 뉴스 기사를 선택하세요.")
 
     fix_game_3_slot_animation()
 
     title, article_text, url = load_game_3_article()
 
-    # common.py에서 기사 선택 및 읽기 진행 중
     if not title or not article_text or not url:
         return
 
@@ -397,14 +426,10 @@ def show_news_screen():
     st.markdown(f"**뉴스 제목: {title}**")
 
     with st.expander("뉴스 본문 확인하기", expanded=True):
-
         st.write(article_text)
 
     st.markdown(f"[기사 원문 열기]({url})")
 
-    st.caption(f"기사 URL: {url}")
-
-    # 기사 로딩 완료 후 AI 분석 단계로 변경
     st.session_state.game_3_screen = "analysis"
 
     st.rerun()
@@ -419,6 +444,7 @@ def analyze_game_3(ws):
     article = st.session_state.get("game_3_article_data")
 
     if not article:
+
         st.error("분석할 뉴스 기사가 없습니다.")
         return
 
@@ -442,7 +468,6 @@ def analyze_game_3(ws):
     st.markdown(f"**뉴스 제목: {title}**")
 
     with st.expander("뉴스 본문 확인하기"):
-
         st.write(article_text)
 
     st.markdown(f"[기사 원문 열기]({url})")
@@ -460,18 +485,18 @@ def analyze_game_3(ws):
                 summary_text = asyncio.run(summary(article_text))
 
                 if not summary_text:
-
-                    raise ValueError(
-                        "뉴스 요약 결과가 비어 있습니다."
-                    )
+                    raise ValueError("뉴스 요약 결과가 비어 있습니다.")
 
                 # 유사도 계산
-                actual_score = similarity_check(
+                similarity_result = similarity_check(
                     summary_text,
                     title
                 )
 
-                actual_score = float(actual_score)
+                # 딕셔너리 또는 숫자 반환값 처리
+                actual_score = extract_similarity_score(
+                    similarity_result
+                )
 
                 if (
                     not math.isfinite(actual_score)
@@ -479,7 +504,7 @@ def analyze_game_3(ws):
                 ):
 
                     raise ValueError(
-                        "유사도 점수가 올바르지 않습니다."
+                        f"유사도 점수가 0~100 범위를 벗어났습니다: {actual_score}"
                     )
 
                 integer_score = int(actual_score)
@@ -492,13 +517,12 @@ def analyze_game_3(ws):
 
                 is_win = user_choice == ai_result
 
-                # 코인 정산
                 if is_win:
                     reward = bet_coin
                 else:
                     reward = -(bet_coin // 2)
 
-                # 최신 사용자 정보
+                # 최신 사용자 정보 가져오기
                 users_data = ws.get_all_records()
 
                 user_row_idx = None
@@ -517,24 +541,15 @@ def analyze_game_3(ws):
                         break
 
                 if user_info is None:
-
-                    raise ValueError(
-                        "사용자 정보를 다시 찾을 수 없습니다."
-                    )
+                    raise ValueError("사용자 정보를 다시 찾을 수 없습니다.")
 
                 current_balance = int(user_info.get("코인", 0))
                 current_streak = int(user_info.get("연승", 0))
 
                 if current_balance < bet_coin:
+                    raise ValueError("현재 보유 코인이 부족합니다.")
 
-                    raise ValueError(
-                        "현재 보유 코인이 부족합니다."
-                    )
-
-                new_balance = max(
-                    0,
-                    current_balance + reward
-                )
+                new_balance = max(0, current_balance + reward)
 
                 new_streak = (
                     current_streak + 1 if is_win else 0
@@ -573,9 +588,7 @@ def analyze_game_3(ws):
 
             except Exception as e:
 
-                st.error(
-                    f"게임 진행 중 오류가 발생했습니다: {e}"
-                )
+                st.error(f"게임 진행 중 오류가 발생했습니다: {e}")
 
 
 # ==========================================
@@ -613,14 +626,10 @@ def show_result_screen():
     )
 
     st.progress(
-        max(
-            0.0,
-            min(1.0, res["actual_score"] / 100)
-        )
+        max(0.0, min(1.0, res["actual_score"] / 100))
     )
 
     with st.expander("AI 뉴스 요약 결과"):
-
         st.write(res["summary"])
 
     with st.expander("분석한 뉴스 기사 정보"):
@@ -673,20 +682,14 @@ def show_result_screen():
 
     with col1:
 
-        if st.button(
-            "🔄 다시 도전하기",
-            use_container_width=True
-        ):
+        if st.button("🔄 다시 도전하기", use_container_width=True):
 
             reset_game_3_state()
             st.rerun()
 
     with col2:
 
-        if st.button(
-            "⬅️ 메인으로 돌아가기",
-            use_container_width=True
-        ):
+        if st.button("⬅️ 메인으로 돌아가기", use_container_width=True):
 
             reset_game_3_state()
             change_page("main")
@@ -702,14 +705,10 @@ def show_game_3():
 
     ws = init_gspread()
 
-    # 최초 화면 설정
     if "game_3_screen" not in st.session_state:
         st.session_state.game_3_screen = "choice"
 
-    # ======================================
-    # 선택 시간 초과
-    # ======================================
-
+    # 시간 초과
     if st.session_state.get("game_3_choice_timeout", False):
 
         st.error("⏰ 선택 시간이 초과되었습니다!")
@@ -726,37 +725,28 @@ def show_game_3():
 
         return
 
-    # ======================================
-    # 화면별 렌더링
-    # ======================================
-
     screen = st.session_state.game_3_screen
 
-    # STEP 1
     if screen == "choice":
 
         show_choice_screen()
         return
 
-    # STEP 2
     elif screen == "bet":
 
         show_bet_screen(ws)
         return
 
-    # STEP 3
     elif screen == "news":
 
         show_news_screen()
         return
 
-    # STEP 4
     elif screen == "analysis":
 
         analyze_game_3(ws)
         return
 
-    # STEP 5
     elif screen == "result":
 
         show_result_screen()
