@@ -315,21 +315,31 @@ def show_game_5():
         """
         <style>
         .st-key-game5-candidates [data-testid="stHorizontalBlock"] {
-            gap: 6px;
+            gap: 12px;
             align-items: stretch;
         }
         .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] {
             height: 100%;
             min-height: 190px;
-            border: 2px solid #6f3690;
+            border: 2px solid #a842c5;
             border-radius: 22px;
-            background: linear-gradient(160deg, #28103d, #130a20);
-            box-shadow: 0 5px 14px #12001d80;
+            background: linear-gradient(160deg, #351346, #17091f);
+            box-shadow: 0 0 12px #a13dcc35, inset 0 0 18px #a13dcc22;
             padding: 14px 12px 12px;
         }
+        .st-key-game5-candidates .st-key-game5-card-0 {
+            transform: translateX(50%);
+            position: relative;
+            z-index: 1;
+        }
+        .st-key-game5-candidates .st-key-game5-card-1 {
+            transform: translateX(-50%);
+            position: relative;
+            z-index: 1;
+        }
         .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"]:hover {
-            border-color: #d78cff;
-            box-shadow: 0 0 14px #b840e66e;
+            border-color: #e7a4ff;
+            box-shadow: 0 0 14px #bf4ce366, inset 0 0 18px #a13dcc35;
         }
         .st-key-game5-candidates .game5-card-title {
             min-height: 70px;
@@ -357,7 +367,7 @@ def show_game_5():
         }
         @media (max-width: 430px) {
             .st-key-game5-candidates [data-testid="stHorizontalBlock"] {
-                gap: 4px;
+                gap: 8px;
             }
             .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] {
                 min-height: 178px;
@@ -379,15 +389,18 @@ def show_game_5():
     )
 
     with st.container(key="game5-candidates"):
-        rows = ((None, 0, None, 1, None), (2, None, 3, None, 4))
+        rows = ((0, None, 1), (2, 3, 4))
         for row in rows:
-            columns = st.columns(5)
+            columns = st.columns(3)
             for column, index in zip(columns, row):
                 if index is None:
                     continue
                 article = candidates[index]
                 with column:
-                    with st.container(border=True):
+                    with st.container(
+                        key=f"game5-card-{index}",
+                        border=True,
+                    ):
                         st.markdown(
                             f'<div class="game5-card-number">{index + 1}</div>'
                             f'<div class="game5-card-title">'
