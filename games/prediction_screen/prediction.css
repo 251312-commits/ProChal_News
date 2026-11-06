@@ -97,14 +97,21 @@ h1 {
   width:40%; height:40%; object-fit:contain;
   filter:drop-shadow(0 0 7px #c62cf5);
 }
+/* Center the headline inside the paper's printable area, not over its border.
+   Clip the copy area as well as the two-line title for very long news headlines. */
+.news-copy {
+  position:absolute; inset:34% 7% 12% 26%;
+  display:flex; align-items:center; justify-content:center;
+  min-width:0; min-height:0; overflow:hidden;
+}
 .news-title {
-  position:absolute; display:-webkit-box; -webkit-box-orient:vertical;
+  display:-webkit-box; -webkit-box-orient:vertical;
   -webkit-line-clamp:2; line-clamp:2;
-  top:52%; left:27%; right:5%; max-height:58%; transform:translateY(-32%);
+  width:100%; max-height:100%; min-width:0;
   overflow:hidden; margin:0; text-align:center;
   word-break:keep-all; overflow-wrap:anywhere;
-  color:#331041; font-size:clamp(11px,3.6cqw,21px);
-  font-weight:900; letter-spacing:-.04em; line-height:1.12;
+  color:#331041; font-size:clamp(10px,3.25cqw,18px);
+  font-weight:900; letter-spacing:-.04em; line-height:1.14;
 }
 /* Container queries scale the frame AND podium as one unit, without cropping
    either image or forcing a tall screen to scroll. */
@@ -119,7 +126,7 @@ h1 {
 }
 .machine-art { position:absolute; inset:0; width:100%; height:100%; }
 .machine h2 {
-  position:absolute; top:17.5%; left:8%; width:84%; margin:0;
+  position:absolute; top:12.5%; left:8%; width:84%; margin:0;
   color:#ffe8fe; font-size:clamp(11px,3.8cqw,20px);
   font-weight:850; line-height:1.15; text-shadow:0 0 10px #e148ff;
   text-align:center; white-space:nowrap;
@@ -168,7 +175,7 @@ h1 {
 .range strong { color:#fff0ff; font-weight:800; }
 .range span { margin-left:.2em; }
 .podium {
-  position:absolute; top:51.5%; left:-5%; width:110%;
+  position:absolute; top:55.5%; left:-5%; width:110%;
   height:auto; aspect-ratio:1160/566; object-fit:contain;
   filter:drop-shadow(0 3px 10px #a630f3a3);
 }
