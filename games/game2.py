@@ -4,14 +4,13 @@ import asyncio
 import random
 import streamlit as st
 from modules.news_ai import summary, similarity_check
-from modules.db_handler import init_gspread, init_news_sheet
+from modules.db_handler import init_gspread
 from modules.ui_components import change_page
 from games.result_reveal import show_summary_before_score
 from games.common import get_game_news_selection
 from games.news_roulette2 import render_news_slot  # 룰렛 모듈 불러오기
 
 ws = init_gspread()
-ws_news = init_news_sheet()
 
 def _parse_news_item(raw_news):
     """뉴스 데이터를 무조건 (title, article, url) 튜플 3개 형태로 안전하게 반환"""
@@ -456,27 +455,60 @@ def show_game_2():
                 'coins': c_val
             })
 
-        curr_sorted = sorted(processed_users, key=lambda x: x['coins'], reverse=True)
-        curr_rank = next((idx + 1 for idx, u in enumerate(curr_sorted) if u['id'] == current_sid or u['nickname'] == st.session_state.current_user_data.get('아이디', '')), len(curr_sorted) + 1)
+        me_sid = current_sid
+        me_nickname = st.session_state.current_user_data.get('아이디', '')
 
-        sim_list = [{
-            'id': u['id'], 'nickname': u['nickname'],
-            'coins': simulated_total_coins if (u['id'] == current_sid or u['nickname'] == st.session_state.current_user_data.get('아이디', '')) else u['coins'],
-            'is_me': (u['id'] == current_sid or u['nickname'] == st.session_state.current_user_data.get('아이디', ''))
-        } for u in processed_users]
+        def is_me(user):
+            return user.get('id') == me_sid or user.get('nickname') == me_nickname
+
+        curr_sorted = sorted(processed_users, key=lambda x: x['coins'], reverse=True)
+        curr_rank = next(
+            (idx + 1 for idx, u in enumerate(curr_sorted) if is_me(u)),
+            len(curr_sorted) + 1
+        )
+
+        sim_list = []
+        for u in processed_users:
+            sim_list.append({
+                'id': u['id'],
+                'nickname': u['nickname'],
+                'coins': simulated_total_coins if is_me(u) else u['coins'],
+                'is_me': is_me(u)
+            })
 
         sim_sorted = sorted(sim_list, key=lambda x: x['coins'], reverse=True)
         sim_me_idx = next((idx for idx, u in enumerate(sim_sorted) if u['is_me']), None)
         sim_rank = sim_me_idx + 1 if sim_me_idx is not None else len(sim_sorted) + 1
 
         rank_climb = curr_rank - sim_rank if curr_rank else 0
-        
-        # 💡 UnboundLocalError 예방: 미리 None으로 설정 후 안전 검사
-        above_user = sim_sorted[sim_me_idx - 1] if (sim_me_idx is not None and sim_me_idx > 0) else None
-        below_user = sim_sorted[sim_me_idx + 1] if (sim_me_idx is not None and sim_me_idx < len(sim_sorted) - 1) else None
 
-        above_str = f"🔺 <b>위:</b> {above_user['nickname']} <span style='color:#ff9999;'>({above_user['coins'] - simulated_total_coins:,} C 부족)</span>" if above_user else "👑 <b>예상 랭킹 1위 달성!</b>"
-        below_str = f"🔻 <b>아래:</b> {below_user['nickname']} <span style='color:#00ff88;'>({simulated_total_coins - below_user['coins']:,} C 제침)</span>" if below_user else "🛡️ <b>최하위 라이벌 없음</b>"
+        # UnboundLocalError 완전 예방: 위/아래 유저는 항상 먼저 None으로 초기화
+        above_user = None
+        below_user = None
+
+        if sim_me_idx is not None:
+            if sim_me_idx > 0:
+                above_user = sim_sorted[sim_me_idx - 1]
+            if sim_me_idx < len(sim_sorted) - 1:
+                below_user = sim_sorted[sim_me_idx + 1]
+
+        if above_user is not None:
+            above_gap = max(0, int(above_user.get('coins', 0)) - int(simulated_total_coins))
+            above_str = (
+                f"🔺 <b>위:</b> {above_user.get('nickname', '익명')} "
+                f"<span style='color:#ff9999;'>({above_gap:,} C 부족)</span>"
+            )
+        else:
+            above_str = "👑 <b>예상 랭킹 1위 달성!</b>"
+
+        if below_user is not None:
+            below_gap = max(0, int(simulated_total_coins) - int(below_user.get('coins', 0)))
+            below_str = (
+                f"🔻 <b>아래:</b> {below_user.get('nickname', '익명')} "
+                f"<span style='color:#00ff88;'>({below_gap:,} C 제침)</span>"
+            )
+        else:
+            below_str = "🛡️ <b>최하위 라이벌 없음</b>"
 
         col_card1, col_card2 = st.columns(2)
         with col_card1:
@@ -680,7 +712,7 @@ def show_game_2():
     def reset_game_2_state():
         keys_to_clear = [
             "game_2_bet", "selected_news_game_2", "candidates_game_2", 
-            "read_done_game_2", "game_2_target_num", "game_2_user_choice", "game_2_result",
+            "game_2_target_num", "game_2_user_choice", "game_2_result",
             "game_2_summary_revealed", "game_2_slot_round"
         ]
         for k in keys_to_clear:
