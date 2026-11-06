@@ -34,6 +34,7 @@ def _reset_game_5_state() -> None:
         "game_5_answer_index",
         "game_5_candidates",
         "game_5_selected_index",
+        "game_5_pending_selection",
         "game_5_result",
         "game_5_article_index",
         "bet_slider_val",
@@ -172,6 +173,27 @@ def _build_target_range(answer_score: float) -> tuple[float, float]:
 
 def _format_score_range(score_range: tuple[float, float]) -> str:
     return f"{score_range[0]:.2f}~{score_range[1]:.2f}%"
+
+
+@st.dialog("기사 선택 확인")
+def _confirm_article_selection(index: int) -> None:
+    candidates = st.session_state.get("game_5_candidates", [])
+    if not 0 <= index < len(candidates):
+        st.error("선택할 뉴스 정보를 찾을 수 없습니다.")
+        return
+
+    st.write(f"**후보 {index + 1}**을 정답으로 결정할까요?")
+    st.caption(candidates[index]["title"])
+    confirm_col, cancel_col = st.columns(2)
+    with confirm_col:
+        if st.button("결정하기", key="game_5_confirm_selection", use_container_width=True):
+            st.session_state.game_5_selected_index = index
+            st.session_state.pop("game_5_pending_selection", None)
+            st.rerun()
+    with cancel_col:
+        if st.button("다시 보기", key="game_5_cancel_selection", use_container_width=True):
+            st.session_state.pop("game_5_pending_selection", None)
+            st.rerun()
 
 
 def _show_article_detail() -> None:
@@ -321,10 +343,10 @@ def show_game_5():
         .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] {
             height: 100%;
             min-height: 190px;
-            border: 2px solid #a842c5;
+            border: 3px solid #bf4ce3;
             border-radius: 22px;
             background: linear-gradient(160deg, #351346, #17091f);
-            box-shadow: 0 0 12px #a13dcc35, inset 0 0 18px #a13dcc22;
+            box-shadow: 0 0 14px #bf4ce366, inset 0 0 18px #a13dcc35;
             padding: 14px 12px 12px;
         }
         .st-key-game5-candidates .st-key-game5-card-0 {
@@ -339,7 +361,7 @@ def show_game_5():
         }
         .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"]:hover {
             border-color: #e7a4ff;
-            box-shadow: 0 0 14px #bf4ce366, inset 0 0 18px #a13dcc35;
+            box-shadow: 0 0 18px #d967f099, inset 0 0 18px #a13dcc45;
         }
         .st-key-game5-candidates .game5-card-title {
             min-height: 70px;
@@ -361,9 +383,10 @@ def show_game_5():
             font-weight: 900;
         }
         .st-key-game5-candidates [data-testid="stButton"] button {
-            min-height: 40px;
+            min-height: 36px;
             border-radius: 12px;
-            font-size: 13px;
+            font-size: 12px;
+            padding: 4px 6px;
         }
         @media (max-width: 430px) {
             .st-key-game5-candidates [data-testid="stHorizontalBlock"] {
@@ -379,8 +402,9 @@ def show_game_5():
                 font-size: 13px;
             }
             .st-key-game5-candidates [data-testid="stButton"] button {
-                padding-inline: 4px;
-                font-size: 12px;
+                min-height: 34px;
+                padding-inline: 2px;
+                font-size: 11px;
             }
         }
         </style>
@@ -389,6 +413,10 @@ def show_game_5():
     )
 
     with st.container(key="game5-candidates"):
+        pending_index = st.session_state.get("game_5_pending_selection")
+        if isinstance(pending_index, int):
+            _confirm_article_selection(pending_index)
+
         rows = ((0, None, 1), (2, 3, 4))
         for row in rows:
             columns = st.columns(3)
@@ -410,7 +438,7 @@ def show_game_5():
                         read_col, select_col = st.columns(2)
                         with read_col:
                             if st.button(
-                                "📖 본문",
+                                "본문 읽기",
                                 key=f"game_5_article_{index}",
                                 use_container_width=True,
                             ):
@@ -434,11 +462,11 @@ def show_game_5():
                                 change_page("game_5_article")
                         with select_col:
                             if st.button(
-                                "✅ 선택",
+                                "정답 결정",
                                 key=f"game_5_select_{index}",
                                 use_container_width=True,
                             ):
-                                st.session_state.game_5_selected_index = index
+                                st.session_state.game_5_pending_selection = index
                                 st.rerun()
 
     if "game_5_selected_index" not in st.session_state:
