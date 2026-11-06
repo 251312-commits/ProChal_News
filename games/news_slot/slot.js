@@ -47,7 +47,7 @@ function openUrlModal() {
 function closeUrlModal() {
   urlModal.hidden = true;
   urlSubmit.disabled = false;
-  if (!urlError.textContent.startsWith("올바르지 않은 URL")) setUrlMessage("");
+  setUrlMessage("");
 }
 
 function submitDirectUrl() {
@@ -281,6 +281,13 @@ window.addEventListener("message", event => {
   document.body.style.setProperty("--backdrop", 'url("' + art.background + '")');
   document.body.style.setProperty("--paper", 'url("' + art.paper + '")');
   back.hidden = args.allow_back === false;
+  const coins = scene.querySelector(".coins");
+  coins.textContent = Number(args.coins).toLocaleString("ko-KR");
+  coins.setAttribute("aria-label", "보유 코인 " + coins.textContent);
+  if (roundId !== args.round_id) {
+    continuousReel = args.continuous_reel === true;
+    reset(args.round_id, args.titles);
+  }
   const supported = Array.isArray(args.supported_sources) ? args.supported_sources : [];
   urlSources.textContent = supported.length ? "지원 언론사: " + supported.join(" · ") : "";
   const errorId = String(args.direct_url_error_id || "");
@@ -294,13 +301,6 @@ window.addEventListener("message", event => {
     lastErrorId = "";
     if (urlError.dataset.kind === "loading") setUrlMessage("");
     urlSubmit.disabled = false;
-  }
-  const coins = scene.querySelector(".coins");
-  coins.textContent = Number(args.coins).toLocaleString("ko-KR");
-  coins.setAttribute("aria-label", "보유 코인 " + coins.textContent);
-  if (roundId !== args.round_id) {
-    continuousReel = args.continuous_reel === true;
-    reset(args.round_id, args.titles);
   }
   scene.hidden = false;
   send("streamlit:setFrameHeight", {height: window.innerHeight || 620});
