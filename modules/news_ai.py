@@ -115,8 +115,10 @@ def similarity_check(summary_text, title):
 # ==========================================
 # 선택 횟수 기반 최저 뉴스 3개 무작위 추출 알고리즘
 # ==========================================
-def pick_3_lowest_count_news(news_list):
-    if len(news_list) <= 3:
+def pick_lowest_count_news(news_list, limit=3):
+    if limit < 1:
+        return []
+    if len(news_list) <= limit:
         return news_list
 
     sorted_counts = sorted(list(set(item['count'] for item in news_list)))
@@ -124,14 +126,22 @@ def pick_3_lowest_count_news(news_list):
     selected = []
     for count_val in sorted_counts:
         tier_items = [item for item in news_list if item['count'] == count_val]
-        needed = 3 - len(selected)
+        needed = limit - len(selected)
         
         if len(tier_items) <= needed:
             selected.extend(tier_items)
         else:
             selected.extend(random.sample(tier_items, needed))
             
-        if len(selected) == 3:
+        if len(selected) == limit:
             break
             
     return selected
+
+
+def pick_3_lowest_count_news(news_list):
+    return pick_lowest_count_news(news_list, 3)
+
+
+def pick_5_lowest_count_news(news_list):
+    return pick_lowest_count_news(news_list, 5)
