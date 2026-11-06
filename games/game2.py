@@ -18,13 +18,11 @@ def _parse_news_item(raw_news):
         t = str(raw_news[0]) if len(raw_news) > 0 and raw_news[0] else ""
         a = str(raw_news[1]) if len(raw_news) > 1 and raw_news[1] else ""
         u = str(raw_news[2]) if len(raw_news) > 2 and raw_news[2] else ""
-        # 본문이 비어있고 제목만 있는 경우 제목을 본문 대체용으로 사용
         if not a and t:
             a = t
         return (t, a, u)
     elif isinstance(raw_news, dict):
         t = str(raw_news.get("title") or raw_news.get("제목") or "")
-        # 본문 필드명이 다양한 경우(article, content, body, 본문, text) 모두 탐색
         a = str(
             raw_news.get("article") or 
             raw_news.get("content") or 
@@ -566,22 +564,20 @@ def show_game_2():
 
         return
 
-    # [2단계] 뉴스 슬롯 룰렛 (유일한 뉴스 선택 화면)
-    if "candidates_game_2" not in st.session_state:
-        st.session_state.candidates_game_2 = [
-            _parse_news_item(get_game_news_selection("game_2")),
-            _parse_news_item(get_game_news_selection("game_2")),
-            _parse_news_item(get_game_news_selection("game_2"))
-        ]
-
+    # [2단계] 뉴스 룰렛을 통해 뉴스 1건 추출 및 최종 확정
     if "selected_news_game_2" not in st.session_state:
-        selected_idx = render_news_slot(st.session_state.candidates_game_2)
+        # 뉴스 1건을 새로 호출하여 룰렛 구성 요소로 전달
+        raw_news = get_game_news_selection("game_2")
+        selected_idx = render_news_slot([raw_news])
+        
         if selected_idx is None:
-            return
-        st.session_state.selected_news_game_2 = _parse_news_item(st.session_state.candidates_game_2[selected_idx])
+            return  # 룰렛 애니메이션 중이거나 선택 전
+            
+        st.session_state.selected_news_game_2 = _parse_news_item(raw_news)
         st.rerun()
 
-    title, article_text, url = _parse_news_item(st.session_state.selected_news_game_2)
+    # 이미 추출된 뉴스를 변수에 바인딩
+    title, article_text, url = st.session_state.selected_news_game_2
     if not title:
         return
 
@@ -630,12 +626,11 @@ def show_game_2():
 
     if "game_2_result" not in st.session_state:
         with st.spinner("🤖 AI가 유사도를 분석 중입니다..."):
-            # 본문 텍스트 유효성 안전 보장 (본문이 비어있으면 제목으로 요약 수행)
             text_for_summary = article_text if (article_text and article_text.strip()) else title
             summary_text = asyncio.run(summary(text_for_summary))
             
             if not summary_text:
-                summary_text = title  # 요약 실패 시 제목 자체를 요약문으로 대체
+                summary_text = title
 
             score_details = similarity_check(summary_text, title)
             actual_score = score_details["score"]
