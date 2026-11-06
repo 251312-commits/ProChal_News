@@ -4,7 +4,9 @@
 import streamlit as st
 
 from modules.account_math import account_amount
-from modules.db_handler import BankBalancesChanged, init_gspread, save_bank_balances
+from modules.transactions import (
+    BalanceChanged, TransactionError, bank_transaction, transaction_id, update_session_balances,
+)
 
 UNIT = 1_000
 MAX_LOAN = 10_000
@@ -12,27 +14,40 @@ INTEREST_RATE = 0.20
 
 
 def _save_balances(coins: int, loan: int, message: str, *, success_state_key: str | None = None) -> None:
+    """Apply one bank operation via the locked ledger before showing success."""
     user = st.session_state.current_user_data
-    student_id = st.session_state.get("current_user") or user.get("학번")
+    before_coins = account_amount(user.get("코인"), strict=True)
+    before_loan = account_amount(user.get("대출금"), strict=True)
+    coin_delta, loan_delta = coins - before_coins, loan - before_loan
+    if not coin_delta or coin_delta != loan_delta:
+        st.error("대출 거래 금액이 올바르지 않습니다.")
+        return
+    kind = "borrow" if loan_delta > 0 else "repay"
+    amount = abs(loan_delta)
+    pending_key = "bank_pending_transaction"
+    pending = st.session_state.get(pending_key)
+    if pending and (pending["kind"], pending["amount"]) != (kind, amount):
+        st.error("확인되지 않은 은행 거래가 있습니다. 이전 금액으로 다시 시도하세요.")
+        return
+    if not pending:
+        pending = {"kind": kind, "amount": amount, "id": transaction_id(kind)}
+        st.session_state[pending_key] = pending
+
     try:
-        save_bank_balances(
-            init_gspread(), student_id, coins, loan,
-            expected_coins=account_amount(user.get("코인")),
-            expected_loan=account_amount(user.get("대출금")),
-        )
-    except BankBalancesChanged as changed:
-        user.update({"코인": changed.coins, "대출금": changed.loan})
+        bank_transaction(kind, amount, pending["id"])
+    except BalanceChanged as changed:
+        # A rejected stale request is safe to abandon. Refresh the UI first.
+        update_session_balances(changed.balances)
+        st.session_state.pop(pending_key, None)
         st.toast("잔액이 변경되었습니다. 새 잔액을 확인한 뒤 다시 신청하세요.")
         st.rerun()
         return
-    except ValueError:
-        st.error("시트의 코인(C열)과 대출금(G열)에 올바른 숫자가 입력되어 있는지 확인하세요.")
-        return
-    except Exception:
-        st.error("거래를 저장하지 못했습니다. 잠시 후 다시 시도하세요.")
+    except (TransactionError, ValueError) as exc:
+        # Keep the transaction ID for a retry after an ambiguous timeout.
+        st.error(str(exc))
         return
 
-    user.update({"코인": coins, "대출금": loan})
+    st.session_state.pop(pending_key, None)
     if success_state_key:
         st.session_state[success_state_key] = True
     st.toast(message)
