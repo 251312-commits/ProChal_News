@@ -1,11 +1,18 @@
 """Checks for the news comparison reveal."""
 
 from base64 import b64decode
-from math import log
+from math import isclose, log
 import re
+from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 from games.result_reveal import show_summary_before_score, type_summary_characters
+
+
+def _rendered_html(calls):
+    return "\n".join(
+        call.args[0] for call in calls if call[0] in ("html", "empty().html")
+    )
 
 
 def test_unicode_summary_is_streamed_without_changes():
@@ -39,11 +46,21 @@ def test_round_graph_uses_stored_score_and_skips_replay():
         "logit": log(0.8704 / (1 - 0.8704)), "normalized": 0.8704,
         "score_hundredths": 8704, "score": 87.04,
     }
-    with patch.dict("sys.modules", streamlit=st), patch("games.result_reveal.time.sleep") as sleep:
+    with (
+        patch.dict("sys.modules", streamlit=st),
+        patch("games.result_reveal.time.monotonic", return_value=0),
+        patch("games.result_reveal.time.sleep") as sleep,
+    ):
+        st.attach_mock(sleep, "pause")
         show_summary_before_score(summary, "round", title=title, score=87.04, details=details, prediction=4)
-        html = "\n".join(
-            call.args[0] for call in st.mock_calls if call[0] in ("html", "empty().html")
-        )
+        events = st.mock_calls
+        hold = next(i for i, c in enumerate(events) if c[0] == "pause" and c.args == (2.6,))
+        early = _rendered_html(events[:hold])
+        late = _rendered_html(events[hold + 1:])
+        assert 'data-reveal-phase="rolling">' in early and "??.??" in early
+        assert "87.04" not in early and "data:image/svg+xml" not in early
+        assert late.index('data-reveal-phase="landed">') < late.index("87.04점") < late.index("data:image/svg+xml")
+        html = early + late
         assert "전기버스 &lt;서울&gt;" in html
         assert html.index("서울역 앞에 전기버스 &amp; 택시") < html.index("87.04점")
         assert 'aria-label="AI 유사도 87.04점"' in html
@@ -62,6 +79,39 @@ def test_round_graph_uses_stored_score_and_skips_replay():
         sleep.reset_mock()
         show_summary_before_score(summary, "round", title=title, score=87.04, details=details, prediction=4)
         sleep.assert_not_called()
+        rerun_html = _rendered_html(st.mock_calls)
+        assert 'data-reveal-phase="settled">' in rerun_html
+        assert 'data-reveal-phase="rolling">' not in rerun_html
+        assert 'data-reveal-phase="landed">' not in rerun_html
+
+
+def test_interrupted_drumroll_resumes_same_cue_for_remaining_time():
+    st = MagicMock()
+    st.session_state = {}
+    with (
+        patch.dict("sys.modules", streamlit=st),
+        patch("games.result_reveal.time.monotonic", return_value=0) as clock,
+        patch("games.result_reveal.time.sleep") as sleep,
+    ):
+        sleep.side_effect = InterruptedError
+        with TestCase().assertRaises(InterruptedError):
+            show_summary_before_score("글", "round", title="제목", score=87.04, score_precision=2)
+        first_stage = st.empty.return_value.html.call_args.args[0]
+        cue = re.search(r'data-reveal-id="([^"]+)"', first_stage).group(1)
+        assert 'data-reveal-phase="rolling">' in first_stage
+        clock.return_value = 1
+        st.reset_mock()
+        sleep.reset_mock()
+        sleep.side_effect = None
+        show_summary_before_score("글", "round", title="제목", score=87.04, score_precision=2)
+        sleep.assert_called_once()
+        assert isclose(sleep.call_args.args[0], 1.6)
+        stages = [
+            c.args[0] for c in st.empty.return_value.html.call_args_list
+            if 'class="score-stage"' in c.args[0]
+        ]
+        assert len(stages) == 2 and all(f'data-reveal-id="{cue}"' in s for s in stages)
+        assert 'data-reveal-phase="rolling">' in stages[0] and "87.04점" in stages[1]
 
 
 def test_old_round_keeps_the_saved_integer_even_with_an_old_logit():

@@ -4,8 +4,11 @@ The audio elements live on Streamlit's parent window to survive reruns, while
 the compact controls live in that window's DOM only on the main page.
 """
 import json
+from pathlib import Path
 
 import streamlit.components.v1 as components
+
+_SCORE_ROLL_JS = json.dumps(Path(__file__).with_name("score_roll.js").read_text(encoding="utf-8"))
 
 
 def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False):
@@ -63,6 +66,7 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
             const gain = player.muted ? 0 : volumeGain(player.volume);
             player.intro.volume = gain;
             player.loop.volume = gain;
+            host.__newsScoreRoll?.setVolume(gain);
           }}
 
           function stop(player) {{
@@ -193,6 +197,13 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
             start(player);
           }}
 
+          // Install in the app document so gesture and DOM callbacks outlive this iframe.
+          if (!host.__newsScoreRoll) {{
+            const controller = doc.createElement("script");
+            controller.textContent = {_SCORE_ROLL_JS};
+            doc.head.appendChild(controller).remove();
+          }}
+
           let style = doc.getElementById(STYLE_ID);
           if (!style) {{
             style = doc.createElement("style");
@@ -315,6 +326,7 @@ def stop_bgm():
         <script>
         (function () {
           var host = window.parent;
+          host.__newsScoreRoll?.cancel();
           var player = host.__newsBgmPlayer;
           if (player) {
             player.stopped = true;

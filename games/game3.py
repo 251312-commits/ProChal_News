@@ -9,6 +9,7 @@ from modules.news_ai import summary, similarity_check, bring_article
 from modules.db_handler import init_gspread
 from modules.ui_components import change_page
 from games.common import get_game_news_selection
+from games.result_reveal import show_summary_before_score
 
 
 # ==========================================
@@ -84,6 +85,7 @@ def reset_game_3_state():
         "game_3_choice_timeout",
         "game_3_bet",
         "game_3_result",
+        "game_3_summary_revealed",
         "game_3_screen",
         "selected_news_game_3",
         "candidates_game_3",
@@ -451,7 +453,7 @@ def analyze_game_3(ws):
 
     st.info(
         "AI가 뉴스 본문을 요약하고 "
-        "뉴스 제목과 본문의 유사도를 분석합니다."
+        "뉴스 제목과 요약문의 유사도를 분석합니다."
     )
 
     st.markdown(f"**뉴스 제목: {title}**")
@@ -557,6 +559,12 @@ def analyze_game_3(ws):
                 st.session_state.game_3_result = {
 
                     "actual_score": actual_score,
+                    "score_details": (
+                        similarity_result
+                        if isinstance(similarity_result, Mapping)
+                        and {"model_name", "logit", "normalized", "token_count"}.issubset(similarity_result)
+                        else None
+                    ),
                     "integer_score": integer_score,
                     "ai_result": ai_result,
                     "user_choice": user_choice,
@@ -588,6 +596,11 @@ def show_result_screen():
 
     res = st.session_state.game_3_result
 
+    show_summary_before_score(
+        res["summary"], "game_3_summary_revealed",
+        title=res["title"], score=res["actual_score"],
+        details=res.get("score_details"), score_precision=2,
+    )
     st.markdown("### 🏆 최종 게임 결과")
 
     if res["is_win"]:
@@ -605,21 +618,7 @@ def show_result_screen():
         st.metric("내 선택", res["user_choice"])
 
     with col2:
-        st.metric("AI 판정", res["ai_result"])
-
-    st.markdown("### 📊 AI 분석 결과")
-
-    st.metric(
-        "뉴스 제목-본문 유사도",
-        f"{res['actual_score']:.2f}%"
-    )
-
-    st.progress(
-        max(0.0, min(1.0, res["actual_score"] / 100))
-    )
-
-    with st.expander("AI 뉴스 요약 결과"):
-        st.write(res["summary"])
+        st.metric("정수 부분의 홀짝", f"{res['integer_score']} · {res['ai_result']}")
 
     with st.expander("분석한 뉴스 기사 정보"):
 
@@ -635,20 +634,6 @@ def show_result_screen():
         text-align:center;
         color:white;
     ">
-
-        <h3>뉴스 유사도</h3>
-
-        <h1 style="color:#00ffcc;">
-            {res['actual_score']:.2f}%
-        </h1>
-
-        <p>홀짝 판정 기준 정수: {res['integer_score']}</p>
-
-        <h1 style="color:#ffd700;">
-            {res['ai_result']}
-        </h1>
-
-        <hr>
 
         <p>베팅 금액: {res['bet']:,} C</p>
 

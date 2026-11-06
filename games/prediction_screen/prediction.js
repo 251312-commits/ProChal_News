@@ -55,7 +55,11 @@ for (const [index, reel] of reels.entries()) {
 }
 ui.back.addEventListener("click", () => finish("back"));
 ui.bank.addEventListener("click", () => finish("bank"));
-ui.confirm.addEventListener("click", () => finish("confirm"));
+ui.confirm.addEventListener("click", () => {
+  // Unlock on the tap itself, before Streamlit replaces the prediction iframe.
+  try { window.parent.__newsScoreRoll?.unlock(); } catch (_) {}
+  finish("confirm");
+});
 
 function setImage(image, uri) {
   if (typeof uri === "string" && uri && image.getAttribute("src") !== uri) {
