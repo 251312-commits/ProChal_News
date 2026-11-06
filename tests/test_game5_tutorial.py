@@ -11,7 +11,13 @@ class GameFiveTutorialTests(unittest.TestCase):
         st.session_state = state
         st.button.side_effect = lambda label, **kwargs: label == "게임 시작"
 
-        with patch.dict(sys.modules, {"streamlit": st, "modules.ui_components": ui}):
+        with patch.dict(sys.modules, {
+            "streamlit": st, "modules.ui_components": ui,
+            "modules.news_ai": MagicMock(), "modules.db_handler": MagicMock(),
+            "views.ranking": MagicMock(),
+            "games.shared.betting": MagicMock(),
+            "games.shared.loading": MagicMock(),
+        }):
             show_tutorial = run_module("games.game5")["show_game_5_tutorial"]
             show_tutorial()
 
@@ -24,7 +30,13 @@ class GameFiveTutorialTests(unittest.TestCase):
         st.session_state = state
         st.button.side_effect = lambda label, **kwargs: label == "건너뛰기"
 
-        with patch.dict(sys.modules, {"streamlit": st, "modules.ui_components": ui}):
+        with patch.dict(sys.modules, {
+            "streamlit": st, "modules.ui_components": ui,
+            "modules.news_ai": MagicMock(), "modules.db_handler": MagicMock(),
+            "views.ranking": MagicMock(),
+            "games.shared.betting": MagicMock(),
+            "games.shared.loading": MagicMock(),
+        }):
             show_tutorial = run_module("games.game5")["show_game_5_tutorial"]
             show_tutorial()
 

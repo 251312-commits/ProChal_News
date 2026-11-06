@@ -23,7 +23,10 @@ class GameOneTests(unittest.TestCase):
         dependencies = {
             "streamlit": st, "modules.news_ai": ai, "modules.db_handler": db,
             "modules.ui_components": MagicMock(), "views.ranking": MagicMock(),
-            "games.common": common, "games.result_reveal": MagicMock(),
+            "games.shared.news_flow": MagicMock(get_game_news_selection=common.get_game_news_selection),
+            "games.shared.betting": MagicMock(),
+            "games.shared.loading": MagicMock(),
+            "games.shared.result": MagicMock(),
             "streamlit.components": st.components,
             "streamlit.components.v1": st.components.v1,
         }
