@@ -504,7 +504,7 @@ def show_game_2():
 
         return
 
-    # [2단계] 뉴스 슬롯 룰렛으로 기사 선택 (단일 선택 방식)
+    # [2단계] 뉴스 슬롯 룰렛 단일 화면 (중복 뉴스 선택 화면 제거)
     if "candidates_game_2" not in st.session_state:
         st.session_state.candidates_game_2 = [
             get_game_news_selection("game_2"),
@@ -519,25 +519,22 @@ def show_game_2():
         st.session_state.selected_news_game_2 = st.session_state.candidates_game_2[selected_idx]
         st.rerun()
 
-    # 안전하게 기사 정보 가공 (언패킹 에러 완전 방지)
+    # 기사 데이터 가공 (튜플/딕셔너리 예외 없이 안전 파싱)
     chosen_news = st.session_state.selected_news_game_2
     if isinstance(chosen_news, (tuple, list)):
         title = chosen_news[0] if len(chosen_news) > 0 else ""
         article_text = chosen_news[1] if len(chosen_news) > 1 else ""
-        url = chosen_news[2] if len(chosen_news) > 2 else ""
     elif isinstance(chosen_news, dict):
         title = chosen_news.get("title", "")
         article_text = chosen_news.get("article", "")
-        url = chosen_news.get("url", "")
     else:
         title = str(chosen_news)
         article_text = ""
-        url = ""
 
     if not title:
         return
 
-    # [3단계] 임의의 기준 점수 생성 및 HIGH / LOW 예측
+    # [3단계] HIGH / LOW 선택 단계 (룰렛 선택 완료 시 즉시 진입)
     if "game_2_target_num" not in st.session_state:
         st.session_state.game_2_target_num = random.randint(0, 100)
 
@@ -576,7 +573,7 @@ def show_game_2():
 
         return
 
-    # [4단계] AI 측정 및 결과 판정
+    # [4단계] AI 유사도 판단 & 스코어 계체
     bet_coin = st.session_state.game_2_bet
     user_choice = st.session_state.game_2_user_choice
 
