@@ -193,3 +193,40 @@ test('settlement rejects a different player or unconfirmed round', () => {
     round_id:id,game:'game_5',bet:1000,is_win:true,student_id:'22022'}), /No matching bet/);
   assert.equal(e.rows.ledger.filter(row => row[3] === 'settle').length, 0);
 });
+
+
+test('registration rejects HTML, entity and spreadsheet-injection nicknames', () => {
+  const e = environment([]);
+  const invalid = [
+    '<script>alert(1)</script>',
+    '<img src=x onerror=alert(1)>',
+    '&lt;script&gt;',
+    'Alice" onclick="evil()',
+    '=IMPORTXML("http://example.com")',
+    'a\nb',
+    'a/b',
+    '   ',
+    'x'.repeat(81),
+  ];
+  for (const [i, nickname] of invalid.entries()) {
+    assert.throws(() => e.call({
+      kind: 'register', transaction_id: 'register:' + (i + 1).toString(16).repeat(32),
+      student_id: String(30000 + i), nickname, password: 'pw', referrer_id: '',
+    }), error => error.code === 'INVALID_NICKNAME', nickname);
+  }
+  assert.equal(e.rows.users.length, 1);
+  assert.equal(e.rows.ledger.length, 1);
+  assert.equal(e.state.batches, 0);
+});
+
+test('registration accepts normal Korean, alphanumeric and spaced nicknames', () => {
+  const e = environment([]);
+  const valid = ['안닢', 'Student_01', '김 철수', 'Mina-02.'];
+  for (const [i, nickname] of valid.entries()) {
+    e.call({
+      kind: 'register', transaction_id: 'register:' + (i + 1).toString(16).repeat(32),
+      student_id: String(40000 + i), nickname, password: 'pw', referrer_id: '',
+    });
+  }
+  assert.deepEqual(e.rows.users.slice(1).map(row => row[1]), valid);
+});

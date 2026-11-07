@@ -12,6 +12,7 @@ import requests
 import streamlit as st
 
 from modules.account_math import account_amount
+from modules.nickname import normalize_nickname
 
 
 class TransactionError(RuntimeError):
@@ -163,6 +164,10 @@ def bank_transaction(kind: str, amount: int, tx_id: str) -> dict:
 def register_player(student_id: str, nickname: str, password: str,
                     referrer_id: str, tx_id: str) -> dict:
     """Create an account and credit both referral bonuses in one Sheets batch."""
+    try:
+        nickname = normalize_nickname(nickname)
+    except ValueError as exc:
+        raise TransactionError(str(exc), code="INVALID_NICKNAME") from exc
     result = _request({
         "transaction_id": tx_id, "kind": "register",
         "student_id": student_id, "nickname": nickname,

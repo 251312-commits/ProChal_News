@@ -2,6 +2,7 @@ import streamlit as st
 from streamlit_autorefresh import st_autorefresh  # 1. 모듈 import 추가
 from games.shared.betting import find_player, rank_by_coins, ranking_entries
 from modules.db_handler import init_gspread
+from modules.nickname import html_nickname
 from modules.ui_components import change_page
 from views.ranking_display import select_ranking_rows
 
@@ -283,9 +284,9 @@ def show_ranking():
     top2 = next((u for u in sorted_users if u['rank'] == 2), None)
     top3 = next((u for u in sorted_users if u['rank'] == 3), None)
 
-    top2_html = f'<div class="banner-box banner-silver"><div class="crown-icon">🥈</div><div class="banner-nickname">{top2["nickname"]}</div><div class="banner-coin-tag">🪙 {top2["coins"]:,}</div></div>' if top2 else '<div class="banner-box banner-silver" style="opacity:0.3;"><div class="crown-icon">🥈</div>-</div>'
-    top1_html = f'<div class="banner-box banner-gold"><div class="crown-icon crown-gold">👑</div><div class="banner-nickname">{top1["nickname"]}</div><div class="banner-coin-tag">🪙 {top1["coins"]:,}</div></div>' if top1 else '<div class="banner-box banner-gold" style="opacity:0.3;"><div class="crown-icon crown-gold">👑</div>-</div>'
-    top3_html = f'<div class="banner-box banner-bronze"><div class="crown-icon">🥉</div><div class="banner-nickname">{top3["nickname"]}</div><div class="banner-coin-tag">🪙 {top3["coins"]:,}</div></div>' if top3 else '<div class="banner-box banner-bronze" style="opacity:0.3;"><div class="crown-icon">🥉</div>-</div>'
+    top2_html = f'<div class="banner-box banner-silver"><div class="crown-icon">🥈</div><div class="banner-nickname">{html_nickname(top2["nickname"])}</div><div class="banner-coin-tag">🪙 {top2["coins"]:,}</div></div>' if top2 else '<div class="banner-box banner-silver" style="opacity:0.3;"><div class="crown-icon">🥈</div>-</div>'
+    top1_html = f'<div class="banner-box banner-gold"><div class="crown-icon crown-gold">👑</div><div class="banner-nickname">{html_nickname(top1["nickname"])}</div><div class="banner-coin-tag">🪙 {top1["coins"]:,}</div></div>' if top1 else '<div class="banner-box banner-gold" style="opacity:0.3;"><div class="crown-icon crown-gold">👑</div>-</div>'
+    top3_html = f'<div class="banner-box banner-bronze"><div class="crown-icon">🥉</div><div class="banner-nickname">{html_nickname(top3["nickname"])}</div><div class="banner-coin-tag">🪙 {top3["coins"]:,}</div></div>' if top3 else '<div class="banner-box banner-bronze" style="opacity:0.3;"><div class="crown-icon">🥉</div>-</div>'
 
     # The lower panel always has six slots (rank, ellipsis, or empty row).
     list_items_html = ""
@@ -299,7 +300,7 @@ def show_ranking():
             is_me = row is my_info
             is_me_class = "is-me" if is_me else ""
             me_label = " (나)" if is_me else ""
-            list_items_html += f'<div class="rank-item {is_me_class}"><div class="rank-number">{r}</div><div class="rank-nickname">{row["nickname"]}{me_label}</div><div class="coin-box">🪙 {row["coins"]:,}</div></div>'
+            list_items_html += f'<div class="rank-item {is_me_class}"><div class="rank-number">{r}</div><div class="rank-nickname">{html_nickname(row["nickname"])}{me_label}</div><div class="coin-box">🪙 {row["coins"]:,}</div></div>'
 
     full_ranking_html = f'''
     <div class="ranking-container">
@@ -307,7 +308,7 @@ def show_ranking():
         <div class="my-rank-card">
             <div style="display:flex; align-items:center; overflow:hidden;">
                 <span class="my-rank-badge">{rank_str}</span>
-                <span class="my-nickname">👤 {my_nickname} (나)</span>
+                <span class="my-nickname">👤 {html_nickname(my_nickname)} (나)</span>
             </div>
             <div class="coin-box">🪙 {my_coins:,} C</div>
         </div>
