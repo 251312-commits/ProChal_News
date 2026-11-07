@@ -5,6 +5,7 @@ from pathlib import Path
 import streamlit as st
 
 from modules.account_math import account_amount
+from modules.transactions import TransactionError, refresh_account_from_gateway
 from modules.ui_components import change_page, load_local_image_url
 from .draw import draw_loan
 from .repay import pay_loan
@@ -55,9 +56,16 @@ def show_bank() -> None:
     page = st.session_state.page
     coins = account_amount(user.get("코인"))
     loan = account_amount(user.get("대출금"))
-    if page == "draw_loan" and user.get("대출원금") in (None, ""):
-        st.error("대출원금 정보가 없습니다. 서버의 대출원금 열을 초기화한 뒤 다시 로그인하세요.")
-        return
+    if page in ("draw_loan", "pay_loan") and user.get("대출원금") in (None, ""):
+        # Refresh sessions created before the H-column migration. A server with
+        # initialized H can now heal the session without forcing a new login.
+        try:
+            refresh_account_from_gateway()
+        except TransactionError as exc:
+            st.error(f"은행 계정 정보를 불러올 수 없습니다: {exc}")
+            return
+        coins = account_amount(user.get("코인"))
+        loan = account_amount(user.get("대출금"))
     principal = account_amount(user.get("대출원금"))
     with st.container(key="bank-page", gap=None):
         _navigation(page, coins)

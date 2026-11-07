@@ -422,3 +422,43 @@ test('registration accepts normal Korean, alphanumeric and spaced nicknames', ()
   }
   assert.deepEqual(e.rows.users.slice(1).map(row => row[1]), valid);
 });
+
+
+test('status probe returns gateway version and C/D/G/H without writing to sheets', () => {
+  const e = environment([['11011', 'Alice', 5000, 2, '', 'pw', 9600, 8000]]);
+  const result = e.call({kind: 'status', transaction_id: 'status:' + hex('9')});
+  assert.equal(result.ok, true);
+  assert.equal(result.gateway_version, 2);
+  assert.equal(result.balances.coins, 5000);
+  assert.equal(result.balances.streak, 2);
+  assert.equal(result.balances.loan, 9600);
+  assert.equal(result.balances.principal, 8000);
+  assert.equal(result.settlement, null);
+  assert.equal(result.interest, null);
+  assert.equal(e.state.batches, 0);
+  assert.equal(e.rows.ledger.length, 1);
+  assert.equal(e.state.locked, false);
+});
+
+test('status probe flags missing principal column or uninitialized H', () => {
+  const e = environment();
+  const probe = {kind: 'status', transaction_id: 'status:' + hex('a')};
+  e.rows.users[1][7] = '';
+  assert.throws(() => e.call(probe), err => err.code === 'PRINCIPAL_NOT_READY');
+  e.rows.users[1][7] = 0;
+  e.rows.users[0][7] = '';
+  assert.throws(() => e.call(probe), err => err.code === 'PRINCIPAL_NOT_READY');
+  assert.equal(e.state.batches, 0);
+  assert.equal(e.rows.ledger.length, 1);
+});
+
+test('status never changes principal or accrues a turn interest', () => {
+  const e = environment([['11011','Alice',5000,0,'','pw',8000,8000]]);
+  for (const suffix of ['b','c','d']) {
+    e.call({kind:'status',transaction_id:'status:'+hex(suffix)});
+  }
+  assert.equal(e.rows.users[1][6], 8000);
+  assert.equal(e.rows.users[1][7], 8000);
+  assert.equal(e.rows.ledger.length, 1);
+  assert.equal(e.state.batches, 0);
+});

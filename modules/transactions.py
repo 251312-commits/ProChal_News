@@ -15,6 +15,9 @@ from modules.account_math import account_amount
 from modules.nickname import normalize_nickname
 
 
+GATEWAY_VERSION = 2
+
+
 class TransactionError(RuntimeError):
     """The transaction was not confirmed; do not show success."""
 
@@ -49,7 +52,13 @@ def _request(payload: dict) -> dict:
             endpoint, json={**payload, "token": token}, timeout=40,
         )
         response.raise_for_status()
-        result = response.json()
+        try:
+            result = response.json()
+        except ValueError as exc:
+            raise TransactionError(
+                "Apps Script가 JSON을 반환하지 않았습니다. 웹 앱 배포 URL(/exec)과 접근 권한을 확인하세요.",
+                code="BAD_RESPONSE",
+            ) from exc
     except (KeyError, ValueError, TypeError) as exc:
         raise TransactionError(
             "거래 서버 설정이나 응답을 확인할 수 없습니다. 관리자에게 문의하세요.",
@@ -74,7 +83,19 @@ def _request(payload: dict) -> dict:
             "UNCONFIRMED_BET": "확정된 베팅을 찾을 수 없습니다. 다시 베팅하세요.",
             "UNSETTLED_ROUND": "결과가 정산되지 않은 턴에는 이자를 부과할 수 없습니다.",
             "ALREADY_REGISTERED": "이미 가입한 학번입니다. 로그인하세요.",
-            "NOT_CONFIGURED": "거래 서버가 준비되지 않았습니다. 관리자에게 문의하세요.",
+            "NOT_CONFIGURED": "거래 서버 설정이나 거래 원장 구성이 완료되지 않았습니다. Apps Script 설정을 확인하세요.",
+            "PRINCIPAL_NOT_READY": (
+                "Users 시트 H열 '대출원금'이 초기화되지 않았습니다. "
+                "Apps Script에서 installTransactionLedger()를 실행한 뒤 다시 시도하세요."
+            ),
+            "MIGRATION_REQUIRED": (
+                "이전 대출 내역과 시트 잔액이 일치하지 않아 자동 복원이 중단됐습니다. "
+                "Transactions 내역을 확인해야 합니다."
+            ),
+            "INVALID_REQUEST": "서버에 전달한 거래 요청이 거부됐습니다. Apps Script 배포 버전을 확인하세요.",
+            "UNAUTHORIZED": "Apps Script와 Streamlit의 거래 인증 토큰이 일치하지 않습니다.",
+            "USER_NOT_FOUND": "거래 시트에서 로그인한 계정을 찾지 못했습니다.",
+            "DUPLICATE_USER": "동일한 학번 계정이 중복되어 거래를 처리할 수 없습니다.",
             "IDEMPOTENCY_CONFLICT": "이 거래 번호가 다른 내용으로 사용되었습니다.",
         }
         raise TransactionError(errors.get(code, "거래가 완료되지 않았습니다. 관리자에게 문의하세요."), code=code)
@@ -105,6 +126,41 @@ def update_session_balances(balances: dict) -> dict:
     return normalized
 
 
+def refresh_account_from_gateway() -> dict:
+    """Check deployed gateway capabilities and refresh authoritative C/D/G/H.
+
+    A new client must never send a mutating request to an older gateway:
+    the older code can commit a loan but omit the new principal field,
+    making a successful transaction incorrectly appear to have failed.
+    """
+    try:
+        result = _request({
+            "transaction_id": transaction_id("status"),
+            "kind": "status", "student_id": _student_id(),
+        })
+    except TransactionError as exc:
+        if exc.code == "INVALID_REQUEST":
+            raise TransactionError(
+                "거래 서버가 구버전일 가능성이 큽니다. 최신 apps_script/Code.gs를 "
+                "Apps Script 웹 앱의 새 버전으로 배포하세요.",
+                code="OUTDATED_GATEWAY",
+            ) from exc
+        raise
+    if result.get("gateway_version") != GATEWAY_VERSION:
+        raise TransactionError(
+            "거래 서버와 앱 버전이 다릅니다. Apps Script 웹 앱을 최신 버전으로 배포하세요.",
+            code="OUTDATED_GATEWAY",
+        )
+    balances = result["balances"]
+    if "principal" not in balances:
+        raise TransactionError(
+            "거래 서버 응답에 대출원금이 없습니다. Users H열 초기화를 확인하세요.",
+            code="PRINCIPAL_NOT_READY",
+        )
+    update_session_balances(balances)
+    return balances
+
+
 def confirm_bet(game: str, amount: int) -> dict:
     """Validate the live wallet and append a bet confirmation under a lock.
 
@@ -116,6 +172,8 @@ def confirm_bet(game: str, amount: int) -> dict:
     if not round_id:
         round_id = uuid4().hex
         st.session_state[key] = round_id
+    # Confirm compatibility before committing even the first bet.
+    refresh_account_from_gateway()
     result = _request({
         "transaction_id": f"bet:{round_id}",
         "kind": "bet", "round_id": round_id,
@@ -159,6 +217,7 @@ def apply_round_interest(game: str) -> dict:
     round_id = st.session_state.get(f"{game}_round_id")
     if not round_id:
         raise TransactionError("라운드 거래 번호가 없어 이자를 부과할 수 없습니다.")
+    refresh_account_from_gateway()
     result = _request({
         "transaction_id": f"interest:{round_id}",
         "kind": "interest", "round_id": round_id,
@@ -186,6 +245,9 @@ def bank_transaction(kind: str, amount: int, tx_id: str) -> dict:
     """Borrow or repay atomically with an expected balance check and ledger row."""
     if kind not in ("borrow", "repay"):
         raise ValueError("Invalid bank operation")
+    # A capability probe is required before any mutation, and also refreshes
+    # stale session balances from another tab or an already completed request.
+    refresh_account_from_gateway()
     user = st.session_state.get("current_user_data") or {}
     if user.get("대출원금") is None or user.get("대출원금") == "":
         raise TransactionError("대출원금 정보가 없습니다. 계정 데이터를 갱신한 후 다시 시도하세요.")

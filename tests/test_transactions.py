@@ -41,15 +41,29 @@ class ClientTests(unittest.TestCase):
         }
         return result
 
+    def status(self, *, coins=5000, streak=2, loan=1000, principal=1000):
+        response = Mock()
+        response.json.return_value = {
+            "ok": True, "gateway_version": 2,
+            "balances": {
+                "coins": coins, "streak": streak, "loan": loan, "principal": principal,
+            },
+        }
+        return response
+
     def test_confirm_reuses_round_id_on_retry(self):
-        with patch.object(tx.requests, "post", return_value=self.response()) as post:
+        with patch.object(tx.requests, "post", side_effect=[
+            self.status(), self.response(), self.status(), self.response()
+        ]) as post:
             tx.confirm_bet("game_1", 1000)
             first_id = self.session.game_1_round_id
             tx.confirm_bet("game_1", 1000)
             self.assertEqual(self.session.game_1_round_id, first_id)
-            self.assertEqual(post.call_count, 2)
-            self.assertEqual(post.call_args_list[0].kwargs["json"]["transaction_id"],
-                             post.call_args_list[1].kwargs["json"]["transaction_id"])
+            self.assertEqual(post.call_count, 4)
+            self.assertEqual(post.call_args_list[0].kwargs["json"]["kind"], "status")
+            self.assertEqual(post.call_args_list[2].kwargs["json"]["kind"], "status")
+            self.assertEqual(post.call_args_list[1].kwargs["json"]["transaction_id"],
+                             post.call_args_list[3].kwargs["json"]["transaction_id"])
             self.assertEqual(self.session.current_user_data["대출금"], 1000)
 
     def test_settle_returns_committed_snapshot_and_does_not_repeat_id(self):
@@ -68,7 +82,7 @@ class ClientTests(unittest.TestCase):
             "ok": False, "code": "INSUFFICIENT_FUNDS",
             "balances": {"coins": 600, "streak": 2, "loan": 1000},
         }
-        with patch.object(tx.requests, "post", return_value=error):
+        with patch.object(tx.requests, "post", side_effect=[self.status(), error]):
             with self.assertRaises(tx.BalanceChanged) as raised:
                 tx.confirm_bet("game_3", 1000)
             self.assertEqual(raised.exception.balances["coins"], 600)
@@ -93,14 +107,17 @@ class ClientTests(unittest.TestCase):
         response.json.return_value["interest"] = {
             "charged": 200, "loan_before": 1000, "loan_after": 1200,
         }
-        with patch.object(tx.requests, "post", return_value=response) as post:
+        with patch.object(tx.requests, "post", side_effect=[
+            self.status(), response,
+            self.status(coins=6000, loan=1200), response,
+        ]) as post:
             first = tx.apply_round_interest("game_1")
             second = tx.apply_round_interest("game_1")
         self.assertEqual(first["charged"], 200)
         self.assertEqual(second["new_loan"], 1200)
         self.assertEqual(self.session.current_user_data["대출금"], 1200)
         self.assertEqual(self.session.current_user_data["대출원금"], 1000)
-        self.assertEqual(post.call_count, 2)
+        self.assertEqual(post.call_count, 4)
         self.assertEqual(
             post.call_args.kwargs["json"]["transaction_id"], "interest:" + "f" * 32,
         )
@@ -113,13 +130,17 @@ class ClientTests(unittest.TestCase):
             post.assert_not_called()
 
         self.session.game_2_round_id = "a" * 32
-        with patch.object(tx.requests, "post", return_value=self.response()):
+        with patch.object(tx.requests, "post", side_effect=[
+            self.status(), self.response(),
+        ]):
             with self.assertRaises(tx.TransactionError):
                 tx.apply_round_interest("game_2")
         self.assertEqual(self.session.current_user_data["대출금"], 1000)
 
     def test_bank_sends_expected_fresh_values(self):
-        with patch.object(tx.requests, "post", return_value=self.response(coins=7000, loan=3000)) as post:
+        with patch.object(tx.requests, "post", side_effect=[
+            self.status(), self.response(coins=7000, loan=3000),
+        ]) as post:
             tx.bank_transaction("borrow", 2000, "borrow:" + "b" * 32)
             body = post.call_args.kwargs["json"]
             self.assertEqual((body["expected_coins"], body["expected_loan"], body["expected_principal"]),
@@ -132,19 +153,66 @@ class ClientTests(unittest.TestCase):
         self.session.current_user_data.update({"코인": 6000, "대출금": 9600, "대출원금": 8000})
         response = self.response(coins=8000, loan=11600)
         response.json.return_value["balances"]["principal"] = 10000
-        with patch.object(tx.requests, "post", return_value=response) as post:
+        with patch.object(tx.requests, "post", side_effect=[
+            self.status(coins=6000, loan=9600, principal=8000), response,
+        ]) as post:
             tx.bank_transaction("borrow", 2000, "borrow:" + "c" * 32)
         body = post.call_args.kwargs["json"]
         self.assertEqual((body["expected_loan"], body["expected_principal"]), (9600, 8000))
         self.assertEqual(self.session.current_user_data["대출금"], 11600)
         self.assertEqual(self.session.current_user_data["대출원금"], 10000)
 
-    def test_borrow_refuses_missing_principal(self):
+    def test_bank_recovers_stale_session_missing_principal(self):
         self.session.current_user_data.pop("대출원금")
-        with patch.object(tx.requests, "post") as post:
-            with self.assertRaises(tx.TransactionError):
+        with patch.object(tx.requests, "post", side_effect=[
+            self.status(), self.response(coins=6000, loan=2000),
+        ]) as post:
+            result = tx.bank_transaction("borrow", 1000, "borrow:" + "a" * 32)
+        self.assertEqual(post.call_count, 2)
+        self.assertEqual(post.call_args_list[0].kwargs["json"]["kind"], "status")
+        self.assertEqual(post.call_args_list[1].kwargs["json"]["expected_principal"], 1000)
+        self.assertEqual(self.session.current_user_data["대출원금"], 2000)
+        self.assertIsNotNone(result)
+
+    def test_old_gateway_cannot_commit_a_loan(self):
+        old_gateway = self.response()
+        old_gateway.json.return_value = {
+            "ok": False, "code": "INVALID_REQUEST", "balances": None,
+        }
+        with patch.object(tx.requests, "post", return_value=old_gateway) as post:
+            with self.assertRaises(tx.TransactionError) as raised:
                 tx.bank_transaction("borrow", 1000, "borrow:" + "a" * 32)
-        post.assert_not_called()
+        self.assertEqual(raised.exception.code, "OUTDATED_GATEWAY")
+        post.assert_called_once()
+        self.assertEqual(post.call_args.kwargs["json"]["kind"], "status")
+
+    def test_old_success_response_without_version_cannot_commit_a_loan(self):
+        with patch.object(tx.requests, "post", return_value=self.response()) as post:
+            with self.assertRaises(tx.TransactionError) as raised:
+                tx.bank_transaction("borrow", 1000, "borrow:" + "b" * 32)
+        self.assertEqual(raised.exception.code, "OUTDATED_GATEWAY")
+        post.assert_called_once()
+        self.assertEqual(post.call_args.kwargs["json"]["kind"], "status")
+
+    def test_uninitialized_principal_reports_setup_error(self):
+        missing = self.response()
+        missing.json.return_value = {
+            "ok": False, "code": "PRINCIPAL_NOT_READY", "balances": None,
+        }
+        with patch.object(tx.requests, "post", return_value=missing) as post:
+            with self.assertRaises(tx.TransactionError) as raised:
+                tx.bank_transaction("borrow", 1000, "borrow:" + "c" * 32)
+        self.assertEqual(raised.exception.code, "PRINCIPAL_NOT_READY")
+        self.assertIn("installTransactionLedger()", str(raised.exception))
+        post.assert_called_once()
+
+    def test_confirm_fails_on_outdated_gateway_before_bet(self):
+        with patch.object(tx.requests, "post", return_value=self.response()) as post:
+            with self.assertRaises(tx.TransactionError) as raised:
+                tx.confirm_bet("game_2", 1000)
+        self.assertEqual(raised.exception.code, "OUTDATED_GATEWAY")
+        post.assert_called_once()
+        self.assertEqual(post.call_args.kwargs["json"]["kind"], "status")
 
     def test_missing_endpoint_blocks_all_writes(self):
         self.secrets.pop("transaction_endpoint")

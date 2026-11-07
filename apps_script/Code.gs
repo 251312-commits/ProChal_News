@@ -18,6 +18,7 @@ const HEADERS = [
 ];
 const RULES = {game_1: 100, game_2: 1, game_3: 1, game_4: 2, game_5: 5};
 const MAX_PRINCIPAL = 10000; // The limit is on unpaid borrowed principal, not interest.
+const GATEWAY_VERSION = 2; // Capabilities: principal in Users!H, interest per settled round.
 const MAX_NICKNAME_LENGTH = 80;
 const TURN_INTEREST_RATE_PERCENT = 20; // 1/5 per completed round, compound interest
 
@@ -184,7 +185,7 @@ function balance_(values) {
   // initialized: zeroing an unknown principal could bypass the borrowing cap.
   const sheetNumber = (raw, field) => number_(raw === '' || raw == null ? 0 : raw, field, 0);
   if (values[7] === '' || values[7] == null) {
-    fail_('NOT_CONFIGURED', 'Users!H principal not initialized; run installTransactionLedger()');
+    fail_('PRINCIPAL_NOT_READY', 'Users!H principal not initialized; run installTransactionLedger()');
   }
   const balance = {
     coins: sheetNumber(values[2], 'coins'),
@@ -245,6 +246,7 @@ function commit_(ss, requests) {
 function result_(balances, row, replayed) {
   return {
     ok: true,
+    gateway_version: GATEWAY_VERSION,
     replayed: replayed,
     balances: balances,
     settlement: row && String(row[3]) === 'settle' ? {
@@ -278,9 +280,9 @@ function process_(request) {
     game: String(request.game || ''),
     round_id: String(request.round_id || '')
   };
-  if (!/^(bet|settle|interest|borrow|repay|register):[a-f0-9]{32}$/.test(tx.transaction_id) ||
+  if (!/^(bet|settle|interest|borrow|repay|register|status):[a-f0-9]{32}$/.test(tx.transaction_id) ||
       !/^\d{5}$/.test(tx.student_id) ||
-      !['bet', 'settle', 'interest', 'borrow', 'repay', 'register'].includes(tx.kind) ||
+      !['bet', 'settle', 'interest', 'borrow', 'repay', 'register', 'status'].includes(tx.kind) ||
       tx.transaction_id.split(':', 1)[0] !== tx.kind) {
     fail_('INVALID_REQUEST', 'Invalid transaction ID, student ID, or operation');
   }
@@ -312,9 +314,21 @@ function process_(request) {
     const users = ss.getSheetByName(USER_TAB);
     const ledger = ss.getSheetByName(LEDGER_TAB);
     if (!users || !ledger) fail_('NOT_CONFIGURED', 'Missing Users or Transactions sheet');
+    if (users.getMaxColumns() < 8 ||
+        String(users.getRange(1, 8, 1, 1).getValues()[0][0]) !== '대출원금') {
+      fail_('PRINCIPAL_NOT_READY', 'Users!H principal column missing; run installTransactionLedger()');
+    }
     const headers = ledger.getRange(1, 1, 1, HEADERS.length).getValues()[0];
     if (JSON.stringify(headers) !== JSON.stringify(HEADERS)) {
       fail_('NOT_CONFIGURED', 'Transactions schema mismatch');
+    }
+
+    // Read-only capability and account probe: never changes a wallet or the ledger.
+    // Clients call this BEFORE borrowing or betting, so an outdated deployment
+    // cannot accidentally commit a transaction and then report it as a failure.
+    if (tx.kind === 'status') {
+      const account = findUser_(users, tx.student_id);
+      return result_(balance_(account.values), null, false);
     }
 
     const previous = findTransaction_(ledger, tx.transaction_id);
