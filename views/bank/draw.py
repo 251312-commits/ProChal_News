@@ -13,7 +13,7 @@ from .scene import BANK_ART, asset_uri
 BORROW_SUCCESS_KEY = "bank_borrow_success"
 
 
-def draw_loan(coins: int, loan: int) -> None:
+def draw_loan(coins: int, loan: int, principal: int) -> None:
     st.html(Path(__file__).with_suffix(".css"))
     paper = asset_uri("bank_paper")
     temple = asset_uri("bank_temple")
@@ -27,7 +27,8 @@ def draw_loan(coins: int, loan: int) -> None:
         '}</style>'
     )
 
-    available = max(0, MAX_LOAN - loan)
+    # The 10,000C limit applies to outstanding principal, NOT accrued interest.
+    available = max(0, MAX_LOAN - principal)
     limit = available // UNIT * UNIT
     rate = int(INTEREST_RATE * 100)
     # The confirmation animation runs only on the rerun after Sheets saves.
@@ -71,12 +72,12 @@ def draw_loan(coins: int, loan: int) -> None:
             st.html(
                 '<section class="bank-draw-summary" aria-label="현재 대출 현황">'
                 '<dl class="bank-draw-summary-grid">'
-                f'<div><dt>{icon("coins", "#f2b454")}보유 코인</dt><dd>{coins:,} C</dd></div>'
-                f'<div><dt>{icon("bank", "#d99ae9")}대출 잔액</dt><dd>{loan:,} C</dd></div>'
+                f'<div><dt>{icon("coins", "#f2b454")}대출원금</dt><dd>{principal:,} C</dd></div>'
+                f'<div><dt>{icon("bank", "#d99ae9")}총대출금</dt><dd>{loan:,} C</dd></div>'
                 f'<div><dt>{icon("coins-plus", "#f2b454")}추가 대출 가능액</dt><dd>{limit:,} C</dd></div>'
                 '</dl>'
-                f'<p>ⓘ &nbsp;대출 잔액에 턴마다 <strong>{rate}%</strong>의 이자가 '
-                '<strong>복리</strong>로 추가됩니다.</p></section>'
+                f'<p>ⓘ &nbsp;한도 {MAX_LOAN:,} C는 <strong>대출원금</strong> 기준입니다. '
+                f'턴당 {rate}%의 복리 이자는 한도에 포함되지 않습니다.</p></section>'
             )
             if st.button(
                 "대출 신청하기", key="bank-borrow-submit", icon=":material/account_balance:",
