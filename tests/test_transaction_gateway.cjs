@@ -193,3 +193,100 @@ test('settlement rejects a different player or unconfirmed round', () => {
     round_id:id,game:'game_5',bet:1000,is_win:true,student_id:'22022'}), /No matching bet/);
   assert.equal(e.rows.ledger.filter(row => row[3] === 'settle').length, 0);
 });
+
+
+test('turn-end interest compounds 20% once per settled round and never changes coins', () => {
+  const e = environment([['11011', 'Alice', 5000, 1, '', 'pw', 1000]]);
+  const round = hex('1');
+  const confirm = id => e.call({
+    kind: 'bet', transaction_id: 'bet:' + id, round_id: id, game: 'game_2', bet: 1000,
+  });
+  const settle = id => e.call({
+    kind: 'settle', transaction_id: 'settle:' + id, round_id: id,
+    game: 'game_2', bet: 1000, is_win: true,
+  });
+  const interest = id => e.call({
+    kind: 'interest', transaction_id: 'interest:' + id, round_id: id, game: 'game_2',
+  });
+  confirm(round);
+  settle(round);
+  const coins = e.rows.users[1][2];
+  const streak = e.rows.users[1][3];
+  const first = interest(round);
+  assert.equal(first.interest.charged, 200);
+  assert.equal(first.interest.loan_before, 1000);
+  assert.equal(first.interest.loan_after, 1200);
+  assert.equal(e.rows.users[1][6], 1200);
+  assert.equal(e.rows.users[1][2], coins);
+  assert.equal(e.rows.users[1][3], streak);
+  assert.equal(first.settlement, null);
+  const batches = e.state.batches;
+  const replay = interest(round);
+  assert.equal(replay.replayed, true);
+  assert.equal(replay.interest.charged, 200);
+  assert.equal(e.state.batches, batches);
+  assert.equal(e.rows.ledger.filter(row => row[3] === 'interest').length, 1);
+  const next = hex('2');
+  confirm(next);
+  settle(next);
+  const second = interest(next);
+  assert.equal(second.interest.charged, 240);
+  assert.equal(second.interest.loan_after, 1440);
+  assert.equal(e.rows.users[1][6], 1440);
+});
+
+test('interest only applies to a matching settled player/game/round', () => {
+  const e = environment([['11011','Alice',5000,0,'','pw',1000],
+    ['22022','Bob',5000,0,'','pw',1000]]);
+  const id = hex('3');
+  const request = {kind: 'interest', transaction_id: 'interest:' + id,
+    round_id: id, game: 'game_1'};
+  assert.throws(() => e.call(request), /No matching settled round/);
+  e.call({kind: 'bet', transaction_id: 'bet:' + id, round_id: id, game: 'game_1', bet: 1000});
+  assert.throws(() => e.call(request), /No matching settled round/);
+  e.call({kind: 'settle', transaction_id: 'settle:' + id,
+    round_id: id, game: 'game_1', bet: 1000, is_win: false});
+  assert.throws(() => e.call({...request, student_id: '22022'}), /No matching settled round/);
+  assert.throws(() => e.call({...request, game: 'game_2'}), /No matching settled round|Invalid game/);
+  const receipt = e.call(request);
+  assert.equal(receipt.interest.loan_after, 1200);
+});
+
+test('zero-debt turn records an idempotent receipt even if player borrows later', () => {
+  const e = environment();
+  const id = hex('4');
+  e.call({kind: 'bet', transaction_id: 'bet:' + id, round_id: id, game: 'game_2', bet: 1000});
+  e.call({kind: 'settle', transaction_id: 'settle:' + id,
+    round_id: id, game: 'game_2', bet: 1000, is_win: true});
+  const request = {kind: 'interest', transaction_id: 'interest:' + id,
+    round_id: id, game: 'game_2'};
+  const first = e.call(request);
+  assert.equal(first.interest.charged, 0);
+  assert.equal(e.rows.ledger.filter(row => row[3] === 'interest').length, 1);
+  e.call({kind: 'borrow', transaction_id: 'borrow:' + hex('5'),
+    amount: 1000, expected_coins: 6000, expected_loan: 0});
+  const replay = e.call(request);
+  assert.equal(replay.replayed, true);
+  assert.equal(replay.interest.loan_after, 0);
+  assert.equal(replay.balances.loan, 1000);
+  assert.equal(e.rows.users[1][6], 1000);
+});
+
+test('fractional interest rounds up and failed atomic batch is safely retryable', () => {
+  const e = environment([['11011','Alice',5000,0,'','pw',3]]);
+  const id = hex('6');
+  e.call({kind:'bet',transaction_id:'bet:'+id,round_id:id,game:'game_2',bet:1000});
+  e.call({kind:'settle',transaction_id:'settle:'+id,
+    round_id:id,game:'game_2',bet:1000,is_win:false});
+  const request = {kind:'interest',transaction_id:'interest:'+id,round_id:id,game:'game_2'};
+  e.state.failedBatch = true;
+  assert.throws(() => e.call(request), /Simulated atomic batch failure/);
+  assert.equal(e.rows.users[1][6], 3);
+  assert.equal(e.rows.ledger.filter(row => row[3] === 'interest').length, 0);
+  assert.equal(e.state.locked, false);
+  e.state.failedBatch = false;
+  const result = e.call(request);
+  assert.equal(result.interest.charged, 1);
+  assert.equal(result.interest.loan_after, 4);
+  assert.equal(e.rows.users[1][6], 4);
+});

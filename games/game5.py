@@ -13,6 +13,7 @@ from games.shared.betting import check_user_coins_or_pop_bank
 from games.shared.betting import render_betting_ui
 from games.shared.loading import similarity_analysis_loading
 from modules.db_handler import init_news_sheet
+from games.shared.interest import apply_end_of_turn_interest
 from modules.transactions import BalanceChanged, TransactionError, settle_game_round, update_session_balances
 from modules.news_ai import bring_article, pick_5_lowest_count_news, similarity_check, summary
 from modules.ui_components import change_page
@@ -232,6 +233,8 @@ def _show_result() -> None:
     result = st.session_state.get("game_5_result")
     if not result:
         change_page("game_5")
+        return
+    if not apply_end_of_turn_interest("game_5"):
         return
 
     st.title("🏆 게임 5 최종 결과")

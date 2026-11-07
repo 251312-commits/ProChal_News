@@ -17,6 +17,7 @@ const HEADERS = [
 ];
 const RULES = {game_1: 100, game_2: 1, game_3: 1, game_4: 2, game_5: 5};
 const MAX_LOAN = 10000;
+const TURN_INTEREST_RATE_PERCENT = 20; // 1/5 per completed round, compound interest
 
 function installTransactionLedger() {
   const ss = SpreadsheetApp.openById(property_('SPREADSHEET_ID'));
@@ -152,14 +153,24 @@ function result_(balances, row, replayed) {
     ok: true,
     replayed: replayed,
     balances: balances,
-    settlement: row ? {
+    settlement: row && String(row[3]) === 'settle' ? {
       coins: number_(row[10], 'coins_after'),
       streak: number_(row[12], 'streak_after'),
       loan: number_(row[14], 'loan_after'),
       delta: Number(row[7]),
       is_win: row[8] === true
+    } : null,
+    interest: row && String(row[3]) === 'interest' ? {
+      charged: number_(row[14], 'loan_after') - number_(row[13], 'loan_before'),
+      loan_before: number_(row[13], 'loan_before'),
+      loan_after: number_(row[14], 'loan_after')
     } : null
   };
+}
+
+function turnInterest_(loan) {
+  // 20% = 1/5; whole-coin round-up without floating-point multiplication.
+  return Math.floor(loan / 5) + (loan % 5 === 0 ? 0 : 1);
 }
 
 function process_(request) {
@@ -173,20 +184,22 @@ function process_(request) {
     game: String(request.game || ''),
     round_id: String(request.round_id || '')
   };
-  if (!/^(bet|settle|borrow|repay|register):[a-f0-9]{32}$/.test(tx.transaction_id) ||
+  if (!/^(bet|settle|interest|borrow|repay|register):[a-f0-9]{32}$/.test(tx.transaction_id) ||
       !/^\d{5}$/.test(tx.student_id) ||
-      !['bet', 'settle', 'borrow', 'repay', 'register'].includes(tx.kind) ||
+      !['bet', 'settle', 'interest', 'borrow', 'repay', 'register'].includes(tx.kind) ||
       tx.transaction_id.split(':', 1)[0] !== tx.kind) {
     fail_('INVALID_REQUEST', 'Invalid transaction ID, student ID, or operation');
   }
-  if (tx.kind === 'bet' || tx.kind === 'settle') {
+  if (tx.kind === 'bet' || tx.kind === 'settle' || tx.kind === 'interest') {
     if (!Object.prototype.hasOwnProperty.call(RULES, tx.game) ||
         !/^[a-f0-9]{32}$/.test(tx.round_id) ||
         tx.transaction_id !== tx.kind + ':' + tx.round_id) {
       fail_('INVALID_REQUEST', 'Invalid game or round');
     }
-    tx.bet = number_(request.bet, 'bet', 1000);
-    if ((tx.bet - 1000) % 50 !== 0) fail_('INVALID_REQUEST', 'Bet must use 50C steps');
+    if (tx.kind !== 'interest') {
+      tx.bet = number_(request.bet, 'bet', 1000);
+      if ((tx.bet - 1000) % 50 !== 0) fail_('INVALID_REQUEST', 'Bet must use 50C steps');
+    }
   } else {
     if (tx.game || tx.round_id) fail_('INVALID_REQUEST', 'Unexpected game details');
   }
@@ -283,6 +296,20 @@ function process_(request) {
         -(tx.game === 'game_3' ? Math.floor(tx.bet / 2) : tx.bet);
       after.coins += tx.delta;
       after.streak = tx.is_win ? before.streak + 1 : 0;
+    } else if (tx.kind === 'interest') {
+      const settled = findTransaction_(ledger, 'settle:' + tx.round_id);
+      if (!settled || sid_(settled[2]) !== tx.student_id ||
+          String(settled[3]) !== 'settle' || String(settled[4]) !== tx.game ||
+          String(settled[5]) !== tx.round_id) {
+        fail_('UNSETTLED_ROUND', 'No matching settled round');
+      }
+      // Record even a zero-debt turn, so replaying this result after borrowing
+      // later cannot retroactively charge interest to an already ended round.
+      const charged = turnInterest_(before.loan);
+      if (charged > Number.MAX_SAFE_INTEGER - before.loan) {
+        fail_('INVALID_REQUEST', 'Loan balance overflow');
+      }
+      after.loan += charged;
     } else {
       const expectedCoins = number_(request.expected_coins, 'expected_coins');
       const expectedLoan = number_(request.expected_loan, 'expected_loan');
@@ -308,7 +335,9 @@ function process_(request) {
     }
     if (!Number.isSafeInteger(after.coins) || !Number.isSafeInteger(after.streak) ||
         !Number.isSafeInteger(after.loan)) fail_('INVALID_REQUEST', 'Balance overflow');
-    const row = record_(tx, before, after, '');
+    const detail = tx.kind === 'interest' ?
+      'turn-end compound interest ' + TURN_INTEREST_RATE_PERCENT + '%; round up to 1C' : '';
+    const row = record_(tx, before, after, detail);
     const requests = tx.kind === 'bet' ? [] : walletUpdate_(users, user.rowIndex, after);
     requests.push(append_(ledger, [row]));
     commit_(ss, requests);

@@ -85,6 +85,36 @@ class ClientTests(unittest.TestCase):
             self.assertEqual(self.session.game_4_round_id, original)
             self.assertEqual(self.session.current_user_data["코인"], 5000)
 
+    def test_interest_posts_one_round_id_and_refreshes_balances(self):
+        self.session.game_1_round_id = "f" * 32
+        response = self.response(coins=6000, loan=1200)
+        response.json.return_value["interest"] = {
+            "charged": 200, "loan_before": 1000, "loan_after": 1200,
+        }
+        with patch.object(tx.requests, "post", return_value=response) as post:
+            first = tx.apply_round_interest("game_1")
+            second = tx.apply_round_interest("game_1")
+        self.assertEqual(first["charged"], 200)
+        self.assertEqual(second["new_loan"], 1200)
+        self.assertEqual(self.session.current_user_data["대출금"], 1200)
+        self.assertEqual(post.call_count, 2)
+        self.assertEqual(
+            post.call_args.kwargs["json"]["transaction_id"], "interest:" + "f" * 32,
+        )
+        self.assertEqual(post.call_args.kwargs["json"]["kind"], "interest")
+
+    def test_interest_fails_closed_without_round_id_or_receipt(self):
+        with patch.object(tx.requests, "post") as post:
+            with self.assertRaises(tx.TransactionError):
+                tx.apply_round_interest("game_2")
+            post.assert_not_called()
+
+        self.session.game_2_round_id = "a" * 32
+        with patch.object(tx.requests, "post", return_value=self.response()):
+            with self.assertRaises(tx.TransactionError):
+                tx.apply_round_interest("game_2")
+        self.assertEqual(self.session.current_user_data["대출금"], 1000)
+
     def test_bank_sends_expected_fresh_values(self):
         with patch.object(tx.requests, "post", return_value=self.response(coins=7000, loan=3000)) as post:
             tx.bank_transaction("borrow", 2000, "borrow:" + "b" * 32)

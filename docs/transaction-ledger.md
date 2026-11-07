@@ -21,7 +21,9 @@ Keep the existing gcp_service_account for read-only account views and News sheet
 ## Guarantees
 
 - The five games call confirm_bet() at bet confirmation and settle_game_round() once after analysis, each validating the live wallet under a shared ScriptLock.
-- Each UUID round produces one bet:<uuid> and one settle:<uuid> transaction. Duplicate requests return their original settled snapshot instead of paying again. Conflicting reuse of a transaction ID is rejected.
+- Each UUID round produces one bet:<uuid>, one settle:<uuid>, and one interest:<uuid> transaction. Duplicate requests return the original receipt instead of applying the operation twice. Conflicting reuse of a transaction ID is rejected.
+- Immediately before displaying a settled game's result, the shared turn-end helper requests **20% compound interest** on the current outstanding loan (Users!G). The interest is rounded **up to the next whole coin**: 1,000C → 1,200C → 1,440C after two turns. It never subtracts from wallet coins (Users!C) or changes the streak (Users!D).
+- Interest requires a matching committed settlement for the same player, game, and round. Even a 0C loan gets an interest ledger entry, preventing an old results screen from charging a loan taken later.
 - The stake is not deducted on confirmation (existing behavior). Settlement verifies a matching confirmed bet and available coins again; another tab may consume the balance between steps, in which case no settlement occurs.
 - The server enforces payout rules: game 1 +100×; games 2/3 +1×; game 4 +2×; game 5 +5×. Game 3 losses cost half the bet; other losses cost the whole bet. Winning increments the streak; losing resets it.
 - Borrowing and repayments compare the current C/G wallet and debt to the displayed snapshot under lock, enforce 1,000C increments (or final small repayment) and cap debt at 10,000C.
@@ -31,6 +33,7 @@ Keep the existing gcp_service_account for read-only account views and News sheet
 ## Limitations and verification
 
 - LockService serializes requests **only through this Apps Script**; external writers bypass the guarantee. Prevent or migrate such writes.
-- The pre-existing interface displays 20% compound interest per turn, but existing game code did not accrue it. This change does not introduce new loan interest rules.
+- **Deploy the updated apps_script/Code.gs as a new Apps Script Web App version first** (and update Streamlit's transaction_endpoint if the deployment URL changes). The older gateway does not recognize the new interest transaction; until updated, result screens will block rather than silently skip interest.
+- Verify 20% interest after each of games 1–5, zero-debt turns, retries after lost responses, and a second turn's interest on the increased debt. Inspect both Users!G and the immutable Transactions interest:<round_id> rows.
 - User passwords remain in the original Users sheet layout; password security merits a separate migration.
 - Before deployment run all unit tests, then verify borrow, repay, game win/loss, duplicate settlement, two-tab concurrent spends, signup and referral on isolated test accounts. Reconcile the Transactions ledger with Users C/D/G and retain a backup.

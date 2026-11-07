@@ -20,11 +20,22 @@ class SharedScreenStructureTests(unittest.TestCase):
             GAMES / "game1" / "game1.py",
             *(GAMES / f"game{i}.py" for i in range(2, 6)),
             SHARED / "result.py",
+            SHARED / "interest.py",
             ROOT / "news.py",
         ]:
             with self.subTest(path=path.name):
                 self.assertTrue(path.is_file(), path)
                 ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+
+    def test_each_result_applies_interest_before_reveal(self):
+        files = [
+            GAMES / "game1" / "game1.py",
+            *(GAMES / f"game{i}.py" for i in range(2, 6)),
+        ]
+        for index, game_file in enumerate(files, start=1):
+            source = game_file.read_text(encoding="utf-8")
+            self.assertIn("from games.shared.interest import apply_end_of_turn_interest", source)
+            self.assertIn(f'if not apply_end_of_turn_interest("game_{index}"):', source)
 
     def test_game_one_only_screens_are_in_its_own_module(self):
         source = (GAMES / "game1" / "game1.py").read_text(encoding="utf-8")

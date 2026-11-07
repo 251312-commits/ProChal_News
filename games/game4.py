@@ -11,6 +11,7 @@ from games.shared.betting import check_user_coins_or_pop_bank
 from games.shared.news_flow import get_game_news_selection
 from games.shared.betting import render_betting_ui
 from games.shared.loading import similarity_analysis_loading
+from games.shared.interest import apply_end_of_turn_interest
 from modules.transactions import BalanceChanged, TransactionError, settle_game_round, update_session_balances
 from modules.news_ai import similarity_check, summary
 from modules.ui_components import change_page
@@ -124,6 +125,8 @@ def _settle_game_4(
 
 def _show_game_4_result() -> None:
     result = st.session_state.game_4_result
+    if not apply_end_of_turn_interest("game_4"):
+        return
     st.subheader("🏆 최종 결과")
     if result["is_win"]:
         st.balloons()

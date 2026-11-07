@@ -12,6 +12,7 @@ from games.shared.news_flow import get_game_news_selection
 from games.shared.loading import similarity_analysis_loading
 from games.shared.betting import render_betting_ui
 from games.shared.result import show_summary_before_score
+from games.shared.interest import apply_end_of_turn_interest
 from modules.transactions import BalanceChanged, TransactionError, settle_game_round, update_session_balances
 
 
@@ -529,6 +530,8 @@ def analyze_game_3(ws):
 def show_result_screen():
 
     res = st.session_state.game_3_result
+    if not apply_end_of_turn_interest("game_3"):
+        return
 
     show_summary_before_score(
         res["summary"], "game_3_summary_revealed",
