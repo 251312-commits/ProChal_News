@@ -4,7 +4,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from modules.ui_components import load_local_image_as_base64
+from modules.ui_components import load_local_image_url
 from .draw_icons import icon
 from .forms import INTEREST_RATE, MAX_LOAN, UNIT, _amount_selector, _save_balances
 from .scene import BANK_ART, asset_uri
@@ -19,7 +19,7 @@ def draw_loan(coins: int, loan: int, principal: int) -> None:
     temple = asset_uri("bank_temple")
     seal = asset_uri("bank_wax_seal")
     stamp = asset_uri("bank_stamp")
-    postmark = load_local_image_as_base64(str(BANK_ART / "bank_postmark.svg"))
+    postmark = load_local_image_url(str(BANK_ART / "bank_postmark.svg"))
     st.html(
         '<style>.st-key-bank-draw-screen {'
         f'--paper:url("{paper}"); --temple:url("{temple}"); --seal:url("{seal}");'

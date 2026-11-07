@@ -1,8 +1,17 @@
-import streamlit as st
 import base64
 import mimetypes
+import os
+import shutil
+import tempfile
+from pathlib import Path
+from urllib.parse import quote
 
-# 정의된 함수: load_local_image_as_base64, change_page, show_placeholder_page, inject_casino_theme
+import streamlit as st
+
+# Large artwork uses static HTTP URLs, not repeated Streamlit WebSocket payloads.
+_ASSETS_ROOT = Path(__file__).resolve().parents[1] / "assets"
+_STATIC_ASSETS_ROOT = Path(__file__).resolve().parents[1] / "static" / "assets"
+_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif", ".svg"}
 
 @st.cache_data
 def load_local_image_as_base64(file_path: str) -> str:
@@ -10,6 +19,59 @@ def load_local_image_as_base64(file_path: str) -> str:
         encoded = base64.b64encode(f.read()).decode()
     image_type = mimetypes.guess_type(file_path)[0] or "image/png"
     return f"data:{image_type};base64,{encoded}"
+
+
+def load_local_image_url(file_path: str) -> str:
+    """Return a short, cacheable URL for an image committed under assets/.
+
+    Streamlit serves only static/. The original remains under assets/; a copy
+    is generated on first use or when changed. The copy is ignored by Git.
+    Absolute same-origin paths work inside Streamlit component iframes, too.
+    """
+    source = Path(file_path).resolve(strict=True)
+    if source.suffix.lower() not in _IMAGE_EXTENSIONS:
+        raise ValueError(f"Unsupported image type: {source.suffix}")
+    try:
+        relative = source.relative_to(_ASSETS_ROOT.resolve())
+    except ValueError as exc:
+        raise ValueError("Image must be inside the repository assets/ directory") from exc
+
+    # External deployments may override the repository's Streamlit configuration.
+    if not st.get_option("server.enableStaticServing"):
+        return load_local_image_as_base64(str(source))
+
+    destination = _STATIC_ASSETS_ROOT / relative
+    source_stat = source.stat()
+    try:
+        try:
+            cached_stat = destination.stat()
+        except FileNotFoundError:
+            cached_stat = None
+        if (
+            cached_stat is None
+            or cached_stat.st_size != source_stat.st_size
+            or cached_stat.st_mtime_ns != source_stat.st_mtime_ns
+        ):
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            # Atomic replacement avoids partially copied files on concurrent requests.
+            with tempfile.NamedTemporaryFile(
+                dir=destination.parent, prefix=".asset-", delete=False
+            ) as temp_file:
+                temporary_path = Path(temp_file.name)
+            try:
+                shutil.copy2(source, temporary_path)
+                os.replace(temporary_path, destination)
+            finally:
+                temporary_path.unlink(missing_ok=True)
+    except OSError:
+        # Rendering remains functional even on a read-only deployment.
+        return load_local_image_as_base64(str(source))
+
+    base = str(st.get_option("server.baseUrlPath") or "").strip("/")
+    prefix = f"/{base}" if base else ""
+    version = f"{source_stat.st_mtime_ns:x}-{source_stat.st_size:x}"
+    return f"{prefix}/app/static/assets/{quote(relative.as_posix(), safe='/')}?v={version}"
+
     
 def change_page(page_name):
     st.session_state.page = page_name

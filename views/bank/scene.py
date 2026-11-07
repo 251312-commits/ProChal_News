@@ -4,7 +4,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from modules.ui_components import load_local_image_as_base64
+from modules.ui_components import load_local_image_url
 
 
 BANK_ART = Path(__file__).resolve().parents[2] / "assets" / "bank"
@@ -14,7 +14,7 @@ def asset_uri(stem: str) -> str:
     for suffix in (".avif", ".png"):
         path = BANK_ART / (stem + suffix)
         if path.is_file():
-            return load_local_image_as_base64(str(path))
+            return load_local_image_url(str(path))
     return ""
 
 
@@ -35,7 +35,7 @@ def _heading() -> str:
 
 
 def _letter(opening: bool = False) -> str:
-    crest = load_local_image_as_base64(str(BANK_ART / "bank_crest.svg"))
+    crest = load_local_image_url(str(BANK_ART / "bank_crest.svg"))
     layers = ""
     if opening:
         layers = (

@@ -1,0 +1,3 @@
+[server]
+# Serve artwork via HTTP URLs instead of repeating data URIs on every rerun.
+enableStaticServing = true
