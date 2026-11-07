@@ -44,10 +44,15 @@ class SupportedNewsUrlTests(unittest.TestCase):
 
 class DirectGameOneUrlTests(unittest.TestCase):
     def setUp(self):
-        self.st, self.ai, self.ui = MagicMock(), MagicMock(), MagicMock()
+        self.st, self.ai, self.ui, self.db = MagicMock(), MagicMock(), MagicMock(), MagicMock()
+        self.db.LAST_ARTICLE_HEADER = "마지막기사URL"
+        self.db.normalize_article_url.side_effect = lambda url: str(url or "").strip()
+        self.db.register_user_article.return_value = (4, True)
+        self.db.save_last_article_url.return_value = True
         self.st.session_state = Session(
             game_1_bet=1000,
-            current_user_data={"코인": 3000},
+            current_user="11011",
+            current_user_data={"학번": "11011", "아이디": "테스터", "코인": 3000},
             candidates_game_1=[{"title": "후보", "url": "url-1", "count": 0, "row_idx": 2}],
         )
         self.component = self.st.components.v1.declare_component.return_value
@@ -57,6 +62,7 @@ class DirectGameOneUrlTests(unittest.TestCase):
             "streamlit.components": self.st.components,
             "streamlit.components.v1": self.st.components.v1,
             "modules.news_ai": self.ai,
+            "modules.db_handler": self.db,
             "modules.ui_components": self.ui,
         })
         modules.start()
@@ -105,6 +111,17 @@ class DirectGameOneUrlTests(unittest.TestCase):
         self.assertEqual(chosen["image_url"], "https://img.yna.co.kr/test.jpg")
         self.assertNotIn("candidates_game_1", self.st.session_state)
         self.ai.bring_article.assert_called_once_with(url, include_image=True)
+        self.db.register_user_article.assert_called_once_with(
+            self.db.init_news_sheet.return_value,
+            url=url,
+            title="직접 입력 기사",
+            submitter_id="11011",
+            submitter_name="테스터",
+        )
+        self.db.save_last_article_url.assert_called_once_with(
+            self.db.init_gspread.return_value, "11011", url
+        )
+        self.assertEqual(self.st.session_state.current_user_data["마지막기사URL"], url)
         self.st.rerun.assert_called_once()
 
 

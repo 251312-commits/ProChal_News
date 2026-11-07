@@ -13,12 +13,21 @@ class Session(dict):
 class NewsSlotTests(unittest.TestCase):
     def setUp(self):
         self.st, self.ai, db, self.ui = (MagicMock() for _ in range(4))
-        self.st.session_state = Session(game_1_bet=1000)
+        db.LAST_ARTICLE_HEADER = "마지막기사URL"
+        db.normalize_article_url.side_effect = lambda url: str(url or "").strip()
+        db.news_row_is_active.side_effect = lambda row: str(row.get("Active", "")).lower() not in {"false", "0"}
+        db.save_last_article_url.return_value = True
+        self.st.session_state = Session(
+            game_1_bet=1000,
+            current_user="11011",
+            current_user_data={"학번": "11011", "아이디": "테스터", "코인": 3000},
+        )
         self.st.columns.return_value = [MagicMock(), MagicMock()]
         self.st.button.return_value = False
         self.component = self.st.components.v1.declare_component.return_value
         self.component.return_value = None
         self.sheet = db.init_news_sheet.return_value
+        self.users_sheet = db.init_gspread.return_value
         self.sheet.get_all_records.return_value = [
             {"Title": "첫 기사", "URL": "url-1", "Count": 4},
             {"Title": "둘째 기사", "URL": "url-2", "Count": 7},
@@ -78,7 +87,7 @@ class NewsSlotTests(unittest.TestCase):
         self.ai.bring_article.assert_called_once_with("url-1", include_image=True)
 
     def test_reader_navigation_uses_live_data_and_preserves_the_stake(self):
-        self.st.session_state.current_user_data = {"코인": 2300}
+        self.st.session_state.current_user_data = {"학번": "11011", "아이디": "테스터", "코인": 2300}
         url = "https://www.press.example/story"
         self.sheet.get_all_records.return_value[0]["URL"] = url
         self.select("game_1")
@@ -111,6 +120,19 @@ class NewsSlotTests(unittest.TestCase):
         self.sheet.update_cell.assert_called_once_with(2, 2, 5)
         self.ai.bring_article.assert_called_once_with(url, include_image=True)
         self.ai.pick_3_lowest_count_news.assert_called_once()
+
+    def test_excludes_last_seen_and_own_submitted_articles_before_count_selection(self):
+        self.st.session_state.current_user_data["마지막기사URL"] = "url-last"
+        self.sheet.get_all_records.return_value = [
+            {"Title": "직전 기사", "URL": "url-last", "Count": 0},
+            {"Title": "내 제보", "URL": "url-mine", "Count": 0, "SubmittedBy": "11011", "SourceType": "user"},
+            {"Title": "남의 제보", "URL": "url-other", "Count": 1, "SubmittedBy": "22022", "SourceType": "user"},
+            {"Title": "기본 기사", "URL": "url-base", "Count": 2},
+        ]
+        self.select("game_1")
+        filtered = self.ai.pick_3_lowest_count_news.call_args.args[0]
+        self.assertEqual([item["url"] for item in filtered], ["url-other", "url-base"])
+        self.assertEqual([item["source_type"] for item in filtered], ["user", "base"])
 
     def test_other_games_still_use_their_existing_reader(self):
         self.st.session_state.selected_news_game_2 = {

@@ -10,11 +10,38 @@ from games.shared.betting import calculate_expected_gain
 from games.shared.article_reader import render_article_reader
 from games.shared.roulette import render_news_slot
 from modules.news_ai import bring_article, pick_3_lowest_count_news
-from modules.db_handler import init_news_sheet
+from modules.db_handler import (
+    LAST_ARTICLE_HEADER,
+    init_gspread,
+    init_news_sheet,
+    news_row_is_active,
+    normalize_article_url,
+    save_last_article_url,
+)
 from modules.ui_components import change_page
 
 
 ws_news = init_news_sheet()
+ws_users = init_gspread()
+
+
+def _current_student_id():
+    state = st.session_state
+    user = state.get("current_user_data") or {}
+    return str(state.get("current_user") or user.get("학번") or "").strip().removesuffix(".0")
+
+
+def _remember_article(url):
+    state = st.session_state
+    canonical = normalize_article_url(url)
+    user = state.get("current_user_data")
+    if isinstance(user, dict):
+        user[LAST_ARTICLE_HEADER] = canonical
+    try:
+        save_last_article_url(ws_users, _current_student_id(), canonical)
+    except Exception:
+        # A sheet metadata write must not prevent the selected article from opening.
+        pass
 
 
 
@@ -22,11 +49,21 @@ def _get_news_candidates(candidates_key):
     if candidates_key not in st.session_state:
         raw_records = ws_news.get_all_records()
         news_data = []
+        state = st.session_state
+        user = state.get("current_user_data") or {}
+        current_sid = _current_student_id()
+        last_seen = normalize_article_url(user.get(LAST_ARTICLE_HEADER, ""))
 
         with st.spinner("🎰 슬롯머신 기사 추천 중..."):
             for idx, row in enumerate(raw_records):
                 url = str(row.get('URL', '')).strip()
-                if not url:
+                if not url or not news_row_is_active(row):
+                    continue
+                canonical = normalize_article_url(url)
+                if last_seen and canonical == last_seen:
+                    continue
+                submitted_by = str(row.get("SubmittedBy", "") or "").strip().removesuffix(".0")
+                if current_sid and submitted_by == current_sid:
                     continue
                 try:
                     count = int(row.get('Count', 0))
@@ -43,9 +80,11 @@ def _get_news_candidates(candidates_key):
 
                 news_data.append({
                     'row_idx': idx + 2,
-                    'url': url,
+                    'url': canonical,
                     'count': count,
-                    'title': title
+                    'title': title,
+                    'submitted_by': submitted_by,
+                    'source_type': str(row.get("SourceType", "") or "base").strip() or "base",
                 })
 
         if not news_data:
@@ -79,6 +118,7 @@ def _open_chosen_article(item, news_key, candidates_key, *, include_image=False)
     }
     if include_image:
         st.session_state[news_key]['image_url'] = image_url
+    _remember_article(item['url'])
     del st.session_state[candidates_key]
     st.rerun()
 
