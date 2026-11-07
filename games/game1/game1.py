@@ -14,6 +14,7 @@ from games.shared.news_flow import get_game_news_selection
 from games.shared.betting import check_user_coins_or_pop_bank
 from games.shared.betting import render_betting_ui
 from games.shared.loading import similarity_analysis_loading
+from games.shared.interest import apply_end_of_turn_interest
 from modules.transactions import BalanceChanged, TransactionError, settle_game_round, update_session_balances
 
 ws_news = init_news_sheet()
@@ -120,8 +121,10 @@ def show_game_1():
                 "new_streak": new_streak
             }
 
-    # 최종 결과 출력
+    # 이자가 확정된 뒤에만 결과를 공개한다. 재실행 시 같은 턴에는 재부과하지 않는다.
     res = st.session_state.game_1_result
+    if not apply_end_of_turn_interest("game_1"):
+        return
     show_summary_before_score(
         res.get("summary", ""), "game_1_summary_revealed",
         title=res.get("title", title), score=res["actual_score"],

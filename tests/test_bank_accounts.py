@@ -56,6 +56,7 @@ class BankAccountTests(unittest.TestCase):
         )
         self.assertEqual(st.session_state.current_user_data["코인"], 6000)
         self.assertEqual(st.session_state.current_user_data["대출금"], 0)
+        self.assertEqual(st.session_state.current_user_data["대출원금"], 0)
         db.init_gspread.return_value.update_cell.assert_not_called()
         db.init_gspread.return_value.append_row.assert_not_called()
 

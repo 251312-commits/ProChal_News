@@ -8,6 +8,7 @@ from modules.ui_components import change_page
 from games.shared.result import show_summary_before_score
 from games.shared.news_flow import get_game_news_selection
 from games.shared.loading import similarity_analysis_loading
+from games.shared.interest import apply_end_of_turn_interest
 from modules.transactions import BalanceChanged, TransactionError, settle_game_round, update_session_balances
 from games.shared.betting import render_betting_ui
 from games.shared.betting import check_user_coins_or_pop_bank
@@ -306,8 +307,10 @@ def show_game_2():
                 "new_streak": new_streak
             }
 
-    # [5단계] 최종 결과 화면
+    # [5단계] 결과 공개 직전 턴 종료 이자 부과
     res = st.session_state.game_2_result
+    if not apply_end_of_turn_interest("game_2"):
+        return
     show_summary_before_score(
         res.get("summary", ""), "game_2_summary_revealed",
         title=res.get("title", title), score=res["actual_score"],

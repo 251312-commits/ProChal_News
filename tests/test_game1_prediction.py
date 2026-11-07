@@ -27,6 +27,7 @@ class GameOneTests(unittest.TestCase):
             "games.shared.betting": MagicMock(),
             "games.shared.loading": MagicMock(),
             "games.shared.result": MagicMock(),
+            "games.shared.interest": MagicMock(apply_end_of_turn_interest=lambda game: True),
             "modules.transactions": tx,
             "streamlit.components": st.components,
             "streamlit.components.v1": st.components.v1,

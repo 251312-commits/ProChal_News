@@ -45,6 +45,8 @@ def show_login_page():
                         
                         if user_info:
                             user_info["대출금"] = account_amount(user_info.get("대출금"))
+                            if user_info.get("대출원금") not in (None, ""):
+                                user_info["대출원금"] = account_amount(user_info["대출원금"])
                             st.session_state.temp_user_data = user_info
                             st.session_state.login_step = '2_exist'
                         else:
@@ -130,6 +132,7 @@ def show_login_page():
                                 "아이디": final_username,
                                 "코인": balances["coins"],
                                 "대출금": balances["loan"],
+                                "대출원금": balances.get("principal", 0),
                                 "연승": balances["streak"],
                                 "비밀번호": password,
                             }

@@ -72,6 +72,7 @@ def _request(payload: dict) -> dict:
         errors = {
             "BUSY": "거래가 몰렸습니다. 같은 요청으로 다시 시도하세요.",
             "UNCONFIRMED_BET": "확정된 베팅을 찾을 수 없습니다. 다시 베팅하세요.",
+            "UNSETTLED_ROUND": "결과가 정산되지 않은 턴에는 이자를 부과할 수 없습니다.",
             "ALREADY_REGISTERED": "이미 가입한 학번입니다. 로그인하세요.",
             "NOT_CONFIGURED": "거래 서버가 준비되지 않았습니다. 관리자에게 문의하세요.",
             "IDEMPOTENCY_CONFLICT": "이 거래 번호가 다른 내용으로 사용되었습니다.",
@@ -88,12 +89,16 @@ def _student_id() -> str:
 
 
 def update_session_balances(balances: dict) -> dict:
-    """Update the three account fields only after a confirmed server result."""
+    """Refresh wallet, total debt and borrowed principal from a committed result."""
     normalized = {
         "코인": account_amount(balances["coins"], strict=True),
         "연승": account_amount(balances["streak"], strict=True),
         "대출금": account_amount(balances["loan"], strict=True),
     }
+    # Legacy transactions may lack principal; new bank transactions reject
+    # those responses, whereas existing game client tests still use old mocks.
+    if "principal" in balances:
+        normalized["대출원금"] = account_amount(balances["principal"], strict=True)
     user = st.session_state.get("current_user_data")
     if user is not None:
         user.update(normalized)
@@ -145,18 +150,55 @@ def settle_game_round(game: str, amount: int, is_win: bool) -> dict:
     }
 
 
+def apply_round_interest(game: str) -> dict:
+    """Accrue interest for a settled round once, under the ledger's script lock.
+
+    The transaction ID is derived from the same confirmed round as settlement.
+    A replay uses the original interest receipt while refreshing live balances.
+    """
+    round_id = st.session_state.get(f"{game}_round_id")
+    if not round_id:
+        raise TransactionError("라운드 거래 번호가 없어 이자를 부과할 수 없습니다.")
+    result = _request({
+        "transaction_id": f"interest:{round_id}",
+        "kind": "interest", "round_id": round_id,
+        "student_id": _student_id(), "game": game,
+    })
+    interest = result.get("interest")
+    if not isinstance(interest, dict):
+        raise TransactionError("이자 부과 기록을 확인할 수 없습니다.")
+    try:
+        charged = account_amount(interest["charged"], strict=True)
+        loan_before = account_amount(interest["loan_before"], strict=True)
+        loan_after = account_amount(interest["loan_after"], strict=True)
+    except (KeyError, TypeError, ValueError) as exc:
+        raise TransactionError("이자 부과 기록의 금액이 올바르지 않습니다.") from exc
+    if loan_after - loan_before != charged:
+        raise TransactionError("이자 계산 기록이 일치하지 않습니다.")
+    update_session_balances(result["balances"])
+    return {
+        "charged": charged, "loan_before": loan_before,
+        "new_loan": loan_after, "replayed": bool(result.get("replayed")),
+    }
+
+
 def bank_transaction(kind: str, amount: int, tx_id: str) -> dict:
     """Borrow or repay atomically with an expected balance check and ledger row."""
     if kind not in ("borrow", "repay"):
         raise ValueError("Invalid bank operation")
     user = st.session_state.get("current_user_data") or {}
+    if user.get("대출원금") is None or user.get("대출원금") == "":
+        raise TransactionError("대출원금 정보가 없습니다. 계정 데이터를 갱신한 후 다시 시도하세요.")
     result = _request({
         "transaction_id": tx_id,
         "kind": kind, "student_id": _student_id(),
         "amount": int(amount),
         "expected_coins": account_amount(user.get("코인"), strict=True),
         "expected_loan": account_amount(user.get("대출금"), strict=True),
+        "expected_principal": account_amount(user["대출원금"], strict=True),
     })
+    if "principal" not in result["balances"]:
+        raise TransactionError("거래 서버에 대출원금 관리 기능이 적용되지 않았습니다.", code="NOT_CONFIGURED")
     update_session_balances(result["balances"])
     return result
 
