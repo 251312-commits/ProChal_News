@@ -70,15 +70,17 @@ class PublicAssetUrlTests(unittest.TestCase):
             ui.load_local_image_url(str(other))
 
     def test_public_urls_match_actual_repository_assets(self):
-        for relative in (
-            "banner1.png", "bet_background.jpg", "bet_podium.png",
-            "bank/bank_envelope_open.avif",
-            "news_slot/news_slot_frame.webp",
-            "game1_article/reader-frame.webp",
-        ):
-            with self.subTest(relative=relative):
-                url = ui.load_local_image_url(str(ROOT / "assets" / relative))
-                self.assertIn("/main/assets/" + relative, url)
+        # This test uses the real checked-in assets, not the setUp fixture.
+        with patch.object(ui, "_ASSETS_ROOT", ROOT / "assets"):
+            for relative in (
+                "banner1.png", "bet_background.jpg", "bet_podium.png",
+                "bank/bank_envelope_open.avif",
+                "news_slot/news_slot_frame.webp",
+                "game1_article/reader-frame.webp",
+            ):
+                with self.subTest(relative=relative):
+                    url = ui.load_local_image_url(str(ROOT / "assets" / relative))
+                    self.assertIn("/main/assets/" + relative, url)
 
     def test_large_image_callers_use_shared_url_loader(self):
         for path in (
