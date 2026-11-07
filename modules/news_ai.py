@@ -3,8 +3,6 @@ from newspaper import Article
 import random
 from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
-import torch
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from modules.news_preprocessing import (
     clean_common_text,
     is_ad_or_ui_line,
@@ -21,12 +19,14 @@ RERANKER_NAME = "BAAI/bge-reranker-v2-m3"
 
 @st.cache_resource
 def load_ai_model():
+    # Import heavyweight inference libraries only when a score is requested.
+    from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
     tokenizer = AutoTokenizer.from_pretrained(RERANKER_NAME)
     model = AutoModelForSequenceClassification.from_pretrained(RERANKER_NAME)
     model.eval()
     return tokenizer, model
 
-tokenizer, model = load_ai_model()
 
 # ==========================================
 # 2. 제공해주신 기사 전처리 함수들
@@ -97,6 +97,9 @@ async def summary(article):
 
 def similarity_check(summary_text, title):
     """Return the game score and the intermediate values from the same model call."""
+    tokenizer, model = load_ai_model()
+    import torch
+
     inputs = tokenizer(summary_text, title, padding=True, truncation=True, return_tensors="pt", max_length=512)
     with torch.no_grad():
         outputs = model(**inputs)
