@@ -4,6 +4,7 @@ import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 from st_clickable_images import clickable_images
 from modules.db_handler import init_gspread
+from modules.nickname import html_nickname
 from modules.ui_components import change_page, load_local_image_as_base64
 
 ws = init_gspread()
@@ -34,7 +35,7 @@ def show_main_page():
         <div class="neon-promo-banner">
             <div class="neon-left-box">
                 <div class="neon-numbers">
-                    VIP <span>{user.get('아이디', '알 수 없음')}</span><br>
+                    VIP <span>{html_nickname(user.get('아이디', '알 수 없음'))}</span><br>
                     보유 <span>{user.get('코인', 0)}</span> C<br>
                     🔥<span>{user.get('연승', 0)}</span> 연승중🔥
                 </div>

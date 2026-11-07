@@ -1,6 +1,7 @@
 import streamlit as st
 from modules.account_math import account_amount
 from modules.db_handler import init_gspread
+from modules.nickname import is_valid_nickname, normalize_nickname
 from modules.transactions import TransactionError, register_player, transaction_id
 from modules.ui_components import change_page
 
@@ -77,7 +78,7 @@ def show_login_page():
             elif st.session_state.login_step == '2_new':
                 st.success(f"신규 가입 대상 학번: {st.session_state.temp_student_id}")
                 
-                username = st.text_input("아이디 (닉네임)", placeholder="사용할 닉네임", key="input_uname")
+                username = st.text_input("아이디 (닉네임)", max_chars=80, placeholder="사용할 닉네임", key="input_uname")
                 password = st.text_input("비밀번호", type="password", placeholder="비밀번호 설정", key="input_pw1")
                 password_confirm = st.text_input("비밀번호 확인", type="password", placeholder="비밀번호 재입력", key="input_pw2")
                 referral = st.text_input("추천인 학번 (선택)", placeholder="초대한 친구 학번", key="input_ref")
@@ -100,13 +101,15 @@ def show_login_page():
                     if st.button("가입완료", use_container_width=True):
                         if not username.strip():
                             st.error("닉네임을 입력해 주세요.")
+                        elif not is_valid_nickname(username):
+                            st.error("닉네임에는 문자, 숫자, 공백, _, -, .만 사용할 수 있습니다.")
                         elif not password:
                             st.error("비밀번호를 입력해 주세요.")
                         elif password != password_confirm:
                             st.error("비밀번호 확인이 일치하지 않습니다.")
                         else:
                             clean_id = st.session_state.temp_student_id
-                            final_username = username.strip()
+                            final_username = normalize_nickname(username)
                             # A stable request ID makes a timed-out registration
                             # and both referral bonuses safe to retry.
                             key = "registration_pending_id"
