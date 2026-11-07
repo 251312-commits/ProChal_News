@@ -88,6 +88,8 @@ class ClientTests(unittest.TestCase):
     def test_interest_posts_one_round_id_and_refreshes_balances(self):
         self.session.game_1_round_id = "f" * 32
         response = self.response(coins=6000, loan=1200)
+        # Interest increases total debt, but must never increase borrowed principal.
+        response.json.return_value["balances"]["principal"] = 1000
         response.json.return_value["interest"] = {
             "charged": 200, "loan_before": 1000, "loan_after": 1200,
         }
@@ -97,6 +99,7 @@ class ClientTests(unittest.TestCase):
         self.assertEqual(first["charged"], 200)
         self.assertEqual(second["new_loan"], 1200)
         self.assertEqual(self.session.current_user_data["대출금"], 1200)
+        self.assertEqual(self.session.current_user_data["대출원금"], 1000)
         self.assertEqual(post.call_count, 2)
         self.assertEqual(
             post.call_args.kwargs["json"]["transaction_id"], "interest:" + "f" * 32,
