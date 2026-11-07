@@ -30,6 +30,18 @@ Keep the existing gcp_service_account for read-only account views and News sheet
 - C/D/G/H and a ledger row are submitted in one Sheets spreadsheets.batchUpdate request. Google Sheets applies all requests in a batch atomically. Registration and referral credits are also bundled in a single batch.
 - On timeout the transaction might have committed. The client retains its transaction ID for a safe retry.
 
+## Troubleshooting live failures
+
+**GitHub merge does not deploy an Apps Script web app.** The Python client now sends a read-only `status:<uuid>` request before any new bet/borrow/repay or round-interest write. The server responds with `gateway_version: 2` and the current C/D/G/H account values. An older server rejects this probe and the client blocks all subsequent writes, preventing a loan from being paid out on the server but reported as failed in Streamlit.
+
+1. If the app reports **outdated gateway**, open the existing Apps Script project, paste the newest `apps_script/Code.gs`, and choose **Deploy → Manage deployments → Edit → Version: New version → Deploy**. Reuse the existing web app /exec URL when editing the same deployment; otherwise update the private `transaction_endpoint`.
+2. If the app reports **Users H principal not initialized**, back up the spreadsheet, run `installTransactionLedger()` once as the sheet owner, and confirm that Users!H has the `대출원금` header and numeric values for existing players. For manual legacy discrepancies, reconcile the Transactions ledger before changing H; do not set H = G when G already includes interest.
+3. If **authorization** fails, verify that `TRANSACTION_TOKEN` (Apps Script properties) exactly matches the **private** Streamlit secret `transaction_token`; never post these values to GitHub.
+4. If the response is **not JSON**, verify that Streamlit uses the published **Web App /exec** endpoint, that the URL is accessible, and that the deployed version executes as the owner. Do not use the Apps Script editor /dev URL.
+5. If an earlier loan was shown as failed, examine the unique transaction ID and the corresponding `Transactions` entry before retrying with a new ID; a previous older gateway could have already credited coins. Avoid making manual C/G/H edits without reconciling the ledger.
+
+The `status` request is read-only: it neither charges interest nor modifies balances. It is authorized using the same private token as ordinary transactions. Network errors remain retriable and never trigger optimistic local writes.
+
 ## Limitations and verification
 
 - LockService serializes requests **only through this Apps Script**; external writers bypass the guarantee. Prevent or migrate such writes.
