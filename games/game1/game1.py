@@ -7,7 +7,7 @@ import streamlit.components.v1 as components
 import streamlit as st
 from modules.news_ai import summary, similarity_check
 from modules.db_handler import init_news_sheet
-from modules.ui_components import change_page, load_local_image_as_base64
+from modules.ui_components import change_page, load_local_image_url
 from views.ranking import fetch_ranking_data
 from games.shared.result import show_summary_before_score
 from games.shared.news_flow import get_game_news_selection
@@ -197,7 +197,7 @@ _ART = {
 def _artwork() -> dict[str, str]:
     """Use the same cached local asset loader as the news selection screen."""
     return {
-        key: load_local_image_as_base64(str(_ASSETS / filename))
+        key: load_local_image_url(str(_ASSETS / filename))
         for key, filename in _ART.items()
     }
 
@@ -295,7 +295,7 @@ def show_game_1_tutorial():
     )
     cards = "".join(
         f'<li><h2><span>{number:02d}</span>{title}</h2>'
-        f'<img src="{load_local_image_as_base64(str(art / (name + ".webp")))}" alt="">'
+        f'<img src="{load_local_image_url(str(art / (name + ".webp")))}" alt="">'
         f'<p>{caption}</p></li>'
         for number, (name, title, caption) in enumerate(steps, 1)
     )

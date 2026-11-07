@@ -5,7 +5,7 @@ from streamlit_autorefresh import st_autorefresh
 from st_clickable_images import clickable_images
 from modules.db_handler import init_gspread
 from modules.nickname import html_nickname
-from modules.ui_components import change_page, load_local_image_as_base64
+from modules.ui_components import change_page, load_local_image_url
 
 ws = init_gspread()
 
@@ -54,7 +54,7 @@ def show_main_page():
     # Resolve all seven PNG banners from this module, independent of the cwd.
     assets_dir = Path(__file__).resolve().parents[1] / "assets"
     img_urls = [
-        load_local_image_as_base64(str(assets_dir / f"banner{index}.png"))
+        load_local_image_url(str(assets_dir / f"banner{index}.png"))
         for index in range(1, 8)
     ]
 

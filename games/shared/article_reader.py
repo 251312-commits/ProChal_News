@@ -6,7 +6,7 @@ from uuid import uuid4
 import streamlit as st
 import streamlit.components.v1 as components
 
-from modules.ui_components import load_local_image_as_base64
+from modules.ui_components import load_local_image_url
 
 
 HERE = Path(__file__).resolve().parent
@@ -71,7 +71,7 @@ def render_article_reader(chosen, *, game_id="game_1", reward=None):
             source=source,
             coins=int(user.get("코인", 0) or 0),
             reward=reward,
-            art={name: load_local_image_as_base64(str(ASSETS / path)) for name, path in ART.items()},
+            art={name: load_local_image_url(str(ASSETS / path)) for name, path in ART.items()},
             default=None,
         )
 

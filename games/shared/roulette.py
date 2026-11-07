@@ -11,7 +11,7 @@ import streamlit.components.v1 as components
 
 from modules.news_ai import bring_article
 from modules.news_preprocessing import SUPPORTED_NEWS_SITES, supported_news_site
-from modules.ui_components import change_page, load_local_image_as_base64
+from modules.ui_components import change_page, load_local_image_url
 
 
 HERE = Path(__file__).resolve().parent
@@ -134,7 +134,7 @@ def render_news_slot(
             supported_sources=list(SUPPORTED_NEWS_SITES) if allow_direct_url else [],
             direct_url_error=str(state.get(error_key, "") or "") if allow_direct_url else "",
             direct_url_error_id=str(state.get(request_key, "") or "") if allow_direct_url else "",
-            art={name: load_local_image_as_base64(str(ASSETS / path)) for name, path in ART.items()},
+            art={name: load_local_image_url(str(ASSETS / path)) for name, path in ART.items()},
             default=None,
         )
 

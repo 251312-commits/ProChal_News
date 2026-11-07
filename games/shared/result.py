@@ -5,12 +5,13 @@ only controls what the player sees, and never re-runs a wager or sheet update.
 """
 
 from base64 import b64encode
-from functools import lru_cache
 from html import escape
 from math import ceil, tanh
 from pathlib import Path
 import time
 from uuid import uuid4
+
+from modules.ui_components import load_local_image_url
 
 
 
@@ -146,12 +147,10 @@ _STYLE = """
 """
 
 
-@lru_cache(maxsize=1)
 def _theatre_style():
     asset = Path(__file__).resolve().parents[2] / "assets/score_reveal/theatre.webp"
-    art = b64encode(asset.read_bytes()).decode("ascii")
-    return f"<style>.st-key-news_comparison{{--score-stage-art:url(data:image/webp;base64,{art})}}{STAGE_CSS}</style>"
-
+    art = load_local_image_url(str(asset))
+    return f'<style>.st-key-news_comparison{{--score-stage-art:url("{art}")}}{STAGE_CSS}</style>'
 
 def type_summary_characters(summary_text: str):
     """Yield each Unicode character with a short, bounded typing delay."""

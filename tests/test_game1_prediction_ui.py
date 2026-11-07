@@ -62,8 +62,8 @@ class PredictionScreenTests(unittest.TestCase):
         self.parent.v1 = self.v1
         self.st.components = self.parent
         self.ui = MagicMock()
-        self.ui.load_local_image_as_base64.side_effect = (
-            lambda path: "data:image/png;base64,AAAA"
+        self.ui.load_local_image_url.side_effect = (
+            lambda path: "/app/static/assets/" + Path(path).name
         )
         with patch.dict(sys.modules, {
             "streamlit": self.st,
@@ -92,12 +92,15 @@ class PredictionScreenTests(unittest.TestCase):
         self.assertEqual(call["title"], "AI, 일자리 지형을 다시 바꾸나")
         self.assertTrue(call["round_id"])
         self.assertIn("bet_podium.png", [
-            Path(path).name for path in self.ui.load_local_image_as_base64.call_args_list
+            Path(path).name for path in self.ui.load_local_image_url.call_args_list
             for path in [path.args[0]]
         ])
         self.assertEqual(set(call["art"]), {
             "background", "header", "news", "tag", "frame", "reel", "podium"
         })
+        self.assertTrue(all(
+            value.startswith("/app/static/assets/") for value in call["art"].values()
+        ))
         self.assertNotIn("game_1_predicted_digits", self.st.session_state)
 
     def test_change_updates_both_digit_keys_without_submitting(self):

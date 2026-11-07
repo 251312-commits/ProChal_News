@@ -11,7 +11,7 @@ from decimal import Decimal, InvalidOperation
 from operator import itemgetter
 from modules.account_math import account_amount, net_coins
 from modules.transactions import BalanceChanged, TransactionError, confirm_bet, update_session_balances
-from modules.ui_components import change_page, load_local_image_as_base64
+from modules.ui_components import change_page, load_local_image_url
 
 def calculate_expected_gain(bet_amount, payout_multiplier):
     """Net coin increase on a win (not the stake-inclusive gross return).
@@ -100,7 +100,7 @@ def _no_money_modal(min_required, current_coins):
         st.html(Path(__file__).with_name("low_balance.css"))
     with st.container(key="low_balance_panel" if use_art else None):
         if use_art:
-            art = load_local_image_as_base64(str(_ASSET_ROOT / "low_balance.webp"))
+            art = load_local_image_url(str(_ASSET_ROOT / "low_balance.webp"))
             st.html(f"""
                 <div class="low-balance-art">
                     <img src="{art}" alt="잔액 부족. 베팅하려면 {min_required:,}C가 필요합니다.">
@@ -161,7 +161,7 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
 
     def asset(filename):
         try:
-            return load_local_image_as_base64(str(_ASSET_ROOT / filename))
+            return load_local_image_url(str(_ASSET_ROOT / filename))
         except (OSError, ValueError):
             return None
 
@@ -176,7 +176,7 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
             background_path = Path(bg_image_path)
             if not background_path.is_absolute():
                 background_path = _REPO_ROOT / background_path
-            background_img = load_local_image_as_base64(str(background_path))
+            background_img = load_local_image_url(str(background_path))
         except (OSError, ValueError):
             pass
 
