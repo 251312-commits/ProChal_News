@@ -1,16 +1,17 @@
 import base64
 import mimetypes
-import os
-import shutil
-import tempfile
 from pathlib import Path
 from urllib.parse import quote
 
 import streamlit as st
 
-# Large artwork uses static HTTP URLs, not repeated Streamlit WebSocket payloads.
+# Streamlit Community Cloud does not guarantee runtime-generated static files.
+# These assets are tracked in this repository and publicly accessible.
 _ASSETS_ROOT = Path(__file__).resolve().parents[1] / "assets"
-_STATIC_ASSETS_ROOT = Path(__file__).resolve().parents[1] / "static" / "assets"
+_PUBLIC_ASSET_BASE_URL = (
+    "https://raw.githubusercontent.com/251312-commits/"
+    "ProChal_News/main/assets/"
+)
 _IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif", ".svg"}
 
 @st.cache_data
@@ -22,11 +23,11 @@ def load_local_image_as_base64(file_path: str) -> str:
 
 
 def load_local_image_url(file_path: str) -> str:
-    """Return a short, cacheable URL for an image committed under assets/.
+    """Reference checked-in artwork by its public URL, not by Base64 payload.
 
-    Streamlit serves only static/. The original remains under assets/; a copy
-    is generated on first use or when changed. The copy is ignored by Git.
-    Absolute same-origin paths work inside Streamlit component iframes, too.
+    No image is copied at runtime. Browsers cache the original PNG, JPEG,
+    AVIF and WebP resources; stable URLs work in component iframes as well.
+    Keep the two tiny SVG icons inline to avoid SVG MIME/CSP edge cases.
     """
     source = Path(file_path).resolve(strict=True)
     if source.suffix.lower() not in _IMAGE_EXTENSIONS:
@@ -36,43 +37,18 @@ def load_local_image_url(file_path: str) -> str:
     except ValueError as exc:
         raise ValueError("Image must be inside the repository assets/ directory") from exc
 
-    # External deployments may override the repository's Streamlit configuration.
-    if not st.get_option("server.enableStaticServing"):
+    # These are small; Base64 avoids cross-origin SVG policy differences.
+    if source.suffix.lower() == ".svg":
         return load_local_image_as_base64(str(source))
 
-    destination = _STATIC_ASSETS_ROOT / relative
     source_stat = source.stat()
-    try:
-        try:
-            cached_stat = destination.stat()
-        except FileNotFoundError:
-            cached_stat = None
-        if (
-            cached_stat is None
-            or cached_stat.st_size != source_stat.st_size
-            or cached_stat.st_mtime_ns != source_stat.st_mtime_ns
-        ):
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            # Atomic replacement avoids partially copied files on concurrent requests.
-            with tempfile.NamedTemporaryFile(
-                dir=destination.parent, prefix=".asset-", delete=False
-            ) as temp_file:
-                temporary_path = Path(temp_file.name)
-            try:
-                shutil.copy2(source, temporary_path)
-                os.replace(temporary_path, destination)
-            finally:
-                temporary_path.unlink(missing_ok=True)
-    except OSError:
-        # Rendering remains functional even on a read-only deployment.
-        return load_local_image_as_base64(str(source))
-
-    base = str(st.get_option("server.baseUrlPath") or "").strip("/")
-    prefix = f"/{base}" if base else ""
     version = f"{source_stat.st_mtime_ns:x}-{source_stat.st_size:x}"
-    return f"{prefix}/app/static/assets/{quote(relative.as_posix(), safe='/')}?v={version}"
+    return (
+        f"{_PUBLIC_ASSET_BASE_URL}"
+        f"{quote(relative.as_posix(), safe='/')}?v={version}"
+    )
 
-    
+
 def change_page(page_name):
     st.session_state.page = page_name
     st.rerun()
