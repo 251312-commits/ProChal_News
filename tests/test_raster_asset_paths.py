@@ -15,8 +15,6 @@ class RasterAssetPathTests(unittest.TestCase):
             path for path in ROOT.rglob("*")
             if path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES
             and ".git" not in path.parts
-            # Static HTTP copies are generated at runtime from canonical assets.
-            and not path.is_relative_to(ROOT / "static" / "assets")
         ]
         self.assertTrue(rasters, "No PNG or JPEG assets were found")
         for path in rasters:
