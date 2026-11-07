@@ -5,8 +5,9 @@
  * SPREADSHEET_ID and TRANSACTION_TOKEN, enable the advanced Google Sheets API,
  * and run installTransactionLedger() once before deployment.
  *
- * Every wallet mutation MUST use this gateway. Editing Users!C/D/G outside it
- * bypasses LockService and defeats its concurrency guarantee.
+ * Every wallet mutation MUST use this gateway. Editing Users!C/D/G/H outside it
+ * bypasses LockService and defeats its concurrency guarantee. Users!G stores
+ * total outstanding debt; Users!H stores outstanding borrowed principal.
  */
 const USER_TAB = 'Users';
 const LEDGER_TAB = 'Transactions';
@@ -16,7 +17,7 @@ const HEADERS = [
   'streak_before', 'streak_after', 'loan_before', 'loan_after', 'detail'
 ];
 const RULES = {game_1: 100, game_2: 1, game_3: 1, game_4: 2, game_5: 5};
-const MAX_LOAN = 10000;
+const MAX_PRINCIPAL = 10000; // The limit is on unpaid borrowed principal, not interest.
 const TURN_INTEREST_RATE_PERCENT = 20; // 1/5 per completed round, compound interest
 
 function installTransactionLedger() {
@@ -31,6 +32,79 @@ function installTransactionLedger() {
     sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
     sheet.setFrozenRows(1);
   }
+  const users = ss.getSheetByName(USER_TAB);
+  if (!users) fail_('NOT_CONFIGURED', 'Missing Users sheet');
+  installPrincipalColumn_(users, sheet);
+}
+
+/**
+ * Backfill Users!H from historical ledger events, preserving interest already
+ * charged before the migration. For legacy accounts without ledger history,
+ * assume their existing Users!G debt was borrowed principal.
+ *
+ * Run this installer once before using the new transaction gateway. If the
+ * historical ledger disagrees with Users!G, stop rather than guess principal.
+ */
+function principalFromHistory_(rows, sid, outstandingLoan) {
+  const history = rows.filter(row => sid_(row[2]) === sid);
+  if (!history.length) return outstandingLoan;
+
+  let principal = number_(history[0][13], 'first loan_before');
+  let previousTotal = principal;
+  for (const row of history) {
+    const totalBefore = number_(row[13], 'loan_before');
+    const totalAfter = number_(row[14], 'loan_after');
+    if (totalBefore !== previousTotal) {
+      fail_('MIGRATION_REQUIRED', 'Historical loan ledger is discontinuous for ' + sid);
+    }
+    const kind = String(row[3]);
+    if (kind === 'borrow') {
+      if (totalAfter < totalBefore) fail_('MIGRATION_REQUIRED', 'Invalid historic borrowing');
+      principal += totalAfter - totalBefore;
+    } else if (kind === 'repay') {
+      if (totalAfter > totalBefore) fail_('MIGRATION_REQUIRED', 'Invalid historic repayment');
+      // Repay interest before principal; the principal cannot exceed total debt.
+      principal = Math.min(principal, totalAfter);
+    } else if (kind === 'interest') {
+      if (totalAfter < totalBefore) fail_('MIGRATION_REQUIRED', 'Invalid historic interest');
+    } else if (totalBefore !== totalAfter) {
+      fail_('MIGRATION_REQUIRED', 'Unknown loan event for ' + sid);
+    }
+    previousTotal = totalAfter;
+  }
+  if (previousTotal !== outstandingLoan || principal > outstandingLoan ||
+      !Number.isSafeInteger(principal)) {
+    fail_('MIGRATION_REQUIRED', 'Users!G differs from Transactions history for ' + sid);
+  }
+  return principal;
+}
+
+function installPrincipalColumn_(users, ledger) {
+  if (users.getMaxColumns() < 8) users.insertColumnsAfter(users.getMaxColumns(), 8 - users.getMaxColumns());
+  const header = users.getRange(1, 8, 1, 1).getValues()[0][0];
+  if (header && String(header) !== '대출원금') {
+    fail_('NOT_CONFIGURED', 'Users!H is in use; cannot overwrite its column');
+  }
+
+  const count = Math.max(0, users.getLastRow() - 1);
+  const userRows = count ? users.getRange(2, 1, count, 8).getValues() : [];
+  const logCount = Math.max(0, ledger.getLastRow() - 1);
+  const histories = logCount ? ledger.getRange(2, 1, logCount, HEADERS.length).getValues() : [];
+  const toInitialize = [];
+  userRows.forEach(function (values, index) {
+    const total = number_(values[6] === '' ? 0 : values[6], 'loan');
+    if (values[7] !== '' && values[7] != null) {
+      const existing = number_(values[7], 'principal');
+      if (existing > total) fail_('MIGRATION_REQUIRED', 'Existing principal exceeds total debt');
+      return;
+    }
+    toInitialize.push({
+      row: index + 2,
+      amount: principalFromHistory_(histories, sid_(values[0]), total)
+    });
+  });
+  users.getRange(1, 8, 1, 1).setValues([['대출원금']]);
+  toInitialize.forEach(entry => users.getRange(entry.row, 8, 1, 1).setValues([[entry.amount]]));
 }
 
 function property_(name) {
@@ -69,7 +143,7 @@ function cell_(value) {
 
 function findUser_(users, sid) {
   if (users.getLastRow() < 2) fail_('USER_NOT_FOUND', 'No registered player');
-  const rows = users.getRange(2, 1, users.getLastRow() - 1, 7).getValues();
+  const rows = users.getRange(2, 1, users.getLastRow() - 1, 8).getValues();
   let match = null;
   rows.forEach(function (values, index) {
     if (sid_(values[0]) === sid) {
@@ -94,14 +168,22 @@ function findTransaction_(ledger, id) {
 }
 
 function balance_(values) {
-  // Legacy Users rows may have an empty streak or the newly introduced G debt
-  // column. Keep the pre-existing account_amount(blank) == 0 behavior.
+  // Blank streak and G debt cells are legacy zeros, but H must be explicitly
+  // initialized: zeroing an unknown principal could bypass the borrowing cap.
   const sheetNumber = (raw, field) => number_(raw === '' || raw == null ? 0 : raw, field, 0);
-  return {
+  if (values[7] === '' || values[7] == null) {
+    fail_('NOT_CONFIGURED', 'Users!H principal not initialized; run installTransactionLedger()');
+  }
+  const balance = {
     coins: sheetNumber(values[2], 'coins'),
     streak: sheetNumber(values[3], 'streak'),
-    loan: sheetNumber(values[6], 'loan')
+    loan: sheetNumber(values[6], 'loan'),
+    principal: number_(values[7], 'principal')
   };
+  if (balance.principal > balance.loan) {
+    fail_('INVALID_REQUEST', 'Principal cannot exceed total debt');
+  }
+  return balance;
 }
 
 function record_(tx, before, after, detail) {
@@ -134,7 +216,7 @@ function walletUpdate_(users, rowIndex, balance) {
     }},
     {updateCells: {
       start: {sheetId: users.getSheetId(), rowIndex: rowIndex, columnIndex: 6},
-      rows: [{values: [cell_(balance.loan)]}],
+      rows: [{values: [cell_(balance.loan), cell_(balance.principal)]}],
       fields: 'userEnteredValue'
     }}
   ];
@@ -259,15 +341,15 @@ function process_(request) {
       const ref = referrerId && referrerId !== tx.student_id ?
         findExisting_(users, referrerId) : null;
       const bonus = ref ? 1000 : 0;
-      const starting = {coins: 5000 + bonus, streak: 0, loan: 0};
-      const empty = {coins: 0, streak: 0, loan: 0};
+      const starting = {coins: 5000 + bonus, streak: 0, loan: 0, principal: 0};
+      const empty = {coins: 0, streak: 0, loan: 0, principal: 0};
       const requests = [
-        append_(users, [[tx.student_id, nickname, starting.coins, 0, referrerId, password, 0]])
+        append_(users, [[tx.student_id, nickname, starting.coins, 0, referrerId, password, 0, 0]])
       ];
       const logs = [record_(tx, empty, starting, 'registration')];
       if (ref) {
         const prior = balance_(ref.values);
-        const next = {coins: prior.coins + 3000, streak: prior.streak, loan: prior.loan};
+        const next = {coins: prior.coins + 3000, streak: prior.streak, loan: prior.loan, principal: prior.principal};
         requests.push.apply(requests, walletUpdate_(users, ref.rowIndex, next));
         logs.push(record_({
           transaction_id: 'referrer:' + tx.transaction_id.split(':')[1],
@@ -281,7 +363,10 @@ function process_(request) {
 
     const user = findUser_(users, tx.student_id);
     const before = balance_(user.values);
-    const after = {coins: before.coins, streak: before.streak, loan: before.loan};
+    const after = {
+      coins: before.coins, streak: before.streak,
+      loan: before.loan, principal: before.principal
+    };
     if (tx.kind === 'bet') {
       if (before.coins < tx.bet) fail_('INSUFFICIENT_FUNDS', 'Insufficient coins', before);
     } else if (tx.kind === 'settle') {
@@ -313,15 +398,18 @@ function process_(request) {
     } else {
       const expectedCoins = number_(request.expected_coins, 'expected_coins');
       const expectedLoan = number_(request.expected_loan, 'expected_loan');
-      if (before.coins !== expectedCoins || before.loan !== expectedLoan) {
+      const expectedPrincipal = number_(request.expected_principal, 'expected_principal');
+      if (before.coins !== expectedCoins || before.loan !== expectedLoan ||
+          before.principal !== expectedPrincipal) {
         fail_('STALE_BALANCE', 'Balance has changed', before);
       }
       if (tx.kind === 'borrow') {
-        if (tx.amount % 1000 !== 0 || after.loan + tx.amount > MAX_LOAN) {
-          fail_('INVALID_REQUEST', 'Borrowing limit exceeded');
+        if (tx.amount % 1000 !== 0 || tx.amount > MAX_PRINCIPAL - after.principal) {
+          fail_('INVALID_REQUEST', 'Borrowed principal limit exceeded');
         }
         after.coins += tx.amount;
         after.loan += tx.amount;
+        after.principal += tx.amount;
         tx.delta = tx.amount;
       } else if (tx.kind === 'repay') {
         if (after.coins < tx.amount || after.loan < tx.amount ||
@@ -330,11 +418,16 @@ function process_(request) {
         }
         after.coins -= tx.amount;
         after.loan -= tx.amount;
+        // Repay accrued interest first; any leftover reduces borrowed principal.
+        after.principal = Math.min(before.principal, after.loan);
         tx.delta = -tx.amount;
       }
     }
     if (!Number.isSafeInteger(after.coins) || !Number.isSafeInteger(after.streak) ||
-        !Number.isSafeInteger(after.loan)) fail_('INVALID_REQUEST', 'Balance overflow');
+        !Number.isSafeInteger(after.loan) || !Number.isSafeInteger(after.principal) ||
+        after.principal < 0 || after.principal > after.loan) {
+      fail_('INVALID_REQUEST', 'Balance or principal overflow');
+    }
     const detail = tx.kind === 'interest' ?
       'turn-end compound interest ' + TURN_INTEREST_RATE_PERCENT + '%; round up to 1C' : '';
     const row = record_(tx, before, after, detail);
@@ -349,7 +442,7 @@ function process_(request) {
 
 function findExisting_(users, sid) {
   if (!sid || users.getLastRow() < 2) return null;
-  const values = users.getRange(2, 1, users.getLastRow() - 1, 7).getValues();
+  const values = users.getRange(2, 1, users.getLastRow() - 1, 8).getValues();
   let found = null;
   values.forEach(function (row, i) {
     if (sid_(row[0]) === sid) {

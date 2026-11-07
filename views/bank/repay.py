@@ -102,6 +102,7 @@ def pay_loan(coins: int, loan: int) -> None:
                 f'<strong class="bank-repay-after">{max(0, loan - amount):,} C</strong></div>'
                 '</div>'
             )
+            st.caption("상환액은 발생한 이자부터 차감하고, 남은 금액으로 대출원금을 갚습니다.")
 
         label = f"{amount:,} C 상환하기" if amount else "상환할 금액 없음"
         if st.button(

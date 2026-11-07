@@ -95,6 +95,12 @@ class BankAnimationTests(unittest.TestCase):
         self.assertEqual((user["코인"], user["대출금"]), (7_000, 6_000))
         st.toast.assert_called_with("saved")
 
+    def test_borrowing_limit_uses_principal_not_interest_in_total_debt(self):
+        source = (ROOT / "views/bank/draw.py").read_text(encoding="utf-8")
+        self.assertIn("available = max(0, MAX_LOAN - principal)", source)
+        self.assertNotIn("MAX_LOAN - loan", source)
+        self.assertIn("대출원금", source)
+
     def test_borrow_submit_sets_the_animation_key(self):
         source = (ROOT / "views/bank/draw.py").read_text(encoding="utf-8")
         self.assertIn('BORROW_SUCCESS_KEY = "bank_borrow_success"', source)

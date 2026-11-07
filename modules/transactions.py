@@ -88,12 +88,16 @@ def _student_id() -> str:
 
 
 def update_session_balances(balances: dict) -> dict:
-    """Update the three account fields only after a confirmed server result."""
+    """Refresh wallet, total debt and borrowed principal from a committed result."""
     normalized = {
         "코인": account_amount(balances["coins"], strict=True),
         "연승": account_amount(balances["streak"], strict=True),
         "대출금": account_amount(balances["loan"], strict=True),
     }
+    # Legacy transactions may lack principal; new bank transactions reject
+    # those responses, whereas existing game client tests still use old mocks.
+    if "principal" in balances:
+        normalized["대출원금"] = account_amount(balances["principal"], strict=True)
     user = st.session_state.get("current_user_data")
     if user is not None:
         user.update(normalized)
@@ -182,13 +186,18 @@ def bank_transaction(kind: str, amount: int, tx_id: str) -> dict:
     if kind not in ("borrow", "repay"):
         raise ValueError("Invalid bank operation")
     user = st.session_state.get("current_user_data") or {}
+    if user.get("대출원금") is None or user.get("대출원금") == "":
+        raise TransactionError("대출원금 정보가 없습니다. 계정 데이터를 갱신한 후 다시 시도하세요.")
     result = _request({
         "transaction_id": tx_id,
         "kind": kind, "student_id": _student_id(),
         "amount": int(amount),
         "expected_coins": account_amount(user.get("코인"), strict=True),
         "expected_loan": account_amount(user.get("대출금"), strict=True),
+        "expected_principal": account_amount(user["대출원금"], strict=True),
     })
+    if "principal" not in result["balances"]:
+        raise TransactionError("거래 서버에 대출원금 관리 기능이 적용되지 않았습니다.", code="NOT_CONFIGURED")
     update_session_balances(result["balances"])
     return result
 

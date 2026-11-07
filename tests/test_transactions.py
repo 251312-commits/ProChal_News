@@ -16,7 +16,7 @@ class ClientTests(unittest.TestCase):
     def setUp(self):
         self.session = Session(
             current_user="11011",
-            current_user_data={"학번": "11011", "코인": 5000, "연승": 2, "대출금": 1000},
+            current_user_data={"학번": "11011", "코인": 5000, "연승": 2, "대출금": 1000, "대출원금": 1000},
         )
         self.secrets = {
             "transaction_endpoint": "https://script.google.com/macros/s/deployment/exec",
@@ -33,7 +33,7 @@ class ClientTests(unittest.TestCase):
         result = Mock()
         result.json.return_value = {
             "ok": True, "replayed": replayed,
-            "balances": {"coins": coins, "streak": streak, "loan": loan},
+            "balances": {"coins": coins, "streak": streak, "loan": loan, "principal": loan},
             "settlement": {
                 "delta": delta, "coins": coins, "streak": streak,
                 "loan": loan, "is_win": delta > 0,
@@ -119,9 +119,29 @@ class ClientTests(unittest.TestCase):
         with patch.object(tx.requests, "post", return_value=self.response(coins=7000, loan=3000)) as post:
             tx.bank_transaction("borrow", 2000, "borrow:" + "b" * 32)
             body = post.call_args.kwargs["json"]
-            self.assertEqual((body["expected_coins"], body["expected_loan"]), (5000, 1000))
+            self.assertEqual((body["expected_coins"], body["expected_loan"], body["expected_principal"]),
+                             (5000, 1000, 1000))
             self.assertEqual((self.session.current_user_data["코인"],
-                              self.session.current_user_data["대출금"]), (7000, 3000))
+                              self.session.current_user_data["대출금"],
+                              self.session.current_user_data["대출원금"]), (7000, 3000, 3000))
+
+    def test_borrowing_can_exceed_total_debt_cap_but_not_principal_cap(self):
+        self.session.current_user_data.update({"코인": 6000, "대출금": 9600, "대출원금": 8000})
+        response = self.response(coins=8000, loan=11600)
+        response.json.return_value["balances"]["principal"] = 10000
+        with patch.object(tx.requests, "post", return_value=response) as post:
+            tx.bank_transaction("borrow", 2000, "borrow:" + "c" * 32)
+        body = post.call_args.kwargs["json"]
+        self.assertEqual((body["expected_loan"], body["expected_principal"]), (9600, 8000))
+        self.assertEqual(self.session.current_user_data["대출금"], 11600)
+        self.assertEqual(self.session.current_user_data["대출원금"], 10000)
+
+    def test_borrow_refuses_missing_principal(self):
+        self.session.current_user_data.pop("대출원금")
+        with patch.object(tx.requests, "post") as post:
+            with self.assertRaises(tx.TransactionError):
+                tx.bank_transaction("borrow", 1000, "borrow:" + "a" * 32)
+        post.assert_not_called()
 
     def test_missing_endpoint_blocks_all_writes(self):
         self.secrets.pop("transaction_endpoint")

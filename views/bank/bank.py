@@ -55,6 +55,10 @@ def show_bank() -> None:
     page = st.session_state.page
     coins = account_amount(user.get("코인"))
     loan = account_amount(user.get("대출금"))
+    if page == "draw_loan" and user.get("대출원금") in (None, ""):
+        st.error("대출원금 정보가 없습니다. 서버의 대출원금 열을 초기화한 뒤 다시 로그인하세요.")
+        return
+    principal = account_amount(user.get("대출원금"))
     with st.container(key="bank-page", gap=None):
         _navigation(page, coins)
         with st.container(key="bank-body", gap=None):
@@ -64,6 +68,6 @@ def show_bank() -> None:
                 if st.session_state.pop("bank_open_letter", False):
                     opening_scene()
                 if page == "draw_loan":
-                    draw_loan(coins, loan)
+                    draw_loan(coins, loan, principal)
                 elif page == "pay_loan":
                     pay_loan(coins, loan)
