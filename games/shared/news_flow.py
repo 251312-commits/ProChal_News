@@ -49,11 +49,21 @@ def _get_news_candidates(candidates_key):
     if candidates_key not in st.session_state:
         raw_records = ws_news.get_all_records()
         news_data = []
+        state = st.session_state
+        user = state.get("current_user_data") or {}
+        current_sid = _current_student_id()
+        last_seen = normalize_article_url(user.get(LAST_ARTICLE_HEADER, ""))
 
         with st.spinner("🎰 슬롯머신 기사 추천 중..."):
             for idx, row in enumerate(raw_records):
                 url = str(row.get('URL', '')).strip()
-                if not url:
+                if not url or not news_row_is_active(row):
+                    continue
+                canonical = normalize_article_url(url)
+                if last_seen and canonical == last_seen:
+                    continue
+                submitted_by = str(row.get("SubmittedBy", "") or "").strip().removesuffix(".0")
+                if current_sid and submitted_by == current_sid:
                     continue
                 try:
                     count = int(row.get('Count', 0))
@@ -70,9 +80,11 @@ def _get_news_candidates(candidates_key):
 
                 news_data.append({
                     'row_idx': idx + 2,
-                    'url': url,
+                    'url': canonical,
                     'count': count,
-                    'title': title
+                    'title': title,
+                    'submitted_by': submitted_by,
+                    'source_type': str(row.get("SourceType", "") or "base").strip() or "base",
                 })
 
         if not news_data:
@@ -106,6 +118,7 @@ def _open_chosen_article(item, news_key, candidates_key, *, include_image=False)
     }
     if include_image:
         st.session_state[news_key]['image_url'] = image_url
+    _remember_article(item['url'])
     del st.session_state[candidates_key]
     st.rerun()
 
