@@ -3,18 +3,19 @@ import types
 import unittest
 from unittest.mock import MagicMock, patch
 
+# Streamlit pulls in the real google namespace through protobuf. Import it first,
+# then stub only the optional Sheets dependencies absent from the minimal CI image.
+import streamlit  # noqa: F401
+
 gspread = types.ModuleType("gspread")
 gspread.WorksheetNotFound = type("WorksheetNotFound", (Exception,), {})
-google = types.ModuleType("google")
 oauth2 = types.ModuleType("google.oauth2")
 service_account = types.ModuleType("google.oauth2.service_account")
 service_account.Credentials = MagicMock()
-google.oauth2 = oauth2
 oauth2.service_account = service_account
 
 _modules = patch.dict(sys.modules, {
     "gspread": gspread,
-    "google": google,
     "google.oauth2": oauth2,
     "google.oauth2.service_account": service_account,
 })
