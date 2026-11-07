@@ -1,0 +1,227 @@
+{
+  "reference": {
+    "w": 864,
+    "h": 1536,
+    "unit": "px",
+    "origin": "top-left"
+  },
+  "drawOrder": "back-to-front",
+  "assets": [
+    {
+      "file": "art/stage-ring.png",
+      "label": "하단 빛 고리",
+      "x": 0,
+      "y": 1400,
+      "w": 864,
+      "h": 111
+    },
+    {
+      "file": "art/chip-left.png",
+      "label": "왼쪽 칩",
+      "x": 50,
+      "y": 93,
+      "w": 106,
+      "h": 84
+    },
+    {
+      "file": "art/chip-right.png",
+      "label": "오른쪽 칩",
+      "x": 766,
+      "y": 128,
+      "w": 90,
+      "h": 90
+    },
+    {
+      "file": "art/sparkle-gold.png",
+      "label": "금빛 반짝임",
+      "x": 183,
+      "y": 178,
+      "w": 59,
+      "h": 47
+    },
+    {
+      "file": "chrome/article-surface.png",
+      "label": "기사 바탕",
+      "x": 44,
+      "y": 223,
+      "w": 775,
+      "h": 839
+    },
+    {
+      "file": "chrome/article-frame.png",
+      "label": "기사 테두리",
+      "x": 26,
+      "y": 207,
+      "w": 810,
+      "h": 871
+    },
+    {
+      "file": "art/article-ai-copyright.png",
+      "label": "AI·저작권 기사 삽화",
+      "x": 88,
+      "y": 261,
+      "w": 687,
+      "h": 213
+    },
+    {
+      "file": "chrome/article-divider.png",
+      "label": "기사 구분선",
+      "x": 92,
+      "y": 582,
+      "w": 681,
+      "h": 24
+    },
+    {
+      "file": "chrome/progress-track.png",
+      "label": "진행 막대 트랙",
+      "x": 196,
+      "y": 992,
+      "w": 484,
+      "h": 27
+    },
+    {
+      "file": "chrome/progress-fill.png",
+      "label": "진행 막대 채움",
+      "x": 190,
+      "y": 987,
+      "w": 209,
+      "h": 37
+    },
+    {
+      "file": "chrome/guidance-panel.png",
+      "label": "안내 패널",
+      "x": 30,
+      "y": 1076,
+      "w": 804,
+      "h": 148
+    },
+    {
+      "file": "chrome/predict-button.png",
+      "label": "예측 버튼",
+      "x": 40,
+      "y": 1232,
+      "w": 783,
+      "h": 150
+    },
+    {
+      "file": "chrome/read-button.png",
+      "label": "계속 읽기 버튼",
+      "x": 244,
+      "y": 1388,
+      "w": 377,
+      "h": 81
+    },
+    {
+      "file": "chrome/news-label.png",
+      "label": "선택한 뉴스 배지",
+      "x": 285,
+      "y": 140,
+      "w": 295,
+      "h": 73
+    },
+    {
+      "file": "chrome/balance-pill.png",
+      "label": "잔액 배지",
+      "x": 597,
+      "y": 21,
+      "w": 250,
+      "h": 70
+    },
+    {
+      "file": "chrome/reward-pill.png",
+      "label": "보상 배지",
+      "x": 625,
+      "y": 1105,
+      "w": 171,
+      "h": 45
+    },
+    {
+      "file": "art/bet-header.png",
+      "label": "BET 헤더",
+      "x": 190,
+      "y": 16,
+      "w": 484,
+      "h": 120
+    },
+    {
+      "file": "icons/back.png",
+      "label": "뒤로 가기",
+      "x": 34,
+      "y": 30,
+      "w": 35,
+      "h": 50
+    },
+    {
+      "file": "icons/coin.png",
+      "label": "코인",
+      "x": 611,
+      "y": 30,
+      "w": 51,
+      "h": 52
+    },
+    {
+      "file": "icons/add-balance.png",
+      "label": "잔액 추가",
+      "x": 784,
+      "y": 28,
+      "w": 54,
+      "h": 55
+    },
+    {
+      "file": "icons/die.png",
+      "label": "주사위",
+      "x": 326,
+      "y": 150,
+      "w": 49,
+      "h": 52
+    },
+    {
+      "file": "icons/clipboard.png",
+      "label": "안내판",
+      "x": 52,
+      "y": 1096,
+      "w": 152,
+      "h": 109
+    },
+    {
+      "file": "icons/target.png",
+      "label": "과녁",
+      "x": 200,
+      "y": 1264,
+      "w": 83,
+      "h": 78
+    },
+    {
+      "file": "icons/book.png",
+      "label": "책",
+      "x": 334,
+      "y": 1409,
+      "w": 50,
+      "h": 41
+    },
+    {
+      "file": "icons/reward-crown.png",
+      "label": "보상 왕관",
+      "x": 647,
+      "y": 1110,
+      "w": 36,
+      "h": 30
+    },
+    {
+      "file": "icons/laurel-left.png",
+      "label": "왼쪽 월계수",
+      "x": 617,
+      "y": 1144,
+      "w": 30,
+      "h": 49
+    },
+    {
+      "file": "icons/laurel-right.png",
+      "label": "오른쪽 월계수",
+      "x": 778,
+      "y": 1144,
+      "w": 31,
+      "h": 49
+    }
+  ]
+}

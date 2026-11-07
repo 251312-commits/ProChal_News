@@ -12,9 +12,9 @@ import streamlit as st
 from games.shared.betting import check_user_coins_or_pop_bank
 from games.shared.betting import render_betting_ui
 from games.shared.loading import similarity_analysis_loading
-from modules.transactions import BalanceChanged, TransactionError, settle_game_round, update_session_balances
 from modules.db_handler import init_news_sheet
-from modules.news_ai import bring_article, pick_3_lowest_count_news, similarity_check, summary
+from modules.transactions import BalanceChanged, TransactionError, settle_game_round, update_session_balances
+from modules.news_ai import bring_article, pick_5_lowest_count_news, similarity_check, summary
 from modules.ui_components import change_page
 from views.ranking import fetch_ranking_data
 
@@ -22,7 +22,7 @@ from views.ranking import fetch_ranking_data
 GAME_5_WIN_MULTIPLIER = 5.0
 GAME_5_MIN_BET = 1000
 GAME_5_SCORE_MAX = 99.99
-GAME_5_MAX_RANGE_WIDTH = 10.0
+GAME_5_TARGET_RANGE_WIDTH = 2.0
 
 ws_news = init_news_sheet()
 
@@ -35,6 +35,7 @@ def _reset_game_5_state() -> None:
         "game_5_answer_index",
         "game_5_candidates",
         "game_5_selected_index",
+        "game_5_pending_selection",
         "game_5_result",
         "game_5_article_index",
         "bet_slider_val",
@@ -42,13 +43,14 @@ def _reset_game_5_state() -> None:
         st.session_state.pop(key, None)
 
 
-def _load_candidates() -> list[dict]:
+def _load_candidates(excluded_urls: set[str] | None = None) -> list[dict]:
+    excluded_urls = excluded_urls or set()
     records = ws_news.get_all_records()
     news_list = []
     for row_index, item in enumerate(records, start=2):
         url = str(item.get("URL", "")).strip()
         title = str(item.get("Title", "")).strip()
-        if not url or not title:
+        if not url or not title or url in excluded_urls:
             continue
         try:
             count = int(float(item.get("Count", 0) or 0))
@@ -56,29 +58,24 @@ def _load_candidates() -> list[dict]:
             count = 0
         news_list.append({"url": url, "title": title, "count": count, "row_idx": row_index})
 
-    candidates = pick_3_lowest_count_news(news_list)
-    if len(candidates) < 3:
-        raise ValueError("게임 5에 필요한 뉴스 후보가 3개 미만입니다.")
+    candidates = pick_5_lowest_count_news(news_list)
+    if len(candidates) < 5:
+        raise ValueError("게임 5에 필요한 뉴스 후보가 5개 미만입니다.")
 
-    loaded = []
-    for item in candidates:
-        try:
-            title, text = bring_article(item["url"])
-        except Exception as exc:
-            raise RuntimeError(f"뉴스 본문을 불러오지 못했습니다: {exc}") from exc
-        if not title or not text:
-            raise ValueError("제목 또는 본문이 비어 있는 뉴스가 후보에 포함되어 있습니다.")
-        article = {**item, "title": title, "text": text}
-        article["score"] = _calculate_score(article)
-        loaded.append(article)
-    return loaded
+    return [{**item, "text": ""} for item in candidates]
 
 
-def _calculate_score(article: dict) -> float:
-    summary_text = asyncio.run(summary(article["text"]))
+@st.cache_data(ttl=3600, show_spinner=False)
+def _extract_article(url: str) -> tuple[str, str]:
+    return bring_article(url)
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def _calculate_score_cached(article_text: str, title: str) -> float:
+    summary_text = asyncio.run(summary(article_text))
     if not summary_text:
         raise ValueError("뉴스 본문 요약 결과가 비어 있습니다.")
-    score_details = similarity_check(summary_text, article["title"])
+    score_details = similarity_check(summary_text, title)
     score = score_details.get("score")
     if (
         not isinstance(score, (int, float))
@@ -91,6 +88,29 @@ def _calculate_score(article: dict) -> float:
         rounding=ROUND_HALF_UP,
     )
     return max(0.0, min(float(normalized_score), GAME_5_SCORE_MAX))
+
+
+def _load_article(article: dict) -> None:
+    try:
+        title, text = _extract_article(article["url"])
+    except Exception as exc:
+        raise RuntimeError(f"뉴스 본문을 불러오지 못했습니다: {exc}") from exc
+    if not title or not text:
+        raise ValueError("제목 또는 본문이 비어 있는 뉴스가 후보에 포함되어 있습니다.")
+    article["title"] = title
+    article["text"] = text
+
+
+def _calculate_score(article: dict) -> float:
+    return _calculate_score_cached(article["text"], article["title"])
+
+
+def _replace_candidate(candidates: list[dict], index: int) -> None:
+    excluded_urls = {candidate["url"] for candidate in candidates}
+    replacements = _load_candidates(excluded_urls)
+    if not replacements:
+        raise ValueError("교체할 수 있는 뉴스 후보가 없습니다.")
+    candidates[index] = replacements[0]
 
 
 def _build_exclusive_range(candidates: list[dict], answer_index: int) -> tuple[float, float]:
@@ -112,7 +132,7 @@ def _build_exclusive_range(candidates: list[dict], answer_index: int) -> tuple[f
     # to the impractically wide 0~100% range at the ends of the scale.
     half_width = min(
         nearest_gap * (2 / 3),
-        GAME_5_MAX_RANGE_WIDTH / 2,
+        GAME_5_TARGET_RANGE_WIDTH / 2,
     )
     lower = max(0.0, answer_score - half_width)
     upper = min(GAME_5_SCORE_MAX, answer_score + half_width)
@@ -129,14 +149,52 @@ def _build_exclusive_range(candidates: list[dict], answer_index: int) -> tuple[f
     ]
     lower = max(lower_candidates)
     upper = min(upper_candidates)
-    upper = min(upper, lower + GAME_5_MAX_RANGE_WIDTH)
+    upper = min(upper, lower + GAME_5_TARGET_RANGE_WIDTH)
     if lower > answer_score or answer_score > upper:
         raise ValueError("후보 뉴스의 일치율로 정답 구간을 만들 수 없습니다.")
     return lower, upper
 
 
+def _build_target_range(answer_score: float) -> tuple[float, float]:
+    """Build a small, score-centered range without calculating other candidates."""
+    half_width = GAME_5_TARGET_RANGE_WIDTH / 2
+    lower = max(0.0, answer_score - half_width)
+    upper = min(GAME_5_SCORE_MAX, answer_score + half_width)
+    if upper - lower < GAME_5_TARGET_RANGE_WIDTH:
+        if lower == 0.0:
+            upper = min(GAME_5_SCORE_MAX, GAME_5_TARGET_RANGE_WIDTH)
+        elif upper == GAME_5_SCORE_MAX:
+            lower = max(0.0, GAME_5_SCORE_MAX - GAME_5_TARGET_RANGE_WIDTH)
+    quantizer = Decimal("0.01")
+    return (
+        float(Decimal(str(lower)).quantize(quantizer, rounding=ROUND_HALF_UP)),
+        float(Decimal(str(upper)).quantize(quantizer, rounding=ROUND_HALF_UP)),
+    )
+
+
 def _format_score_range(score_range: tuple[float, float]) -> str:
     return f"{score_range[0]:.2f}~{score_range[1]:.2f}%"
+
+
+@st.dialog("기사 선택 확인")
+def _confirm_article_selection(index: int) -> None:
+    candidates = st.session_state.get("game_5_candidates", [])
+    if not 0 <= index < len(candidates):
+        st.error("선택할 뉴스 정보를 찾을 수 없습니다.")
+        return
+
+    st.write(f"**후보 {index + 1}**을 정답으로 결정할까요?")
+    st.caption(candidates[index]["title"])
+    confirm_col, cancel_col = st.columns(2)
+    with confirm_col:
+        if st.button("결정하기", key="game_5_confirm_selection", use_container_width=True):
+            st.session_state.game_5_selected_index = index
+            st.session_state.pop("game_5_pending_selection", None)
+            st.rerun()
+    with cancel_col:
+        if st.button("다시 보기", key="game_5_cancel_selection", use_container_width=True):
+            st.session_state.pop("game_5_pending_selection", None)
+            st.rerun()
 
 
 def _show_article_detail() -> None:
@@ -149,6 +207,20 @@ def _show_article_detail() -> None:
         return
 
     article = candidates[article_index]
+    if not article.get("text"):
+        with st.spinner("뉴스 본문을 불러오는 중..."):
+            try:
+                _load_article(article)
+            except (RuntimeError, ValueError) as exc:
+                try:
+                    _replace_candidate(candidates, article_index)
+                except ValueError as replacement_exc:
+                    st.error(f"뉴스 본문을 불러오지 못했고 교체할 후보도 없습니다: {replacement_exc}")
+                    return
+                st.warning(f"실패한 기사를 교체했습니다: {exc}")
+                st.session_state.pop("game_5_article_index", None)
+                st.rerun()
+                return
     st.title(f"📰 후보 {article_index + 1} 본문")
     st.subheader(article["title"])
     st.markdown(article["text"])
@@ -215,33 +287,35 @@ def show_game_5():
 
     if "game_5_candidates" not in st.session_state:
         with similarity_analysis_loading():
-            try:
-                candidates = _load_candidates()
-                unique_score_indices = [
-                    index
-                    for index, candidate in enumerate(candidates)
-                    if sum(other["score"] == candidate["score"] for other in candidates) == 1
-                ]
-                if not unique_score_indices:
-                    raise ValueError(
-                        "후보 뉴스의 일치율이 모두 겹쳐 정답 구간을 만들 수 없습니다."
+            failed_urls = set()
+            while True:
+                round_candidates = None
+                try:
+                    round_candidates = _load_candidates(failed_urls)
+                    answer_index = random.randrange(len(round_candidates))
+                    _load_article(round_candidates[answer_index])
+                    round_candidates[answer_index]["score"] = _calculate_score(
+                        round_candidates[answer_index]
                     )
-                answer_index = random.choice(unique_score_indices)
-                target_range = _build_exclusive_range(candidates, answer_index)
-            except (RuntimeError, ValueError, TypeError) as exc:
-                st.error(f"뉴스 후보를 준비하지 못했습니다: {exc}")
-                return
-
-        st.session_state.game_5_candidates = candidates
+                    target_range = _build_target_range(round_candidates[answer_index]["score"])
+                    break
+                except (RuntimeError, ValueError, TypeError) as exc:
+                    if not round_candidates:
+                        st.error(f"뉴스 후보를 준비하지 못했습니다: {exc}")
+                        return
+                    failed_urls.add(round_candidates[answer_index]["url"])
+                    if len(failed_urls) >= len(ws_news.get_all_records()):
+                        st.error(f"뉴스 후보를 준비하지 못했습니다: {exc}")
+                        return
+            candidates = round_candidates
+            st.session_state.game_5_candidates = candidates
         st.session_state.game_5_answer_index = answer_index
         st.session_state.game_5_target_range = target_range
         st.rerun()
 
     candidates = st.session_state.game_5_candidates
     target_range = st.session_state.game_5_target_range
-    st.info(
-        "아래 뉴스 중 이 구간에 해당하는 뉴스 하나를 선택하세요."
-    )
+    st.info("본문을 확인한 뒤, 이 구간에 해당하는 뉴스 하나를 선택하세요.")
     st.markdown(
         f"""
         <div style="background:linear-gradient(135deg, #260044, #110022);
@@ -260,29 +334,141 @@ def show_game_5():
         unsafe_allow_html=True,
     )
 
-    for index, article in enumerate(candidates):
-        with st.container(border=True):
-            st.subheader(f"📰 후보 {index + 1}: {article['title']}")
-            preview = html.escape(article["text"].replace("\n", " ").strip())
-            st.markdown(
-                f'<div style="height:120px; overflow-y:auto; padding:8px; '
-                f'border:1px solid #663399; border-radius:6px;">{preview}</div>',
-                unsafe_allow_html=True,
-            )
-            if st.button(
-                f"📖 후보 {index + 1} 본문 보기",
-                key=f"game_5_article_{index}",
-                use_container_width=True,
-            ):
-                st.session_state.game_5_article_index = index
-                change_page("game_5_article")
-            if st.button(
-                f"후보 {index + 1} 선택",
-                key=f"game_5_select_{index}",
-                use_container_width=True,
-            ):
-                st.session_state.game_5_selected_index = index
-                st.rerun()
+    st.markdown(
+        """
+        <style>
+        .st-key-game5-candidates [data-testid="stHorizontalBlock"] {
+            gap: 12px;
+            align-items: stretch;
+        }
+        .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] {
+            height: 100%;
+            min-height: 190px;
+            border: 3px solid #bf4ce3;
+            border-radius: 22px;
+            background: linear-gradient(160deg, #351346, #17091f);
+            box-shadow: 0 0 14px #bf4ce366, inset 0 0 18px #a13dcc35;
+            padding: 14px 12px 12px;
+        }
+        .st-key-game5-candidates .st-key-game5-card-0 {
+            transform: translateX(50%);
+            position: relative;
+            z-index: 1;
+        }
+        .st-key-game5-candidates .st-key-game5-card-1 {
+            transform: translateX(-50%);
+            position: relative;
+            z-index: 1;
+        }
+        .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"]:hover {
+            border-color: #e7a4ff;
+            box-shadow: 0 0 18px #d967f099, inset 0 0 18px #a13dcc45;
+        }
+        .st-key-game5-candidates .game5-card-title {
+            min-height: 70px;
+            color: #fff3ff;
+            font-size: clamp(14px, 3.8vw, 18px);
+            font-weight: 800;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+        }
+        .st-key-game5-candidates .game5-card-number {
+            display: grid;
+            place-items: center;
+            width: 34px;
+            height: 34px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            background: #ffda39;
+            color: #25132f;
+            font-weight: 900;
+        }
+        .st-key-game5-candidates [data-testid="stButton"] button {
+            min-height: 36px;
+            border-radius: 12px;
+            font-size: 12px;
+            padding: 4px 6px;
+        }
+        @media (max-width: 430px) {
+            .st-key-game5-candidates [data-testid="stHorizontalBlock"] {
+                gap: 8px;
+            }
+            .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] {
+                min-height: 178px;
+                padding: 11px 9px 10px;
+                border-radius: 18px;
+            }
+            .st-key-game5-candidates .game5-card-title {
+                min-height: 76px;
+                font-size: 13px;
+            }
+            .st-key-game5-candidates [data-testid="stButton"] button {
+                min-height: 34px;
+                padding-inline: 2px;
+                font-size: 11px;
+            }
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    with st.container(key="game5-candidates"):
+        pending_index = st.session_state.get("game_5_pending_selection")
+        if isinstance(pending_index, int):
+            _confirm_article_selection(pending_index)
+
+        rows = ((0, None, 1), (2, 3, 4))
+        for row in rows:
+            columns = st.columns(3)
+            for column, index in zip(columns, row):
+                if index is None:
+                    continue
+                article = candidates[index]
+                with column:
+                    with st.container(
+                        key=f"game5-card-{index}",
+                        border=True,
+                    ):
+                        st.markdown(
+                            f'<div class="game5-card-number">{index + 1}</div>'
+                            f'<div class="game5-card-title">'
+                            f'{html.escape(article["title"])}</div>',
+                            unsafe_allow_html=True,
+                        )
+                        read_col, select_col = st.columns(2)
+                        with read_col:
+                            if st.button(
+                                "본문 읽기",
+                                key=f"game_5_article_{index}",
+                                use_container_width=True,
+                            ):
+                                if not article.get("text"):
+                                    with st.spinner("뉴스 본문을 불러오는 중..."):
+                                        try:
+                                            _load_article(article)
+                                        except (RuntimeError, ValueError) as exc:
+                                            try:
+                                                _replace_candidate(candidates, index)
+                                            except ValueError as replacement_exc:
+                                                st.error(
+                                                    "뉴스 본문을 불러오지 못했고 "
+                                                    f"교체할 후보도 없습니다: {replacement_exc}"
+                                                )
+                                                continue
+                                            st.warning(f"실패한 기사를 교체했습니다: {exc}")
+                                            st.rerun()
+                                            continue
+                                st.session_state.game_5_article_index = index
+                                change_page("game_5_article")
+                        with select_col:
+                            if st.button(
+                                "정답 결정",
+                                key=f"game_5_select_{index}",
+                                use_container_width=True,
+                            ):
+                                st.session_state.game_5_pending_selection = index
+                                st.rerun()
 
     if "game_5_selected_index" not in st.session_state:
         return
@@ -290,12 +476,25 @@ def show_game_5():
     if "game_5_result" not in st.session_state:
         selected_index = st.session_state.game_5_selected_index
         selected_article = candidates[selected_index]
+        if "score" not in selected_article or not selected_article.get("text"):
+            with similarity_analysis_loading():
+                try:
+                    _load_article(selected_article)
+                    selected_article["score"] = _calculate_score(selected_article)
+                except (RuntimeError, ValueError, TypeError) as exc:
+                    try:
+                        _replace_candidate(candidates, selected_index)
+                    except ValueError as replacement_exc:
+                        st.error(f"선택한 기사를 교체할 수 없습니다: {replacement_exc}")
+                        return
+                    st.session_state.pop("game_5_selected_index", None)
+                    st.warning(f"실패한 기사를 교체했습니다. 다시 선택해 주세요: {exc}")
+                    st.rerun()
+                    return
         actual_score = selected_article["score"]
 
         is_win = target_range[0] <= actual_score <= target_range[1]
         bet_coin = int(st.session_state.game_5_bet)
-        reward = int(bet_coin * GAME_5_WIN_MULTIPLIER) if is_win else -bet_coin
-
         try:
             settled = settle_game_round("game_5", bet_coin, is_win)
         except BalanceChanged as changed:
@@ -305,6 +504,7 @@ def show_game_5():
         except TransactionError as exc:
             st.error(str(exc))
             return
+
         reward = settled["reward"]
         new_coins = settled["new_coins"]
         new_streak = settled["new_streak"]
@@ -357,7 +557,7 @@ def show_game_5_tutorial():
                     <li>
                         <h2><span>03</span>뉴스 선택</h2>
                         <div class="game5-guide-icon">?</div>
-                        <p>후보 뉴스 세 편을 읽고<br>구간에 해당하는 한 편을 고른다.</p>
+                        <p>후보 뉴스 <b>5개</b>를 읽고<br>구간에 해당하는 한 편을 고른다.</p>
                     </li>
                     <li>
                         <h2><span>04</span>결과 확인</h2>
