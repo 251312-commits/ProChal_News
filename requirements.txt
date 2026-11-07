@@ -10,3 +10,4 @@ gspread
 google-auth
 st-clickable-images
 google-genai
+requests>=2.31,<3

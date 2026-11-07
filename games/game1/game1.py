@@ -6,7 +6,7 @@ import streamlit.components.v1 as components
 
 import streamlit as st
 from modules.news_ai import summary, similarity_check
-from modules.db_handler import init_gspread, init_news_sheet
+from modules.db_handler import init_news_sheet
 from modules.ui_components import change_page, load_local_image_as_base64
 from views.ranking import fetch_ranking_data
 from games.shared.result import show_summary_before_score
@@ -14,8 +14,8 @@ from games.shared.news_flow import get_game_news_selection
 from games.shared.betting import check_user_coins_or_pop_bank
 from games.shared.betting import render_betting_ui
 from games.shared.loading import similarity_analysis_loading
+from modules.transactions import BalanceChanged, TransactionError, settle_game_round, update_session_balances
 
-ws = init_gspread()
 ws_news = init_news_sheet()
 
 # 순이익(잔액 증가액) 배율. UI 예상 코인과 실제 승리 정산에 공통 적용.
@@ -94,33 +94,18 @@ def show_game_1():
                 is_win = False
                 result_msg = f"💥 빗나갔습니다. 정답은 {answer_digits:02d}"
 
-            current_sid = st.session_state.current_user
-            users_data = ws.get_all_records()
-            user_row_idx = None
-            user_info = None
-
-            for idx, u in enumerate(users_data):
-                sid = str(u.get('학번', '')).strip().replace('.0', '')
-                if sid == current_sid:
-                    user_row_idx = idx + 2
-                    user_info = u
-                    break
-
-            current_coins = int(user_info.get('코인', 0)) if user_info else 0
-            current_streak = int(user_info.get('연승', 0)) if user_info else 0
-
-            if is_win:
-                new_coins = current_coins + reward
-                new_streak = current_streak + 1
-            else:
-                new_coins = max(0, current_coins + reward)
-                new_streak = 0
-
-            if user_row_idx:
-                ws.update_cell(user_row_idx, 3, new_coins)
-                ws.update_cell(user_row_idx, 4, new_streak)
-                st.session_state.current_user_data['코인'] = new_coins
-                st.session_state.current_user_data['연승'] = new_streak
+            try:
+                settled = settle_game_round("game_1", int(bet_coin), is_win)
+            except BalanceChanged as changed:
+                update_session_balances(changed.balances)
+                st.error(str(changed))
+                return
+            except TransactionError as exc:
+                st.error(str(exc))
+                return
+            reward = settled["reward"]
+            new_coins = settled["new_coins"]
+            new_streak = settled["new_streak"]
 
             st.session_state.game_1_result = {
                 "title": title,
@@ -172,7 +157,7 @@ def show_game_1():
     def reset_game_1_state():
         keys_to_clear = [
             "game_1_bet", "selected_news_game_1", "candidates_game_1", 
-            "read_done_game_1", "game_1_predicted_digits", "game_1_predicted_score", "game_1_result",
+            "read_done_game_1", "game_1_round_id", "game_1_predicted_digits", "game_1_predicted_score", "game_1_result",
             "tens_val", "ones_val", "game1_pred_tens", "game1_pred_ones", "game1_pred_round_id", "game_1_summary_revealed"
         ]
         for k in keys_to_clear:

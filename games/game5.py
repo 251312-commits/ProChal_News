@@ -12,7 +12,8 @@ import streamlit as st
 from games.shared.betting import check_user_coins_or_pop_bank
 from games.shared.betting import render_betting_ui
 from games.shared.loading import similarity_analysis_loading
-from modules.db_handler import init_gspread, init_news_sheet
+from modules.db_handler import init_news_sheet
+from modules.transactions import BalanceChanged, TransactionError, settle_game_round, update_session_balances
 from modules.news_ai import bring_article, pick_5_lowest_count_news, similarity_check, summary
 from modules.ui_components import change_page
 from views.ranking import fetch_ranking_data
@@ -23,13 +24,13 @@ GAME_5_MIN_BET = 1000
 GAME_5_SCORE_MAX = 99.99
 GAME_5_TARGET_RANGE_WIDTH = 2.0
 
-ws = init_gspread()
 ws_news = init_news_sheet()
 
 
 def _reset_game_5_state() -> None:
     for key in (
         "game_5_bet",
+        "game_5_round_id",
         "game_5_target_range",
         "game_5_answer_index",
         "game_5_candidates",
@@ -494,29 +495,19 @@ def show_game_5():
 
         is_win = target_range[0] <= actual_score <= target_range[1]
         bet_coin = int(st.session_state.game_5_bet)
-        reward = int(bet_coin * GAME_5_WIN_MULTIPLIER) if is_win else -bet_coin
-
-        current_sid = str(st.session_state.get("current_user", "")).strip().replace(".0", "")
-        users_data = ws.get_all_records()
-        user_row_idx = None
-        user_info = None
-        for index, user in enumerate(users_data):
-            if str(user.get("학번", "")).strip().replace(".0", "") == current_sid:
-                user_row_idx = index + 2
-                user_info = user
-                break
-        if user_info is None or user_row_idx is None:
-            st.error("사용자 정보를 찾을 수 없어 정산할 수 없습니다.")
+        try:
+            settled = settle_game_round("game_5", bet_coin, is_win)
+        except BalanceChanged as changed:
+            update_session_balances(changed.balances)
+            st.error(str(changed))
+            return
+        except TransactionError as exc:
+            st.error(str(exc))
             return
 
-        current_coins = int(user_info.get("코인", 0))
-        current_streak = int(user_info.get("연승", 0))
-        new_coins = max(0, current_coins + reward)
-        new_streak = current_streak + 1 if is_win else 0
-        ws.update_cell(user_row_idx, 3, new_coins)
-        ws.update_cell(user_row_idx, 4, new_streak)
-        st.session_state.current_user_data["코인"] = new_coins
-        st.session_state.current_user_data["연승"] = new_streak
+        reward = settled["reward"]
+        new_coins = settled["new_coins"]
+        new_streak = settled["new_streak"]
         st.session_state.game_5_result = {
             "actual_score": actual_score,
             "target_range": _format_score_range(target_range),

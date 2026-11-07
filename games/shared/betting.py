@@ -10,6 +10,7 @@ import streamlit as st
 from decimal import Decimal, InvalidOperation
 from operator import itemgetter
 from modules.account_math import account_amount, net_coins
+from modules.transactions import BalanceChanged, TransactionError, confirm_bet, update_session_balances
 from modules.ui_components import change_page, load_local_image_as_base64
 
 def calculate_expected_gain(bet_amount, payout_multiplier):
@@ -138,7 +139,7 @@ def _adjust_bet_amount(step, min_val, max_val, slider_key="bet_slider_val"):
     st.session_state[slider_key] = max(min_val, min(max_val, aligned + step))
 
 
-def render_betting_ui(current_coins, users_data=None, current_sid="", current_nickname="", min_bet=MIN_BET, bg_image_path=None, *, payout_multiplier, title="title", state_key="bet"):
+def render_betting_ui(current_coins, users_data=None, current_sid="", current_nickname="", min_bet=MIN_BET, bg_image_path=None, *, payout_multiplier, title="title", state_key="bet", round_key=None):
     """Responsive betting screen with configurable net-win multiplier and title.
 
     payout_multiplier is the factor *added* to the existing coin balance on a win.
@@ -603,6 +604,18 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
             ''', unsafe_allow_html=True,
         )
         if st.button(f"⚡ {bet_val:,} 베팅하기", type="primary", key=f"{state_key}_confirm_cta", use_container_width=True):
+            # A recorded confirmation checks the current sheet balance while
+            # holding the same distributed lock used by settlement and banking.
+            try:
+                confirm_bet(round_key or state_key, bet_val)
+            except BalanceChanged as changed:
+                update_session_balances(changed.balances)
+                st.warning(str(changed))
+                st.rerun()
+                return None
+            except TransactionError as exc:
+                st.error(str(exc))
+                return None
             return bet_val
         st.markdown('<p class="cb-footnote">베팅 금액에 따라 예상 수익과 순위가 달라집니다.</p>', unsafe_allow_html=True)
 

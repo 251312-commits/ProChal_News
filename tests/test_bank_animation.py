@@ -48,41 +48,50 @@ class BankAnimationTests(unittest.TestCase):
         navigate("draw_loan")
         self.assertFalse(session.bank_open_letter)
 
-    def test_stamp_flag_is_set_only_after_successful_persistence(self):
-        class Changed(Exception):
-            coins = 2_000
-            loan = 1_000
+    def test_stamp_flag_is_set_only_after_confirmed_ledger_write(self):
+        class TransactionError(Exception):
+            pass
 
-        worksheet = object()
+        class BalanceChanged(TransactionError):
+            balances = {"coins": 2_000, "streak": 2, "loan": 1_000}
+
         persist = Mock()
-        user = {"학번": 1234, "코인": "1,250", "대출금": ""}
+        user = {"학번": "01234", "코인": "1,250", "대출금": "", "연승": 0}
         session = State(current_user="01234", current_user_data=user)
         st = Mock(session_state=session)
+        def sync(balances):
+            user.update({
+                "코인": balances["coins"], "연승": balances["streak"],
+                "대출금": balances["loan"],
+            })
         save = function_from("views/bank/forms.py", "_save_balances", {
-            "st": st, "init_gspread": lambda: worksheet,
-            "save_bank_balances": persist, "BankBalancesChanged": Changed,
-            "account_amount": account_amount,
+            "st": st, "bank_transaction": persist,
+            "transaction_id": lambda kind: kind + ":" + "a" * 32,
+            "TransactionError": TransactionError, "BalanceChanged": BalanceChanged,
+            "update_session_balances": sync, "account_amount": account_amount,
         })
 
-        persist.side_effect = RuntimeError("not saved")
+        persist.side_effect = TransactionError("not saved")
         save(6_250, 5_000, "failed", success_state_key="bank_borrow_success")
         self.assertNotIn("bank_borrow_success", session)
         self.assertEqual((user["코인"], user["대출금"]), ("1,250", ""))
+        self.assertEqual(session.bank_pending_transaction["kind"], "borrow")
         st.error.assert_called_once()
         st.toast.assert_not_called()
         st.rerun.assert_not_called()
 
-        persist.side_effect = Changed()
+        persist.side_effect = BalanceChanged()
         save(6_250, 5_000, "stale", success_state_key="bank_borrow_success")
         self.assertNotIn("bank_borrow_success", session)
+        self.assertNotIn("bank_pending_transaction", session)
         self.assertEqual((user["코인"], user["대출금"]), (2_000, 1_000))
         st.rerun.assert_called_once()
 
-        persist.side_effect = None
+        persist.side_effect = lambda *_: sync({"coins": 7_000, "streak": 2, "loan": 6_000})
         save(7_000, 6_000, "saved", success_state_key="bank_borrow_success")
-        persist.assert_called_with(worksheet, "01234", 7_000, 6_000,
-                                   expected_coins=2_000, expected_loan=1_000)
+        persist.assert_called_with("borrow", 5000, "borrow:" + "a" * 32)
         self.assertTrue(session.bank_borrow_success)
+        self.assertNotIn("bank_pending_transaction", session)
         self.assertEqual((user["코인"], user["대출금"]), (7_000, 6_000))
         st.toast.assert_called_with("saved")
 

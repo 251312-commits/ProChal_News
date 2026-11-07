@@ -13,7 +13,7 @@ class Session(dict):
 
 class GameOneTests(unittest.TestCase):
     def test_settles_once_using_the_displayed_fractional_digits(self):
-        st, ai, db, common = (MagicMock() for _ in range(4))
+        st, ai, db, common, tx = (MagicMock() for _ in range(5))
         st.button.return_value = False
         st.columns.side_effect = lambda count: [MagicMock() for _ in range(count)]
         ai.summary = AsyncMock(return_value="요약문")
@@ -27,6 +27,7 @@ class GameOneTests(unittest.TestCase):
             "games.shared.betting": MagicMock(),
             "games.shared.loading": MagicMock(),
             "games.shared.result": MagicMock(),
+            "modules.transactions": tx,
             "streamlit.components": st.components,
             "streamlit.components.v1": st.components.v1,
         }
@@ -38,7 +39,12 @@ class GameOneTests(unittest.TestCase):
                 with self.subTest(normalized=normalized, guess=guess):
                     units = score_hundredths(normalized)
                     ai.similarity_check.reset_mock()
-                    sheet.update_cell.reset_mock()
+                    tx.settle_game_round.reset_mock()
+                    tx.settle_game_round.return_value = {
+                        "reward": 100_000 if wins else -1000,
+                        "new_coins": 102_000 if wins else 1000,
+                        "new_streak": 1 if wins else 0,
+                    }
                     ai.similarity_check.return_value = {"score": units / 100, "score_hundredths": units}
                     st.session_state = Session(
                         current_user="1", current_user_data={}, game_1_bet=1000,
@@ -50,4 +56,4 @@ class GameOneTests(unittest.TestCase):
                     self.assertEqual(result["is_win"], wins)
                     self.assertEqual(result["reward"], 100_000 if wins else -1000)
                     ai.similarity_check.assert_called_once_with("요약문", "제목")
-                    self.assertEqual(sheet.update_cell.call_count, 2)
+                    tx.settle_game_round.assert_called_once_with("game_1", 1000, wins)
