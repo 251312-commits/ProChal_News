@@ -10,11 +10,38 @@ from games.shared.betting import calculate_expected_gain
 from games.shared.article_reader import render_article_reader
 from games.shared.roulette import render_news_slot
 from modules.news_ai import bring_article, pick_3_lowest_count_news
-from modules.db_handler import init_news_sheet
+from modules.db_handler import (
+    LAST_ARTICLE_HEADER,
+    init_gspread,
+    init_news_sheet,
+    news_row_is_active,
+    normalize_article_url,
+    save_last_article_url,
+)
 from modules.ui_components import change_page
 
 
 ws_news = init_news_sheet()
+ws_users = init_gspread()
+
+
+def _current_student_id():
+    state = st.session_state
+    user = state.get("current_user_data") or {}
+    return str(state.get("current_user") or user.get("학번") or "").strip().removesuffix(".0")
+
+
+def _remember_article(url):
+    state = st.session_state
+    canonical = normalize_article_url(url)
+    user = state.get("current_user_data")
+    if isinstance(user, dict):
+        user[LAST_ARTICLE_HEADER] = canonical
+    try:
+        save_last_article_url(ws_users, _current_student_id(), canonical)
+    except Exception:
+        # A sheet metadata write must not prevent the selected article from opening.
+        pass
 
 
 
