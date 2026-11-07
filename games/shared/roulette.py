@@ -10,6 +10,14 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from modules.news_ai import bring_article
+from modules.db_handler import (
+    LAST_ARTICLE_HEADER,
+    init_gspread,
+    init_news_sheet,
+    normalize_article_url,
+    register_user_article,
+    save_last_article_url,
+)
 from modules.news_preprocessing import SUPPORTED_NEWS_SITES, supported_news_site
 from modules.ui_components import change_page, load_local_image_url
 
@@ -63,8 +71,34 @@ def _open_direct_url(raw_url, game_id="game_1"):
             "기사 내용을 확인할 수 없습니다. 기사 상세 페이지 URL을 입력해 주세요.", game_id
         )
 
+    canonical = normalize_article_url(url)
+    user = state.get("current_user_data") or {}
+    submitter_id = str(state.get("current_user") or user.get("학번") or "").strip().removesuffix(".0")
+    submitter_name = str(user.get("아이디") or "").strip()
+    try:
+        register_user_article(
+            init_news_sheet(),
+            url=canonical,
+            title=title,
+            submitter_id=submitter_id,
+            submitter_name=submitter_name,
+        )
+    except Exception:
+        return _reject_direct_url(
+            "기사는 읽었지만 뉴스풀에 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.", game_id
+        )
+
+    if isinstance(user, dict):
+        user[LAST_ARTICLE_HEADER] = canonical
+    try:
+        save_last_article_url(init_gspread(), submitter_id, canonical)
+    except Exception:
+        # The article can still be used this round; session history prevents
+        # an immediate repeat even if the persistent metadata write is unavailable.
+        pass
+
     state[f"selected_news_{game_id}"] = {
-        "title": title, "text": text, "url": url,
+        "title": title, "text": text, "url": canonical,
         "image_url": str(image_url or "").strip(), "newsroom": newsroom,
     }
     state.pop(f"candidates_{game_id}", None)
