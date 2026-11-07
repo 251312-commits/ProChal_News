@@ -17,6 +17,7 @@ const HEADERS = [
 ];
 const RULES = {game_1: 100, game_2: 1, game_3: 1, game_4: 2, game_5: 5};
 const MAX_LOAN = 10000;
+const MAX_NICKNAME_LENGTH = 80;
 
 function installTransactionLedger() {
   const ss = SpreadsheetApp.openById(property_('SPREADSHEET_ID'));
@@ -47,6 +48,17 @@ function fail_(code, message, balances) {
 
 function sid_(raw) {
   return String(raw == null ? '' : raw).trim().replace(/\.0$/, '');
+}
+
+function nickname_(raw) {
+  if (typeof raw !== 'string') fail_('INVALID_NICKNAME', 'Nickname must be a string');
+  const nickname = raw.trim();
+  // No HTML syntax or formula characters may enter the Users sheet.
+  if (!nickname || Array.from(nickname).length > MAX_NICKNAME_LENGTH ||
+      !/^[\p{L}\p{N} _.-]+$/u.test(nickname)) {
+    fail_('INVALID_NICKNAME', 'Nickname contains unsupported characters');
+  }
+  return nickname;
 }
 
 function number_(value, name, min) {
@@ -237,9 +249,9 @@ function process_(request) {
 
     if (tx.kind === 'register') {
       if (findExisting_(users, tx.student_id)) fail_('ALREADY_REGISTERED', 'Player exists');
-      const nickname = String(request.nickname || '').trim();
+      const nickname = nickname_(request.nickname);
       const password = String(request.password || '');
-      if (!nickname || !password || nickname.length > 80 || password.length > 200) {
+      if (!password || password.length > 200) {
         fail_('INVALID_REQUEST', 'Invalid registration credentials');
       }
       const referrerId = sid_(request.referrer_id || '');
