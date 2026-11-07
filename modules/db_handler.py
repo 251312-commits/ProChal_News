@@ -107,7 +107,10 @@ def normalize_article_url(url: str) -> str:
 
     scheme = parsed.scheme.lower()
     host = parsed.hostname.lower().rstrip(".")
-    port = parsed.port
+    try:
+        port = parsed.port
+    except ValueError:
+        return raw
     if port and not ((scheme == "http" and port == 80) or (scheme == "https" and port == 443)):
         host = f"{host}:{port}"
 
