@@ -49,7 +49,12 @@ if st.session_state.page == 'login':
     show_login_page()
 else:
     # 로그인 완료 후 메인/랭킹/게임 화면 진입 시 BGM 실행 (중복 재생 없음)
-    init_seamless_bgm(\n        INTRO_BGM_URL, LOOP_BGM_URL,\n        show_controls=st.session_state.page == 'main',\n        suspend_for_result=(st.session_state.page == 'game_1'\n                            and 'game_1_result' in st.session_state),\n    )
+    init_seamless_bgm(
+        INTRO_BGM_URL, LOOP_BGM_URL,
+        show_controls=st.session_state.page == 'main',
+        suspend_for_result=(st.session_state.page == 'game_1'
+                            and 'game_1_result' in st.session_state),
+    )
     
     if st.session_state.page == 'main':
         show_main_page()
