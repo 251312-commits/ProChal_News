@@ -289,8 +289,8 @@ function start() {
   ui.start.hidden = true;
   ui.skip.hidden = false;
   ui.status.textContent = "빌드업 · AI 유사도를 계산했습니다";
-  primeFailSound(); // Must be called inside the actual click handler.
-  const pending = song.play();
+  const pending = song.play(); // Prioritize the soundtrack's user-gesture unlock.
+  primeFailSound(); // Pre-unlock the loss stinger in that same click handler.
   if (pending && typeof pending.catch === "function") {
     pending.catch(() => {
       if (!fullyFinished) {
