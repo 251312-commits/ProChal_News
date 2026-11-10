@@ -72,9 +72,15 @@ STAGE_CSS = """
 }
 .score-stage[data-reveal-phase="rolling"] .stage-digits { color:#ad8aad; text-shadow:0 1px 1px #f4ddf466,0 4px 7px #100815; }
 .score-stage[data-reveal-phase="rolling"] .stage-lamps { opacity:.35; }
+.score-stage[data-reveal-phase="ready"] .stage-digits { color:#d5afd4; }
+.score-stage[data-reveal-phase="ready"] .stage-footer {
+    color:#ffe0aa; font-weight:750; letter-spacing:.025em;
+}
 @media (prefers-reduced-motion:no-preference) {
-    .score-stage[data-reveal-phase="rolling"] .stage-lamps { animation:score-warm-lamps 2.6s ease-in both; }
-    .score-stage[data-reveal-phase="rolling"] .stage-beats { animation:score-drum-beats .52s ease-in-out 4 alternate; }
+    .score-stage[data-reveal-phase="ready"] .stage-lamps { animation:score-ready-pulse 1.7s ease-in-out infinite alternate; }
+    .score-stage[data-reveal-phase="ready"] .stage-digits { animation:score-ready-pulse 1.7s ease-in-out infinite alternate; }
+    .score-stage[data-reveal-phase="rolling"] .stage-lamps { animation:score-warm-lamps 1.05s ease-in both; }
+    .score-stage[data-reveal-phase="rolling"] .stage-beats { animation:score-drum-beats .25s ease-in-out 4 alternate; }
     .score-stage[data-reveal-phase="landed"] .stage-window::after {
         content:""; position:absolute; inset:-30%; pointer-events:none;
         background:linear-gradient(111deg,transparent 41%,#ffd88a44 48%,#fff0b577 50%,transparent 55%);
@@ -84,6 +90,7 @@ STAGE_CSS = """
         content:"✦"; position:absolute; right:-.27em; top:-.16em; font-size:.44em; color:#fff1c4;
         text-shadow:0 0 9px #ffd07e; animation:score-corner-glint .68s ease-out both;
     }
+    @keyframes score-ready-pulse { from { opacity:.64; } to { opacity:1; } }
     @keyframes score-warm-lamps { from {opacity:.22;} 70% {opacity:.60;} to {opacity:.92;} }
     @keyframes score-drum-beats { from {transform:scaleY(.45);} to {transform:scaleY(1.2);} }
     @keyframes score-brass-sweep { from {transform:translateX(-70%);} to {transform:translateX(75%);} }
@@ -94,12 +101,16 @@ STAGE_CSS = """
 
 def score_stage(phase, reveal_id, *, digits_html="", score_label="", guess_html=""):
     """Render the pending stage without inserting any score, even in accessible text."""
-    if phase not in ("rolling", "landed", "settled"):
+    if phase not in ("ready", "rolling", "landed", "settled"):
         raise ValueError("Unknown score reveal phase")
-    if phase == "rolling":
+    if phase in ("ready", "rolling"):
         digits = "??.??"
         label = "점수 공개 대기"
-        footer = '<span class="stage-beats" aria-hidden="true"></span>두구두구…'
+        footer = (
+            '화면 아무 곳이나 눌러 점수 공개'
+            if phase == "ready"
+            else '<span class="stage-beats" aria-hidden="true"></span>두구두구…'
+        )
     else:
         digits = digits_html
         label = f"AI 유사도 {escape(score_label)}점"
@@ -139,6 +150,16 @@ _STYLE = """
 }
 .st-key-news_comparison [data-testid="stCaptionContainer"] p { color: #e7def0; }
 .st-key-news_comparison .news-still { display: none; }
+.st-key-news_comparison [class*="st-key-score_tap_"] button {
+    min-height:3.3rem; width:100%; cursor:pointer;
+    border:2px solid #f0c978 !important; border-radius:14px !important;
+    color:#fff2cd !important; font-weight:800 !important; font-size:1rem !important;
+    background:linear-gradient(135deg,#5a3061,#2a183c) !important;
+    box-shadow:0 0 17px #f3c77266, inset 0 0 13px #a269a744 !important;
+}
+.st-key-news_comparison [class*="st-key-score_tap_"] button:focus-visible {
+    outline:3px solid #ffe7a0 !important; outline-offset:3px;
+}
 @media (prefers-reduced-motion: reduce) {
     .st-key-news_comparison .news-still { display: inline; }
     .st-key-news_comparison .news-typing { display: none; }
@@ -256,8 +277,12 @@ def _score_diagram(details, animate):
 def show_summary_before_score(
     summary_text: str, state_key: str, *, title: str, score: float, details=None, prediction=None,
     score_precision: int = 0,
-) -> None:
-    """Show stored model measurements and the score used to settle this round."""
+) -> bool:
+    """Show the typed summary, then wait for a user tap before revealing scores.
+
+    Returns False while waiting so callers do not render win/loss or settlement
+    details prematurely. Scoring and coin settlement have already happened once.
+    """
     import streamlit as st
 
     text = str(summary_text or "").strip()
@@ -289,6 +314,41 @@ def show_summary_before_score(
                         next_frame = now + 0.03
             message.html(f'<div class="news-copy news-message">{escaped_text}</div>')
 
+        stage = st.empty()
+        reveal_id = state_key
+        if not seen:
+            if pending is None:
+                pending = {"result": reveal, "id": uuid4().hex, "phase": "ready"}
+                st.session_state[state_key] = pending
+            reveal_id = pending["id"]
+            phase = pending.get("phase", "ready")
+
+            if phase != "rolling":
+                # A pending round never advances on its own. The actual click
+                # is a normal Streamlit button; the sound controller additionally
+                # delegates taps elsewhere in the page to this button.
+                stage.html(score_stage("ready", reveal_id))
+                tap_slot = st.empty()
+                with tap_slot:
+                    pressed = st.button(
+                        "화면을 터치해 점수 공개",
+                        key=f"score_tap_{state_key}",
+                        use_container_width=True,
+                    )
+                if not pressed:
+                    return False
+                tap_slot.empty()
+                pending["phase"] = "rolling"
+                pending["until"] = time.monotonic() + 1.05
+                st.session_state[state_key] = pending
+
+            remaining = pending.get("until", time.monotonic()) - time.monotonic()
+            if remaining > 0:
+                stage.html(score_stage("rolling", reveal_id))
+                time.sleep(remaining)
+
+        # No score, prediction, chart, or outcome is placed in the client DOM
+        # until the user has tapped and the short drumroll has completed.
         hundredths = details.get("score_hundredths") if details else None
         guess = ""
         if hundredths is None:
@@ -301,25 +361,14 @@ def show_summary_before_score(
                 digits = f'{whole}.<span class="score-fraction">{fraction:02d}</span>'
                 guess = f'<div class="score-guess">내 예측 <b>{prediction:02d}</b></div>'
 
-        stage = st.empty()
-        reveal_id = state_key
-        if not seen:
-            if pending is None:
-                pending = {"result": reveal, "id": uuid4().hex, "until": time.monotonic() + 2.6}
-                st.session_state[state_key] = pending
-            reveal_id = pending["id"]
-            remaining = pending["until"] - time.monotonic()
-            if remaining > 0:
-                stage.html(score_stage("rolling", reveal_id))
-                time.sleep(remaining)
-
         stage.html(score_stage(
             "settled" if seen else "landed", reveal_id, digits_html=digits,
             score_label=score_label, guess_html=guess,
         ))
         st.session_state[state_key] = reveal
-        # Even the sigmoid chart discloses the exact outcome. Send it after the unveiling.
+        # Even the sigmoid chart discloses the outcome: show it after the reveal.
         if details is not None:
             st.html(_score_diagram(details, not seen))
         else:
             st.caption("이 라운드에는 최종 점수만 저장됐다.")
+    return True
