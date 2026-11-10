@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>최종 점수 공개</title>
+  <link rel="stylesheet" href="./result.css">
+  <script src="./result.js" defer></script>
+</head>
+<body>
+  <main class="reveal" hidden aria-label="최종 점수 공개">
+    <nav class="topbar">
+      <span class="round-label">RESULT</span>
+      <div class="wallet" hidden><span class="coin">₵</span><output class="balance"></output></div>
+    </nav>
+    <header class="hero">
+      <div class="crown" aria-hidden="true">♛</div>
+      <span class="subtitle">RESULT REVEAL</span>
+      <h1>운명의 숫자</h1>
+      <p>두 자리 중 몇 개를 맞혔을까?</p>
+    </header>
+    <section class="news" aria-label="선택한 뉴스">
+      <img class="news-art" alt="" draggable="false">
+      <div class="news-text"><span>선택한 뉴스</span><p class="news-title"></p></div>
+    </section>
+    <section class="theatre" aria-label="결과 공개 무대">
+      <div class="your-choice">
+        <span class="section-label">MY PREDICTION · 나의 예측</span>
+        <div class="guess-digits"><span class="guess-tens">0</span><span class="guess-ones">4</span></div>
+      </div>
+      <div class="versus">VS</div>
+      <div class="score-console">
+        <img class="frame-art" alt="" draggable="false">
+        <div class="score-inside">
+          <span class="section-label">AI SIMILARITY · 유사도 점수</span>
+          <div class="actual-score" aria-live="off">
+            <span class="whole">??</span><span class="decimal">.</span>
+            <span class="actual-digit" data-index="0">?</span>
+            <span class="actual-digit" data-index="1">?</span>
+            <span class="point">점</span>
+          </div>
+          <p class="status" aria-live="polite">아직 결과를 공개하지 않았습니다.</p>
+          <div class="music-progress" aria-hidden="true"><div class="progress-fill"></div></div>
+          <div class="drop-markers" aria-hidden="true"><i></i><i></i></div>
+        </div>
+      </div>
+      <img class="podium" alt="" draggable="false">
+    </section>
+    <section class="outcome" hidden aria-live="polite">
+      <div class="outcome-title"></div>
+      <p class="outcome-description"></p>
+      <div class="reward"></div>
+    </section>
+    <section class="analysis" hidden aria-label="AI 판단 과정">
+      <h2>AI는 어떻게 점수를 계산했을까?</h2>
+      <div class="analysis-row"><span class="step">01</span><div>
+        <strong>기사 제목과 AI 요약문 비교</strong>
+        <p class="analysis-summary"></p>
+      </div></div>
+      <div class="analysis-row"><span class="step">02</span><div>
+        <strong>AI 관련성 원점수</strong><p class="analysis-logit"></p>
+      </div></div>
+      <div class="analysis-row"><span class="step">03</span><div>
+        <strong>시그모이드 변환 후 100배</strong><p class="analysis-normalized"></p>
+      </div></div>
+      <p class="analysis-note">AI 모델이 개별 단어의 인과적 판단 근거를 제공하는 것은 아닙니다.</p>
+    </section>
+    <footer class="actions">
+      <button class="start primary" type="button">♫ 결과 공개 시작</button>
+      <button class="skip secondary" type="button" hidden>연출 건너뛰기</button>
+      <button class="explain primary" type="button" hidden>AI 판단 과정 보기</button>
+      <div class="after-actions" hidden>
+        <button class="again secondary" type="button">다시 도전하기</button>
+        <button class="home secondary" type="button">메인으로</button>
+      </div>
+      <button class="sound-switch" type="button" aria-pressed="false">♫ 음악 켜짐</button>
+    </footer>
+  </main>
+</body>
+</html>
