@@ -5,6 +5,7 @@
   const doc = host.document;
   let ctx, output, source, roll, chime;
   let lastStage = "", seenId = "", soundingId = "";
+  const rollSeconds = 1.05;
 
   function audible() {
     const p = host.__newsBgmPlayer;
@@ -38,12 +39,12 @@
   // Generate both short cues locally once. Each cue plays as one cancellable source.
   function cue(isRoll) {
     const rate = 24000;
-    const buffer = ctx.createBuffer(1, rate * (isRoll ? 2.6 : 0.65), rate);
+    const buffer = ctx.createBuffer(1, Math.ceil(rate * (isRoll ? rollSeconds : 0.65)), rate);
     const samples = buffer.getChannelData(0);
     if (isRoll) {
-      for (let beat = 0; beat < 2.55; beat += 0.25 - 0.19 * beat / 2.6) {
+      for (let beat = 0; beat < rollSeconds - 0.05; beat += 0.21 - 0.14 * beat / rollSeconds) {
         const start = Math.floor(beat * rate);
-        const accent = 0.5 + 0.4 * beat / 2.6;
+        const accent = 0.5 + 0.4 * beat / rollSeconds;
         for (let j = 0; j < rate * 0.11 && start + j < samples.length; j++) {
           const t = j / rate;
           const skin = Math.sin(2 * Math.PI * 139 * t) * Math.exp(-38 * t);
@@ -86,6 +87,20 @@
   }
   host.__newsScoreRoll = {unlock, setVolume, cancel};
   doc.addEventListener("click", unlock, true);
+  // Keep the real score server-side until a Streamlit button is clicked.
+  // While the stage is ready, forward a genuine screen tap to that button.
+  // Its keyboard-accessible, visible fallback still works without this helper.
+  function revealOnScreenTap(event) {
+    if (!event.isTrusted) return;
+    const ready = doc.querySelector('.score-stage[data-reveal-phase="ready"]');
+    if (!ready || event.target?.closest?.("#news-bgm-controls")) return;
+    const button = doc.querySelector('[class*="st-key-score_tap_"] button');
+    if (!button || button.disabled || button.contains(event.target)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    button.click();
+  }
+  doc.addEventListener("click", revealOnScreenTap, true);
   doc.addEventListener("keydown", unlock, true);
   doc.addEventListener("visibilitychange", () => { if (doc.hidden) cancel(); });
   host.addEventListener("pagehide", cancel);
