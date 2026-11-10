@@ -142,7 +142,7 @@ function publishOutcome() {
   revealFinished = true;
   for (let i = 0; i < 2; i++) revealDigit(i);
   ui.whole.textContent = String(Math.floor(args.units / 100));
-  ui.progress.style.width = "100%";
+  if (!args.win || fullyFinished) ui.progress.style.width = "100%";
   ui.outcome.hidden = false;
   ui.explain.hidden = false;
   ui.afterActions.hidden = false;
@@ -210,6 +210,7 @@ function onSongEnded() {
   if (!started || fullyFinished) return;
   fullyFinished = true;
   cancelAnimationFrame(animationFrame);
+  if (song && !song.ended) song.pause(); // Honour the configured track ending.
   publishOutcome();
   ui.skip.hidden = true;
   if (Boolean(args.win)) ui.status.textContent = "피날레 완료 · 최종 점수 공개";
