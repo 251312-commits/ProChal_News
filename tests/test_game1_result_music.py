@@ -49,6 +49,25 @@ class ResultMusicTests(unittest.TestCase):
         ):
             self.assertIn(marker, js)
 
+    def test_loss_music_is_silenced_before_a_louder_fail_effect(self):
+        js = (ROOT / "games/game1/result_screen/result.js").read_text(encoding="utf-8")
+        html = (ROOT / "games/game1/result_screen/index.html").read_text(encoding="utf-8")
+        assert "Math.sqrt(settings.volume) * 2" in js  # louder than squared BGM mix
+        assert "const songGain = localMuted ? 0 : settings.volume;" in js
+        assert "failSound.volume = failGain" in js
+        assert "function primeFailSound()" in js
+        assert "primeFailSound(); // Pre-unlock" in js
+        assert 'failSound.preload = "auto"' in js
+        assert "failSound.load();" in js
+        assert "function failNow()" in js
+        fail_branch = js.split("function failNow()", 1)[1].split("\nfunction tick()", 1)[0]
+        assert fail_branch.index("song.pause()") < fail_branch.index("playFailSound()")
+        assert fail_branch.index("song.volume = 0") < fail_branch.index("playFailSound()")
+        assert fail_branch.index("pauseMainBgm()") < fail_branch.index("playFailSound()")
+        assert "failSound.currentTime = 0" in js
+        assert "ui.retryFail.hidden = false" in js
+        assert 'class="retry-fail secondary"' in html
+
     def test_score_is_settled_before_visual_reveal_and_bgm_is_suspended(self):
         game1 = (ROOT / "games/game1/game1.py").read_text(encoding="utf-8")
         self.assertLess(
