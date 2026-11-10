@@ -29,7 +29,8 @@ const ui = {
   afterActions: screen.querySelector(".after-actions"),
   again: screen.querySelector(".again"),
   home: screen.querySelector(".home"),
-  soundSwitch: screen.querySelector(".sound-switch")
+  soundSwitch: screen.querySelector(".sound-switch"),
+  retryFail: screen.querySelector(".retry-fail")
 };
 
 let roundId = null;
@@ -95,17 +96,55 @@ function soundSettings() {
 }
 function applySound() {
   const settings = soundSettings();
-  const gain = localMuted ? 0 : settings.volume || 0.10;
+  // The BGM control stores a squared, very quiet media gain (30% -> 0.09).
+  // The failure stinger needs its own much louder mix, while retaining the
+  // listener's volume preference and respecting mute/zero-volume.
+  const songGain = localMuted ? 0 : settings.volume;
+  const failGain = localMuted ? 0 : Math.min(1, Math.sqrt(settings.volume) * 2);
   if (song) {
     song.muted = localMuted;
-    song.volume = gain;
+    song.volume = songGain;
   }
   if (failSound) {
     failSound.muted = localMuted;
-    failSound.volume = gain;
+    failSound.volume = failGain;
   }
   ui.soundSwitch.textContent = localMuted ? "♫ 음악 꺼짐" : "♫ 음악 켜짐";
   ui.soundSwitch.setAttribute("aria-pressed", String(localMuted));
+}
+
+// On mobile, playing a second audio element after a long asynchronous
+// countdown may be disallowed. Unlock it silently during the same user tap
+// that starts the result track, then pause/rewind before the actual failure.
+function primeFailSound() {
+  if (!failSound) return;
+  failSound.muted = true;
+  failSound.volume = 0;
+  const priming = failSound.play();
+  if (!priming || typeof priming.then !== "function") return;
+  priming.then(() => {
+    if (fullyFinished) return; // Never interrupt the genuine loss stinger.
+    failSound.pause();
+    failSound.currentTime = 0;
+    applySound();
+  }).catch(() => {
+    if (!fullyFinished) applySound();
+  });
+}
+
+function playFailSound() {
+  if (!failSound || localMuted) return;
+  failSound.currentTime = 0;
+  // Setting the winning soundtrack's volume to zero before invoking play
+  // prevents a buffered tail or a resumed BGM from covering the stinger.
+  const playing = failSound.play();
+  if (playing && typeof playing.catch === "function") {
+    playing.catch(() => {
+      // A direct tap can recover on browsers which still require a gesture.
+      ui.retryFail.hidden = false;
+      ui.status.textContent = "패배 효과음 재생이 차단됨 · 버튼을 눌러 재생";
+    });
+  }
 }
 function matchPositions() {
   return args.matches.map(Boolean);
@@ -164,15 +203,18 @@ function publishOutcome() {
 }
 function failNow() {
   if (revealFinished) return;
-  if (song) song.pause(); // Abrupt cut, never fade out into a drop.
+  cancelAnimationFrame(animationFrame);
+  // Make the track inaudible before the fail effect starts, not after it.
+  if (song) {
+    song.pause();
+    song.muted = true;
+    song.volume = 0;
+  }
+  pauseMainBgm();
   ui.skip.hidden = true;
   publishOutcome();
   fullyFinished = true;
-  if (failSound && !localMuted) {
-    failSound.currentTime = 0;
-    failSound.play().catch(() => {}); // Visual result still works without audio.
-  }
-  cancelAnimationFrame(animationFrame);
+  playFailSound();
 }
 function tick() {
   if (!started || fullyFinished || !args || !song) return;
@@ -231,6 +273,7 @@ function initializeTrack(data) {
   song.loop = false;
   failSound = new Audio(data.fail_url);
   failSound.preload = "auto";
+  failSound.load();
   song.addEventListener("ended", onSongEnded);
   song.addEventListener("error", () => {
     if (started && !fullyFinished) {
@@ -246,6 +289,7 @@ function start() {
   ui.start.hidden = true;
   ui.skip.hidden = false;
   ui.status.textContent = "빌드업 · AI 유사도를 계산했습니다";
+  primeFailSound(); // Must be called inside the actual click handler.
   const pending = song.play();
   if (pending && typeof pending.catch === "function") {
     pending.catch(() => {
@@ -303,6 +347,7 @@ function setup(data) {
   ui.explain.hidden = true;
   ui.explain.textContent = "AI 판단 과정 보기";
   ui.afterActions.hidden = true;
+  ui.retryFail.hidden = true;
   ui.status.textContent = "결과를 공개하려면 버튼을 누르세요.";
   screen.classList.remove("jackpot", "failed", "beat");
   modelDetails(data);
@@ -327,6 +372,11 @@ ui.explain.addEventListener("click", () => {
   ui.analysis.hidden = !ui.analysis.hidden;
   ui.explain.textContent = ui.analysis.hidden ? "AI 판단 과정 보기" : "AI 판단 과정 닫기";
   if (!ui.analysis.hidden) ui.analysis.scrollIntoView({behavior: "smooth", block: "nearest"});
+});
+ui.retryFail.addEventListener("click", () => {
+  if (!fullyFinished || args?.win || localMuted || !failSound) return;
+  ui.retryFail.hidden = true;
+  playFailSound();
 });
 ui.again.addEventListener("click", () => sendAction("again"));
 ui.home.addEventListener("click", () => sendAction("home"));
