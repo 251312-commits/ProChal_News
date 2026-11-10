@@ -49,3 +49,21 @@ The `status` request is read-only: it neither charges interest nor modifies bala
 - Verify 20% interest after each of games 1–5, zero-debt turns, retries after lost responses, and a second turn's interest on the increased debt. Inspect Users!G (total debt), Users!H (principal) and the immutable Transactions interest:<round_id> rows. Old clients signed in before migration should sign in again to refresh H.
 - User passwords remain in the original Users sheet layout; password security merits a separate migration.
 - Before deployment run all unit tests, then verify borrow, repay, game win/loss, duplicate settlement, two-tab concurrent spends, signup and referral on isolated test accounts. Reconcile the Transactions ledger with Users C/D/G and retain a backup.
+
+
+## One-week school event registration
+
+- New student IDs follow `^[1-3]0[1-5][01][0-9]$`. Older accounts remain able to log in.
+- Teachers use the "선생님이신가요? 신규가입" link. No verification code is required.
+- Apps Script assigns `40101`, `40102`, ... under ScriptLock and commits the
+  account and registration receipt together in one atomic batch.
+- Teacher signup starts with 5,000C and neither claims nor awards referral bonuses.
+  A teacher ID is not eligible as a student referrer. Student referral rewards
+  remain atomic and idempotent.
+- The completed teacher signup screen displays the assigned ID. Future logins
+  use this ID and the password in the same login screen as students.
+- This is an **unverified** teacher designation. Anyone with the URL can take
+  that signup path; a 4xxxx prefix is not authentication. With no roster or
+  verification step, one-account-per-person cannot be enforced.
+- Deploy the updated Apps Script `Code.gs` web app version before making the
+  teacher signup UI available. Merging GitHub changes alone does not redeploy it.

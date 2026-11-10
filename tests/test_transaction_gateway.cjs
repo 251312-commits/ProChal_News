@@ -166,13 +166,13 @@ test('borrow and repay revalidate expected values under the lock', () => {
 });
 
 test('registration and referrer bonuses commit in one batch and retry once', () => {
-  const e = environment([['22022', 'Bob', 4000, 0, '', 'pw', 0]]);
+  const e = environment([['20102', 'Bob', 4000, 0, '', 'pw', 0]]);
   const request = {kind:'register',transaction_id:'register:'+hex('d'),
-    student_id:'33033',nickname:'Cathy',password:'pass',referrer_id:'22022'};
+    student_id:'30103',nickname:'Cathy',password:'pass',referrer_id:'20102'};
   const r = e.call(request);
   assert.equal(r.balances.coins, 6000);
-  assert.equal(e.rows.users.find(row => row[0] === '33033')[2], 6000);
-  assert.equal(e.rows.users.find(row => row[0] === '22022')[2], 7000);
+  assert.equal(e.rows.users.find(row => row[0] === '30103')[2], 6000);
+  assert.equal(e.rows.users.find(row => row[0] === '20102')[2], 7000);
   assert.equal(e.rows.ledger.length, 3);
   const replay = e.call(request);
   assert.equal(replay.replayed, true);
@@ -403,7 +403,7 @@ test('registration rejects HTML, entity and spreadsheet-injection nicknames', ()
   for (const [i, nickname] of invalid.entries()) {
     assert.throws(() => e.call({
       kind: 'register', transaction_id: 'register:' + (i + 1).toString(16).repeat(32),
-      student_id: String(30000 + i), nickname, password: 'pw', referrer_id: '',
+      student_id: String(30100 + i), nickname, password: 'pw', referrer_id: '',
     }), error => error.code === 'INVALID_NICKNAME', nickname);
   }
   assert.equal(e.rows.users.length, 1);
@@ -417,7 +417,7 @@ test('registration accepts normal Korean, alphanumeric and spaced nicknames', ()
   for (const [i, nickname] of valid.entries()) {
     e.call({
       kind: 'register', transaction_id: 'register:' + (i + 1).toString(16).repeat(32),
-      student_id: String(40000 + i), nickname, password: 'pw', referrer_id: '',
+      student_id: String(10100 + i), nickname, password: 'pw', referrer_id: '',
     });
   }
   assert.deepEqual(e.rows.users.slice(1).map(row => row[1]), valid);
@@ -461,4 +461,99 @@ test('status never changes principal or accrues a turn interest', () => {
   assert.equal(e.rows.users[1][7], 8000);
   assert.equal(e.rows.ledger.length, 1);
   assert.equal(e.state.batches, 0);
+});
+
+
+test('school IDs are checked before accepting a new student', () => {
+  const e = environment([]);
+  for (const [i, student_id] of
+      ['10001','11001','10601','10120','40101','00101','99999'].entries()) {
+    assert.throws(() => e.call({
+      kind:'register', transaction_id:'register:'+(i+1).toString(16).repeat(32),
+      student_id, nickname:'학생', password:'pw', referrer_id:'',
+    }), err => err.code === 'INVALID_STUDENT_ID');
+  }
+  assert.equal(e.rows.users.length, 1);
+  assert.equal(e.state.batches, 0);
+});
+
+test('different transaction IDs cannot duplicate a student account or referral', () => {
+  const e = environment([['20102','Bob',4000,0,'','pw',0]]);
+  const r = {kind:'register',transaction_id:'register:'+hex('a'),
+    student_id:'10101',nickname:'학생',password:'pw',referrer_id:'20102'};
+  e.call(r);
+  assert.throws(() => e.call({...r,transaction_id:'register:'+hex('b')}),
+    err => err.code === 'ALREADY_REGISTERED');
+  assert.equal(e.rows.users.length, 3);
+  assert.equal(e.rows.users[1][2], 7000);
+  assert.equal(e.rows.ledger.filter(row => row[3] === 'referrer').length, 1);
+});
+
+test('failed student registration is atomic and safe to retry', () => {
+  const e = environment([['20102','Bob',4000,0,'','pw',0]]);
+  const r = {kind:'register',transaction_id:'register:'+hex('c'),
+    student_id:'10101',nickname:'학생',password:'pw',referrer_id:'20102'};
+  e.state.failedBatch = true;
+  assert.throws(() => e.call(r), /Simulated atomic batch failure/);
+  assert.equal(e.rows.users.length, 2);
+  assert.equal(e.rows.users[1][2], 4000);
+  assert.equal(e.rows.ledger.length, 1);
+  e.state.failedBatch = false;
+  e.call(r);
+  assert.equal(e.rows.users[1][2], 7000);
+  assert.equal(e.rows.ledger.filter(row => row[3] === 'register').length, 1);
+});
+
+test('teacher IDs are sequential and retries do not create another account', () => {
+  const e = environment([['40101','Original',5000,0,'','pw',0]]);
+  const r = {kind:'register_teacher',transaction_id:'register_teacher:'+hex('a'),
+    student_id:'',nickname:'교사1',password:'pw',referrer_id:''};
+  const first = e.call(r);
+  assert.equal(first.student_id, '40102');
+  assert.equal(first.balances.coins, 5000);
+  const replay = e.call(r);
+  assert.equal(replay.replayed, true);
+  assert.equal(replay.student_id, '40102');
+  const second = e.call({...r,transaction_id:'register_teacher:'+hex('b'),nickname:'교사2'});
+  assert.equal(second.student_id, '40103');
+  assert.equal(e.rows.users.length, 4);
+  assert.equal(e.rows.ledger.filter(row => row[3] === 'referrer').length, 0);
+  assert.throws(() => e.call({...r,nickname:'바뀐이름'}),
+    err => err.code === 'IDEMPOTENCY_CONFLICT');
+  assert.equal(e.state.batches, 2);
+});
+
+test('teacher sequence starts at 40101 and continues past 40109', () => {
+  const e = environment([]);
+  const r = {kind:'register_teacher',transaction_id:'register_teacher:'+hex('a'),
+    student_id:'',nickname:'교사',password:'pw',referrer_id:''};
+  assert.equal(e.call(r).student_id, '40101');
+  const other = environment([['40109','Older',5000,0,'','pw',0]]);
+  assert.equal(other.call(r).student_id, '40110');
+});
+
+test('teacher registration accepts no custom ID or referral', () => {
+  const e = environment([['40101','Teacher',5000,0,'','pw',0]]);
+  const r = {kind:'register_teacher',transaction_id:'register_teacher:'+hex('a'),
+    student_id:'',nickname:'교사',password:'pw',referrer_id:''};
+  assert.throws(() => e.call({...r,student_id:'40102'}), err => err.code === 'INVALID_REQUEST');
+  assert.throws(() => e.call({...r,referrer_id:'10101'}), err => err.code === 'INVALID_REQUEST');
+  const student = e.call({kind:'register',transaction_id:'register:'+hex('b'),
+    student_id:'10101',nickname:'학생',password:'pw',referrer_id:'40101'});
+  assert.equal(student.balances.coins, 5000);
+  assert.equal(e.rows.users[1][2], 5000);
+  assert.equal(e.rows.ledger.filter(row => row[3] === 'referrer').length, 0);
+});
+
+test('failed teacher registration does not consume the next ID', () => {
+  const e = environment([]);
+  const r = {kind:'register_teacher',transaction_id:'register_teacher:'+hex('a'),
+    student_id:'',nickname:'교사',password:'pw',referrer_id:''};
+  e.state.failedBatch = true;
+  assert.throws(() => e.call(r), /Simulated atomic batch failure/);
+  assert.equal(e.rows.users.length, 1);
+  assert.equal(e.rows.ledger.length, 1);
+  e.state.failedBatch = false;
+  assert.equal(e.call(r).student_id, '40101');
+  assert.equal(e.rows.ledger.length, 2);
 });
