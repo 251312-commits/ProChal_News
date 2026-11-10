@@ -125,12 +125,13 @@ def show_game_1():
     res = st.session_state.game_1_result
     if not apply_end_of_turn_interest("game_1"):
         return
-    show_summary_before_score(
+    if not show_summary_before_score(
         res.get("summary", ""), "game_1_summary_revealed",
         title=res.get("title", title), score=res["actual_score"],
         details=res.get("score_details"),
         prediction=res.get("predicted_digits"),
-    )
+    ):
+        return
     st.markdown("---")
     st.markdown("### 🏆 6단계: 최종 결과")
 
