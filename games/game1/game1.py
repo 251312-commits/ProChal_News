@@ -125,6 +125,13 @@ def show_game_1():
     res = st.session_state.game_1_result
     if not apply_end_of_turn_interest("game_1"):
         return
+    # All settlement/interest is committed before the music starts. The new
+    # full-screen result is presentation-only; legacy whole-score games keep
+    # their existing result screen.
+    if "predicted_digits" in res:
+        from games.game1.result_reveal import render_game1_result_reveal
+        render_game1_result_reveal(res)
+        return
     show_summary_before_score(
         res.get("summary", ""), "game_1_summary_revealed",
         title=res.get("title", title), score=res["actual_score"],
