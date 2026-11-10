@@ -11,10 +11,11 @@ import streamlit.components.v1 as components
 _SCORE_ROLL_JS = json.dumps(Path(__file__).with_name("score_roll.js").read_text(encoding="utf-8"))
 
 
-def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False):
+def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False, suspend_for_result: bool = False):
     intro = json.dumps(intro_url)
     loop = json.dumps(loop_url)
     visible = "true" if show_controls else "false"
+    suspended = "true" if suspend_for_result else "false"
     components.html(
         f"""
         <script>
@@ -24,6 +25,9 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
           const introURL = {intro};
           const loopURL = {loop};
           const onMain = {visible};
+          // A Game 1 result song owns the soundtrack until its screen closes.
+          const suppressForResult = {suspended};
+          host.__newsResultActive = suppressForResult;
           const jsFrame = window.frameElement;
           if (jsFrame) {{
             jsFrame.setAttribute("aria-hidden", "true");
@@ -82,14 +86,14 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
 
           function start(player) {{
             if (player.stopped || player.muted || player.volume <= 0 ||
-                doc.visibilityState === "hidden") return;
+                host.__newsResultActive || doc.visibilityState === "hidden") return;
             if (player.playing || player.pending) return;
             player.pending = true;
             const selected = player.intro.ended ? player.loop : player.intro;
             selected.play().then(() => {{
               player.pending = false;
               if (player.stopped || player.muted || player.volume <= 0 ||
-                  doc.visibilityState === "hidden") {{
+                  host.__newsResultActive || doc.visibilityState === "hidden") {{
                 selected.pause();
                 player.playing = false;
                 host.__bgm_playing = false;
@@ -151,7 +155,7 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
             updateAudio(player);
             introAudio.addEventListener("ended", () => {{
               if (player.stopped || player.muted || player.volume === 0 ||
-                  doc.visibilityState === "hidden") return;
+                  host.__newsResultActive || doc.visibilityState === "hidden") return;
               loopAudio.play().then(() => {{
                 player.playing = true;
                 host.__bgm_playing = true;
@@ -174,7 +178,7 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
                 player.loop.pause();
                 player.playing = false;
                 host.__bgm_playing = false;
-              }} else if (!player.stopped) {{
+              }} else if (!player.stopped && !host.__newsResultActive) {{
                 start(player);
               }}
             }};
@@ -188,7 +192,7 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
           player.stopped = false;
           updateAudio(player);
           // Streamlit reruns update the UI, never create duplicate audio tracks.
-          if (player.muted || player.volume <= 0) {{
+          if (player.muted || player.volume <= 0 || host.__newsResultActive) {{
             player.intro.pause();
             player.loop.pause();
             player.playing = false;
