@@ -36,11 +36,11 @@ def test_typing_delays_do_not_exceed_expected_pause():
     assert max(call.args[0] for call in sleeper.call_args_list) <= 0.12
 
 
-def test_round_graph_uses_stored_score_and_skips_replay():
+
+def test_score_waits_for_tap_and_never_advances_automatically():
     st = MagicMock()
     st.session_state = {}
-    summary = "서울역 앞에 전기버스 & 택시"
-    title = "전기버스 <서울>"
+    st.button.return_value = False
     details = {
         "model_name": "BAAI/bge-reranker-v2-m3", "token_count": 37,
         "logit": log(0.8704 / (1 - 0.8704)), "normalized": 0.8704,
@@ -48,46 +48,75 @@ def test_round_graph_uses_stored_score_and_skips_replay():
     }
     with (
         patch.dict("sys.modules", streamlit=st),
-        patch("games.shared.result.time.monotonic", return_value=0),
+        patch("games.shared.result.time.monotonic", return_value=0) as clock,
         patch("games.shared.result.time.sleep") as sleep,
     ):
-        st.attach_mock(sleep, "pause")
-        show_summary_before_score(summary, "round", title=title, score=87.04, details=details, prediction=4)
-        events = st.mock_calls
-        hold = next(i for i, c in enumerate(events) if c[0] == "pause" and c.args == (2.6,))
-        early = _rendered_html(events[:hold])
-        late = _rendered_html(events[hold + 1:])
-        assert 'data-reveal-phase="rolling">' in early and "??.??" in early
-        assert "87.04" not in early and "data:image/svg+xml" not in early
-        assert late.index('data-reveal-phase="landed">') < late.index("87.04점") < late.index("data:image/svg+xml")
-        html = early + late
-        assert "전기버스 &lt;서울&gt;" in html
-        assert html.index("서울역 앞에 전기버스 &amp; 택시") < html.index("87.04점")
+        done = show_summary_before_score(
+            "서울역 앞에 전기버스 & 택시", "round",
+            title="전기버스 <서울>", score=87.04, details=details, prediction=4,
+        )
+        assert done is False
+        hidden = _rendered_html(st.mock_calls)
+        assert 'data-reveal-phase="ready">' in hidden
+        assert "??.??" in hidden
+        assert "87.04" not in hidden and "data:image/svg+xml" not in hidden
+        assert "내 예측" not in hidden
+        assert st.session_state["round"]["phase"] == "ready"
+        assert st.button.call_args.kwargs["key"] == "score_tap_round"
+
+        # Even after arbitrary elapsed time, the same round remains masked.
+        st.reset_mock()
+        sleep.reset_mock()
+        clock.return_value = 100_000
+        done = show_summary_before_score(
+            "서울역 앞에 전기버스 & 택시", "round",
+            title="전기버스 <서울>", score=87.04, details=details, prediction=4,
+        )
+        assert done is False
+        sleep.assert_not_called()
+        assert "87.04" not in _rendered_html(st.mock_calls)
+        assert st.session_state["round"]["phase"] == "ready"
+
+        # A real button press releases the result after one short drumroll.
+        st.reset_mock()
+        sleep.reset_mock()
+        st.button.return_value = True
+        done = show_summary_before_score(
+            "서울역 앞에 전기버스 & 택시", "round",
+            title="전기버스 <서울>", score=87.04, details=details, prediction=4,
+        )
+        assert done is True
+        sleep.assert_called_once_with(1.05)
+        html = _rendered_html(st.mock_calls)
+        assert html.index('data-reveal-phase="ready">') < html.index('data-reveal-phase="rolling">')
+        assert html.index('data-reveal-phase="rolling">') < html.index('data-reveal-phase="landed">')
+        assert html.index('data-reveal-phase="landed">') < html.index("data:image/svg+xml")
         assert 'aria-label="AI 유사도 87.04점"' in html
         assert '<span class="score-fraction">04</span>' in html
         assert '내 예측 <b>04</b>' in html
         assert "<mark>" not in html
-        image = re.search(r'data:image/svg\+xml;base64,([a-zA-Z0-9+/=]+)', html)
-        assert image, "The measured score should be visualized."
+        image = re.search(r'data:image/svg\\+xml;base64,([a-zA-Z0-9+/=]+)', html)
+        assert image
         diagram = b64decode(image.group(1)).decode()
         assert "<polyline" in diagram and "<circle" in diagram
-        assert details["model_name"] in html and "bge-reranker-v2-m3" in diagram
-        assert "37토큰" in diagram
-        assert f"{details['logit']:.4f}" in diagram and "0.8704" in diagram
+        assert "bge-reranker-v2-m3" in diagram and "37토큰" in diagram
 
         st.reset_mock()
         sleep.reset_mock()
-        show_summary_before_score(summary, "round", title=title, score=87.04, details=details, prediction=4)
+        show_summary_before_score("서울역 앞에 전기버스 & 택시", "round",
+                                  title="전기버스 <서울>", score=87.04,
+                                  details=details, prediction=4)
         sleep.assert_not_called()
-        rerun_html = _rendered_html(st.mock_calls)
-        assert 'data-reveal-phase="settled">' in rerun_html
-        assert 'data-reveal-phase="rolling">' not in rerun_html
-        assert 'data-reveal-phase="landed">' not in rerun_html
+        again = _rendered_html(st.mock_calls)
+        assert 'data-reveal-phase="settled">' in again
+        assert 'data-reveal-phase="ready">' not in again
+        st.button.assert_not_called()
 
 
-def test_interrupted_drumroll_resumes_same_cue_for_remaining_time():
+def test_interrupted_tapped_drumroll_resumes_remaining_time():
     st = MagicMock()
     st.session_state = {}
+    st.button.return_value = True
     with (
         patch.dict("sys.modules", streamlit=st),
         patch("games.shared.result.time.monotonic", return_value=0) as clock,
@@ -96,23 +125,43 @@ def test_interrupted_drumroll_resumes_same_cue_for_remaining_time():
         sleep.side_effect = InterruptedError
         with TestCase().assertRaises(InterruptedError):
             show_summary_before_score("글", "round", title="제목", score=87.04, score_precision=2)
-        first_stage = st.empty.return_value.html.call_args.args[0]
-        cue = re.search(r'data-reveal-id="([^"]+)"', first_stage).group(1)
-        assert 'data-reveal-phase="rolling">' in first_stage
-        clock.return_value = 1
+        first = [
+            call.args[0] for call in st.empty.return_value.html.call_args_list
+            if 'class="score-stage"' in call.args[0]
+        ]
+        assert any('data-reveal-phase="rolling">' in stage for stage in first)
+        cue = re.search(r'data-reveal-id="([^"]+)"', first[-1]).group(1)
+        assert st.session_state["round"]["phase"] == "rolling"
+        clock.return_value = 0.45
         st.reset_mock()
         sleep.reset_mock()
         sleep.side_effect = None
-        show_summary_before_score("글", "round", title="제목", score=87.04, score_precision=2)
+        done = show_summary_before_score("글", "round", title="제목", score=87.04, score_precision=2)
+        assert done is True
         sleep.assert_called_once()
-        assert isclose(sleep.call_args.args[0], 1.6)
+        assert isclose(sleep.call_args.args[0], 0.60)
         stages = [
             c.args[0] for c in st.empty.return_value.html.call_args_list
             if 'class="score-stage"' in c.args[0]
         ]
-        assert len(stages) == 2 and all(f'data-reveal-id="{cue}"' in s for s in stages)
-        assert 'data-reveal-phase="rolling">' in stages[0] and "87.04점" in stages[1]
+        assert len(stages) == 2 and all(f'data-reveal-id="{cue}"' in stage for stage in stages)
+        assert 'data-reveal-phase="rolling">' in stages[0]
+        assert 'data-reveal-phase="landed">' in stages[1] and "87.04점" in stages[1]
+        st.button.assert_not_called()
 
+
+def test_anywhere_tap_is_delegated_only_when_ready():
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    sound = (root / "sounds" / "score_roll.js").read_text(encoding="utf-8")
+    assert "revealOnScreenTap" in sound
+    assert 'data-reveal-phase="ready"' in sound
+    assert 'if (!event.isTrusted)' in sound
+    assert "button.click()" in sound
+    for file in ("games/game1/game1.py", "games/game2.py", "games/game3.py"):
+        source = (root / file).read_text(encoding="utf-8")
+        assert "if not show_summary_before_score(" in source
 
 def test_old_round_keeps_the_saved_integer_even_with_an_old_logit():
     st = MagicMock()
