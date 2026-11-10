@@ -12,6 +12,7 @@ import requests
 import streamlit as st
 
 from modules.account_math import account_amount
+from modules.account_ids import is_valid_student_id, is_valid_teacher_id
 from modules.nickname import normalize_nickname
 
 
@@ -83,6 +84,8 @@ def _request(payload: dict) -> dict:
             "UNCONFIRMED_BET": "확정된 베팅을 찾을 수 없습니다. 다시 베팅하세요.",
             "UNSETTLED_ROUND": "결과가 정산되지 않은 턴에는 이자를 부과할 수 없습니다.",
             "ALREADY_REGISTERED": "이미 가입한 학번입니다. 로그인하세요.",
+            "INVALID_STUDENT_ID": "학교 학번 형식이 올바르지 않습니다.",
+            "TEACHER_IDS_EXHAUSTED": "교사 ID 발급 가능 범위를 초과했습니다. 관리자에게 문의하세요.",
             "NOT_CONFIGURED": "거래 서버 설정이나 거래 원장 구성이 완료되지 않았습니다. Apps Script 설정을 확인하세요.",
             "PRINCIPAL_NOT_READY": (
                 "Users 시트 H열 '대출원금'이 초기화되지 않았습니다. "
@@ -268,6 +271,8 @@ def bank_transaction(kind: str, amount: int, tx_id: str) -> dict:
 def register_player(student_id: str, nickname: str, password: str,
                     referrer_id: str, tx_id: str) -> dict:
     """Create an account and credit both referral bonuses in one Sheets batch."""
+    if not is_valid_student_id(student_id):
+        raise TransactionError("학교 학번 형식이 올바르지 않습니다.", code="INVALID_STUDENT_ID")
     try:
         nickname = normalize_nickname(nickname)
     except ValueError as exc:
@@ -278,3 +283,29 @@ def register_player(student_id: str, nickname: str, password: str,
         "password": password, "referrer_id": referrer_id,
     })
     return result["balances"]
+
+
+def register_teacher(nickname: str, password: str, tx_id: str) -> dict:
+    """Allocate a unique teacher ID and create an account in one gateway transaction."""
+    try:
+        nickname = normalize_nickname(nickname)
+    except ValueError as exc:
+        raise TransactionError(str(exc), code="INVALID_NICKNAME") from exc
+    try:
+        result = _request({
+            "transaction_id": tx_id, "kind": "register_teacher",
+            "student_id": "", "nickname": nickname, "password": password,
+            "referrer_id": "",
+        })
+    except TransactionError as exc:
+        if exc.code == "INVALID_REQUEST":
+            raise TransactionError(
+                "거래 서버가 교사 회원가입을 지원하지 않습니다. "
+                "최신 Apps Script 웹 앱 버전을 배포해 주세요.",
+                code="OUTDATED_GATEWAY",
+            ) from exc
+        raise
+    assigned_id = result.get("student_id")
+    if not is_valid_teacher_id(assigned_id):
+        raise TransactionError("교사 ID 발급 결과가 올바르지 않습니다.", code="BAD_RESPONSE")
+    return {"student_id": assigned_id, "balances": result["balances"]}

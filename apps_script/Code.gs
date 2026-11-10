@@ -20,6 +20,7 @@ const RULES = {game_1: 100, game_2: 1, game_3: 1, game_4: 2, game_5: 5};
 const MAX_PRINCIPAL = 10000; // The limit is on unpaid borrowed principal, not interest.
 const GATEWAY_VERSION = 2; // Capabilities: principal in Users!H, interest per settled round.
 const MAX_NICKNAME_LENGTH = 80;
+const FIRST_TEACHER_ID = 40101;
 const TURN_INTEREST_RATE_PERCENT = 20; // 1/5 per completed round, compound interest
 
 function installTransactionLedger() {
@@ -135,6 +136,28 @@ function nickname_(raw) {
     fail_('INVALID_NICKNAME', 'Nickname contains unsupported characters');
   }
   return nickname;
+}
+
+function isStudentId_(id) {
+  return /^[1-3]0[1-5][01][0-9]$/.test(id);
+}
+
+function isTeacherId_(id) {
+  return /^4[0-9]{4}$/.test(id);
+}
+
+function nextTeacherId_(users) {
+  // Only called while holding ScriptLock.
+  let highest = FIRST_TEACHER_ID - 1;
+  if (users.getLastRow() > 1) {
+    const ids = users.getRange(2, 1, users.getLastRow() - 1, 1).getValues();
+    ids.forEach(function (entry) {
+      const id = sid_(entry[0]);
+      if (isTeacherId_(id)) highest = Math.max(highest, Number(id));
+    });
+  }
+  if (highest >= 49999) fail_('TEACHER_IDS_EXHAUSTED', 'No more teacher IDs');
+  return String(highest + 1);
 }
 
 function number_(value, name, min) {
@@ -280,9 +303,9 @@ function process_(request) {
     game: String(request.game || ''),
     round_id: String(request.round_id || '')
   };
-  if (!/^(bet|settle|interest|borrow|repay|register|status):[a-f0-9]{32}$/.test(tx.transaction_id) ||
-      !/^\d{5}$/.test(tx.student_id) ||
-      !['bet', 'settle', 'interest', 'borrow', 'repay', 'register', 'status'].includes(tx.kind) ||
+  if (!/^(bet|settle|interest|borrow|repay|register|register_teacher|status):[a-f0-9]{32}$/.test(tx.transaction_id) ||
+      !['bet', 'settle', 'interest', 'borrow', 'repay', 'register', 'register_teacher', 'status'].includes(tx.kind) ||
+      (tx.kind === 'register_teacher' ? tx.student_id !== '' : !/^[0-9]{5}$/.test(tx.student_id)) ||
       tx.transaction_id.split(':', 1)[0] !== tx.kind) {
     fail_('INVALID_REQUEST', 'Invalid transaction ID, student ID, or operation');
   }
@@ -333,7 +356,8 @@ function process_(request) {
 
     const previous = findTransaction_(ledger, tx.transaction_id);
     if (previous) {
-      const same = sid_(previous[2]) === tx.student_id &&
+      const same = (tx.kind === 'register_teacher' ?
+          isTeacherId_(sid_(previous[2])) : sid_(previous[2]) === tx.student_id) &&
         String(previous[3]) === tx.kind && String(previous[4]) === tx.game &&
         String(previous[5]) === tx.round_id &&
         (tx.bet === undefined || Number(previous[6]) === tx.bet) &&
@@ -345,26 +369,39 @@ function process_(request) {
         (!['borrow', 'repay'].includes(tx.kind) || Number(previous[7]) ===
           (tx.kind === 'borrow' ? tx.amount : -tx.amount));
       if (!same) fail_('IDEMPOTENCY_CONFLICT', 'Transaction ID already used with different arguments');
-      const current = findUser_(users, tx.student_id);
-      if (tx.kind === 'register' && (
-        String(current.values[1]) !== String(request.nickname || '').trim() ||
-        String(current.values[5]) !== String(request.password || '') ||
-        sid_(current.values[4]) !== sid_(request.referrer_id || '')
-      )) {
-        fail_('IDEMPOTENCY_CONFLICT', 'Registration retry details differ');
+      const accountId = tx.kind === 'register_teacher' ? sid_(previous[2]) : tx.student_id;
+      const current = findUser_(users, accountId);
+      if (tx.kind === 'register' || tx.kind === 'register_teacher') {
+        const expectedReferrer = tx.kind === 'register_teacher' ? '' : sid_(request.referrer_id || '');
+        if (String(current.values[1]) !== String(request.nickname || '').trim() ||
+            String(current.values[5]) !== String(request.password || '') ||
+            sid_(current.values[4]) !== expectedReferrer) {
+          fail_('IDEMPOTENCY_CONFLICT', 'Registration retry details differ');
+        }
       }
-      return result_(balance_(current.values), previous, true);
+      const replay = result_(balance_(current.values), previous, true);
+      return tx.kind === 'register_teacher' ?
+        Object.assign(replay, {student_id: accountId}) : replay;
     }
 
-    if (tx.kind === 'register') {
-      if (findExisting_(users, tx.student_id)) fail_('ALREADY_REGISTERED', 'Player exists');
+    if (tx.kind === 'register' || tx.kind === 'register_teacher') {
+      const teacher = tx.kind === 'register_teacher';
+      if (teacher) {
+        if (sid_(request.referrer_id || '')) {
+          fail_('INVALID_REQUEST', 'Teacher registration cannot include a referral');
+        }
+        tx.student_id = nextTeacherId_(users);
+      } else {
+        if (!isStudentId_(tx.student_id)) fail_('INVALID_STUDENT_ID', 'Invalid school student ID');
+        if (findExisting_(users, tx.student_id)) fail_('ALREADY_REGISTERED', 'Player exists');
+      }
       const nickname = nickname_(request.nickname);
       const password = String(request.password || '');
       if (!password || password.length > 200) {
         fail_('INVALID_REQUEST', 'Invalid registration credentials');
       }
-      const referrerId = sid_(request.referrer_id || '');
-      const ref = referrerId && referrerId !== tx.student_id ?
+      const referrerId = teacher ? '' : sid_(request.referrer_id || '');
+      const ref = !teacher && isStudentId_(referrerId) && referrerId !== tx.student_id ?
         findExisting_(users, referrerId) : null;
       const bonus = ref ? 1000 : 0;
       const starting = {coins: 5000 + bonus, streak: 0, loan: 0, principal: 0};
@@ -384,7 +421,8 @@ function process_(request) {
       }
       requests.push(append_(ledger, logs));
       commit_(ss, requests);
-      return result_(starting, logs[0], false);
+      const result = result_(starting, logs[0], false);
+      return teacher ? Object.assign(result, {student_id: tx.student_id}) : result;
     }
 
     const user = findUser_(users, tx.student_id);
