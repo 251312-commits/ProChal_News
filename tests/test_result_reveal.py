@@ -86,7 +86,8 @@ def test_score_waits_for_tap_and_never_advances_automatically():
             title="전기버스 <서울>", score=87.04, details=details, prediction=4,
         )
         assert done is True
-        sleep.assert_called_once_with(1.05)
+        sleep.assert_called_once()
+        assert isclose(sleep.call_args.args[0], 1.05)
         html = _rendered_html(st.mock_calls)
         assert html.index('data-reveal-phase="ready">') < html.index('data-reveal-phase="rolling">')
         assert html.index('data-reveal-phase="rolling">') < html.index('data-reveal-phase="landed">')
