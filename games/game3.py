@@ -533,11 +533,12 @@ def show_result_screen():
     if not apply_end_of_turn_interest("game_3"):
         return
 
-    show_summary_before_score(
+    if not show_summary_before_score(
         res["summary"], "game_3_summary_revealed",
         title=res["title"], score=res["actual_score"],
         details=res.get("score_details"), score_precision=2,
-    )
+    ):
+        return
     st.markdown("### 🏆 최종 게임 결과")
 
     if res["is_win"]:
