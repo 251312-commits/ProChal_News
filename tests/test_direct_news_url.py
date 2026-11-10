@@ -90,6 +90,34 @@ class DirectGameOneUrlTests(unittest.TestCase):
         self.ai.bring_article.assert_not_called()
         self.st.rerun.assert_called_once()
 
+    def test_rejects_last_read_article_before_fetching_or_registering(self):
+        round_id, candidates = self._round()
+        canonical = "https://www.yna.co.kr/view/AKR123"
+        submitted = canonical + "?utm_source=share"
+        self.st.session_state.current_user_data["마지막기사URL"] = canonical
+        self.db.normalize_article_url.side_effect = (
+            lambda url: canonical if str(url or "").startswith(canonical) else str(url or "").strip()
+        )
+        self.component.return_value = {
+            "action": "direct_url",
+            "round_id": round_id,
+            "request_id": "repeat-1",
+            "url": submitted,
+        }
+
+        self.render(candidates)
+
+        self.assertEqual(
+            self.st.session_state["game_1_direct_url_error"],
+            "직전 턴에 읽은 기사입니다. 다른 기사를 입력해 주세요.",
+        )
+        self.assertIn("candidates_game_1", self.st.session_state)
+        self.assertNotIn("selected_news_game_1", self.st.session_state)
+        self.ai.bring_article.assert_not_called()
+        self.db.register_user_article.assert_not_called()
+        self.db.save_last_article_url.assert_not_called()
+        self.st.rerun.assert_called_once()
+
     def test_valid_direct_article_becomes_current_article_without_sheet_count(self):
         round_id, candidates = self._round()
         url = "https://www.yna.co.kr/view/AKR123"

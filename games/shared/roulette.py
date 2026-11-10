@@ -57,6 +57,14 @@ def _open_direct_url(raw_url, game_id="game_1"):
             "올바르지 않은 URL입니다. 지원 언론사의 기사 URL을 입력해 주세요.", game_id
         )
 
+    canonical = normalize_article_url(url)
+    user = state.get("current_user_data") or {}
+    last_seen = normalize_article_url(user.get(LAST_ARTICLE_HEADER, ""))
+    if last_seen and canonical == last_seen:
+        return _reject_direct_url(
+            "직전 턴에 읽은 기사입니다. 다른 기사를 입력해 주세요.", game_id
+        )
+
     try:
         title, text, image_url = bring_article(url, include_image=True)
     except Exception:
@@ -71,8 +79,6 @@ def _open_direct_url(raw_url, game_id="game_1"):
             "기사 내용을 확인할 수 없습니다. 기사 상세 페이지 URL을 입력해 주세요.", game_id
         )
 
-    canonical = normalize_article_url(url)
-    user = state.get("current_user_data") or {}
     submitter_id = str(state.get("current_user") or user.get("학번") or "").strip().removesuffix(".0")
     submitter_name = str(user.get("아이디") or "").strip()
     try:
