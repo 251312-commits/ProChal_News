@@ -96,7 +96,7 @@ def test_score_waits_for_tap_and_never_advances_automatically():
         assert '<span class="score-fraction">04</span>' in html
         assert '내 예측 <b>04</b>' in html
         assert "<mark>" not in html
-        image = re.search(r'data:image/svg\\+xml;base64,([a-zA-Z0-9+/=]+)', html)
+        image = re.search(r'data:image/svg\+xml;base64,([a-zA-Z0-9+/=]+)', html)
         assert image
         diagram = b64decode(image.group(1)).decode()
         assert "<polyline" in diagram and "<circle" in diagram
