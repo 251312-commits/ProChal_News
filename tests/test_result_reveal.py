@@ -180,3 +180,28 @@ def test_old_round_keeps_the_saved_integer_even_with_an_old_logit():
             assert "78.00" not in html and "77.73" not in html
             if details is None:
                 assert "data:image/svg+xml" not in html
+
+
+class ScoreRevealUnittest(TestCase):
+    """Expose the existing reveal checks to the repository's unittest CI runner."""
+
+    def test_unicode_summary_is_streamed_without_changes(self):
+        test_unicode_summary_is_streamed_without_changes()
+
+    def test_summary_strips_surrounding_whitespace_and_handles_empty(self):
+        test_summary_strips_surrounding_whitespace_and_handles_empty()
+
+    def test_typing_delays_do_not_exceed_expected_pause(self):
+        test_typing_delays_do_not_exceed_expected_pause()
+
+    def test_score_waits_for_tap_and_never_advances_automatically(self):
+        test_score_waits_for_tap_and_never_advances_automatically()
+
+    def test_interrupted_tapped_drumroll_resumes_remaining_time(self):
+        test_interrupted_tapped_drumroll_resumes_remaining_time()
+
+    def test_anywhere_tap_is_delegated_only_when_ready(self):
+        test_anywhere_tap_is_delegated_only_when_ready()
+
+    def test_old_round_keeps_the_saved_integer_even_with_an_old_logit(self):
+        test_old_round_keeps_the_saved_integer_even_with_an_old_logit()
