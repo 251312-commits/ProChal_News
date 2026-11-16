@@ -16,7 +16,7 @@ from modules.account_ids import is_valid_student_id, is_valid_teacher_id
 from modules.nickname import normalize_nickname
 
 
-GATEWAY_VERSION = 2
+GATEWAY_VERSION = 3
 
 
 class TransactionError(RuntimeError):
@@ -100,6 +100,7 @@ def _request(payload: dict) -> dict:
             "USER_NOT_FOUND": "거래 시트에서 로그인한 계정을 찾지 못했습니다.",
             "DUPLICATE_USER": "동일한 학번 계정이 중복되어 거래를 처리할 수 없습니다.",
             "IDEMPOTENCY_CONFLICT": "이 거래 번호가 다른 내용으로 사용되었습니다.",
+            "BADGES_NOT_READY": "Users 시트에 배지 열이 없습니다. Apps Script에서 installBadgeColumns()를 실행하세요.",
         }
         raise TransactionError(errors.get(code, "거래가 완료되지 않았습니다. 관리자에게 문의하세요."), code=code)
     if not isinstance(result.get("balances"), dict):
@@ -161,7 +162,29 @@ def refresh_account_from_gateway() -> dict:
             code="PRINCIPAL_NOT_READY",
         )
     update_session_balances(balances)
+    _update_session_badges(result.get("badges"))
     return balances
+
+
+def _update_session_badges(profile: object) -> tuple[str, ...]:
+    """Copy only a server-confirmed badge profile into the current session."""
+    if not isinstance(profile, dict):
+        return ()
+    from modules.badges import BADGE_BY_ID, serialize_owned
+    raw_owned = profile.get("owned")
+    if not isinstance(raw_owned, list) or any(not isinstance(item, str) for item in raw_owned):
+        return ()
+    owned = [item for item in raw_owned if item in BADGE_BY_ID]
+    equipped = profile.get("equipped", "0")
+    equipped = equipped if equipped in owned else "0"
+    user = st.session_state.get("current_user_data")
+    if isinstance(user, dict):
+        user["장착배지"] = equipped
+        user["보유배지"] = serialize_owned(owned)
+    unlocked = profile.get("unlocked", [])
+    if not isinstance(unlocked, list):
+        return ()
+    return tuple(item for item in unlocked if isinstance(item, str) and item in BADGE_BY_ID)
 
 
 def confirm_bet(game: str, amount: int) -> dict:
@@ -187,8 +210,8 @@ def confirm_bet(game: str, amount: int) -> dict:
     return result
 
 
-def settle_game_round(game: str, amount: int, is_win: bool) -> dict:
-    """Apply a single game's payout and streak, returning the committed snapshot."""
+def settle_game_round(game: str, amount: int, is_win: bool, *, badge_evidence: dict | None = None) -> dict:
+    """Settle one round and commit earned badges atomically in Apps Script."""
     round_id = st.session_state.get(f"{game}_round_id")
     if not round_id:
         raise TransactionError("라운드 거래 번호가 없습니다. 베팅을 다시 확정하세요.")
@@ -197,8 +220,10 @@ def settle_game_round(game: str, amount: int, is_win: bool) -> dict:
         "kind": "settle", "round_id": round_id,
         "student_id": _student_id(), "game": game,
         "bet": int(amount), "is_win": bool(is_win),
+        "badge_evidence": badge_evidence or {},
     })
     update_session_balances(result["balances"])
+    newly_unlocked = _update_session_badges(result.get("badges"))
     committed = result.get("settlement")
     if not isinstance(committed, dict):
         raise TransactionError("정산 기록의 잔액을 확인하지 못했습니다.")
@@ -208,6 +233,7 @@ def settle_game_round(game: str, amount: int, is_win: bool) -> dict:
         "new_streak": account_amount(committed["streak"], strict=True),
         "new_loan": account_amount(committed["loan"], strict=True),
         "replayed": bool(result.get("replayed")),
+        "unlocked_badges": newly_unlocked,
     }
 
 

@@ -282,7 +282,10 @@ def show_game_2():
                 result_msg = f"💥 예측 실패! (실제 유사도: {actual_score:.2f}점)"
 
             try:
-                settled = settle_game_round("game_2", int(bet_coin), is_win)
+                settled = settle_game_round(
+                    "game_2", int(bet_coin), is_win,
+                    badge_evidence={"choice": user_choice},
+                )
             except BalanceChanged as changed:
                 update_session_balances(changed.balances)
                 st.error(str(changed))
