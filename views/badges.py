@@ -4,7 +4,7 @@ from time import monotonic
 
 import streamlit as st
 
-from modules.badges import BADGES, BADGE_BY_ID, parse_owned
+from modules.badges import BADGES, BADGE_BY_ID, parse_owned, serialize_owned
 from modules.badge_display import (
     RARITY_LABELS, badge_accent, badge_gallery_css, badge_image_data_uri, badge_symbol,
 )
@@ -159,7 +159,7 @@ def badge_gallery_dialog() -> None:
                         )
 
     # Generate the selected-card border after processing the current click.
-    st.html(badge_gallery_css(" ".join(owned), selected_id))
+    st.html(badge_gallery_css(serialize_owned(owned), selected_id))
     chosen = BADGE_BY_ID[selected_id]
     unlocked = selected_id in owned
     color = badge_accent(selected_id) if unlocked else "#73717B"
