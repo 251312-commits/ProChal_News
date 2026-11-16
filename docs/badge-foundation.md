@@ -1,8 +1,6 @@
 # Badge foundation (20 titles)
 
-This branch introduces the **catalog and deterministic achievement evaluator only**.
-It does not grant badges in production, modify Google Sheets, add profile UI,
-or change the betting/settlement gateway. Merge is safe for existing players.
+This project now includes the catalog, a server-side achievement evaluator, and an atomic settlement write path. It does not install live sheet columns, deploy Apps Script, render badge icons, or implement the badge selection popup.
 
 ## Fixed design
 
@@ -13,30 +11,47 @@ or change the betting/settlement gateway. Merge is safe for existing players.
 - 20 immutable IDs in `modules/badges.py`. Never renumber IDs.
 - Unequipped value is `0`. Owned IDs serialize as space-separated strings.
 
-## Proposed sheet migration (NOT executed)
+## Storage and migration
 
-Back up the spreadsheet, verify **Users!J and Users!K are empty**, and add:
-- `Users!J`: `장착배지` (default `0`)
-- `Users!K`: `보유배지` (default blank)
+The existing `Transactions` sheet is the single authoritative round history.
+For all *new* settlements, `Transactions!P` contains a `badge-v1:` JSON
+payload with score digits (game 1) or choice (games 2 and 3).
+Previous transactions remain readable; no Transactions columns change.
 
-For accurate history and partial progress, create a separate `AchievementEvents`
-sheet with immutable `round_id` as the deduplication key and fields:
-`student_id, round_id, game, is_win, choice, predicted_digits, answer_digits, settled_at`.
-Store only game results confirmed by the server, not client-supplied claims.
-A player can own many badges but equip only one.
+The separate `AchievementEvents` sheet proposed in the first draft is **not
+needed**. The immutable `settle:<round_id>` record supplies the deduplication
+key. Achievement progress can be recomputed from that history.
 
-**Security and consistency:** the existing Apps Script transaction gateway locks
-coin mutations and has idempotent settlement IDs. Future badge event writes
-should occur under the same lock, or be reconciled from committed settlements.
-Never update Users J/K with a client-side read-modify-write that can lose unlocks.
-Do not change the 16-column Transactions schema or Users G/H/I assignments.
+New Users fields (one row per player):
+- `Users!J`: `장착배지` (default string `0`)
+- `Users!K`: `보유배지` (space-separated stable IDs, default blank)
 
-## Important historical limitation
+Only the Apps Script Web App may write newly earned badges under `ScriptLock`.
+It commits the ledger settlement, wallet, and Users K in **one Sheets batch**.
+Backups are required before running the non-destructive `installBadgeColumns()`
+installer. The installer refuses to overwrite unrelated existing J/K values.
 
-Existing Transactions rows can prove completion, game, win/loss and streak.
-They do not retain game 1 predicted/answer digits or game 2/3 choices.
-Therefore old rounds cannot retroactively earn those detail-dependent badges
-without an independent authoritative record. Do not fabricate these values.
+## Deployment steps
+
+See [badge-awards-deployment.md](badge-awards-deployment.md). In particular,
+copy BOTH `apps_script/Code.gs` and `apps_script/Badges.gs`, run
+`installBadgeColumns()` as spreadsheet owner, and deploy a new Apps Script
+Web App version before activating the new Streamlit code. Version 3 of the
+wallet gateway blocks bets when the server is outdated or badge columns
+are missing.
+
+The connected Drive account available during development had read permission
+but its sheet write attempt returned HTTP 403. No live spreadsheet cells
+were changed by that attempt.
+
+## Historical data limitations
+
+Past settlements in Transactions can prove completion, game, wins and streaks,
+so those achievements may be awarded retroactively when the player completes
+their next settled round. But previous rows do not contain game 1 score digits
+or game 2/3 choices, so those achievements **cannot** be retroactively granted
+from those rows. An old game 1 win without two-digit evidence is also
+insufficient proof for `g1_hit`, because past game rules were different.
 
 ## Evaluator contract
 
@@ -52,12 +67,8 @@ For game 1, the difference compares the two-digit prediction and answer
 (00..99), not circular modulo arithmetic; `0.01%p` means a one-digit
 hundredth difference. A hit is separate from a near miss.
 
-## Next integration phase
+## Remaining UI work
 
-1. Add a versioned, non-destructive schema installer and transactional
-   badge updates to Apps Script.
-2. Persist authoritative per-round detail once and compute progress after
-   successful settlement (with retry/recovery).
-3. Add equipped badge read/display to main and ranking, plus badge dialog.
-4. Provide icon assets and four Legendary nameplate animations.
-5. Add migration, concurrency, replay, and mobile UI tests.
+Read the returned `badges` profile on the main/ranking view, add an icon-only
+nameplate and a modal for equip/unequip, and implement Legendary CSS effects.
+The server-side equip endpoint is deliberately not included in this PR.
