@@ -444,7 +444,6 @@ function setup(data) {
   ui.outcome.hidden = true;
   ui.analysis.hidden = true;
   ui.explain.setAttribute("aria-expanded", "false");
-  ui.start.hidden = true;
   ui.skip.hidden = true;
   ui.explain.hidden = true;
   ui.explain.textContent = "판정 이유 · 그래프 보기";
