@@ -685,3 +685,73 @@ test('multi-game streak condition excludes a single-game winning streak', () => 
   assert.ok(b.includes('streak_five_mixed'));
   assert.ok(b.includes('streak_eight_mixed'));
 });
+
+
+test('equipped badge is saved to Users J without touching coins, debts or ownership', () => {
+  const e = environment();
+  e.rows.users[1][10] = 'first_round g1_hit';
+  const probe = e.call({kind:'status',transaction_id:'status:' + hex('1')});
+  assert.equal(probe.badge_capabilities.equip, true);
+  const beforeCoins = e.rows.users[1][2];
+  const id = hex('a');
+  const request = {kind:'equip',transaction_id:'equip:' + id,badge_id:'g1_hit'};
+  const equipped = e.call(request);
+  assert.equal(equipped.badges.equipped, 'g1_hit');
+  assert.deepEqual([...equipped.badges.owned], ['first_round','g1_hit']);
+  assert.equal(e.rows.users[1][9], 'g1_hit');
+  assert.equal(e.rows.users[1][10], 'first_round g1_hit');
+  assert.equal(e.rows.users[1][2], beforeCoins);
+  assert.equal(e.rows.users[1][6], 0);
+  assert.equal(e.rows.ledger.at(-1)[3], 'equip');
+  assert.equal(e.rows.ledger.at(-1)[15], 'badge-equip:g1_hit');
+  const writes = e.state.batches;
+  const replay = e.call(request);
+  assert.equal(replay.replayed, true);
+  assert.equal(e.state.batches, writes);
+  assert.throws(() => e.call({...request,badge_id:'first_round'}), /Equipped badge changed on replay/);
+  assert.equal(e.rows.users[1][9], 'g1_hit');
+});
+
+test('equipping a locked badge fails safely, and 0 unequips without deleting earned badges', () => {
+  const e = environment();
+  e.rows.users[1][10] = 'first_round';
+  assert.throws(
+    () => e.call({kind:'equip',transaction_id:'equip:' + hex('b'),badge_id:'g1_hit'}),
+    /Badge has not been earned/,
+  );
+  assert.equal(e.rows.ledger.length, 1);
+  e.call({kind:'equip',transaction_id:'equip:' + hex('c'),badge_id:'first_round'});
+  const unequipped = e.call({kind:'equip',transaction_id:'equip:' + hex('d'),badge_id:'0'});
+  assert.equal(unequipped.badges.equipped, '0');
+  assert.equal(e.rows.users[1][9], '0');
+  assert.equal(e.rows.users[1][10], 'first_round');
+  assert.throws(
+    () => e.call({kind:'equip',transaction_id:'equip:' + hex('e'),badge_id:'fake'}),
+    /Unknown badge identifier/,
+  );
+});
+
+test('concurrent player badge ownership is isolated and equip batch is atomic', () => {
+  const e = environment([['11011','Alice',5000,0,'','pw',0],
+                         ['22022','Bob',5000,0,'','pw',0]]);
+  e.rows.users[1][10] = 'first_round';
+  e.rows.users[2][10] = 'g1_hit';
+  e.state.failedBatch = true;
+  assert.throws(() => e.call({
+    kind:'equip', transaction_id:'equip:' + hex('1'), badge_id:'first_round',
+  }), /Simulated atomic batch failure/);
+  assert.equal(e.rows.users[1][9], '0');
+  assert.equal(e.rows.ledger.length, 1);
+  e.state.failedBatch = false;
+  assert.throws(() => e.call({
+    kind:'equip', transaction_id:'equip:' + hex('2'), student_id:'22022',
+    badge_id:'first_round',
+  }), /Badge has not been earned/);
+  const saved = e.call({
+    kind:'equip', transaction_id:'equip:' + hex('3'), student_id:'22022',
+    badge_id:'g1_hit',
+  });
+  assert.equal(saved.badges.equipped, 'g1_hit');
+  assert.equal(e.rows.users[1][9], '0');
+  assert.equal(e.rows.users[2][9], 'g1_hit');
+});
