@@ -533,8 +533,11 @@ function process_(request) {
       (tx.kind === 'settle' ? badgeDetail_(badgeEvidence_(tx.game, request.badge_evidence, tx.is_win)) : '');
     const row = record_(tx, before, after, detail);
     const requests = tx.kind === 'bet' ? [] : walletUpdate_(users, user.rowIndex, after);
-    // Award and money settlement are committed as one atomic Sheets batch.
-    const badgeAward = tx.kind === 'settle' ? awardBadges_(ledger, users, user, tx.student_id, row) : null;
+    // Award badges on *every* completed wallet operation, not only game wins.
+    // Successful borrow/repay, turn-end interest and bankruptcy share the same
+    // atomic Sheets batch as wallet balance + immutable ledger event.
+    const badgeAward = ['settle', 'borrow', 'repay', 'interest'].includes(tx.kind) ?
+      awardBadges_(ledger, users, user, tx.student_id, row, after) : null;
     if (badgeAward && badgeAward.request) requests.push(badgeAward.request);
     requests.push(append_(ledger, [row]));
     commit_(ss, requests);
