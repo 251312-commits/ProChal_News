@@ -20,6 +20,56 @@ class BadgeGalleryTests(unittest.TestCase):
         self.assertEqual(len(set(BADGE_SYMBOLS.values())), 20)
         self.assertEqual(badge_symbol("g1_hit"), "◈")
 
+    def test_all_twenty_artworks_are_valid_standalone_svg_images(self):
+        import base64
+        from xml.etree import ElementTree as ET
+        from modules.badge_display import BADGE_ART_DIR, badge_image_data_uri
+
+        assets = sorted(BADGE_ART_DIR.glob("*.svg"))
+        self.assertEqual(len(assets), 20)
+        seen = set()
+        for badge in BADGES:
+            with self.subTest(badge=badge.id):
+                uri = badge_image_data_uri(badge.id)
+                self.assertTrue(uri.startswith("data:image/svg+xml;base64,"))
+                raw = base64.b64decode(uri.partition(",")[2])
+                image = ET.fromstring(raw)
+                self.assertEqual(image.tag, "{http://www.w3.org/2000/svg}svg")
+                self.assertEqual(image.attrib["viewBox"], "0 0 256 256")
+                self.assertEqual(image.find("{http://www.w3.org/2000/svg}title").text, badge.title)
+                self.assertNotIn(b"<script", raw)
+                self.assertNotIn(b"http://", raw)
+                self.assertNotIn(b"https://", raw)
+                self.assertGreater(len(raw), 2600)
+                self.assertNotIn(raw, seen)
+                seen.add(raw)
+        self.assertEqual(badge_image_data_uri("../../unsafe"), "")
+
+    def test_gallery_renders_local_badge_art_with_locked_filter(self):
+        from modules.badge_display import badge_gallery_css
+
+        css = badge_gallery_css("first_round g1_hit", "g1_hit")
+        self.assertEqual(css.count("background-image:url('data:image/svg+xml;base64,"), 20)
+        self.assertIn("grayscale(1) brightness(.30)", css)
+        self.assertIn("background-repeat:no-repeat", css)
+        self.assertIn("background-size:contain", css)
+
+    def test_equipped_badge_uses_image_not_symbol(self):
+        nameplate = nameplate_html("Player", "g1_hit", "g1_hit")
+        self.assertIn('class="pc-nameplate-art"', nameplate)
+        self.assertIn("data:image/svg+xml;base64,", nameplate)
+        self.assertNotIn("◈</span>", nameplate)
+        self.assertIn("pc-effect-numeric_particles", nameplate)
+
+    def test_detail_and_tile_use_image_assets(self):
+        from pathlib import Path
+
+        source = (Path(__file__).resolve().parents[1] / "views" / "badges.py").read_text(encoding="utf-8")
+        self.assertIn("badge_image_data_uri(selected_id)", source)
+        self.assertIn("art_markup", source)
+        self.assertIn("badge.title,", source)
+        self.assertNotIn("badge_symbol(badge.id),", source)
+
     def test_legendary_effects_are_unique(self):
         self.assertEqual(len(LEGENDARY_ACCENTS), 4)
         for badge in BADGES:
