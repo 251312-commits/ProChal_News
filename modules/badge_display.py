@@ -179,6 +179,13 @@ def badge_gallery_css(owned: object, selected_id: str) -> str:
 .st-key-badge_gallery [data-testid="stHorizontalBlock"] {
   min-width:0!important; max-width:100%!important;
 }
+/* Protect portrait AND landscape phones (e.g. 874×402) from modal overflow. */
+[role="dialog"]:has(.st-key-badge_gallery) {
+  box-sizing:border-box!important;
+  min-width:0!important; max-width:min(560px, calc(100dvw - 16px))!important;
+  max-height:calc(100dvh - 16px)!important;
+  overflow-x:hidden!important; overflow-y:auto!important;
+}
 @media (max-width: 700px) {
   /* The modal itself must fit inside the mobile viewport. */
   [role="dialog"]:has(.st-key-badge_gallery) {
