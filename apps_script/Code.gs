@@ -18,7 +18,7 @@ const HEADERS = [
 ];
 const RULES = {game_1: 100, game_2: 1, game_3: 1, game_4: 2, game_5: 5};
 const MAX_PRINCIPAL = 10000; // The limit is on unpaid borrowed principal, not interest.
-const GATEWAY_VERSION = 2; // Capabilities: principal in Users!H, interest per settled round.
+const GATEWAY_VERSION = 3; // v3 also installs/awards user badges from settled rounds.
 const MAX_NICKNAME_LENGTH = 80;
 const FIRST_TEACHER_ID = 40101;
 const TURN_INTEREST_RATE_PERCENT = 20; // 1/5 per completed round, compound interest
@@ -345,13 +345,17 @@ function process_(request) {
     if (JSON.stringify(headers) !== JSON.stringify(HEADERS)) {
       fail_('NOT_CONFIGURED', 'Transactions schema mismatch');
     }
+    // Fail before any money is committed unless the badge data columns exist.
+    requireBadgeColumns_(users);
 
     // Read-only capability and account probe: never changes a wallet or the ledger.
     // Clients call this BEFORE borrowing or betting, so an outdated deployment
     // cannot accidentally commit a transaction and then report it as a failure.
     if (tx.kind === 'status') {
       const account = findUser_(users, tx.student_id);
-      return result_(balance_(account.values), null, false);
+      return Object.assign(result_(balance_(account.values), null, false), {
+        badges: badgeProfile_(users, account.rowIndex)
+      });
     }
 
     const previous = findTransaction_(ledger, tx.transaction_id);
@@ -379,7 +383,16 @@ function process_(request) {
           fail_('IDEMPOTENCY_CONFLICT', 'Registration retry details differ');
         }
       }
+      if (tx.kind === 'settle' && String(previous[15] || '').startsWith(BADGE_DETAIL_PREFIX)) {
+        const evidence = badgeEvidence_(tx.game, request.badge_evidence, request.is_win);
+        if (String(previous[15]) !== badgeDetail_(evidence)) {
+          fail_('IDEMPOTENCY_CONFLICT', 'Settlement proof changed on replay');
+        }
+      }
       const replay = result_(balance_(current.values), previous, true);
+      if (tx.kind === 'settle') {
+        replay.badges = Object.assign(badgeProfile_(users, current.rowIndex), {unlocked: []});
+      }
       return tx.kind === 'register_teacher' ?
         Object.assign(replay, {student_id: accountId}) : replay;
     }
@@ -407,7 +420,7 @@ function process_(request) {
       const starting = {coins: 5000 + bonus, streak: 0, loan: 0, principal: 0};
       const empty = {coins: 0, streak: 0, loan: 0, principal: 0};
       const requests = [
-        append_(users, [[tx.student_id, nickname, starting.coins, 0, referrerId, password, 0, 0]])
+        append_(users, [[tx.student_id, nickname, starting.coins, 0, referrerId, password, 0, 0, '', '0', '']])
       ];
       const logs = [record_(tx, empty, starting, 'registration')];
       if (ref) {
@@ -493,12 +506,18 @@ function process_(request) {
       fail_('INVALID_REQUEST', 'Balance or principal overflow');
     }
     const detail = tx.kind === 'interest' ?
-      'turn-end compound interest ' + TURN_INTEREST_RATE_PERCENT + '%; round up to 1C' : '';
+      'turn-end compound interest ' + TURN_INTEREST_RATE_PERCENT + '%; round up to 1C' :
+      (tx.kind === 'settle' ? badgeDetail_(badgeEvidence_(tx.game, request.badge_evidence, tx.is_win)) : '');
     const row = record_(tx, before, after, detail);
     const requests = tx.kind === 'bet' ? [] : walletUpdate_(users, user.rowIndex, after);
+    // Award and money settlement are committed as one atomic Sheets batch.
+    const badgeAward = tx.kind === 'settle' ? awardBadges_(ledger, users, user, tx.student_id, row) : null;
+    if (badgeAward && badgeAward.request) requests.push(badgeAward.request);
     requests.push(append_(ledger, [row]));
     commit_(ss, requests);
-    return result_(after, row, false);
+    const receipt = result_(after, row, false);
+    if (badgeAward) receipt.badges = Object.assign(badgeAward.profile, {unlocked: badgeAward.unlocked});
+    return receipt;
   } finally {
     lock.releaseLock();
   }
