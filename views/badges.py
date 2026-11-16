@@ -73,9 +73,11 @@ def badge_gallery_dialog() -> None:
         '</div>',
     )
 
-    # A 4-column grid stays usable on narrow phones, with vertically
-    # scrolling dialog content. Locked badges still open their requirements.
-    with st.container(key="badge_gallery"):
+    # Only this square panel scrolls. The count, selected badge details,
+    # equip/unequip actions, and the dialog close button stay OUTSIDE it.
+    # Streamlit 1.55 enables native vertical scrolling for fixed-height
+    # containers; CSS adjusts both dimensions to a responsive square.
+    with st.container(height=320, border=True, key="badge_gallery"):
         for offset in range(0, len(BADGES), 4):
             columns = st.columns(4, gap="small")
             for index, column in enumerate(columns):

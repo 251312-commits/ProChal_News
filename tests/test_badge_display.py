@@ -130,6 +130,35 @@ class BadgeGalleryTests(unittest.TestCase):
         self.assertIn("flex-flow:row nowrap", css)
         self.assertIn("overflow-x:hidden", css)
 
+    def test_badge_list_alone_is_a_square_scrollport(self):
+        # The 25-card gallery must scroll without moving the selected details
+        # or equip controls. Keep those widgets outside the keyed container.
+        from pathlib import Path
+        source = (Path(__file__).resolve().parents[1] / "views" / "badges.py").read_text(encoding="utf-8")
+        self.assertIn('with st.container(height=320, border=True, key="badge_gallery"):', source)
+        list_start = source.index('with st.container(height=320, border=True, key="badge_gallery")')
+        list_end = source.index('    # Generate the selected-card border', list_start)
+        detail = source.index('    chosen = BADGE_BY_ID[selected_id]', list_end)
+        equip = source.index('        if st.button("이 배지 장착"', detail)
+        self.assertLess(list_start, list_end)
+        self.assertLess(list_end, detail)
+        self.assertLess(detail, equip)
+        self.assertEqual(source.count('key="badge_gallery"'), 1)
+
+        css = badge_gallery_css("", "first_round")
+        self.assertIn("--pc-badge-side:max(", css)
+        self.assertIn("calc(100dvw - 78px)", css)
+        self.assertIn("calc(100dvh - 270px)", css)
+        self.assertIn("aspect-ratio:1 / 1!important", css)
+        self.assertIn("height:auto!important", css)
+        self.assertIn("overflow-y:auto!important", css)
+        self.assertIn("overflow-x:hidden!important", css)
+        self.assertIn("overscroll-behavior:contain", css)
+        self.assertIn("touch-action:pan-y", css)
+        self.assertIn("scrollbar-width:thin", css)
+        # Mobile CSS must not override the square with a full-width panel.
+        self.assertNotIn("width:100%!important; max-width:100%!important;\n    overflow-x:hidden", css)
+
     def test_dialog_uses_small_width_and_html_renderers(self):
         from pathlib import Path
         source = (Path(__file__).resolve().parents[1] / "views" / "badges.py").read_text(encoding="utf-8")
