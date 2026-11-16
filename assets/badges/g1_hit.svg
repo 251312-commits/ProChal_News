@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="소수점의 지배자">
+<title>소수점의 지배자</title>
+<defs>
+<linearGradient id="rim" x1="0%" x2="100%" y1="0%" y2="100%"><stop offset="0" stop-color="#F0FFFF"/><stop offset=".25" stop-color="#69CDEB"/><stop offset=".55" stop-color="#265A8C"/><stop offset=".8" stop-color="#69CDEB"/><stop offset="1" stop-color="#F0FFFF"/></linearGradient>
+<radialGradient id="core" cx="49%" cy="34%" r="80%"><stop offset="0" stop-color="#253552"/><stop offset=".62" stop-color="#14172E"/><stop offset="1" stop-color="#090B1B"/></radialGradient>
+<linearGradient id="gem" x1="0%" y1="0%" x2="90%" y2="100%"><stop offset="0" stop-color="#265A8C"/><stop offset=".5" stop-color="#202B45"/><stop offset="1" stop-color="#69CDEB"/></linearGradient>
+<linearGradient id="metal" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0" stop-color="#F0FFFF"/><stop offset=".5" stop-color="#69CDEB"/><stop offset="1" stop-color="#265A8C"/></linearGradient>
+<linearGradient id="flame" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".55" stop-color="#A1F0FF"/><stop offset="1" stop-color="#FC668C"/></linearGradient>
+<filter id="halo" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter>
+<clipPath id="cut"><path d="M128 26 L206 57 Q218 64 213 80 L202 164 Q197 187 128 228 Q59 187 54 164 L43 80 Q38 64 50 57 Z"/></clipPath>
+</defs>
+<path d="M128 9 L220 45 Q238 55 235 75 L224 167 Q215 206 128 249 Q41 206 32 167 L21 75 Q18 55 36 45 Z" fill="#A1F0FF" opacity=".26" filter="url(#halo)"/>
+<path d="M128 10 L218 46 Q236 56 231 75 L222 166 Q216 199 128 246 Q40 199 34 166 L25 75 Q20 56 38 46 Z" fill="url(#rim)" stroke="#A1F0FF" stroke-width="5"/>
+<path d="M128 24 L206 55 Q220 62 215 81 L204 161 Q197 190 128 231 Q59 190 52 161 L41 81 Q36 62 50 55 Z" fill="url(#core)" stroke="#F0FFFF" stroke-width="2.5"/>
+<g clip-path="url(#cut)">
+<circle cx="128" cy="128" r="75" fill="none" stroke="#A1F0FF" stroke-opacity=".22" stroke-width="1.5"/>
+<path d="M50 90 L201 64 M45 137 L213 100 M52 176 L203 140" stroke="#A1F0FF" stroke-width="1.4" opacity=".12"/>
+<g stroke-linecap="round" stroke-linejoin="round"><path d="M76 83 L96 110 L126 83 L159 110 L181 83 L170 131 L85 131 Z" fill="url(#metal)" stroke="#A1F0FF" stroke-width="6" stroke-linejoin="round"/><polygon points="126.00,87.00 128.43,92.65 134.56,93.22 129.94,97.28 131.29,103.28 126.00,100.14 120.71,103.28 122.06,97.28 117.44,93.22 123.57,92.65" fill="#F0FFFF"/><rect x="72" y="136" width="112" height="52" rx="9" fill="#265A8C" stroke="#F0FFFF" stroke-width="5"/><circle cx="106" cy="161" r="13" fill="url(#metal)" stroke="#A1F0FF" stroke-width="3"/><circle cx="149" cy="161" r="13" fill="url(#metal)" stroke="#A1F0FF" stroke-width="3"/><path d="M106 152 L106 170 M149 152 L149 170" fill="none" stroke="#F0FFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M58 160 L73 160 M183 160 L198 160 M128 190 L128 205" fill="none" stroke="#A1F0FF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><polygon points="178.00,56.00 180.16,61.02 185.61,61.53 181.50,65.14 182.70,70.47 178.00,67.68 173.30,70.47 174.50,65.14 170.39,61.53 175.84,61.02" fill="#F0FFFF"/></g>
+</g>
+<path d="M128 18 L211 50 Q225 57 222 78 L211 166 Q200 194 128 238 Q56 194 45 166 L34 78 Q31 57 45 50 Z" fill="none" stroke="#A1F0FF" stroke-opacity=".7" stroke-width="2"/>
+<path d="M44 67 L61 61 M195 61 L212 67" stroke="#F0FFFF" stroke-width="4" stroke-linecap="round"/>
+<polygon points="128.00,24.00 129.63,27.37 133.00,29.00 129.63,30.63 128.00,34.00 126.37,30.63 123.00,29.00 126.37,27.37" fill="#A1F0FF"/><polygon points="44.00,127.00 44.98,129.02 47.00,130.00 44.98,130.98 44.00,133.00 43.02,130.98 41.00,130.00 43.02,129.02" fill="#F0FFFF"/><polygon points="212.00,127.00 212.98,129.02 215.00,130.00 212.98,130.98 212.00,133.00 211.02,130.98 209.00,130.00 211.02,129.02" fill="#F0FFFF"/>
+</svg>
