@@ -755,3 +755,120 @@ test('concurrent player badge ownership is isolated and equip batch is atomic', 
   assert.equal(e.rows.users[1][9], '0');
   assert.equal(e.rows.users[2][9], 'g1_hit');
 });
+
+
+test('first successful borrowing and repayment earn Common badges exactly once', () => {
+  const e = environment();
+  const borrow = {kind:'borrow',transaction_id:'borrow:'+hex('a'),amount:1000,
+    expected_coins:5000,expected_loan:0,expected_principal:0};
+  const b = e.call(borrow);
+  assert.ok(b.badges.unlocked.includes('first_borrow'));
+  assert.equal(e.rows.users[1][10], 'first_borrow');
+  assert.equal(e.call(borrow).replayed, true);
+  const repay = {kind:'repay',transaction_id:'repay:'+hex('b'),amount:1,
+    expected_coins:6000,expected_loan:1000,expected_principal:1000};
+  const r = e.call(repay);
+  assert.ok(r.badges.unlocked.includes('first_repay'));
+  assert.equal(e.rows.users[1][10], 'first_borrow first_repay');
+  assert.equal(e.call(repay).replayed, true);
+  assert.equal(e.rows.ledger.filter(row => row[3] === 'repay').length, 1);
+});
+
+test('bankruptcy requires both no minimum bet and no 1000C additional loan', () => {
+  const bankrupt = environment([['11011','Alice',1000,0,'','pw',10000,10000]]);
+  const round = hex('c');
+  bankrupt.call({kind:'bet',transaction_id:'bet:'+round,round_id:round,game:'game_2',bet:1000});
+  const result = bankrupt.call({kind:'settle',transaction_id:'settle:'+round,
+    round_id:round,game:'game_2',bet:1000,is_win:false});
+  assert.equal(result.balances.coins, 0);
+  assert.ok(result.badges.unlocked.includes('bankrupt'));
+  assert.ok(!result.badges.unlocked.includes('all_legendary'));
+  assert.equal(bankrupt.rows.users[1][9], '0');
+
+  const canBorrow = environment([['11011','Alice',1000,0,'','pw',9000,9000]]);
+  const r2 = hex('d');
+  canBorrow.call({kind:'bet',transaction_id:'bet:'+r2,round_id:r2,game:'game_2',bet:1000});
+  const outcome = canBorrow.call({kind:'settle',transaction_id:'settle:'+r2,
+    round_id:r2,game:'game_2',bet:1000,is_win:false});
+  assert.ok(!outcome.badges.unlocked.includes('bankrupt'));
+  const stillRich = environment([['11011','Alice',2000,0,'','pw',10000,10000]]);
+  const r3 = hex('e');
+  stillRich.call({kind:'bet',transaction_id:'bet:'+r3,round_id:r3,game:'game_2',bet:1000});
+  const r3s = stillRich.call({kind:'settle',transaction_id:'settle:'+r3,
+    round_id:r3,game:'game_2',bet:1000,is_win:false});
+  assert.equal(r3s.balances.coins, 1000);
+  assert.ok(!r3s.badges.unlocked.includes('bankrupt'));
+});
+
+function bankRound(e, n) {
+  const round = String(n).repeat(32);
+  e.call({kind:'bet',transaction_id:'bet:'+round,round_id:round,game:'game_2',bet:1000});
+  e.call({kind:'settle',transaction_id:'settle:'+round,
+    round_id:round,game:'game_2',bet:1000,is_win:false});
+  return e.call({kind:'interest',transaction_id:'interest:'+round,
+    round_id:round,game:'game_2'});
+}
+
+function repayAll(e, letter) {
+  const wallet = e.call({kind:'status',transaction_id:'status:'+hex(letter)}).balances;
+  return e.call({kind:'repay',transaction_id:'repay:'+hex(letter),amount:wallet.loan,
+    expected_coins:wallet.coins,expected_loan:wallet.loan,
+    expected_principal:wallet.principal});
+}
+
+test('Legendary finance badge needs a single 5000C+ borrow, five settled turns, and full repayment', () => {
+  const early = environment([['11011','Alice',50000,0,'','pw',0]]);
+  early.call({kind:'borrow',transaction_id:'borrow:'+hex('a'),amount:5000,
+    expected_coins:50000,expected_loan:0,expected_principal:0});
+  for(let i=1;i<=4;i++) bankRound(early,i);
+  const before = repayAll(early,'e');
+  assert.ok(!before.badges.unlocked.includes('loan_survivor'));
+  assert.ok(!early.rows.users[1][10].includes('loan_survivor'));
+
+  const e = environment([['11011','Alice',50000,0,'','pw',0]]);
+  e.call({kind:'borrow',transaction_id:'borrow:'+hex('a'),amount:5000,
+    expected_coins:50000,expected_loan:0,expected_principal:0});
+  for(let i=1;i<=5;i++) bankRound(e,i);
+  const balance = e.call({kind:'status',transaction_id:'status:'+hex('f')}).balances;
+  assert.equal(balance.loan, 12442); // 5000 * 1.2^5, rounded each turn
+  const part = e.call({kind:'repay',transaction_id:'repay:'+hex('b'),amount:3000,
+    expected_coins:balance.coins,expected_loan:balance.loan,expected_principal:balance.principal});
+  assert.ok(!part.badges.unlocked.includes('loan_survivor'));
+  const final = repayAll(e,'c');
+  assert.ok(final.badges.unlocked.includes('loan_survivor'));
+  assert.equal(final.balances.loan, 0);
+  assert.ok(e.rows.users[1][10].includes('loan_survivor'));
+  assert.throws(() => e.call({kind:'repay',transaction_id:'repay:'+hex('c'),
+    amount:1,expected_coins:0,expected_loan:0,
+    expected_principal:0}), /different arguments/);
+});
+
+test('Mythic gold requires all five Legendary badges and not Mythic itself', () => {
+  const e = environment([['11011','Alice',50000,0,'','pw',0]]);
+  e.rows.users[1][10] = 'streak_eight_mixed g1_hit g4_four_streak g5_three_streak';
+  e.call({kind:'borrow',transaction_id:'borrow:'+hex('a'),amount:5000,
+    expected_coins:50000,expected_loan:0,expected_principal:0});
+  for(let i=1;i<=5;i++) bankRound(e,i);
+  const last = repayAll(e,'b');
+  assert.ok(last.badges.unlocked.includes('loan_survivor'));
+  assert.ok(last.badges.unlocked.includes('all_legendary'));
+  assert.ok(!last.badges.unlocked.includes('bankrupt'));
+  assert.ok(e.rows.users[1][10].includes('all_legendary'));
+});
+
+test('bank badge write failure is atomic and replay never duplicates milestone', () => {
+  const e = environment();
+  e.state.failedBatch = true;
+  const req={kind:'borrow',transaction_id:'borrow:'+hex('b'),amount:1000,
+    expected_coins:5000,expected_loan:0,expected_principal:0};
+  assert.throws(()=>e.call(req),/Simulated atomic batch failure/);
+  assert.equal(e.rows.users[1][10], '');
+  assert.equal(e.rows.users[1][2],5000);
+  assert.equal(e.rows.ledger.length,1);
+  e.state.failedBatch=false;
+  const first=e.call(req);
+  assert.ok(first.badges.unlocked.includes('first_borrow'));
+  assert.equal(e.state.batches,1);
+  assert.equal(e.call(req).replayed,true);
+  assert.equal(e.state.batches,1);
+});
