@@ -297,8 +297,8 @@ def badge_gallery_css(owned: object, selected_id: str) -> str:
         if badge.id == selected_id:
             stroke = "#FFFFFF" if is_owned else "#7E7387"
         rules.append(
-            f"{key} .stButton button {{background-color:{background}!important;"
-            f"border:2px solid {stroke}!important;"
+            f"{key} .stButton button {{background:{background}!important;"
+            f"color:{color}!important;border:2px solid {stroke}!important;"
             f"box-shadow:{'0 0 11px ' + color + '77' if badge.id == selected_id and is_owned else 'none'}!important;}}"
         )
         uri = badge_image_data_uri(badge.id)
