@@ -132,7 +132,8 @@ def update_session_balances(balances: dict) -> dict:
     return normalized
 
 
-def refresh_account_from_gateway(*, require_badge_equip: bool = False) -> dict:
+def refresh_account_from_gateway(*, require_badge_equip: bool = False,
+                                 require_badge_sync: bool = False) -> dict:
     """Check deployed gateway capabilities and refresh authoritative C/D/G/H.
 
     A new client must never send a mutating request to an older gateway:
@@ -160,6 +161,11 @@ def refresh_account_from_gateway(*, require_badge_equip: bool = False) -> dict:
     if require_badge_equip and (result.get("badge_capabilities") or {}).get("equip") is not True:
         raise TransactionError(
             "배지 장착 기능을 사용하려면 최신 Code.gs를 Apps Script 새 버전으로 배포해야 합니다.",
+            code="OUTDATED_BADGE_GATEWAY",
+        )
+    if require_badge_sync and (result.get("badge_capabilities") or {}).get("sync") is not True:
+        raise TransactionError(
+            "업적 동기화를 사용하려면 최신 Apps Script를 배포해야 합니다.",
             code="OUTDATED_BADGE_GATEWAY",
         )
     balances = result["balances"]
@@ -192,6 +198,26 @@ def _update_session_badges(profile: object) -> tuple[str, ...]:
     if not isinstance(unlocked, list):
         return ()
     return tuple(item for item in unlocked if isinstance(item, str) and item in BADGE_BY_ID)
+
+
+def sync_badges_from_gateway() -> tuple[str, ...]:
+    """Reconcile bank achievements from the ledger and current wallet.
+
+    This explicit operation is used when opening the badge dialog so that
+    players who are already bankrupt can still collect their Mythic badge.
+    A stale gateway is detected before attempting any server mutation.
+    """
+    refresh_account_from_gateway(require_badge_sync=True)
+    result = _request({
+        "transaction_id": transaction_id("badge_sync"),
+        "kind": "badge_sync",
+        "student_id": _student_id(),
+    })
+    profile = result.get("badges")
+    if not isinstance(profile, dict):
+        raise TransactionError("배지 동기화 결과를 확인할 수 없습니다.", code="BAD_RESPONSE")
+    update_session_balances(result["balances"])
+    return _update_session_badges(profile)
 
 
 def equip_badge(badge_id: str, *, request_id: str | None = None) -> dict:
