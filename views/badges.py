@@ -56,7 +56,6 @@ def badge_gallery_dialog() -> None:
         selected_id = equipped if equipped != "0" else BADGES[0].id
         st.session_state["badge_gallery_selected"] = selected_id
 
-    st.html(badge_gallery_css(" ".join(owned), selected_id))
     st.markdown(
         '<div class="pc-badge-count">'
         f'획득 <b>{len(owned)} / {len(BADGES)}</b> '
@@ -95,6 +94,8 @@ def badge_gallery_dialog() -> None:
                             unsafe_allow_html=True,
                         )
 
+    # Generate the selected-card border after processing the current click.
+    st.html(badge_gallery_css(" ".join(owned), selected_id))
     chosen = BADGE_BY_ID[selected_id]
     unlocked = selected_id in owned
     color = badge_accent(selected_id) if unlocked else "#73717B"
