@@ -216,6 +216,36 @@ def badge_gallery_css(owned: object, selected_id: str) -> str:
     rules = [
         """
 <style>
+/* A single, square scrollport: the badge list is the only scrollable region
+   on normal mobile portrait screens. Selection details/buttons live outside.
+   Native st.container(height=320) provides keyboard and touch scrolling. */
+.st-key-badge_gallery {
+  --pc-badge-side:max(145px, min(320px, calc(100dvw - 78px), calc(100dvh - 270px)));
+  box-sizing:border-box!important;
+  width:var(--pc-badge-side)!important;
+  height:var(--pc-badge-side)!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-width:100%!important;
+  max-height:var(--pc-badge-side)!important;
+  aspect-ratio:1 / 1!important;
+  flex:none!important;
+  margin-inline:auto!important;
+  padding:8px!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+  scrollbar-width:thin;
+  scrollbar-color:#A47DE7 #1C142B;
+  background:linear-gradient(150deg,#160E24,#090D18)!important;
+  border:1px solid #6F4E9D!important;
+  border-radius:12px!important;
+}
+.st-key-badge_gallery::-webkit-scrollbar {width:5px;}
+.st-key-badge_gallery::-webkit-scrollbar-thumb {background:#9A70C8;border-radius:6px;}
+.st-key-badge_gallery::-webkit-scrollbar-track {background:#170F26;}
 .st-key-badge_gallery .stButton button {
   box-sizing:border-box!important;
   width:100%!important; min-width:0!important; max-width:100%!important;
@@ -269,9 +299,13 @@ def badge_gallery_css(owned: object, selected_id: str) -> str:
     min-width:0!important; max-width:100%!important;
   }
   .st-key-badge_gallery {
-    box-sizing:border-box!important; min-width:0!important;
-    width:100%!important; max-width:100%!important;
+    /* Keep the same responsive side on phones; do not stretch to dialog width. */
+    width:var(--pc-badge-side)!important;
+    height:var(--pc-badge-side)!important;
+    max-width:100%!important;
+    max-height:var(--pc-badge-side)!important;
     overflow-x:hidden!important;
+    overflow-y:auto!important;
   }
   .st-key-badge_gallery [data-testid="stHorizontalBlock"] {
     display:flex!important; flex-flow:row nowrap!important;
