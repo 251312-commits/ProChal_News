@@ -167,6 +167,15 @@ def badge_gallery_css(owned: object, selected_id: str) -> str:
 .st-key-badge_gallery .pc-badge-tile-name.is-equipped {color:#FFE6A9!important;}
 .st-key-badge_gallery .stButton {margin-bottom:0!important;}
 .st-key-badge_gallery [data-testid="column"] {min-width:0!important;}
+@media (max-width: 700px) {
+  .st-key-badge_gallery [data-testid="stHorizontalBlock"] {
+    flex-wrap:nowrap!important;gap:.25rem!important;
+  }
+  .st-key-badge_gallery [data-testid="column"] {
+    flex:1 1 0!important;max-width:25%!important;min-width:0!important;
+  }
+  .st-key-badge_gallery .stButton button {min-height:48px!important;height:48px!important;}
+}
 .st-key-badge_header_controls button {
  border:1px solid #A985FF!important;border-radius:9px!important;
  background:linear-gradient(90deg,#211036,#32134A)!important;
