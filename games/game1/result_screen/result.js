@@ -39,7 +39,6 @@ const ui = {
   analysisGuess: Array.from(document.querySelectorAll(".analysis-guess-digit")),
   analysisAnswer: Array.from(document.querySelectorAll(".analysis-answer-digit")),
   analysisVerdict: document.querySelector(".analysis-verdict"),
-  start: screen.querySelector(".start"),
   skip: screen.querySelector(".skip"),
   explain: screen.querySelector(".explain"),
   afterActions: screen.querySelector(".after-actions"),
@@ -304,7 +303,6 @@ function start() {
   if (!args || started) return;
   pauseMainBgm();
   started = true;
-  ui.start.hidden = true;
   ui.skip.hidden = false;
   ui.status.textContent = "빌드업 · AI 유사도를 계산했습니다";
   // Autoplay is attempted immediately. Mobile browsers may block unprompted audio:
@@ -470,7 +468,6 @@ function setup(data) {
   start();
   send("streamlit:setFrameHeight", {height: window.innerHeight || 700});
 }
-ui.start.addEventListener("click", start);
 ui.skip.addEventListener("click", skip);
 ui.explain.addEventListener("click", openExplanation);
 ui.analysisClose.addEventListener("click", closeExplanation);
