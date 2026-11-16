@@ -872,3 +872,35 @@ test('bank badge write failure is atomic and replay never duplicates milestone',
   assert.equal(e.call(req).replayed,true);
   assert.equal(e.state.batches,1);
 });
+
+test('badge_sync grants already bankrupt users without a bet or wallet mutation', () => {
+  const e = environment([['11011','Alice',500,0,'','pw',10000,10000]]);
+  const before = e.call({kind:'status',transaction_id:'status:'+hex('a')});
+  assert.equal(before.badge_capabilities.sync,true);
+  assert.equal(e.state.batches,0);
+  assert.equal(e.rows.users[1][10],'');
+  const sync={kind:'badge_sync',transaction_id:'badge_sync:'+hex('b')};
+  const result=e.call(sync);
+  assert.equal(result.balances.coins,500);
+  assert.ok(result.badges.unlocked.includes('bankrupt'));
+  assert.equal(e.rows.users[1][10],'bankrupt');
+  assert.equal(e.rows.ledger.at(-1)[3],'badge_sync');
+  assert.equal(e.state.batches,1);
+  assert.equal(e.call(sync).replayed,true);
+  assert.equal(e.state.batches,1);
+  const next=e.call({kind:'badge_sync',transaction_id:'badge_sync:'+hex('c')});
+  assert.deepEqual([...next.badges.unlocked],[]);
+  assert.equal(e.state.batches,1); // no ledger spam when nothing new
+});
+test('badge_sync can recover historic first borrow and repayment records', () => {
+  const e=environment([['11011','Alice',5000,0,'','pw',0]]);
+  e.call({kind:'borrow',transaction_id:'borrow:'+hex('d'),amount:1000,
+    expected_coins:5000,expected_loan:0,expected_principal:0});
+  e.call({kind:'repay',transaction_id:'repay:'+hex('e'),amount:1000,
+    expected_coins:6000,expected_loan:1000,expected_principal:1000});
+  e.rows.users[1][10]=''; // simulate records created before the badge upgrade
+  const recovered=e.call({kind:'badge_sync',transaction_id:'badge_sync:'+hex('f')});
+  assert.ok(recovered.badges.unlocked.includes('first_borrow'));
+  assert.ok(recovered.badges.unlocked.includes('first_repay'));
+  assert.equal(e.rows.users[1][10], 'first_borrow first_repay');
+});
