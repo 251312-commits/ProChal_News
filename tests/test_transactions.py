@@ -44,7 +44,7 @@ class ClientTests(unittest.TestCase):
     def status(self, *, coins=5000, streak=2, loan=1000, principal=1000):
         response = Mock()
         response.json.return_value = {
-            "ok": True, "gateway_version": 2,
+            "ok": True, "gateway_version": 3,
             "balances": {
                 "coins": coins, "streak": streak, "loan": loan, "principal": principal,
             },
@@ -75,6 +75,38 @@ class ClientTests(unittest.TestCase):
             self.assertTrue(result["replayed"])
             self.assertEqual(post.call_args.kwargs["json"]["transaction_id"],
                              "settle:" + "a" * 32)
+
+    def test_settlement_sends_badge_evidence_and_refreshes_profile(self):
+        self.session.game_1_round_id = "d" * 32
+        response = self.response(delta=-1000, coins=4000, streak=0)
+        response.json.return_value["badges"] = {
+            "equipped": "0",
+            "owned": ["first_round", "g1_exact_one"],
+            "unlocked": ["first_round", "g1_exact_one"],
+        }
+        with patch.object(tx.requests, "post", return_value=response) as post:
+            result = tx.settle_game_round(
+                "game_1", 1000, False,
+                badge_evidence={"predicted_digits": 37, "answer_digits": 36},
+            )
+        self.assertEqual(post.call_args.kwargs["json"]["badge_evidence"],
+                         {"predicted_digits": 37, "answer_digits": 36})
+        self.assertEqual(result["unlocked_badges"], ("first_round", "g1_exact_one"))
+        self.assertEqual(self.session.current_user_data["보유배지"],
+                         "first_round g1_exact_one")
+        self.assertEqual(self.session.current_user_data["장착배지"], "0")
+
+    def test_badge_schema_not_ready_is_reported_before_betting(self):
+        missing = self.response()
+        missing.json.return_value = {
+            "ok": False, "code": "BADGES_NOT_READY", "balances": None,
+        }
+        with patch.object(tx.requests, "post", return_value=missing) as post:
+            with self.assertRaises(tx.TransactionError) as raised:
+                tx.confirm_bet("game_1", 1000)
+        self.assertEqual(raised.exception.code, "BADGES_NOT_READY")
+        post.assert_called_once()
+        self.assertIn("installBadgeColumns", str(raised.exception))
 
     def test_insufficient_balance_is_not_optimistically_saved(self):
         error = self.response()
