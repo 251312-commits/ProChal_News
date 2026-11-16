@@ -33,13 +33,18 @@ BADGE_SYMBOLS = {
     "g4_four_streak": "⟦",
     "g5_three_wins": "⌕",
     "g5_three_streak": "◉",
+    "all_legendary": "♛",
+    "bankrupt": "☒",
+    "loan_survivor": "⌛",
+    "first_borrow": "▤",
+    "first_repay": "✓",
 }
 assert set(BADGE_SYMBOLS) == set(BADGE_BY_ID)
 
 
 RARITY_LABELS = {
     "common": "COMMON", "rare": "RARE",
-    "epic": "EPIC", "legendary": "LEGENDARY",
+    "epic": "EPIC", "legendary": "LEGENDARY", "mythic": "MYTHIC",
 }
 # Distinct Legendary accents; Common/Rare/Epic use their shared tier color.
 LEGENDARY_ACCENTS = {
@@ -47,12 +52,18 @@ LEGENDARY_ACCENTS = {
     "g1_hit": "#80E3FF",
     "g4_four_streak": "#C7A4FF",
     "g5_three_streak": "#FF8097",
+    "loan_survivor": "#FFD48C",
+}
+MYTHIC_ACCENTS = {
+    "all_legendary": "#FFE172",
+    "bankrupt": "#FF526A",
 }
 RARITY_ACCENTS = {
     "common": "#C6C6D5",
     "rare": "#4DE9EC",
     "epic": "#B78BFF",
     "legendary": "#F6CB64",
+    "mythic": "#FFE172",
 }
 
 
@@ -65,7 +76,7 @@ def badge_symbol(badge_id: str) -> str:
 BADGE_ART_DIR = Path(__file__).resolve().parents[1] / "assets" / "badges"
 
 
-@lru_cache(maxsize=24)
+@lru_cache(maxsize=32)
 def badge_image_data_uri(badge_id: str) -> str:
     """Return a trusted in-repo SVG as an embeddable data URI.
 
@@ -86,7 +97,7 @@ def badge_accent(badge_id: str) -> str:
     badge = BADGE_BY_ID.get(badge_id)
     if badge is None:
         return "#53505B"
-    return LEGENDARY_ACCENTS.get(badge_id, RARITY_ACCENTS[badge.rarity])
+    return MYTHIC_ACCENTS.get(badge_id, LEGENDARY_ACCENTS.get(badge_id, RARITY_ACCENTS[badge.rarity]))
 
 
 def nameplate_html(nickname: object, equipped: object, owned: object) -> str:
@@ -97,7 +108,7 @@ def nameplate_html(nickname: object, equipped: object, owned: object) -> str:
         return display_name
 
     title = escape(badge.title, quote=True)
-    effect = badge.effect if badge.rarity == "legendary" else "plain"
+    effect = badge.effect if badge.rarity in ("legendary", "mythic") else "plain"
     data_uri = badge_image_data_uri(badge.id)
     # A text fallback remains only when a packaged art file is missing.
     content = (
@@ -132,16 +143,34 @@ NAMEPLATE_CSS = """
 .pc-nameplate-text { min-width:0; overflow:hidden; text-overflow:ellipsis; }
 .pc-nameplate.pc-tier-rare .pc-nameplate-text,
 .pc-nameplate.pc-tier-epic .pc-nameplate-text,
-.pc-nameplate.pc-tier-legendary .pc-nameplate-text {
+.pc-nameplate.pc-tier-legendary .pc-nameplate-text,
+.pc-nameplate.pc-tier-mythic .pc-nameplate-text {
   color:var(--pc-badge-accent)!important; text-shadow:none!important;
 }
 .pc-nameplate.pc-tier-rare .pc-nameplate-symbol {filter:drop-shadow(0 0 3px #4de9ec77);}
 .pc-nameplate.pc-tier-epic .pc-nameplate-symbol {filter:drop-shadow(0 0 5px #ba8affaa);}
-.pc-nameplate.pc-tier-legendary {
+.pc-nameplate.pc-tier-legendary,
+.pc-nameplate.pc-tier-mythic {
   filter:drop-shadow(0 0 6px var(--pc-badge-accent));
 }
-.pc-nameplate.pc-tier-legendary .pc-nameplate-symbol {
+.pc-nameplate.pc-tier-mythic {
+  filter:drop-shadow(0 0 5px var(--pc-badge-accent)) drop-shadow(0 0 9px var(--pc-badge-accent));
+}
+.pc-nameplate.pc-tier-legendary .pc-nameplate-symbol,
+.pc-nameplate.pc-tier-mythic .pc-nameplate-symbol {
   text-shadow:0 0 6px var(--pc-badge-accent),0 0 13px var(--pc-badge-accent);
+}
+.pc-nameplate.pc-effect-loan_hourglass .pc-nameplate-symbol::after {
+  content:"⌛";position:absolute;font-size:.55em;top:-.4em;right:-.38em;
+  animation:pc-orbit 3.8s ease-in-out infinite;
+}
+.pc-nameplate.pc-effect-golden_crown .pc-nameplate-symbol::after {
+  content:"✦";position:absolute;font-size:.55em;top:-.5em;right:-.5em;
+  animation:pc-shimmer 2s ease-in-out infinite;color:#FFF1BD;
+}
+.pc-nameplate.pc-effect-scarlet_alarm .pc-nameplate-symbol::after {
+  content:"";position:absolute;inset:-.15em;border:1px solid #FF5068;
+  border-radius:50%;box-shadow:0 0 8px #FF344E88;animation:pc-alarm 1.6s ease-in-out infinite;
 }
 .pc-nameplate.pc-effect-orbiting_stars .pc-nameplate-symbol::after {
   content:"✧"; position:absolute; font-size:.55em; top:-.55em; right:-.5em;
@@ -164,6 +193,8 @@ NAMEPLATE_CSS = """
   background:linear-gradient(90deg,transparent 5%,#ffbac533 48%,#ffffff77 51%,transparent 56%);
   background-size:240% 100%;animation:pc-scan 3.2s ease-in-out infinite;
 }
+@keyframes pc-shimmer {0%,100%{opacity:.3;transform:scale(.7)}50%{opacity:1;transform:scale(1.2)}}
+@keyframes pc-alarm {0%,100%{opacity:.4;transform:scale(.94)}50%{opacity:1;transform:scale(1.2)}}
 @keyframes pc-orbit {0%{transform:rotate(0deg) translateX(6px) rotate(0deg)}
 100%{transform:rotate(360deg) translateX(6px) rotate(-360deg)}}
 @keyframes pc-digits {0%,100%{opacity:.2;transform:translateY(4px)}
