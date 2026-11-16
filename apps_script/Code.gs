@@ -303,8 +303,8 @@ function process_(request) {
     game: String(request.game || ''),
     round_id: String(request.round_id || '')
   };
-  if (!/^(bet|settle|interest|borrow|repay|register|register_teacher|status):[a-f0-9]{32}$/.test(tx.transaction_id) ||
-      !['bet', 'settle', 'interest', 'borrow', 'repay', 'register', 'register_teacher', 'status'].includes(tx.kind) ||
+  if (!/^(bet|settle|interest|borrow|repay|register|register_teacher|status|equip):[a-f0-9]{32}$/.test(tx.transaction_id) ||
+      !['bet', 'settle', 'interest', 'borrow', 'repay', 'register', 'register_teacher', 'status', 'equip'].includes(tx.kind) ||
       (tx.kind === 'register_teacher' ? tx.student_id !== '' : !/^[0-9]{5}$/.test(tx.student_id)) ||
       tx.transaction_id.split(':', 1)[0] !== tx.kind) {
     fail_('INVALID_REQUEST', 'Invalid transaction ID, student ID, or operation');
@@ -327,6 +327,12 @@ function process_(request) {
   }
   if (tx.kind === 'borrow' || tx.kind === 'repay') {
     tx.amount = number_(request.amount, 'amount', 1);
+  }
+  if (tx.kind === 'equip') {
+    tx.badge_id = String(request.badge_id == null ? '' : request.badge_id);
+    if (tx.badge_id !== '0' && !BADGE_ID_SET.has(tx.badge_id)) {
+      fail_('INVALID_BADGE', 'Unknown badge identifier');
+    }
   }
 
   // ScriptLock is shared across simultaneous Web App executions.
@@ -354,7 +360,8 @@ function process_(request) {
     if (tx.kind === 'status') {
       const account = findUser_(users, tx.student_id);
       return Object.assign(result_(balance_(account.values), null, false), {
-        badges: badgeProfile_(users, account.rowIndex)
+        badges: badgeProfile_(users, account.rowIndex),
+        badge_capabilities: {equip: true}
       });
     }
 
@@ -389,8 +396,11 @@ function process_(request) {
           fail_('IDEMPOTENCY_CONFLICT', 'Settlement proof changed on replay');
         }
       }
+      if (tx.kind === 'equip' && String(previous[15]) !== 'badge-equip:' + tx.badge_id) {
+        fail_('IDEMPOTENCY_CONFLICT', 'Equipped badge changed on replay');
+      }
       const replay = result_(balance_(current.values), previous, true);
-      if (tx.kind === 'settle') {
+      if (tx.kind === 'settle' || tx.kind === 'equip') {
         replay.badges = Object.assign(badgeProfile_(users, current.rowIndex), {unlocked: []});
       }
       return tx.kind === 'register_teacher' ?
@@ -440,6 +450,19 @@ function process_(request) {
 
     const user = findUser_(users, tx.student_id);
     const before = balance_(user.values);
+    if (tx.kind === 'equip') {
+      // Recheck owned badges while holding the same lock as achievement grants.
+      const profile = badgeProfile_(users, user.rowIndex);
+      if (tx.badge_id !== '0' && !profile.owned.includes(tx.badge_id)) {
+        fail_('BADGE_NOT_OWNED', 'Badge has not been earned');
+      }
+      const changed = {equipped: tx.badge_id, owned: profile.owned};
+      const log = record_(tx, before, before, 'badge-equip:' + tx.badge_id);
+      commit_(ss, [badgeProfileWrite_(users, user.rowIndex, changed), append_(ledger, [log])]);
+      return Object.assign(result_(before, log, false), {
+        badges: Object.assign(changed, {unlocked: []})
+      });
+    }
     const after = {
       coins: before.coins, streak: before.streak,
       loan: before.loan, principal: before.principal
