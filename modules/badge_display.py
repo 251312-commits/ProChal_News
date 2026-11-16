@@ -152,11 +152,17 @@ def badge_gallery_css(owned: object, selected_id: str) -> str:
         """
 <style>
 .st-key-badge_gallery .stButton button {
-  width:100%!important; min-height:54px!important; height:54px!important;
+  box-sizing:border-box!important;
+  width:100%!important; min-width:0!important; max-width:100%!important;
+  min-height:54px!important; height:54px!important;
   font-family:"Segoe UI Symbol","Apple Symbols",sans-serif!important;
   font-size:1.85rem!important; line-height:1!important;
   border-radius:12px!important; margin:0!important; padding:0!important;
   box-shadow:none!important;
+}
+.st-key-badge_gallery .stButton button p {
+  font-family:"Segoe UI Symbol","Apple Symbols",sans-serif!important;
+  font-size:inherit!important; line-height:1!important; white-space:nowrap!important;
 }
 .st-key-badge_gallery div[data-testid="stVerticalBlock"] {gap:.12rem!important;}
 .st-key-badge_gallery .pc-badge-tile-name {
@@ -166,15 +172,63 @@ def badge_gallery_css(owned: object, selected_id: str) -> str:
 .st-key-badge_gallery .pc-badge-tile-name.is-locked {color:#62616B!important;}
 .st-key-badge_gallery .pc-badge-tile-name.is-equipped {color:#FFE6A9!important;}
 .st-key-badge_gallery .stButton {margin-bottom:0!important;}
-.st-key-badge_gallery [data-testid="column"] {min-width:0!important;}
+.st-key-badge_gallery,
+.st-key-badge_gallery [data-testid="stColumn"] {
+  min-width:0!important; max-width:100%!important; box-sizing:border-box!important;
+}
+.st-key-badge_gallery [data-testid="stHorizontalBlock"] {
+  min-width:0!important; max-width:100%!important;
+}
+/* Protect portrait AND landscape phones (e.g. 874×402) from modal overflow. */
+[role="dialog"]:has(.st-key-badge_gallery) {
+  box-sizing:border-box!important;
+  min-width:0!important; max-width:min(560px, calc(100dvw - 16px))!important;
+  max-height:calc(100dvh - 16px)!important;
+  overflow-x:hidden!important; overflow-y:auto!important;
+}
 @media (max-width: 700px) {
+  /* The modal itself must fit inside the mobile viewport. */
+  [role="dialog"]:has(.st-key-badge_gallery) {
+    box-sizing:border-box!important;
+    width:calc(100dvw - 16px)!important;
+    max-width:calc(100dvw - 16px)!important;
+    min-width:0!important; margin-inline:auto!important;
+    max-height:calc(100dvh - 16px)!important;
+    overflow-x:hidden!important; overflow-y:auto!important;
+  }
+  [role="dialog"]:has(.st-key-badge_gallery) [data-testid="stVerticalBlock"] {
+    min-width:0!important; max-width:100%!important;
+  }
+  .st-key-badge_gallery {
+    box-sizing:border-box!important; min-width:0!important;
+    width:100%!important; max-width:100%!important;
+    overflow-x:hidden!important;
+  }
   .st-key-badge_gallery [data-testid="stHorizontalBlock"] {
-    flex-wrap:nowrap!important;gap:.25rem!important;
+    display:flex!important; flex-flow:row nowrap!important;
+    width:100%!important; min-width:0!important; max-width:100%!important;
+    gap:4px!important;
   }
-  .st-key-badge_gallery [data-testid="column"] {
-    flex:1 1 0!important;max-width:25%!important;min-width:0!important;
+  /* Streamlit 1.55 uses stColumn, not the older 'column' test ID. */
+  .st-key-badge_gallery [data-testid="stColumn"] {
+    flex:1 1 0!important; width:0!important; max-width:none!important;
+    min-width:0!important; padding:0!important;
   }
-  .st-key-badge_gallery .stButton button {min-height:48px!important;height:48px!important;}
+  .st-key-badge_gallery .stButton button {
+    min-height:46px!important; height:46px!important;
+    font-size:1.5rem!important; padding:0!important;
+  }
+  .st-key-badge_gallery .pc-badge-tile-name {
+    font-size:.61rem!important; line-height:1.3!important;
+    min-height:2rem!important;
+  }
+  .pc-badge-detail {gap:9px!important;padding:10px!important;max-width:100%!important;min-width:0!important;}
+  .pc-badge-detail > div:last-child {min-width:0!important;overflow-wrap:anywhere!important;}
+  .pc-badge-detail-icon {min-width:44px!important;width:44px!important;height:44px!important;font-size:1.7rem!important;}
+}
+@media (max-width: 370px) {
+  .st-key-badge_gallery [data-testid="stHorizontalBlock"] {gap:3px!important;}
+  .st-key-badge_gallery .pc-badge-tile-name {font-size:.57rem!important;}
 }
 .st-key-badge_header_controls button {
  border:1px solid #A985FF!important;border-radius:9px!important;
@@ -183,6 +237,7 @@ def badge_gallery_css(owned: object, selected_id: str) -> str:
  font-size:.9rem!important;font-weight:800!important;
 }
 .pc-badge-detail {display:flex;align-items:center;gap:14px;
+ max-width:100%; min-width:0;box-sizing:border-box;
  border:1px solid #5B4179;border-radius:13px;padding:12px;margin:12px 0 6px;
  background:#1B102A;color:#FFFFFF}
 .pc-badge-detail-icon {min-width:56px;height:56px;display:flex;align-items:center;
@@ -192,7 +247,6 @@ def badge_gallery_css(owned: object, selected_id: str) -> str:
 .pc-badge-detail-title {font-size:1.05rem;font-weight:800;margin-top:2px}
 .pc-badge-detail-condition {font-size:.82rem;line-height:1.5;color:#D6CDDF;margin-top:3px}
 .pc-badge-count {color:#D3BDFD;font-size:.86rem;margin:4px 0 12px}
-</style>
 """
     ]
     for badge in BADGES:
@@ -208,4 +262,6 @@ def badge_gallery_css(owned: object, selected_id: str) -> str:
             f"color:{color}!important;border:2px solid {stroke}!important;"
             f"box-shadow:{'0 0 11px ' + color + '77' if badge.id == selected_id and is_owned else 'none'}!important;}}"
         )
-    return "".join(rules)
+    # Keep every dynamic button rule INSIDE the single style tag. Appending
+    # selectors after </style> made raw CSS appear as broken HTML in the dialog.
+    return "".join(rules) + "\n</style>"
