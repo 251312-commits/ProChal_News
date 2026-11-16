@@ -57,4 +57,7 @@ class GameOneTests(unittest.TestCase):
                     self.assertEqual(result["is_win"], wins)
                     self.assertEqual(result["reward"], 100_000 if wins else -1000)
                     ai.similarity_check.assert_called_once_with("요약문", "제목")
-                    tx.settle_game_round.assert_called_once_with(\n                        "game_1", 1000, wins,\n                        badge_evidence={"predicted_digits": guess, "answer_digits": units % 100},\n                    )
+                    tx.settle_game_round.assert_called_once_with(
+                        "game_1", 1000, wins,
+                        badge_evidence={"predicted_digits": guess, "answer_digits": units % 100},
+                    )
