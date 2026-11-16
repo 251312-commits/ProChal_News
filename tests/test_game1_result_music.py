@@ -71,7 +71,7 @@ class ResultMusicTests(unittest.TestCase):
     def test_score_is_settled_before_visual_reveal_and_bgm_is_suspended(self):
         game1 = (ROOT / "games/game1/game1.py").read_text(encoding="utf-8")
         self.assertLess(
-            game1.index('settle_game_round("game_1"'),
+            game1.index('settled = settle_game_round('),
             game1.index("render_game1_result_reveal(res)"),
         )
         self.assertLess(
