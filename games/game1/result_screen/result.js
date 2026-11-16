@@ -65,6 +65,8 @@ let animationFrame = 0;
 let lastRoll = 0;
 let localMuted = false;
 let locked = false;
+let silentStart = null;
+let silentMode = false;
 
 function send(type, payload) {
   window.parent.postMessage({isStreamlitMessage: true, type, ...payload}, hostOrigin);
@@ -230,11 +232,11 @@ function failNow() {
   ui.skip.hidden = true;
   publishOutcome();
   fullyFinished = true;
-  playFailSound();
+  if (!silentMode) playFailSound();
 }
 function tick() {
   if (!started || fullyFinished || !args || !song) return;
-  const position = song.currentTime;
+  const position = silentMode ? Math.max(0, (performance.now() - silentStart) / 1000) : song.currentTime;
   const spec = args.track;
   ui.progress.style.width = Math.min(100, position / spec.end * 100) + "%";
   rollIdleNumbers(performance.now());
@@ -305,13 +307,19 @@ function start() {
   ui.start.hidden = true;
   ui.skip.hidden = false;
   ui.status.textContent = "빌드업 · AI 유사도를 계산했습니다";
-  const pending = song.play(); // Prioritize the soundtrack's user-gesture unlock.
-  primeFailSound(); // Pre-unlock the loss stinger in that same click handler.
+  // Autoplay is attempted immediately. Mobile browsers may block unprompted audio:
+  // keep the original drop timing with a silent visual clock in that case.
+  silentStart = performance.now();
+  silentMode = false;
+  let pending;
+  try { pending = song.play(); }
+  catch (_) { pending = Promise.reject(_); }
   if (pending && typeof pending.catch === "function") {
     pending.catch(() => {
-      if (!fullyFinished) {
-        ui.status.textContent = "오디오 재생이 차단되었습니다.";
-        skip(); // Never leave the player waiting through a silent 48 s track.
+      if (!fullyFinished && started) {
+        silentMode = true;
+        silentStart = performance.now();
+        ui.status.textContent = "자동 재생 제한 · 무음으로 결과 공개 중";
       }
     });
   }
@@ -411,6 +419,8 @@ function setup(data) {
   args = data;
   matchCount = (data.matches || []).filter(Boolean).length;
   started = false;
+  silentMode = false;
+  silentStart = null;
   revealFinished = false;
   fullyFinished = false;
   firstRevealed = false;
@@ -436,13 +446,13 @@ function setup(data) {
   ui.outcome.hidden = true;
   ui.analysis.hidden = true;
   ui.explain.setAttribute("aria-expanded", "false");
-  ui.start.hidden = false;
+  ui.start.hidden = true;
   ui.skip.hidden = true;
   ui.explain.hidden = true;
   ui.explain.textContent = "판정 이유 · 그래프 보기";
   ui.afterActions.hidden = true;
   ui.retryFail.hidden = true;
-  ui.status.textContent = "결과를 공개하려면 버튼을 누르세요.";
+  ui.status.textContent = "AI 분석 완료 · 결과를 자동 공개합니다";
   screen.classList.remove("jackpot", "failed", "beat");
   modelDetails(data);
   for (const [name, target] of [
@@ -457,6 +467,7 @@ function setup(data) {
   applySound();
   pauseMainBgm();
   screen.hidden = false;
+  start();
   send("streamlit:setFrameHeight", {height: window.innerHeight || 700});
 }
 ui.start.addEventListener("click", start);
@@ -491,8 +502,10 @@ ui.soundSwitch.addEventListener("click", () => {
 document.addEventListener("visibilitychange", () => {
   if (!song || !started || fullyFinished) return;
   if (document.hidden) song.pause();
-  else song.play().catch(() => {
-    ui.status.textContent = "다시 재생하려면 연출 건너뛰기를 눌러주세요.";
+  else if (!silentMode) song.play().catch(() => {
+    silentMode = true;
+    silentStart = performance.now();
+    ui.status.textContent = "자동 재생 제한 · 무음으로 결과 공개 중";
   });
 });
 window.addEventListener("pagehide", stopMedia);
