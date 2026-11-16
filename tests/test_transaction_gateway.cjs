@@ -165,6 +165,37 @@ test('borrow and repay revalidate expected values under the lock', () => {
   assert.equal(e.rows.ledger.length, 3);
 });
 
+test('repayment accepts 1C increments while borrowing still requires 1000C', () => {
+  const e = environment([['11011', 'Alice', 2000, 0, '', 'pw', 1500, 1000]]);
+  const oneCoin = {kind:'repay',transaction_id:'repay:'+hex('1'),
+    amount:1,expected_coins:2000,expected_loan:1500,expected_principal:1000};
+  const first = e.call(oneCoin);
+  assert.equal(first.balances.coins, 1999);
+  assert.equal(first.balances.loan, 1499);
+  assert.equal(first.balances.principal, 1000); // interest is repaid first
+  assert.equal(e.call(oneCoin).replayed, true);
+
+  const part = e.call({kind:'repay',transaction_id:'repay:'+hex('2'),
+    amount:500,expected_coins:1999,expected_loan:1499,expected_principal:1000});
+  assert.equal(part.balances.coins, 1499);
+  assert.equal(part.balances.loan, 999);
+  assert.equal(part.balances.principal, 999);
+
+  assert.throws(() => e.call({kind:'borrow',transaction_id:'borrow:'+hex('3'),
+    amount:1,expected_coins:1499,expected_loan:999,expected_principal:999}),
+  /Borrowed principal limit exceeded/);
+
+  const paidOff = e.call({kind:'repay',transaction_id:'repay:'+hex('4'),
+    amount:999,expected_coins:1499,expected_loan:999,expected_principal:999});
+  assert.equal(paidOff.balances.coins, 500);
+  assert.equal(paidOff.balances.loan, 0);
+  assert.equal(paidOff.balances.principal, 0);
+  assert.equal(e.rows.ledger.filter(row => row[3] === 'repay').length, 3);
+  assert.throws(() => e.call({kind:'repay',transaction_id:'repay:'+hex('5'),
+    amount:1,expected_coins:500,expected_loan:0,expected_principal:0}),
+  /Invalid repayment/);
+});
+
 test('registration and referrer bonuses commit in one batch and retry once', () => {
   const e = environment([['20102', 'Bob', 4000, 0, '', 'pw', 0]]);
   const request = {kind:'register',transaction_id:'register:'+hex('d'),
