@@ -113,6 +113,8 @@ function environment(usersRows = [['11011', 'Alice', 5000, 1, '', 'pw', 0]]) {
     install() {
       return ctx.installPrincipalColumn_(sheetObjects.users, sheetObjects.ledger);
     },
+    installBadges() {return ctx.installBadgeColumns();},
+    evaluateBadges(events) {return ctx.evaluateBadgesFromSettlements_(events);},
     call(payload) {
       return ctx.process_({token: 'secret', student_id: '11011', ...payload});
     },
@@ -592,4 +594,94 @@ test('failed teacher registration does not consume the next ID', () => {
   e.state.failedBatch = false;
   assert.equal(e.call(r).student_id, '40101');
   assert.equal(e.rows.ledger.length, 2);
+});
+
+
+test('new badge columns are required and installer does not replace unrelated data', () => {
+  const e = environment();
+  e.rows.users[0][9] = 'Other';
+  assert.throws(() => e.installBadges(), /other headers/);
+  e.rows.users[0][9] = '';
+  e.rows.users[0][10] = '';
+  e.rows.users[1][9] = 'some value';
+  assert.throws(() => e.installBadges(), /data without badge headers/);
+  e.rows.users[1][9] = '';
+  assert.throws(() => e.call({
+    kind: 'status', transaction_id: 'status:' + hex('f'),
+  }), /Run installBadgeColumns/);
+  e.installBadges();
+  assert.equal(e.rows.users[0][9], '장착배지');
+  assert.equal(e.rows.users[0][10], '보유배지');
+  assert.equal(e.rows.users[1][9], '0');
+  e.installBadges(); // rerun is safe
+  assert.ok(e.call({kind:'status', transaction_id:'status:' + hex('e')}).ok);
+});
+
+test('game1 proof awards overlapping near-miss badges in the same coin batch', () => {
+  const e = environment();
+  const id = hex('8');
+  e.call({kind:'bet', transaction_id:'bet:' + id, round_id:id, game:'game_1', bet:1000});
+  const payload = {kind:'settle', transaction_id:'settle:' + id,
+    round_id:id, game:'game_1', bet:1000, is_win:false,
+    badge_evidence:{predicted_digits:37, answer_digits:36}};
+  const result = e.call(payload);
+  const expected = ['first_round', 'g1_within_ten', 'g1_within_three', 'g1_exact_one'];
+  for (const name of expected) assert.ok(result.badges.unlocked.includes(name), name);
+  assert.equal(e.rows.users[1][2], 4000);
+  assert.equal(e.rows.users[1][9], '0');
+  assert.equal(e.rows.users[1][10], expected.join(' '));
+  assert.match(e.rows.ledger.at(-1)[15], /^badge-v1:/);
+  assert.equal(e.state.batches, 2);
+  const replay = e.call(payload);
+  assert.equal(replay.replayed, true);
+  assert.equal(e.state.batches, 2);
+  assert.deepEqual([...replay.badges.unlocked], []);
+  assert.throws(() => e.call({
+    ...payload, badge_evidence:{predicted_digits:37, answer_digits:35},
+  }), /proof changed on replay/);
+  assert.equal(e.rows.users[1][10], expected.join(' '));
+});
+
+test('game1 exact hit needs proof and inconsistent evidence cannot pay coins', () => {
+  const e = environment(), id = hex('9');
+  e.call({kind:'bet', transaction_id:'bet:' + id, round_id:id, game:'game_1', bet:1000});
+  const bad = {kind:'settle', transaction_id:'settle:' + id, round_id:id,
+    game:'game_1', bet:1000, is_win:true,
+    badge_evidence:{predicted_digits:31, answer_digits:32}};
+  assert.throws(() => e.call(bad), /disagrees with win\/loss/);
+  assert.equal(e.rows.users[1][2], 5000);
+  assert.equal(e.rows.ledger.length, 2);
+  const good = e.call({...bad, badge_evidence:{predicted_digits:32, answer_digits:32}});
+  assert.ok(good.badges.unlocked.includes('g1_hit'));
+  assert.equal(e.rows.users[1][2], 105000);
+});
+
+test('awards are included in an atomic settlement rollback', () => {
+  const e = environment(), id = hex('7');
+  e.call({kind:'bet', transaction_id:'bet:' + id, round_id:id, game:'game_5', bet:1000});
+  e.state.failedBatch = true;
+  assert.throws(() => e.call({kind:'settle',transaction_id:'settle:' + id,
+    round_id:id,game:'game_5',bet:1000,is_win:true}), /Simulated/);
+  assert.equal(e.rows.users[1][2], 5000);
+  assert.equal(e.rows.users[1][10], '');
+  assert.equal(e.rows.ledger.length, 2);
+  e.state.failedBatch = false;
+  const result = e.call({kind:'settle',transaction_id:'settle:' + id,
+    round_id:id,game:'game_5',bet:1000,is_win:true});
+  assert.ok(result.badges.unlocked.includes('first_round'));
+});
+
+test('multi-game streak condition excludes a single-game winning streak', () => {
+  const e = environment();
+  const single = Array.from({length:8}, (_, i) =>
+    ({round_id:'x'+i, game:'game_2', is_win:true, evidence:{choice:'HIGH'}}));
+  const a = e.evaluateBadges(single);
+  assert.ok(a.includes('streak_three'));
+  assert.ok(!a.includes('streak_five_mixed'));
+  assert.ok(!a.includes('streak_eight_mixed'));
+  const mixed = single.map((row,i) =>
+    ({...row, game: ['game_2','game_3','game_4'][i % 3]}));
+  const b = e.evaluateBadges(mixed);
+  assert.ok(b.includes('streak_five_mixed'));
+  assert.ok(b.includes('streak_eight_mixed'));
 });
