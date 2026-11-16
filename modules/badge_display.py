@@ -210,8 +210,32 @@ NAMEPLATE_CSS = """
 """
 
 
-def badge_gallery_css(owned: object, selected_id: str) -> str:
-    """Theme the Streamlit button grid based on server-confirmed ownership."""
+@lru_cache(maxsize=1)
+def badge_gallery_art_css() -> str:
+    """Static SVG backgrounds injected ONCE when the collection opens.
+
+    The app reruns only the dialog for badge selection. Keeping the ~25 SVG
+    data URIs in the main page means each selection sends only small color/
+    selection rules, rather than retransmitting every illustration.
+    """
+    parts = ["<style>"]
+    for badge in BADGES:
+        uri = badge_image_data_uri(badge.id)
+        if uri:
+            parts.append(
+                f".st-key-badge_card_{badge.id} .stButton button::before "
+                f"{{content:'';display:block;position:absolute;inset:1px;"
+                f"pointer-events:none;background-image:url('{uri}');"
+                f"background-position:center;background-repeat:no-repeat;"
+                f"background-size:contain;}}"
+            )
+    parts.append("</style>")
+    return "".join(parts)
+
+
+@lru_cache(maxsize=128)
+def badge_gallery_css(owned: str, selected_id: str) -> str:
+    """Only small badge state/layout CSS, without retransmitting SVG art."""
     owned_set = set(parse_owned(owned))
     rules = [
         """
@@ -367,18 +391,13 @@ def badge_gallery_css(owned: object, selected_id: str) -> str:
             f"color:{color}!important;border:2px solid {stroke}!important;"
             f"box-shadow:{'0 0 11px ' + color + '77' if badge.id == selected_id and is_owned else 'none'}!important;}}"
         )
-        uri = badge_image_data_uri(badge.id)
-        if uri:
-            # Pseudo-element art preserves the native Streamlit button,
-            # hover/click behavior, keyboard focus and mobile 4-column grid.
-            effect = "none" if is_owned else "grayscale(1) brightness(.30) contrast(1.1)"
-            rules.append(
-                f"{key} .stButton button::before {{content:'';display:block;"
-                f"position:absolute;inset:1px;pointer-events:none;"
-                f"background-image:url('{uri}');background-position:center;"
-                f"background-repeat:no-repeat;background-size:contain;"
-                f"filter:{effect};opacity:{'1' if is_owned else '.72'};}}"
-            )
+        # Artwork is supplied by badge_gallery_art_css() in the parent
+        # (outside the dialog fragment); only the visual lock state changes.
+        effect = "none" if is_owned else "grayscale(1) brightness(.30) contrast(1.1)"
+        rules.append(
+            f"{key} .stButton button::before "
+            f"{{filter:{effect};opacity:{'1' if is_owned else '.72'};}}"
+        )
     # Keep every dynamic button rule INSIDE the single style tag. Appending
     # selectors after </style> made raw CSS appear as broken HTML in the dialog.
     return "".join(rules) + "\n</style>"
