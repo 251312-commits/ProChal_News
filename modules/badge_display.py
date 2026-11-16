@@ -3,7 +3,10 @@
 BADGE_SYMBOLS is the one place to replace temporary glyphs with images later.
 Only catalog IDs can be rendered, and all user-controlled names are HTML escaped.
 """
+from base64 import b64encode
+from functools import lru_cache
 from html import escape
+from pathlib import Path
 
 from modules.badges import BADGES, BADGE_BY_ID, equipped_badge, parse_owned
 
@@ -54,7 +57,29 @@ RARITY_ACCENTS = {
 
 
 def badge_symbol(badge_id: str) -> str:
+    """Legacy fallback for clients that cannot render images."""
     return BADGE_SYMBOLS.get(badge_id, "✦")
+
+
+# Local, text-based SVG assets require no image CDN and scale on high-DPI phones.
+BADGE_ART_DIR = Path(__file__).resolve().parents[1] / "assets" / "badges"
+
+
+@lru_cache(maxsize=24)
+def badge_image_data_uri(badge_id: str) -> str:
+    """Return a trusted in-repo SVG as an embeddable data URI.
+
+    Badge IDs are taken only from the fixed catalog: never interpolate a
+    user-supplied filename into a filesystem path.
+    """
+    if badge_id not in BADGE_BY_ID:
+        return ""
+    path = BADGE_ART_DIR / f"{badge_id}.svg"
+    try:
+        raw = path.read_bytes()
+    except OSError:
+        return ""
+    return "data:image/svg+xml;base64," + b64encode(raw).decode("ascii")
 
 
 def badge_accent(badge_id: str) -> str:
@@ -71,13 +96,18 @@ def nameplate_html(nickname: object, equipped: object, owned: object) -> str:
     if badge is None:
         return display_name
 
-    symbol = escape(badge_symbol(badge.id))
     title = escape(badge.title, quote=True)
     effect = badge.effect if badge.rarity == "legendary" else "plain"
+    data_uri = badge_image_data_uri(badge.id)
+    # A text fallback remains only when a packaged art file is missing.
+    content = (
+        f'<img class="pc-nameplate-art" src="{data_uri}" alt="" loading="lazy" />'
+        if data_uri else escape(badge_symbol(badge.id))
+    )
     return (
         f'<span class="pc-nameplate pc-tier-{badge.rarity} pc-effect-{effect}" '
         f'style="--pc-badge-accent:{badge_accent(badge.id)}">'
-        f'<span class="pc-nameplate-symbol" title="{title}" aria-label="{title} 배지">{symbol}</span>'
+        f'<span class="pc-nameplate-symbol" title="{title}" aria-label="{title} 배지">{content}</span>'
         f'<span class="pc-nameplate-text">{display_name}</span>'
         f'</span>'
     )
@@ -94,6 +124,10 @@ NAMEPLATE_CSS = """
   display:inline-flex; align-items:center; justify-content:center;
   font-size:1.05em; line-height:1; flex:0 0 auto; position:relative;
   color:var(--pc-badge-accent)!important;
+}
+.pc-nameplate-art {
+  display:block; width:1.45em; height:1.45em; max-width:none;
+  object-fit:contain; flex:none; user-select:none; pointer-events:none;
 }
 .pc-nameplate-text { min-width:0; overflow:hidden; text-overflow:ellipsis; }
 .pc-nameplate.pc-tier-rare .pc-nameplate-text,
@@ -160,9 +194,13 @@ def badge_gallery_css(owned: object, selected_id: str) -> str:
   border-radius:12px!important; margin:0!important; padding:0!important;
   box-shadow:none!important;
 }
+.st-key-badge_gallery .stButton button {
+  position:relative!important; isolation:isolate!important;
+}
 .st-key-badge_gallery .stButton button p {
-  font-family:"Segoe UI Symbol","Apple Symbols",sans-serif!important;
-  font-size:inherit!important; line-height:1!important; white-space:nowrap!important;
+  /* Keep the badge title accessible, but use the illustrated asset visually. */
+  font-size:0!important; line-height:0!important;
+  color:transparent!important; user-select:none!important;
 }
 .st-key-badge_gallery div[data-testid="stVerticalBlock"] {gap:.12rem!important;}
 .st-key-badge_gallery .pc-badge-tile-name {
@@ -241,8 +279,9 @@ def badge_gallery_css(owned: object, selected_id: str) -> str:
  border:1px solid #5B4179;border-radius:13px;padding:12px;margin:12px 0 6px;
  background:#1B102A;color:#FFFFFF}
 .pc-badge-detail-icon {min-width:56px;height:56px;display:flex;align-items:center;
- justify-content:center;font-size:2.2rem;border-radius:11px;
+ justify-content:center;font-size:2.2rem;border-radius:11px;overflow:hidden;box-sizing:border-box;
  background:#2A1B3F;border:1px solid currentColor;font-family:"Segoe UI Symbol","Apple Symbols",sans-serif}
+.pc-badge-detail-icon img {width:100%;height:100%;display:block;object-fit:contain;}
 .pc-badge-detail-rarity {font-size:.7rem;font-weight:800;letter-spacing:.16em}
 .pc-badge-detail-title {font-size:1.05rem;font-weight:800;margin-top:2px}
 .pc-badge-detail-condition {font-size:.82rem;line-height:1.5;color:#D6CDDF;margin-top:3px}
@@ -258,10 +297,22 @@ def badge_gallery_css(owned: object, selected_id: str) -> str:
         if badge.id == selected_id:
             stroke = "#FFFFFF" if is_owned else "#7E7387"
         rules.append(
-            f"{key} .stButton button {{background:{background}!important;"
-            f"color:{color}!important;border:2px solid {stroke}!important;"
+            f"{key} .stButton button {{background-color:{background}!important;"
+            f"border:2px solid {stroke}!important;"
             f"box-shadow:{'0 0 11px ' + color + '77' if badge.id == selected_id and is_owned else 'none'}!important;}}"
         )
+        uri = badge_image_data_uri(badge.id)
+        if uri:
+            # Pseudo-element art preserves the native Streamlit button,
+            # hover/click behavior, keyboard focus and mobile 4-column grid.
+            effect = "none" if is_owned else "grayscale(1) brightness(.30) contrast(1.1)"
+            rules.append(
+                f"{key} .stButton button::before {{content:'';display:block;"
+                f"position:absolute;inset:1px;pointer-events:none;"
+                f"background-image:url('{uri}');background-position:center;"
+                f"background-repeat:no-repeat;background-size:contain;"
+                f"filter:{effect};opacity:{'1' if is_owned else '.72'};}}"
+            )
     # Keep every dynamic button rule INSIDE the single style tag. Appending
     # selectors after </style> made raw CSS appear as broken HTML in the dialog.
     return "".join(rules) + "\n</style>"
