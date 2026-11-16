@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="소수점 견습생">
+<title>소수점 견습생</title>
+<defs>
+<linearGradient id="rim" x1="0%" x2="100%" y1="0%" y2="100%"><stop offset="0" stop-color="#EFFAFF"/><stop offset=".25" stop-color="#93A1BA"/><stop offset=".55" stop-color="#4F607C"/><stop offset=".8" stop-color="#93A1BA"/><stop offset="1" stop-color="#EFFAFF"/></linearGradient>
+<radialGradient id="core" cx="49%" cy="34%" r="80%"><stop offset="0" stop-color="#253552"/><stop offset=".62" stop-color="#14172E"/><stop offset="1" stop-color="#090B1B"/></radialGradient>
+<linearGradient id="gem" x1="0%" y1="0%" x2="90%" y2="100%"><stop offset="0" stop-color="#4F607C"/><stop offset=".5" stop-color="#202B45"/><stop offset="1" stop-color="#93A1BA"/></linearGradient>
+<linearGradient id="metal" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0" stop-color="#EFFAFF"/><stop offset=".5" stop-color="#93A1BA"/><stop offset="1" stop-color="#4F607C"/></linearGradient>
+<linearGradient id="flame" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".55" stop-color="#C0D3EE"/><stop offset="1" stop-color="#FC668C"/></linearGradient>
+<filter id="halo" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter>
+<clipPath id="cut"><path d="M128 26 L206 57 Q218 64 213 80 L202 164 Q197 187 128 228 Q59 187 54 164 L43 80 Q38 64 50 57 Z"/></clipPath>
+</defs>
+<path d="M128 9 L220 45 Q238 55 235 75 L224 167 Q215 206 128 249 Q41 206 32 167 L21 75 Q18 55 36 45 Z" fill="#C0D3EE" opacity=".26" filter="url(#halo)"/>
+<path d="M128 10 L218 46 Q236 56 231 75 L222 166 Q216 199 128 246 Q40 199 34 166 L25 75 Q20 56 38 46 Z" fill="url(#rim)" stroke="#C0D3EE" stroke-width="5"/>
+<path d="M128 24 L206 55 Q220 62 215 81 L204 161 Q197 190 128 231 Q59 190 52 161 L41 81 Q36 62 50 55 Z" fill="url(#core)" stroke="#EFFAFF" stroke-width="2.5"/>
+<g clip-path="url(#cut)">
+<circle cx="128" cy="128" r="75" fill="none" stroke="#C0D3EE" stroke-opacity=".22" stroke-width="1.5"/>
+<path d="M50 90 L201 64 M45 137 L213 100 M52 176 L203 140" stroke="#C0D3EE" stroke-width="1.4" opacity=".12"/>
+<g stroke-linecap="round" stroke-linejoin="round"><rect x="72" y="64" width="109" height="140" rx="12" fill="url(#gem)" stroke="#EFFAFF" stroke-width="4"/><rect x="87" y="80" width="81" height="32" rx="6" fill="#4F607C" stroke="#C0D3EE" stroke-width="3"/><circle cx="100" cy="96" r="4" fill="#C0D3EE" stroke="#C0D3EE" stroke-width="1"/><circle cx="111" cy="96" r="4" fill="#C0D3EE" stroke="#C0D3EE" stroke-width="1"/><path d="M129 96 L155 96" fill="none" stroke="#EFFAFF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><rect x="89" y="126" width="20" height="13" rx="4" fill="#4F607C" stroke="#C0D3EE" stroke-width="2"/><rect x="116" y="126" width="20" height="13" rx="4" fill="#4F607C" stroke="#C0D3EE" stroke-width="2"/><rect x="143" y="126" width="20" height="13" rx="4" fill="#4F607C" stroke="#C0D3EE" stroke-width="2"/><rect x="89" y="146" width="20" height="13" rx="4" fill="#4F607C" stroke="#C0D3EE" stroke-width="2"/><rect x="116" y="146" width="20" height="13" rx="4" fill="#4F607C" stroke="#C0D3EE" stroke-width="2"/><rect x="143" y="146" width="20" height="13" rx="4" fill="#4F607C" stroke="#C0D3EE" stroke-width="2"/><rect x="89" y="166" width="20" height="13" rx="4" fill="#4F607C" stroke="#C0D3EE" stroke-width="2"/><rect x="116" y="166" width="20" height="13" rx="4" fill="#4F607C" stroke="#C0D3EE" stroke-width="2"/><rect x="143" y="166" width="20" height="13" rx="4" fill="#4F607C" stroke="#C0D3EE" stroke-width="2"/><path d="M178 153 L201 127 M195 123 L206 135" fill="none" stroke="#EFFAFF" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><polygon points="84.00,64.00 85.62,67.77 89.71,68.15 86.62,70.85 87.53,74.85 84.00,72.76 80.47,74.85 81.38,70.85 78.29,68.15 82.38,67.77" fill="#C0D3EE"/></g>
+</g>
+<path d="M128 18 L211 50 Q225 57 222 78 L211 166 Q200 194 128 238 Q56 194 45 166 L34 78 Q31 57 45 50 Z" fill="none" stroke="#C0D3EE" stroke-opacity=".7" stroke-width="2"/>
+<path d="M44 67 L61 61 M195 61 L212 67" stroke="#EFFAFF" stroke-width="4" stroke-linecap="round"/>
+<polygon points="128.00,24.00 129.63,27.37 133.00,29.00 129.63,30.63 128.00,34.00 126.37,30.63 123.00,29.00 126.37,27.37" fill="#C0D3EE"/><polygon points="44.00,127.00 44.98,129.02 47.00,130.00 44.98,130.98 44.00,133.00 43.02,130.98 41.00,130.00 43.02,129.02" fill="#EFFAFF"/><polygon points="212.00,127.00 212.98,129.02 215.00,130.00 212.98,130.98 212.00,133.00 211.02,130.98 209.00,130.00 211.02,129.02" fill="#EFFAFF"/>
+</svg>
