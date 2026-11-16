@@ -5,7 +5,7 @@ import streamlit as st
 
 from modules.badges import BADGES, BADGE_BY_ID, parse_owned
 from modules.badge_display import (
-    RARITY_LABELS, badge_accent, badge_gallery_css, badge_symbol,
+    RARITY_LABELS, badge_accent, badge_gallery_css, badge_image_data_uri, badge_symbol,
 )
 from modules.transactions import (
     TransactionError, equip_badge, refresh_account_from_gateway, transaction_id,
@@ -80,7 +80,7 @@ def badge_gallery_dialog() -> None:
                 with column:
                     with st.container(key=f"badge_card_{badge.id}"):
                         if st.button(
-                            badge_symbol(badge.id),
+                            badge.title,
                             key=f"badge_choose_{badge.id}",
                             help=f"{badge.title} · {badge.description}",
                             use_container_width=True,
@@ -97,13 +97,19 @@ def badge_gallery_dialog() -> None:
     chosen = BADGE_BY_ID[selected_id]
     unlocked = selected_id in owned
     color = badge_accent(selected_id) if unlocked else "#73717B"
+    art_uri = badge_image_data_uri(selected_id)
+    art_markup = (
+        f'<img src="{art_uri}" alt="" decoding="async" '
+        f'style="{"filter:grayscale(1) brightness(.35);" if not unlocked else ""}" />'
+        if art_uri else escape(badge_symbol(selected_id))
+    )
     badge_status = "장착 중" if selected_id == equipped else (
         "획득 완료" if unlocked else "미획득"
     )
     st.html(
         f'<div class="pc-badge-detail">'
         f'<div class="pc-badge-detail-icon" style="color:{color}">'
-        f'{escape(badge_symbol(selected_id))}</div>'
+        f'{art_markup}</div>'
         f'<div><div class="pc-badge-detail-rarity" style="color:{color}">'
         f'{RARITY_LABELS[chosen.rarity]} · {badge_status}</div>'
         f'<div class="pc-badge-detail-title">{escape(chosen.title)}</div>'
