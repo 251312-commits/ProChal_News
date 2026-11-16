@@ -67,3 +67,7 @@ The `status` request is read-only: it neither charges interest nor modifies bala
   verification step, one-account-per-person cannot be enforced.
 - Deploy the updated Apps Script `Code.gs` web app version before making the
   teacher signup UI available. Merging GitHub changes alone does not redeploy it.
+
+### 1 C repayment increments
+
+Borrowing remains in 1,000 C increments. The repayment page uses a slider with 1 C increments up to the lesser of the wallet balance and the outstanding loan (including accrued interest). The Apps Script gateway must be redeployed from the same revision to accept non-1,000 C partial repayments; merging this client change alone does not update the live web app.

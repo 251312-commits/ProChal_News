@@ -162,7 +162,7 @@
 }
 .st-key-bank-repay-screen .st-key-bank-repay-panel {
   display: grid;
-  grid-template: minmax(0,.29fr) minmax(0,.77fr) minmax(0,.79fr) / minmax(0,1fr);
+  grid-template: minmax(0,.23fr) minmax(0,.93fr) minmax(0,.64fr) minmax(0,.20fr) / minmax(0,1fr);
   align-items: center;
   gap: 0;
   height: 100%;
@@ -186,53 +186,73 @@
   color: #fff7ff !important;
   font: 790 4.45cqw/1.2 system-ui, sans-serif !important;
 }
-.st-key-bank-repay-screen .st-key-bank-repay-stepper {
-  width: 100%;
-  display: grid;
-  grid-template-columns: minmax(40px, .22fr) minmax(0, 1fr) minmax(40px, .22fr);
-  align-items: center;
-  gap: 2.9cqw;
-}
-.st-key-bank-repay-stepper > * {
-  min-width: 0;
-  width: 100%;
-}
-.st-key-bank-repay-stepper button {
-  display: grid;
-  place-content: center;
-  height: max(38px, 10.5cqw);
-  width: max(38px, 10.5cqw);
-  min-height: 0;
-  padding: 0;
-  border-radius: 50%;
-  border: 1px solid #e8a0ff !important;
-  background: radial-gradient(circle at 32% 6%, #993fb6, #431057 62%, #260d35) !important;
-  box-shadow: inset 0 1px 5px #f7bcffa8, 0 0 7px #bf35fe96 !important;
-  color: #fff !important;
-}
-.st-key-bank-repay-stepper button p {
-  margin: 0;
-  color: inherit;
-  font: 700 6cqw/1 system-ui, sans-serif !important;
-}
-.st-key-bank-repay-stepper button:disabled {
-  opacity: .38;
-}
-.bank-repay-amount {
-  display: grid;
-  align-items: center;
+.st-key-bank-repay-screen .st-key-bank-repay-slider-field {
+  display: flex;
+  flex-direction: column;
   justify-content: center;
+  align-items: stretch;
+  gap: 0;
+  min-width: 0;
+  min-height: 0;
+}
+.st-key-bank-repay-slider-field > * {
   width: 100%;
-  height: max(38px, 10.4cqw);
+  min-width: 0;
+}
+.st-key-bank-repay-screen .bank-repay-amount {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: max(30px, 8.5cqw);
   border: 1px solid #cc86eb;
-  border-radius: 3.5cqw;
+  border-radius: 2.5cqw;
   background: linear-gradient(135deg, #230d31, #3a1649 80%, #201029);
   box-shadow: inset 0 0 6px #bc65dc75;
   color: #fff4ff;
   white-space: nowrap;
-  font: 850 6.2cqw/1 system-ui, sans-serif;
+  font: 850 5.4cqw/1 system-ui, sans-serif;
   letter-spacing: -.035em;
 }
+.st-key-bank-repay-slider-field [data-testid="stSlider"] {
+  margin: 0 1.6cqw;
+}
+.st-key-bank-repay-slider-field [data-testid="stSliderTickBar"],
+.st-key-bank-repay-slider-field [data-testid="stSliderThumbValue"] {
+  display: none;
+}
+.st-key-bank-repay-slider-field [data-baseweb="slider"] div:has(> [role="slider"]) {
+  z-index: 1;
+  height: 2.3cqw;
+}
+.st-key-bank-repay-slider-field [data-baseweb="slider"] div:has(> [role="slider"]) + div {
+  height: 2.3cqw !important;
+  border-radius: 99px;
+  filter: hue-rotate(260deg) saturate(1.6);
+  box-shadow: inset 0 1px 3px #56226366;
+}
+.st-key-bank-repay-slider-field [role="slider"] {
+  z-index: 1;
+  width: max(20px, 5.3cqw);
+  height: max(20px, 5.3cqw);
+  border: 2px solid #ffe2ff;
+  background: radial-gradient(#fff0ff, #d686ff 50%, #a23ae3);
+  box-shadow: 0 0 7px #c53ef9;
+}
+.bank-repay-range {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 1.5cqw;
+  color: #ead3f2;
+  font: 680 2.65cqw/1.15 system-ui, sans-serif;
+}
+.st-key-bank-repay-panel [data-testid="stCaptionContainer"] p {
+  margin: 0;
+  color: #e6cde5;
+  font-size: 2.5cqw;
+  line-height: 1.15;
+  text-align: center;
+}
+
 .bank-repay-unavailable {
   margin: 0;
   text-align: center;
@@ -336,10 +356,16 @@
     width: 92%; margin: 4px auto; padding: 4px 4%; border-radius: 14px;
   }
   .st-key-bank-repay-screen .bank-repay-label { font-size: 14px !important; }
-  .st-key-bank-repay-screen .st-key-bank-repay-stepper { gap: 7px; }
-  .st-key-bank-repay-stepper button { width: 36px; height: 36px; }
-  .st-key-bank-repay-stepper button p { font-size: 22px !important; }
-  .bank-repay-amount { font-size: 24px; height: 35px; border-radius: 12px; }
+  .st-key-bank-repay-screen .bank-repay-amount {
+    font-size: 19px; height: 30px; border-radius: 9px;
+  }
+  .st-key-bank-repay-slider-field [data-baseweb="slider"] div:has(> [role="slider"]),
+  .st-key-bank-repay-slider-field [data-baseweb="slider"] div:has(> [role="slider"]) + div {
+    height: 6px !important;
+  }
+  .st-key-bank-repay-slider-field [role="slider"] { width: 20px; height: 20px; }
+  .bank-repay-range { font-size: 10px; }
+  .st-key-bank-repay-panel [data-testid="stCaptionContainer"] p { font-size: 10px; }
   .bank-repay-balance-row { gap: 5px; padding-top: 4px; }
   .bank-repay-balance-row > div { gap: 2px; }
   .bank-repay-balance-row span:not(.bank-repay-arrow) { font-size: 10px; }
