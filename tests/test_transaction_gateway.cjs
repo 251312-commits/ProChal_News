@@ -6,6 +6,7 @@ const vm = require('node:vm');
 const {test} = require('node:test');
 
 const script = fs.readFileSync(path.join(__dirname, '..', 'apps_script', 'Code.gs'), 'utf8');
+const badgeScript = fs.readFileSync(path.join(__dirname, '..', 'apps_script', 'Badges.gs'), 'utf8');
 const headers = [
   'transaction_id', 'timestamp', 'student_id', 'kind', 'game', 'round_id',
   'bet', 'coin_delta', 'is_win', 'coins_before', 'coins_after',
@@ -17,8 +18,11 @@ function environment(usersRows = [['11011', 'Alice', 5000, 1, '', 'pw', 0]]) {
   const state = {failedBatch: false, batches: 0, locked: false};
   const rows = {
     users: [
-      ['학번', '아이디', '코인', '연승', '추천인', '비밀번호', '대출금', '대출원금'],
-      ...usersRows.map(r => r.length >= 8 ? [...r] : [...r, r[6] === '' || r[6] == null ? 0 : r[6]]),
+      ['학번', '아이디', '코인', '연승', '추천인', '비밀번호', '대출금', '대출원금', '마지막기사URL', '장착배지', '보유배지'],
+      ...usersRows.map(r => {
+        const row = r.length >= 8 ? [...r] : [...r, r[6] === '' || r[6] == null ? 0 : r[6]];
+        return [...row.slice(0, 8), '', '0', ''];
+      }),
     ],
     ledger: [headers],
   };
@@ -103,6 +107,7 @@ function environment(usersRows = [['11011', 'Alice', 5000, 1, '', 'pw', 0]]) {
   };
   vm.createContext(ctx);
   vm.runInContext(script, ctx, {filename: 'Code.gs'});
+  vm.runInContext(badgeScript, ctx, {filename: 'Badges.gs'});
   return {
     rows, state,
     install() {
