@@ -100,6 +100,8 @@ def _request(payload: dict) -> dict:
             "USER_NOT_FOUND": "거래 시트에서 로그인한 계정을 찾지 못했습니다.",
             "DUPLICATE_USER": "동일한 학번 계정이 중복되어 거래를 처리할 수 없습니다.",
             "IDEMPOTENCY_CONFLICT": "이 거래 번호가 다른 내용으로 사용되었습니다.",
+            "BADGE_NOT_OWNED": "아직 획득하지 않은 배지는 장착할 수 없습니다.",
+            "INVALID_BADGE": "선택한 배지를 찾을 수 없습니다.",
             "BADGES_NOT_READY": "Users 시트에 배지 열이 없습니다. Apps Script에서 installBadgeColumns()를 실행하세요.",
         }
         raise TransactionError(errors.get(code, "거래가 완료되지 않았습니다. 관리자에게 문의하세요."), code=code)
@@ -130,7 +132,7 @@ def update_session_balances(balances: dict) -> dict:
     return normalized
 
 
-def refresh_account_from_gateway() -> dict:
+def refresh_account_from_gateway(*, require_badge_equip: bool = False) -> dict:
     """Check deployed gateway capabilities and refresh authoritative C/D/G/H.
 
     A new client must never send a mutating request to an older gateway:
@@ -154,6 +156,11 @@ def refresh_account_from_gateway() -> dict:
         raise TransactionError(
             "거래 서버와 앱 버전이 다릅니다. Apps Script 웹 앱을 최신 버전으로 배포하세요.",
             code="OUTDATED_GATEWAY",
+        )
+    if require_badge_equip and (result.get("badge_capabilities") or {}).get("equip") is not True:
+        raise TransactionError(
+            "배지 장착 기능을 사용하려면 최신 Code.gs를 Apps Script 새 버전으로 배포해야 합니다.",
+            code="OUTDATED_BADGE_GATEWAY",
         )
     balances = result["balances"]
     if "principal" not in balances:
@@ -185,6 +192,36 @@ def _update_session_badges(profile: object) -> tuple[str, ...]:
     if not isinstance(unlocked, list):
         return ()
     return tuple(item for item in unlocked if isinstance(item, str) and item in BADGE_BY_ID)
+
+
+def equip_badge(badge_id: str, *, request_id: str | None = None) -> dict:
+    """Persist one equipped badge (or '0' for none) under the gateway lock.
+
+    The gateway, not the client, checks whether the player owns the selected
+    badge. A caller may reuse request_id after a timeout to safely retry.
+    """
+    from modules.badges import BADGE_BY_ID
+
+    if badge_id != "0" and badge_id not in BADGE_BY_ID:
+        raise ValueError("Unknown badge identifier")
+    # Old version-3 gateways can settle bets but cannot yet equip badges.
+    # Check the optional feature flag before sending any mutation.
+    refresh_account_from_gateway(require_badge_equip=True)
+    result = _request({
+        "transaction_id": request_id or transaction_id("equip"),
+        "kind": "equip",
+        "student_id": _student_id(),
+        "badge_id": badge_id,
+    })
+    profile = result.get("badges")
+    if not isinstance(profile, dict):
+        raise TransactionError("장착한 배지 정보를 확인할 수 없습니다.", code="BAD_RESPONSE")
+    update_session_balances(result["balances"])
+    _update_session_badges(profile)
+    # A retry may return a newer profile if another tab has changed the badge.
+    if profile.get("equipped") != badge_id:
+        raise TransactionError("다른 창에서 장착 배지가 변경됐습니다. 목록을 새로 확인하세요.", code="STALE_BADGE")
+    return profile
 
 
 def confirm_bet(game: str, amount: int) -> dict:

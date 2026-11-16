@@ -131,6 +131,58 @@ class ClientTests(unittest.TestCase):
             self.assertEqual(self.session.game_4_round_id, original)
             self.assertEqual(self.session.current_user_data["코인"], 5000)
 
+    def test_badge_equip_checks_capability_then_persists_user_selection(self):
+        self.session.current_user_data.update({"장착배지": "0", "보유배지": "first_round"})
+        probe = self.status()
+        probe.json.return_value.update({
+            "badge_capabilities": {"equip": True},
+            "badges": {"equipped": "0", "owned": ["first_round"]},
+        })
+        commit = self.response()
+        commit.json.return_value["badges"] = {
+            "equipped": "first_round", "owned": ["first_round"], "unlocked": [],
+        }
+        txid = "equip:" + "a" * 32
+        with patch.object(tx.requests, "post", side_effect=[probe, commit]) as post:
+            selected = tx.equip_badge("first_round", request_id=txid)
+        self.assertEqual(selected["equipped"], "first_round")
+        self.assertEqual(post.call_count, 2)
+        self.assertEqual(post.call_args_list[1].kwargs["json"]["kind"], "equip")
+        self.assertEqual(post.call_args_list[1].kwargs["json"]["transaction_id"], txid)
+        self.assertEqual(post.call_args_list[1].kwargs["json"]["badge_id"], "first_round")
+        self.assertEqual(self.session.current_user_data["장착배지"], "first_round")
+        self.assertEqual(self.session.current_user_data["보유배지"], "first_round")
+
+    def test_old_v3_server_blocks_badge_equip_only(self):
+        self.session.current_user_data.update({"장착배지": "0", "보유배지": "first_round"})
+        with patch.object(tx.requests, "post", return_value=self.status()) as post:
+            with self.assertRaises(tx.TransactionError) as raised:
+                tx.equip_badge("first_round")
+        self.assertEqual(raised.exception.code, "OUTDATED_BADGE_GATEWAY")
+        post.assert_called_once()
+        self.assertEqual(post.call_args.kwargs["json"]["kind"], "status")
+
+    def test_equipping_unknown_badge_never_calls_server(self):
+        with patch.object(tx.requests, "post") as post:
+            with self.assertRaises(ValueError):
+                tx.equip_badge("not_a_badge")
+        post.assert_not_called()
+
+    def test_equip_stale_receipt_does_not_claim_success(self):
+        probe = self.status()
+        probe.json.return_value.update({
+            "badge_capabilities": {"equip": True},
+            "badges": {"equipped": "0", "owned": ["first_round"]},
+        })
+        receipt = self.response(replayed=True)
+        receipt.json.return_value["badges"] = {
+            "equipped": "0", "owned": ["first_round"], "unlocked": [],
+        }
+        with patch.object(tx.requests, "post", side_effect=[probe, receipt]):
+            with self.assertRaises(tx.TransactionError) as raised:
+                tx.equip_badge("first_round")
+        self.assertEqual(raised.exception.code, "STALE_BADGE")
+
     def test_interest_posts_one_round_id_and_refreshes_balances(self):
         self.session.game_1_round_id = "f" * 32
         response = self.response(coins=6000, loan=1200)

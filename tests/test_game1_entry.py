@@ -30,6 +30,7 @@ class GameOneEntryTests(unittest.TestCase):
     def test_lobby_opens_guide_or_resumes_an_active_bet(self):
         st, ui, banners = MagicMock(), MagicMock(), MagicMock()
         banners.clickable_images.return_value = 2
+        st.button.return_value = False  # No click on the new badge gallery launcher.
         dependencies = {
             "streamlit": st, "streamlit_autorefresh": MagicMock(),
             "st_clickable_images": banners, "modules.ui_components": ui,

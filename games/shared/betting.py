@@ -46,6 +46,8 @@ def ranking_entries(users_data):
                 "nickname": str(user.get("아이디", user.get("nickname", "")) or "").strip(),
                 "coins": net_coins(user.get("코인"), loan),
                 "loan": loan,
+                "badge_equipped": str(user.get("장착배지", "0") or "0"),
+                "badge_owned": str(user.get("보유배지", "") or ""),
             })
     return entries
 
