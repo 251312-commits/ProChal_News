@@ -19,10 +19,26 @@ const ui = {
   outcomeTitle: screen.querySelector(".outcome-title"),
   outcomeDescription: screen.querySelector(".outcome-description"),
   reward: screen.querySelector(".reward"),
-  analysis: screen.querySelector(".analysis"),
-  summary: screen.querySelector(".analysis-summary"),
-  logit: screen.querySelector(".analysis-logit"),
-  normalized: screen.querySelector(".analysis-normalized"),
+  analysis: document.querySelector(".analysis"),
+  analysisClose: document.querySelector(".analysis-close"),
+  analysisTitle: document.querySelector(".analysis-title"),
+  analysisModel: document.querySelector(".analysis-model-name"),
+  analysisTokens: document.querySelector(".analysis-tokens"),
+  summary: document.querySelector(".analysis-summary"),
+  logit: document.querySelector(".analysis-logit"),
+  normalized: document.querySelector(".analysis-normalized"),
+  chart: document.querySelector(".sigmoid-chart"),
+  chartCurve: document.querySelector(".chart-curve"),
+  chartGuides: document.querySelector(".chart-guides"),
+  chartPoint: document.querySelector(".chart-point"),
+  chartMin: document.querySelector(".chart-min"),
+  chartMax: document.querySelector(".chart-max"),
+  chartUnavailable: document.querySelector(".chart-unavailable"),
+  analysisScore: document.querySelector(".analysis-score"),
+  analysisMeter: document.querySelector(".analysis-meter-fill"),
+  analysisGuess: Array.from(document.querySelectorAll(".analysis-guess-digit")),
+  analysisAnswer: Array.from(document.querySelectorAll(".analysis-answer-digit")),
+  analysisVerdict: document.querySelector(".analysis-verdict"),
   start: screen.querySelector(".start"),
   skip: screen.querySelector(".skip"),
   explain: screen.querySelector(".explain"),
@@ -301,18 +317,95 @@ function start() {
   }
   animationFrame = requestAnimationFrame(tick);
 }
+// Reconstruct the earlier sigmoid visualization from the *stored* model output.
+// The graph explains the score transformation, not the model's causal reasoning.
+function sigmoid(x) {
+  return x >= 0 ? 1 / (1 + Math.exp(-x)) :
+    Math.exp(x) / (1 + Math.exp(x));
+}
+function drawScoreChart(model) {
+  const raw = model.logit == null ? NaN : Number(model.logit);
+  const normalized = model.normalized == null ? NaN : Number(model.normalized);
+  const valid = Number.isFinite(raw) && Number.isFinite(normalized) &&
+    normalized >= 0 && normalized <= 1;
+  ui.chart.hidden = !valid;
+  ui.chartUnavailable.hidden = valid;
+  if (!valid) return;
+
+  const limit = Math.max(4, Math.ceil(Math.abs(raw)));
+  const left = 38, right = 344, top = 18, bottom = 127;
+  const width = right - left, height = bottom - top;
+  const points = [];
+  for (let i = 0; i <= 120; i++) {
+    const fraction = i / 120;
+    const x = (fraction * 2 - 1) * limit;
+    points.push((i ? "L" : "M") +
+      (left + fraction * width).toFixed(2) + "," +
+      (bottom - height * sigmoid(x)).toFixed(2));
+  }
+  const cx = left + ((raw + limit) / (2 * limit)) * width;
+  const cy = bottom - normalized * height;
+  ui.chartCurve.setAttribute("d", points.join(" "));
+  ui.chartGuides.setAttribute("d",
+    "M" + left + "," + cy.toFixed(2) + "H" + cx.toFixed(2) + "V" + bottom);
+  ui.chartPoint.setAttribute("cx", cx.toFixed(2));
+  ui.chartPoint.setAttribute("cy", cy.toFixed(2));
+  ui.chartMin.textContent = "−" + limit;
+  ui.chartMax.textContent = "+" + limit;
+  ui.chart.setAttribute("aria-label",
+    "시그모이드 곡선. 관련성 원점수 " + raw.toFixed(4) +
+    ", 변환값 " + normalized.toFixed(6) + " 위치를 금색 점으로 표시");
+}
 function modelDetails(data) {
   const model = data.model || {};
-  ui.summary.textContent = data.summary || "AI 요약문이 저장되지 않았습니다.";
-  ui.logit.textContent = (model.logit == null ? "원점수 기록 없음" :
-    "관련성 원점수 " + Number(model.logit).toFixed(4)) +
-    " · " + String(model.name || "BGE reranker") +
-    (model.tokens == null ? "" : " · " + Number(model.tokens) + "토큰");
-  ui.normalized.textContent = model.normalized == null ?
-    "최종 유사도 " + (Number(data.units) / 100).toFixed(2) + "점" :
-    "σ(원점수) = " + Number(model.normalized).toFixed(6) +
-    " → × 100 → " + (Number(data.units) / 100).toFixed(2) + "점";
+  const wholeScore = (Number(data.units) / 100).toFixed(2);
+  const guess = String(data.guess).padStart(2, "0");
+  const answer = actualDigits().join("");
+  ui.analysisTitle.textContent = String(data.title || "기사 제목이 저장되지 않았습니다.");
+  ui.summary.textContent = String(data.summary || "AI 요약문이 저장되지 않았습니다.");
+  ui.analysisModel.textContent = String(model.name || "BGE reranker");
+  ui.analysisTokens.textContent = model.tokens == null ||
+    !Number.isFinite(Number(model.tokens)) ? "토큰 수 기록 없음" :
+    Number(model.tokens).toLocaleString("ko-KR") + "토큰";
+  ui.logit.textContent = model.logit == null ||
+    !Number.isFinite(Number(model.logit)) ? "기록 없음" :
+    Number(model.logit).toFixed(4);
+  ui.normalized.textContent = model.normalized == null ||
+    !Number.isFinite(Number(model.normalized)) ? "기록 없음" :
+    Number(model.normalized).toFixed(6);
+  drawScoreChart(model);
+  ui.analysisScore.textContent = wholeScore;
+  const scorePercent = Math.min(100, Math.max(0, Number(data.units) / 100));
+  ui.analysisMeter.style.width = scorePercent + "%";
+  ui.analysisMeter.parentElement.setAttribute("aria-label",
+    "최종 AI 유사도 " + wholeScore + "점, 100점 만점");
+  for (let i = 0; i < 2; i++) {
+    const correct = Boolean(data.matches[i]);
+    ui.analysisGuess[i].textContent = guess[i];
+    ui.analysisAnswer[i].textContent = answer[i];
+    for (const node of [ui.analysisGuess[i], ui.analysisAnswer[i]]) {
+      node.classList.toggle("correct", correct);
+      node.classList.toggle("wrong", !correct);
+    }
+  }
+  ui.analysisVerdict.textContent = matchCount === 2 ? "두 자리 모두 일치 · 적중" :
+    matchCount === 1 ?
+      (data.matches[0] ? "첫 번째 자리만 일치 · 실패" : "두 번째 자리만 일치 · 실패") :
+      "두 자리 모두 불일치 · 실패";
 }
+function openExplanation() {
+  if (!revealFinished || locked) return;
+  ui.analysis.hidden = false;
+  ui.explain.setAttribute("aria-expanded", "true");
+  ui.analysisClose.focus({preventScroll: true});
+}
+function closeExplanation() {
+  if (ui.analysis.hidden) return;
+  ui.analysis.hidden = true;
+  ui.explain.setAttribute("aria-expanded", "false");
+  ui.explain.focus({preventScroll: true});
+}
+
 function setup(data) {
   roundId = data.round_id;
   args = data;
@@ -342,10 +435,11 @@ function setup(data) {
   ui.wallet.hidden = true; // Balance would leak the already-settled payout.
   ui.outcome.hidden = true;
   ui.analysis.hidden = true;
+  ui.explain.setAttribute("aria-expanded", "false");
   ui.start.hidden = false;
   ui.skip.hidden = true;
   ui.explain.hidden = true;
-  ui.explain.textContent = "AI 판단 과정 보기";
+  ui.explain.textContent = "판정 이유 · 그래프 보기";
   ui.afterActions.hidden = true;
   ui.retryFail.hidden = true;
   ui.status.textContent = "결과를 공개하려면 버튼을 누르세요.";
@@ -367,11 +461,21 @@ function setup(data) {
 }
 ui.start.addEventListener("click", start);
 ui.skip.addEventListener("click", skip);
-ui.explain.addEventListener("click", () => {
-  if (!revealFinished) return;
-  ui.analysis.hidden = !ui.analysis.hidden;
-  ui.explain.textContent = ui.analysis.hidden ? "AI 판단 과정 보기" : "AI 판단 과정 닫기";
-  if (!ui.analysis.hidden) ui.analysis.scrollIntoView({behavior: "smooth", block: "nearest"});
+ui.explain.addEventListener("click", openExplanation);
+ui.analysisClose.addEventListener("click", closeExplanation);
+ui.analysis.addEventListener("click", event => {
+  if (event.target === ui.analysis) closeExplanation(); // Backdrop click.
+});
+document.addEventListener("keydown", event => {
+  if (ui.analysis.hidden) return;
+  if (event.key === "Escape") {
+    event.preventDefault();
+    closeExplanation();
+  } else if (event.key === "Tab") {
+    // The close button is the only interactive element in this dialog.
+    event.preventDefault();
+    ui.analysisClose.focus();
+  }
 });
 ui.retryFail.addEventListener("click", () => {
   if (!fullyFinished || args?.win || localMuted || !failSound) return;

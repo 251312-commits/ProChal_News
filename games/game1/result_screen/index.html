@@ -51,24 +51,10 @@
       <p class="outcome-description"></p>
       <div class="reward"></div>
     </section>
-    <section class="analysis" hidden aria-label="AI 판단 과정">
-      <h2>AI는 어떻게 점수를 계산했을까?</h2>
-      <div class="analysis-row"><span class="step">01</span><div>
-        <strong>기사 제목과 AI 요약문 비교</strong>
-        <p class="analysis-summary"></p>
-      </div></div>
-      <div class="analysis-row"><span class="step">02</span><div>
-        <strong>AI 관련성 원점수</strong><p class="analysis-logit"></p>
-      </div></div>
-      <div class="analysis-row"><span class="step">03</span><div>
-        <strong>시그모이드 변환 후 100배</strong><p class="analysis-normalized"></p>
-      </div></div>
-      <p class="analysis-note">AI 모델이 개별 단어의 인과적 판단 근거를 제공하는 것은 아닙니다.</p>
-    </section>
     <footer class="actions">
       <button class="start primary" type="button">♫ 결과 공개 시작</button>
       <button class="skip secondary" type="button" hidden>연출 건너뛰기</button>
-      <button class="explain primary" type="button" hidden>AI 판단 과정 보기</button>
+      <button class="explain primary" type="button" aria-controls="analysis-dialog" aria-expanded="false" hidden>판정 이유 · 그래프 보기</button>
       <button class="retry-fail secondary" type="button" hidden>패배 효과음 다시 재생</button>
       <div class="after-actions" hidden>
         <button class="again secondary" type="button">다시 도전하기</button>
@@ -77,5 +63,68 @@
       <button class="sound-switch" type="button" aria-pressed="false">♫ 음악 켜짐</button>
     </footer>
   </main>
+  <section class="analysis" id="analysis-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="analysis-heading">
+    <div class="analysis-panel">
+      <header class="analysis-header">
+        <div>
+          <span class="analysis-eyebrow">AI SCORE REPORT</span>
+          <h2 id="analysis-heading">판정 이유 · 점수 시각화</h2>
+        </div>
+        <button class="analysis-close" type="button" aria-label="판정 설명 닫기">✕</button>
+      </header>
+      <div class="analysis-body">
+        <div class="analysis-sources" aria-label="AI 모델 비교 입력">
+          <div class="source-box">
+            <span class="source-label">01 · 기사 제목</span>
+            <p class="analysis-title"></p>
+          </div>
+          <div class="source-box">
+            <span class="source-label">02 · AI 요약문</span>
+            <p class="analysis-summary"></p>
+          </div>
+        </div>
+        <div class="analysis-arrow" aria-hidden="true">↓ 관련성 비교</div>
+        <div class="analysis-model">
+          <span>03 · AI RERANKER</span>
+          <strong class="analysis-model-name"></strong>
+          <small class="analysis-tokens"></small>
+        </div>
+        <div class="analysis-visual">
+          <div class="analysis-values">
+            <div><span>관련성 원점수 (logit)</span><strong class="analysis-logit"></strong></div>
+            <span class="values-arrow" aria-hidden="true">→</span>
+            <div><span>시그모이드 변환 σ(x)</span><strong class="analysis-normalized"></strong></div>
+          </div>
+          <div class="analysis-chart-title"><span>04 · 점수 변환 그래프</span><span>σ(x) = 1 / (1 + e<sup>−x</sup>)</span></div>
+          <svg class="sigmoid-chart" viewBox="0 0 360 162" role="img" aria-label="관련성 원점수의 시그모이드 변환 그래프">
+            <path d="M38 18V127H344" class="chart-axis"></path>
+            <path d="M38 72.5H344 M190 18V127" class="chart-grid"></path>
+            <text x="23" y="25" class="chart-label">1</text>
+            <text x="23" y="131" class="chart-label">0</text>
+            <text x="38" y="150" text-anchor="middle" class="chart-label chart-min"></text>
+            <text x="190" y="150" text-anchor="middle" class="chart-label">0</text>
+            <text x="344" y="150" text-anchor="middle" class="chart-label chart-max"></text>
+            <path class="chart-curve" d=""></path>
+            <path class="chart-guides" d=""></path>
+            <circle class="chart-point" cx="190" cy="72" r="5"></circle>
+          </svg>
+          <p class="chart-unavailable" hidden>이 결과에는 원점수 기록이 없어 그래프를 표시할 수 없다.</p>
+        </div>
+        <div class="analysis-final">
+          <div class="analysis-final-heading"><span>05 · 최종 AI 유사도</span><strong><output class="analysis-score"></output><small> / 100점</small></strong></div>
+          <div class="analysis-meter" role="img" aria-label="유사도 점수"><div class="analysis-meter-fill"></div></div>
+        </div>
+        <div class="analysis-match">
+          <span class="analysis-match-heading">게임 판정 · 소수점 아래 두 자리 비교</span>
+          <div class="analysis-compare">
+            <div class="compare-row"><span>내 예측</span><div class="compare-digits"><b class="analysis-guess-digit" data-index="0"></b><b class="analysis-guess-digit" data-index="1"></b></div></div>
+            <div class="compare-row"><span>AI 결과</span><div class="compare-digits"><b class="analysis-answer-digit" data-index="0"></b><b class="analysis-answer-digit" data-index="1"></b></div></div>
+          </div>
+          <p class="analysis-verdict"></p>
+        </div>
+        <p class="analysis-note">이 그래프는 AI의 관련성 원점수가 유사도 점수로 변환되는 과정을 보여준다. 개별 단어가 판단에 미친 인과적 이유를 설명하는 것은 아니다.</p>
+      </div>
+    </div>
+  </section>
 </body>
 </html>

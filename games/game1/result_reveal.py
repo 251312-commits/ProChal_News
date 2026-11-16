@@ -100,7 +100,15 @@ def render_game1_result_reveal(res: dict) -> None:
         [data-testid="stApp"]:has(.st-key-game1-result-reveal-screen) [data-testid="stHeader"] {
           display:none !important;
         }
-        [data-testid="stMain"]:has(.st-key-game1-result-reveal-screen) { overflow:hidden !important; }
+        [data-testid="stMain"]:has(.st-key-game1-result-reveal-screen),
+        [data-testid="stAppViewContainer"]:has(.st-key-game1-result-reveal-screen) {
+          height:100dvh !important; max-height:100dvh !important;
+          overflow:hidden !important; overscroll-behavior:none !important;
+        }
+        html:has(.st-key-game1-result-reveal-screen),
+        body:has(.st-key-game1-result-reveal-screen) {
+          overflow:hidden !important; overscroll-behavior:none !important;
+        }
         </style>
         """)
         event = _COMPONENT(
