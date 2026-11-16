@@ -109,12 +109,24 @@ class BankAnimationTests(unittest.TestCase):
         self.assertIn('bank-borrow-approved', source)
         self.assertNotIn('bank-borrow-stamp-object', source)
 
-    def test_final_repayment_can_clear_a_subunit_balance(self):
-        limit = function_from("views/bank/repay.py", "_repayment_limit", {"UNIT": 1_000})
-        select = function_from("views/bank/repay.py", "_selected_repayment", {"UNIT": 1_000})
+    def test_one_coin_repayment_is_not_limited_to_borrowing_units(self):
+        limit = function_from("views/bank/repay.py", "_repayment_limit", {})
+        select = function_from("views/bank/repay.py", "_selected_repayment", {"REPAY_UNIT": 1})
         self.assertEqual(select(limit(900, 650), 1_000), 650)
-        self.assertEqual(select(limit(600, 650), 1_000), 0)
-        self.assertEqual(select(limit(1_300, 2_000), 2_000), 1_000)
+        self.assertEqual(select(limit(600, 650), 1_000), 600)
+        self.assertEqual(select(limit(1_300, 2_000), 2_000), 1_300)
+        self.assertEqual(select(limit(15, 2_000), 1), 1)
+        self.assertEqual(select(limit(0, 650), 1_000), 0)
+        self.assertEqual(select(limit(5_000, 5_000), None), 1_000)
+
+    def test_repayment_uses_a_one_coin_slider_without_stepper_buttons(self):
+        source = (ROOT / "views/bank/repay.py").read_text(encoding="utf-8")
+        css = (ROOT / "views/bank/repay.css").read_text(encoding="utf-8")
+        self.assertIn('st.slider(', source)
+        self.assertIn('step=REPAY_UNIT', source)
+        self.assertIn('bank-repay-slider-field', source)
+        self.assertNotIn('bank-repay-stepper', source)
+        self.assertIn('.st-key-bank-repay-slider-field', css)
 
     def test_existing_button_stamp_moves_and_ink_is_below(self):
         css = (ROOT / "views/bank/draw.css").read_text(encoding="utf-8")
