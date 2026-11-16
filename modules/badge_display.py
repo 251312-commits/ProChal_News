@@ -223,7 +223,8 @@ def badge_gallery_css(owned: object, selected_id: str) -> str:
   --pc-badge-side:max(145px, min(320px, calc(100dvw - 78px), calc(100dvh - 270px)));
   box-sizing:border-box!important;
   width:var(--pc-badge-side)!important;
-  height:var(--pc-badge-side)!important;
+  /* Auto height + 1:1 aspect ratio remain square if a narrow dialog clamps width. */
+  height:auto!important;
   min-width:0!important;
   min-height:0!important;
   max-width:100%!important;
@@ -301,7 +302,7 @@ def badge_gallery_css(owned: object, selected_id: str) -> str:
   .st-key-badge_gallery {
     /* Keep the same responsive side on phones; do not stretch to dialog width. */
     width:var(--pc-badge-side)!important;
-    height:var(--pc-badge-side)!important;
+    height:auto!important;
     max-width:100%!important;
     max-height:var(--pc-badge-side)!important;
     overflow-x:hidden!important;
