@@ -131,6 +131,28 @@ class ClientTests(unittest.TestCase):
             self.assertEqual(self.session.game_4_round_id, original)
             self.assertEqual(self.session.current_user_data["코인"], 5000)
 
+    def test_badge_sync_recovers_existing_bankruptcy_on_gallery_open(self):
+        probe = self.status(coins=500, loan=10000, principal=10000)
+        probe.json.return_value["badge_capabilities"] = {"equip": True, "sync": True}
+        receipt = self.response(coins=500, loan=10000)
+        receipt.json.return_value["badges"] = {
+            "equipped": "0", "owned": ["bankrupt"], "unlocked": ["bankrupt"],
+        }
+        with patch.object(tx.requests, "post", side_effect=[probe, receipt]) as post:
+            unlocked = tx.sync_badges_from_gateway()
+        self.assertEqual(unlocked, ("bankrupt",))
+        self.assertEqual(post.call_count, 2)
+        self.assertEqual(post.call_args_list[1].kwargs["json"]["kind"], "badge_sync")
+        self.assertTrue(post.call_args_list[1].kwargs["json"]["transaction_id"].startswith("badge_sync:"))
+        self.assertEqual(self.session.current_user_data["보유배지"], "bankrupt")
+
+    def test_badge_sync_old_server_uses_read_only_capability_check(self):
+        with patch.object(tx.requests, "post", return_value=self.status()) as post:
+            with self.assertRaises(tx.TransactionError) as raised:
+                tx.sync_badges_from_gateway()
+        self.assertEqual(raised.exception.code, "OUTDATED_BADGE_GATEWAY")
+        post.assert_called_once()
+
     def test_badge_equip_checks_capability_then_persists_user_selection(self):
         self.session.current_user_data.update({"장착배지": "0", "보유배지": "first_round"})
         probe = self.status()
