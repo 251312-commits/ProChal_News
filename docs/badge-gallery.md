@@ -72,6 +72,11 @@ repayment or an early full repayment does **not** grant the Legendary finance ba
 Successful borrow/repay/settle/interest operations award badges atomically
 inside the existing Apps Script transaction. Historical successful borrow and
 repayment entries can be recognized when the player next makes a transaction.
+Opening the badge collection also invokes the authenticated `badge_sync`
+reconciliation action. This covers players who were **already bankrupt**
+before deployment and cannot place a new bet or take a new loan. The normal
+`status` balance probe remains read-only; `badge_sync` writes an audit
+entry only when one or more missing badges are actually earned.
 An already earned badge is retained even if the user later borrows again or
 recovers from bankruptcy.
 
