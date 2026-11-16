@@ -96,7 +96,13 @@ def show_game_1():
                 result_msg = f"💥 빗나갔습니다. 정답은 {answer_digits:02d}"
 
             try:
-                settled = settle_game_round("game_1", int(bet_coin), is_win)
+                settled = settle_game_round(
+                    "game_1", int(bet_coin), is_win,
+                    badge_evidence={
+                        "predicted_digits": int(predicted_digits),
+                        "answer_digits": int(answer_digits),
+                    },
+                )
             except BalanceChanged as changed:
                 update_session_balances(changed.balances)
                 st.error(str(changed))
