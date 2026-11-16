@@ -1,5 +1,6 @@
 """Mobile-friendly badge collection dialog on the main screen."""
 from html import escape
+from time import monotonic
 
 import streamlit as st
 
@@ -11,6 +12,27 @@ from modules.transactions import (
     TransactionError, equip_badge, refresh_account_from_gateway,
     sync_badges_from_gateway, transaction_id,
 )
+
+
+# The ledger reconciliation can scan the complete Transactions history.
+# Keep it fresh enough for cross-tab usage without repeating it on every
+# dialog open or badge click. Server authorization is always authoritative.
+BADGE_SYNC_TTL_SECONDS = 90
+BADGE_ERROR_RETRY_SECONDS = 20
+
+
+def badge_sync_due(state: dict, now: float, *, force: bool = False) -> bool:
+    """Pure refresh policy, scoped by the dialog owner in open_badge_gallery."""
+    if force:
+        return True
+    checked = state.get("badge_gallery_checked_at")
+    if not isinstance(checked, (int, float)) or not 0 <= now - checked:
+        return True
+    if state.get("badge_gallery_synced") is True:
+        return now - checked >= BADGE_SYNC_TTL_SECONDS
+    if state.get("badge_gallery_sync_error") is True:
+        return now - checked >= BADGE_ERROR_RETRY_SECONDS
+    return True
 
 
 def _current_profile() -> tuple[set[str], str]:
@@ -33,32 +55,63 @@ def _apply_equipped_badge(target: str) -> None:
         st.caption("네트워크 오류라면 같은 버튼을 다시 눌러 저장을 재시도할 수 있다.")
         return
     st.session_state.pop("badge_pending_equip", None)
-    st.session_state["badge_gallery_synced"] = False
+    # The equip response is the authoritative profile. Do not make the next
+    # gallery open scan the full ledger again just because a badge changed.
+    st.session_state["badge_gallery_synced"] = True
+    st.session_state["badge_gallery_sync_error"] = False
+    st.session_state["badge_gallery_sync_message"] = ""
+    st.session_state["badge_gallery_checked_at"] = monotonic()
     st.session_state["badge_flash_message"] = "배지를 해제했다." if target == "0" else "배지를 장착했다."
     st.rerun()
 
 
 @st.dialog("BADGE ARCHIVE  ·  배지 컬렉션", width="small")
 def badge_gallery_dialog() -> None:
-    if not st.session_state.get("badge_gallery_synced"):
+    # A manual refresh remains available when awards arrive from another tab.
+    count_col, refresh_col = st.columns([7, 1], gap="small")
+    with refresh_col:
+        refresh_now = st.button(
+            "↻", key="badge_refresh_now", help="최신 배지와 업적 다시 불러오기",
+            use_container_width=True,
+        )
+
+    now = monotonic()
+    if badge_sync_due(st.session_state, now, force=refresh_now):
+        st.session_state["badge_gallery_checked_at"] = now
         try:
             sync_badges_from_gateway()
             st.session_state["badge_gallery_synced"] = True
             st.session_state["badge_gallery_sync_error"] = False
+            st.session_state["badge_gallery_sync_message"] = ""
         except TransactionError as exc:
             if exc.code == "OUTDATED_BADGE_GATEWAY":
-                # During deployment, still show existing unlocked badges.
+                # Old servers reject badge_sync before touching the wallet.
                 try:
                     refresh_account_from_gateway()
                     st.session_state["badge_gallery_synced"] = True
                     st.session_state["badge_gallery_sync_error"] = False
-                    st.caption("새 은행 업적은 Apps Script를 최신 버전으로 배포하면 동기화된다.")
-                except TransactionError as refresh_error:
+                    st.session_state["badge_gallery_sync_message"] = (
+                        "새 은행 업적은 Apps Script를 최신 버전으로 배포하면 동기화된다."
+                    )
+                except TransactionError as fallback_error:
+                    st.session_state["badge_gallery_synced"] = False
                     st.session_state["badge_gallery_sync_error"] = True
-                    st.warning(f"최신 배지 정보를 불러오지 못했다: {refresh_error}")
+                    st.session_state["badge_gallery_sync_message"] = (
+                        f"최신 배지 정보를 불러오지 못했다: {fallback_error}"
+                    )
             else:
+                st.session_state["badge_gallery_synced"] = False
                 st.session_state["badge_gallery_sync_error"] = True
-                st.warning(f"최신 배지 정보를 불러오지 못했다: {exc}")
+                st.session_state["badge_gallery_sync_message"] = (
+                    f"최신 배지 정보를 불러오지 못했다: {exc}"
+                )
+
+    message = st.session_state.get("badge_gallery_sync_message")
+    if message:
+        if st.session_state.get("badge_gallery_sync_error"):
+            st.warning(message)
+        else:
+            st.caption(message)
 
     owned, equipped = _current_profile()
     selected_id = st.session_state.get("badge_gallery_selected")
@@ -66,12 +119,13 @@ def badge_gallery_dialog() -> None:
         selected_id = equipped if equipped != "0" else BADGES[0].id
         st.session_state["badge_gallery_selected"] = selected_id
 
-    st.html(
-        '<div class="pc-badge-count">'
-        f'획득 <b>{len(owned)} / {len(BADGES)}</b> '
-        '· 컬러 = 획득 · 어두운 회색 = 미획득'
-        '</div>',
-    )
+    with count_col:
+        st.html(
+            '<div class="pc-badge-count">'
+            f'획득 <b>{len(owned)} / {len(BADGES)}</b> '
+            '· 컬러 = 획득 · 어두운 회색 = 미획득'
+            '</div>',
+        )
 
     # Only this square panel scrolls. The count, selected badge details,
     # equip/unequip actions, and the dialog close button stay OUTSIDE it.
@@ -151,7 +205,10 @@ def open_badge_gallery() -> None:
     if st.session_state.get("badge_gallery_owner") != student_id:
         st.session_state.pop("badge_gallery_selected", None)
         st.session_state.pop("badge_pending_equip", None)
+        for key in (
+            "badge_gallery_synced", "badge_gallery_sync_error",
+            "badge_gallery_checked_at", "badge_gallery_sync_message",
+        ):
+            st.session_state.pop(key, None)
     st.session_state["badge_gallery_owner"] = student_id
-    st.session_state["badge_gallery_synced"] = False
-    st.session_state["badge_gallery_sync_error"] = False
     badge_gallery_dialog()
