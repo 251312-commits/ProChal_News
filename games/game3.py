@@ -480,7 +480,10 @@ def analyze_game_3(ws):
                 else:
                     reward = -(bet_coin // 2)
 
-                settled = settle_game_round("game_3", int(bet_coin), is_win)
+                settled = settle_game_round(
+                    "game_3", int(bet_coin), is_win,
+                    badge_evidence={"choice": user_choice},
+                )
                 reward = settled["reward"]
                 new_balance = settled["new_coins"]
                 new_streak = settled["new_streak"]
