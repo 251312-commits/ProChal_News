@@ -8,7 +8,8 @@ from modules.badge_display import (
     RARITY_LABELS, badge_accent, badge_gallery_css, badge_image_data_uri, badge_symbol,
 )
 from modules.transactions import (
-    TransactionError, equip_badge, refresh_account_from_gateway, transaction_id,
+    TransactionError, equip_badge, refresh_account_from_gateway,
+    sync_badges_from_gateway, transaction_id,
 )
 
 
@@ -41,14 +42,23 @@ def _apply_equipped_badge(target: str) -> None:
 def badge_gallery_dialog() -> None:
     if not st.session_state.get("badge_gallery_synced"):
         try:
-            refresh_account_from_gateway()
+            sync_badges_from_gateway()
             st.session_state["badge_gallery_synced"] = True
             st.session_state["badge_gallery_sync_error"] = False
         except TransactionError as exc:
-            # Show the collection from the last known session, but never save
-            # anything while ownership could be stale.
-            st.session_state["badge_gallery_sync_error"] = True
-            st.warning(f"최신 배지 정보를 불러오지 못했다: {exc}")
+            if exc.code == "OUTDATED_BADGE_GATEWAY":
+                # During deployment, still show existing unlocked badges.
+                try:
+                    refresh_account_from_gateway()
+                    st.session_state["badge_gallery_synced"] = True
+                    st.session_state["badge_gallery_sync_error"] = False
+                    st.caption("새 은행 업적은 Apps Script를 최신 버전으로 배포하면 동기화된다.")
+                except TransactionError as refresh_error:
+                    st.session_state["badge_gallery_sync_error"] = True
+                    st.warning(f"최신 배지 정보를 불러오지 못했다: {refresh_error}")
+            else:
+                st.session_state["badge_gallery_sync_error"] = True
+                st.warning(f"최신 배지 정보를 불러오지 못했다: {exc}")
 
     owned, equipped = _current_profile()
     selected_id = st.session_state.get("badge_gallery_selected")
