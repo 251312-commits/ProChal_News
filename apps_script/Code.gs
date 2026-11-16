@@ -476,8 +476,8 @@ function process_(request) {
         after.principal += tx.amount;
         tx.delta = tx.amount;
       } else if (tx.kind === 'repay') {
-        if (after.coins < tx.amount || after.loan < tx.amount ||
-            (tx.amount % 1000 !== 0 && tx.amount !== after.loan)) {
+        // Repayment can be any positive whole coin; borrowing keeps 1,000 C steps.
+        if (after.coins < tx.amount || after.loan < tx.amount) {
           fail_('INVALID_REQUEST', 'Invalid repayment');
         }
         after.coins -= tx.amount;
