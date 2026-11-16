@@ -81,6 +81,12 @@ def _request(payload: dict) -> dict:
             raise BalanceChanged(balance, code)
         errors = {
             "BUSY": "거래가 몰렸습니다. 같은 요청으로 다시 시도하세요.",
+            "BADGES_NOT_READY": "배지 서버 설정을 확인해야 합니다. 모든 배지 .gs 파일을 배포하고 installBadgeSystem()을 실행하세요.",
+            "BADGES_DISABLED": "배지 기록 설정이 바뀌었습니다. 같은 라운드를 다시 시도하세요.",
+            "BADGE_EVIDENCE_REQUIRED": "배지 판정 기록이 누락됐습니다. 최신 앱 버전과 게임 선택 정보를 확인하세요.",
+            "BADGE_DATA_INVALID": "배지 저장 정보가 손상됐습니다. 데이터를 지우지 말고 관리자에게 문의하세요.",
+            "BADGE_LOCKED": "아직 획득하지 않은 배지는 장착할 수 없습니다.",
+            "STALE_BADGE_PROFILE": "다른 화면에서 배지 정보가 변경됐습니다. 목록을 새로 불러온 뒤 선택하세요.",
             "UNCONFIRMED_BET": "확정된 베팅을 찾을 수 없습니다. 다시 베팅하세요.",
             "UNSETTLED_ROUND": "결과가 정산되지 않은 턴에는 이자를 부과할 수 없습니다.",
             "ALREADY_REGISTERED": "이미 가입한 학번입니다. 로그인하세요.",
@@ -160,6 +166,8 @@ def refresh_account_from_gateway() -> dict:
             "거래 서버 응답에 대출원금이 없습니다. Users H열 초기화를 확인하세요.",
             code="PRINCIPAL_NOT_READY",
         )
+    from modules.badges import remember_capabilities
+    remember_capabilities(result, _student_id())
     update_session_balances(balances)
     return balances
 
@@ -187,17 +195,35 @@ def confirm_bet(game: str, amount: int) -> dict:
     return result
 
 
-def settle_game_round(game: str, amount: int, is_win: bool) -> dict:
+def settle_game_round(game: str, amount: int, is_win: bool, *, badge_evidence: dict | None = None) -> dict:
     """Apply a single game's payout and streak, returning the committed snapshot."""
     round_id = st.session_state.get(f"{game}_round_id")
     if not round_id:
         raise TransactionError("라운드 거래 번호가 없습니다. 베팅을 다시 확정하세요.")
-    result = _request({
+    from modules.badges import absorb_profile, collection_enabled, settlement_fields
+    sid = _student_id()
+    # Active collectors recheck deployment capabilities before any mutation.
+    # Legacy/off clients keep their existing single-settlement request shape.
+    if collection_enabled(sid):
+        refresh_account_from_gateway()
+    payload = {
         "transaction_id": f"settle:{round_id}",
         "kind": "settle", "round_id": round_id,
-        "student_id": _student_id(), "game": game,
+        "student_id": sid, "game": game,
         "bet": int(amount), "is_win": bool(is_win),
-    })
+    }
+    fields = settlement_fields(game, bool(is_win), sid, badge_evidence)
+    try:
+        result = _request({**payload, **fields})
+    except TransactionError as exc:
+        if exc.code not in {"BADGES_DISABLED", "BADGE_EVIDENCE_REQUIRED"}:
+            raise
+        # An administrator may toggle collection after bet confirmation. These
+        # errors occur BEFORE commit; re-negotiate and retry the SAME round once.
+        refresh_account_from_gateway()
+        fields = settlement_fields(game, bool(is_win), sid, badge_evidence)
+        result = _request({**payload, **fields})
+    absorb_profile(result, sid)
     update_session_balances(result["balances"])
     committed = result.get("settlement")
     if not isinstance(committed, dict):

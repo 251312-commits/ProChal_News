@@ -303,8 +303,8 @@ function process_(request) {
     game: String(request.game || ''),
     round_id: String(request.round_id || '')
   };
-  if (!/^(bet|settle|interest|borrow|repay|register|register_teacher|status):[a-f0-9]{32}$/.test(tx.transaction_id) ||
-      !['bet', 'settle', 'interest', 'borrow', 'repay', 'register', 'register_teacher', 'status'].includes(tx.kind) ||
+  if (!/^(bet|settle|interest|borrow|repay|register|register_teacher|status|badge_profile|badge_equip):[a-f0-9]{32}$/.test(tx.transaction_id) ||
+      !['bet', 'settle', 'interest', 'borrow', 'repay', 'register', 'register_teacher', 'status', 'badge_profile', 'badge_equip'].includes(tx.kind) ||
       (tx.kind === 'register_teacher' ? tx.student_id !== '' : !/^[0-9]{5}$/.test(tx.student_id)) ||
       tx.transaction_id.split(':', 1)[0] !== tx.kind) {
     fail_('INVALID_REQUEST', 'Invalid transaction ID, student ID, or operation');
@@ -334,6 +334,10 @@ function process_(request) {
   if (!lock.tryLock(20000)) fail_('BUSY', 'Transaction service is busy');
   try {
     const ss = SpreadsheetApp.openById(property_('SPREADSHEET_ID'));
+    if (PropertiesService.getScriptProperties().getProperty('BADGES_ENABLED') === 'true' &&
+        typeof badgePrepare_ !== 'function') {
+      fail_('BADGES_NOT_READY', 'Deploy Code.gs, Badges.gs and BadgeCatalog.gs together');
+    }
     const users = ss.getSheetByName(USER_TAB);
     const ledger = ss.getSheetByName(LEDGER_TAB);
     if (!users || !ledger) fail_('NOT_CONFIGURED', 'Missing Users or Transactions sheet');
@@ -351,7 +355,13 @@ function process_(request) {
     // cannot accidentally commit a transaction and then report it as a failure.
     if (tx.kind === 'status') {
       const account = findUser_(users, tx.student_id);
-      return result_(balance_(account.values), null, false);
+      const status = result_(balance_(account.values), null, false);
+      return typeof badgeStatus_ === 'function' ? Object.assign(status, badgeStatus_(ss)) : status;
+    }
+
+    if (tx.kind === 'badge_profile' || tx.kind === 'badge_equip') {
+      if (typeof badgeOperation_ !== 'function') fail_('BADGES_NOT_READY', 'Deploy all badge .gs files');
+      return badgeOperation_(ss, users, ledger, tx, request);
     }
 
     const previous = findTransaction_(ledger, tx.transaction_id);
@@ -380,6 +390,9 @@ function process_(request) {
         }
       }
       const replay = result_(balance_(current.values), previous, true);
+      if (tx.kind === 'settle' && typeof badgeReplay_ === 'function') {
+        Object.assign(replay, badgeReplay_(ss, previous, request));
+      }
       return tx.kind === 'register_teacher' ?
         Object.assign(replay, {student_id: accountId}) : replay;
     }
@@ -492,13 +505,18 @@ function process_(request) {
         after.principal < 0 || after.principal > after.loan) {
       fail_('INVALID_REQUEST', 'Balance or principal overflow');
     }
-    const detail = tx.kind === 'interest' ?
+    // No extra write after settlement: profile + wallet + receipt commit together.
+    const badges = tx.kind === 'settle' && typeof badgePrepare_ === 'function' ?
+      badgePrepare_(ss, tx, request) : null;
+    const detail = badges ? badges.detail : tx.kind === 'interest' ?
       'turn-end compound interest ' + TURN_INTEREST_RATE_PERCENT + '%; round up to 1C' : '';
     const row = record_(tx, before, after, detail);
     const requests = tx.kind === 'bet' ? [] : walletUpdate_(users, user.rowIndex, after);
     requests.push(append_(ledger, [row]));
+    if (badges) requests.push(badges.write);
     commit_(ss, requests);
-    return result_(after, row, false);
+    const result = result_(after, row, false);
+    return badges ? Object.assign(result, badges.response) : result;
   } finally {
     lock.releaseLock();
   }

@@ -1,0 +1,445 @@
+{
+  "schema_version": 1,
+  "display_mode": "icon_only",
+  "title_linked": true,
+  "slots": 1,
+  "unequipped": "0",
+  "badges": [
+    {
+      "id": "first_round",
+      "number": 1,
+      "game": "common",
+      "name": "신입 에이전트",
+      "achievement": "아무 게임이나 1회 완료",
+      "rarity": "common",
+      "icon_key": "first_round",
+      "conditions": [
+        {
+          "metric": "total",
+          "target": 1
+        }
+      ],
+      "effect": {
+        "name_color": "default",
+        "glow": "none",
+        "animation": "none",
+        "reduced_motion": "none"
+      }
+    },
+    {
+      "id": "all_games",
+      "number": 2,
+      "game": "common",
+      "name": "뉴스 유목민",
+      "achievement": "게임 1~5를 각각 1회 완료",
+      "rarity": "common",
+      "icon_key": "all_games",
+      "conditions": [
+        {
+          "metric": "played_games",
+          "target": 5
+        }
+      ],
+      "effect": {
+        "name_color": "default",
+        "glow": "none",
+        "animation": "none",
+        "reduced_motion": "none"
+      }
+    },
+    {
+      "id": "thirty_rounds",
+      "number": 3,
+      "game": "common",
+      "name": "단골 관측자",
+      "achievement": "모든 게임을 합쳐 누적 30회 완료",
+      "rarity": "rare",
+      "icon_key": "thirty_rounds",
+      "conditions": [
+        {
+          "metric": "total",
+          "target": 30
+        }
+      ],
+      "effect": {
+        "name_color": "cyan",
+        "glow": "none",
+        "animation": "none",
+        "reduced_motion": "none"
+      }
+    },
+    {
+      "id": "streak_three",
+      "number": 4,
+      "game": "common",
+      "name": "연승의 신호탄",
+      "achievement": "게임 종류와 관계없이 3연승",
+      "rarity": "rare",
+      "icon_key": "streak_three",
+      "conditions": [
+        {
+          "metric": "streak",
+          "target": 3
+        }
+      ],
+      "effect": {
+        "name_color": "cyan",
+        "glow": "none",
+        "animation": "none",
+        "reduced_motion": "none"
+      }
+    },
+    {
+      "id": "streak_five_mixed",
+      "number": 5,
+      "game": "common",
+      "name": "흐름을 타는 자",
+      "achievement": "서로 다른 게임 2종 이상을 포함해 5연승",
+      "rarity": "epic",
+      "icon_key": "streak_five_mixed",
+      "conditions": [
+        {
+          "metric": "streak",
+          "target": 5
+        },
+        {
+          "metric": "streak_game_count_5",
+          "target": 2
+        }
+      ],
+      "effect": {
+        "name_color": "purple",
+        "glow": "none",
+        "animation": "none",
+        "reduced_motion": "none"
+      }
+    },
+    {
+      "id": "streak_eight_mixed",
+      "number": 6,
+      "game": "common",
+      "name": "무패의 궤도",
+      "achievement": "서로 다른 게임 3종 이상을 포함해 8연승",
+      "rarity": "legendary",
+      "icon_key": "streak_eight_mixed",
+      "conditions": [
+        {
+          "metric": "streak",
+          "target": 8
+        },
+        {
+          "metric": "streak_game_count_8",
+          "target": 3
+        }
+      ],
+      "effect": {
+        "name_color": "gold",
+        "glow": "gold",
+        "animation": "orbiting_stars",
+        "reduced_motion": "static_glow"
+      }
+    },
+    {
+      "id": "g1_ten",
+      "number": 7,
+      "game": "game_1",
+      "name": "소수점 견습생",
+      "achievement": "게임 1 누적 10회 완료",
+      "rarity": "common",
+      "icon_key": "g1_ten",
+      "conditions": [
+        {
+          "metric": "games.game_1.played",
+          "target": 10
+        }
+      ],
+      "effect": {
+        "name_color": "default",
+        "glow": "none",
+        "animation": "none",
+        "reduced_motion": "none"
+      }
+    },
+    {
+      "id": "g1_within_ten",
+      "number": 8,
+      "game": "game_1",
+      "name": "근접 조우",
+      "achievement": "정답과 0.10%p 이내 차이로 실패",
+      "rarity": "common",
+      "icon_key": "g1_within_ten",
+      "conditions": [
+        {
+          "metric": "near_10",
+          "target": 1
+        }
+      ],
+      "effect": {
+        "name_color": "default",
+        "glow": "none",
+        "animation": "none",
+        "reduced_motion": "none"
+      }
+    },
+    {
+      "id": "g1_within_three",
+      "number": 9,
+      "game": "game_1",
+      "name": "예민한 촉",
+      "achievement": "정답과 0.03%p 이내 차이로 실패",
+      "rarity": "rare",
+      "icon_key": "g1_within_three",
+      "conditions": [
+        {
+          "metric": "near_3",
+          "target": 1
+        }
+      ],
+      "effect": {
+        "name_color": "cyan",
+        "glow": "none",
+        "animation": "none",
+        "reduced_motion": "none"
+      }
+    },
+    {
+      "id": "g1_exact_ten",
+      "number": 10,
+      "game": "game_1",
+      "name": "엇나간 소수점",
+      "achievement": "정답과 정확히 0.10%p 차이로 실패",
+      "rarity": "epic",
+      "icon_key": "g1_exact_ten",
+      "conditions": [
+        {
+          "metric": "exact_10",
+          "target": 1
+        }
+      ],
+      "effect": {
+        "name_color": "purple",
+        "glow": "none",
+        "animation": "none",
+        "reduced_motion": "none"
+      }
+    },
+    {
+      "id": "g1_exact_one",
+      "number": 11,
+      "game": "game_1",
+      "name": "한 끗의 운명",
+      "achievement": "정답과 정확히 0.01%p 차이로 실패",
+      "rarity": "epic",
+      "icon_key": "g1_exact_one",
+      "conditions": [
+        {
+          "metric": "exact_1",
+          "target": 1
+        }
+      ],
+      "effect": {
+        "name_color": "purple",
+        "glow": "none",
+        "animation": "none",
+        "reduced_motion": "none"
+      }
+    },
+    {
+      "id": "g1_hit",
+      "number": 12,
+      "game": "game_1",
+      "name": "소수점의 지배자",
+      "achievement": "소수점 두 자리 정확히 1회 적중",
+      "rarity": "legendary",
+      "icon_key": "g1_hit",
+      "conditions": [
+        {
+          "metric": "games.game_1.wins",
+          "target": 1
+        }
+      ],
+      "effect": {
+        "name_color": "ice_white",
+        "glow": "blue",
+        "animation": "numeric_particles",
+        "reduced_motion": "static_glow"
+      }
+    },
+    {
+      "id": "g2_ten_wins",
+      "number": 13,
+      "game": "game_2",
+      "name": "방향 감각",
+      "achievement": "HIGH/LOW 예측 누적 10회 성공",
+      "rarity": "rare",
+      "icon_key": "g2_ten_wins",
+      "conditions": [
+        {
+          "metric": "games.game_2.wins",
+          "target": 10
+        }
+      ],
+      "effect": {
+        "name_color": "cyan",
+        "glow": "none",
+        "animation": "none",
+        "reduced_motion": "none"
+      }
+    },
+    {
+      "id": "g2_both_fifteen",
+      "number": 14,
+      "game": "game_2",
+      "name": "양방향 레이더",
+      "achievement": "HIGH와 LOW 각각 누적 15회 적중",
+      "rarity": "epic",
+      "icon_key": "g2_both_fifteen",
+      "conditions": [
+        {
+          "metric": "high_wins",
+          "target": 15
+        },
+        {
+          "metric": "low_wins",
+          "target": 15
+        }
+      ],
+      "effect": {
+        "name_color": "purple",
+        "glow": "none",
+        "animation": "none",
+        "reduced_motion": "none"
+      }
+    },
+    {
+      "id": "g3_both_five",
+      "number": 15,
+      "game": "game_3",
+      "name": "양면의 승부사",
+      "achievement": "홀과 짝 각각 누적 5회 적중",
+      "rarity": "rare",
+      "icon_key": "g3_both_five",
+      "conditions": [
+        {
+          "metric": "odd_wins",
+          "target": 5
+        },
+        {
+          "metric": "even_wins",
+          "target": 5
+        }
+      ],
+      "effect": {
+        "name_color": "cyan",
+        "glow": "none",
+        "animation": "none",
+        "reduced_motion": "none"
+      }
+    },
+    {
+      "id": "g3_five_streak",
+      "number": 16,
+      "game": "game_3",
+      "name": "끊기지 않는 박자",
+      "achievement": "게임 3에서 5연승",
+      "rarity": "epic",
+      "icon_key": "g3_five_streak",
+      "conditions": [
+        {
+          "metric": "games.game_3.streak",
+          "target": 5
+        }
+      ],
+      "effect": {
+        "name_color": "purple",
+        "glow": "none",
+        "animation": "none",
+        "reduced_motion": "none"
+      }
+    },
+    {
+      "id": "g4_five_wins",
+      "number": 17,
+      "game": "game_4",
+      "name": "구간 포착자",
+      "achievement": "정답 구간 누적 5회 선택",
+      "rarity": "rare",
+      "icon_key": "g4_five_wins",
+      "conditions": [
+        {
+          "metric": "games.game_4.wins",
+          "target": 5
+        }
+      ],
+      "effect": {
+        "name_color": "cyan",
+        "glow": "none",
+        "animation": "none",
+        "reduced_motion": "none"
+      }
+    },
+    {
+      "id": "g4_four_streak",
+      "number": 18,
+      "game": "game_4",
+      "name": "경계의 지배자",
+      "achievement": "게임 4에서 4연승",
+      "rarity": "legendary",
+      "icon_key": "g4_four_streak",
+      "conditions": [
+        {
+          "metric": "games.game_4.streak",
+          "target": 4
+        }
+      ],
+      "effect": {
+        "name_color": "light_purple",
+        "glow": "purple",
+        "animation": "closing_brackets",
+        "reduced_motion": "static_glow"
+      }
+    },
+    {
+      "id": "g5_three_wins",
+      "number": 19,
+      "game": "game_5",
+      "name": "기사 감별사",
+      "achievement": "정답 기사 누적 3회 선택",
+      "rarity": "rare",
+      "icon_key": "g5_three_wins",
+      "conditions": [
+        {
+          "metric": "games.game_5.wins",
+          "target": 3
+        }
+      ],
+      "effect": {
+        "name_color": "cyan",
+        "glow": "none",
+        "animation": "none",
+        "reduced_motion": "none"
+      }
+    },
+    {
+      "id": "g5_three_streak",
+      "number": 20,
+      "game": "game_5",
+      "name": "특종의 눈",
+      "achievement": "게임 5에서 3연승",
+      "rarity": "legendary",
+      "icon_key": "g5_three_streak",
+      "conditions": [
+        {
+          "metric": "games.game_5.streak",
+          "target": 3
+        }
+      ],
+      "effect": {
+        "name_color": "platinum",
+        "glow": "red",
+        "animation": "scanline",
+        "reduced_motion": "static_glow"
+      }
+    }
+  ]
+}

@@ -2,10 +2,16 @@
 
 Every game completion is identified by its settled round_id. This module consumes
 normalized, chronologically ordered events, not untrusted browser-provided wins.
+The public API and immutable IDs from main are retained; the catalog is shared
+with badge_service and the Apps Script engine rather than defined twice.
 """
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from typing import Iterable
+
+from modules.badge_service import (
+    absorb_profile, collection_enabled, get_catalog, remember_capabilities, settlement_fields,
+)
 
 
 @dataclass(frozen=True)
@@ -18,27 +24,10 @@ class Badge:
     effect: str = ""
 
 
-BADGES = (
-    Badge("first_round", "신입 에이전트", "common", "아무 게임 1회 완료", "common"),
-    Badge("all_games", "뉴스 유목민", "common", "게임 1~5 각각 1회 완료", "common"),
-    Badge("thirty_rounds", "단골 관측자", "common", "전체 누적 30회 완료", "rare"),
-    Badge("streak_three", "연승의 신호탄", "common", "공통 3연승", "rare"),
-    Badge("streak_five_mixed", "흐름을 타는 자", "common", "서로 다른 게임 2종 포함 공통 5연승", "epic"),
-    Badge("streak_eight_mixed", "무패의 궤도", "common", "서로 다른 게임 3종 포함 공통 8연승", "legendary", "orbiting_stars"),
-    Badge("g1_ten", "소수점 견습생", "game_1", "게임 1 누적 10회 완료", "common"),
-    Badge("g1_within_ten", "근접 조우", "game_1", "실패하며 0.10%p 이내 차이", "common"),
-    Badge("g1_within_three", "예민한 촉", "game_1", "실패하며 0.03%p 이내 차이", "rare"),
-    Badge("g1_exact_ten", "엇나간 소수점", "game_1", "실패하며 정확히 0.10%p 차이", "epic"),
-    Badge("g1_exact_one", "한 끗의 운명", "game_1", "실패하며 정확히 0.01%p 차이", "epic"),
-    Badge("g1_hit", "소수점의 지배자", "game_1", "소수점 두 자리 정확히 1회 적중", "legendary", "numeric_particles"),
-    Badge("g2_ten_wins", "방향 감각", "game_2", "HIGH/LOW 누적 10회 성공", "rare"),
-    Badge("g2_both_fifteen", "양방향 레이더", "game_2", "HIGH와 LOW 각각 누적 15회 적중", "epic"),
-    Badge("g3_both_five", "양면의 승부사", "game_3", "홀과 짝 각각 누적 5회 적중", "rare"),
-    Badge("g3_five_streak", "끊기지 않는 박자", "game_3", "게임 3에서 5연승", "epic"),
-    Badge("g4_five_wins", "구간 포착자", "game_4", "게임 4 누적 5회 적중", "rare"),
-    Badge("g4_four_streak", "경계의 지배자", "game_4", "게임 4에서 4연승", "legendary", "closing_brackets"),
-    Badge("g5_three_wins", "기사 감별사", "game_5", "게임 5 누적 3회 적중", "rare"),
-    Badge("g5_three_streak", "특종의 눈", "game_5", "게임 5에서 3연승", "legendary", "scanline"),
+BADGES = tuple(
+    Badge(item["id"], item["name"], item["game"], item["achievement"], item["rarity"],
+          "" if item["effect"]["animation"] == "none" else item["effect"]["animation"])
+    for item in get_catalog()["badges"]
 )
 BADGE_BY_ID = {badge.id: badge for badge in BADGES}
 RARITIES = ("common", "rare", "epic", "legendary")

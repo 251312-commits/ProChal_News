@@ -78,11 +78,21 @@ def show_game_1():
     if "game_1_result" not in st.session_state:
         predicted_digits = st.session_state.game_1_predicted_digits
         with similarity_analysis_loading():
-            summary_text = asyncio.run(summary(article_text))
-            if not summary_text:
-                st.error("뉴스 본문 요약에 실패해 유사도 점수를 계산할 수 없습니다.")
-                return
-            score_details = similarity_check(summary_text, title)
+            # Freeze scored evidence BEFORE settlement, including a lost-response
+            # retry. Otherwise a second AI summary could change the same round.
+            analysis_key = (str(st.session_state.get("current_user", "")),
+                            st.session_state.get("game_1_round_id"), predicted_digits)
+            analysis = st.session_state.get("game_1_pending_analysis")
+            if not analysis or analysis.get("key") != analysis_key:
+                summary_text = asyncio.run(summary(article_text))
+                if not summary_text:
+                    st.error("뉴스 본문 요약에 실패해 유사도 점수를 계산할 수 없습니다.")
+                    return
+                score_details = similarity_check(summary_text, title)
+                analysis = {"key": analysis_key, "summary": summary_text, "details": score_details}
+                st.session_state["game_1_pending_analysis"] = analysis
+            summary_text = analysis["summary"]
+            score_details = analysis["details"]
             actual_score = score_details["score"]
             answer_digits = score_details["score_hundredths"] % 100
 
@@ -96,7 +106,8 @@ def show_game_1():
                 result_msg = f"💥 빗나갔습니다. 정답은 {answer_digits:02d}"
 
             try:
-                settled = settle_game_round("game_1", int(bet_coin), is_win)
+                settled = settle_game_round("game_1", int(bet_coin), is_win,
+                    badge_evidence={"predicted_digits": predicted_digits, "answer_digits": answer_digits})
             except BalanceChanged as changed:
                 update_session_balances(changed.balances)
                 st.error(str(changed))
@@ -167,7 +178,7 @@ def show_game_1():
     def reset_game_1_state():
         keys_to_clear = [
             "game_1_bet", "selected_news_game_1", "candidates_game_1", 
-            "read_done_game_1", "game_1_round_id", "game_1_predicted_digits", "game_1_predicted_score", "game_1_result",
+            "read_done_game_1", "game_1_round_id", "game_1_predicted_digits", "game_1_predicted_score", "game_1_result", "game_1_pending_analysis",
             "tens_val", "ones_val", "game1_pred_tens", "game1_pred_ones", "game1_pred_round_id", "game_1_summary_revealed"
         ]
         for k in keys_to_clear:
