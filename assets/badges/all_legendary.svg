@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="전설의 정복자">
+<title>전설의 정복자</title>
+<defs>
+<linearGradient id="rim" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0" stop-color="#FFE7A8"/><stop offset=".28" stop-color="#D9A742"/><stop offset=".55" stop-color="#8B4F17"/><stop offset=".8" stop-color="#D9A742"/><stop offset="1" stop-color="#FFE7A8"/></linearGradient>
+<radialGradient id="core" cx="49%" cy="34%" r="80%"><stop offset="0" stop-color="#253552"/><stop offset=".62" stop-color="#14172E"/><stop offset="1" stop-color="#090B1B"/></radialGradient>
+<linearGradient id="facet" x1="0%" y1="0%" x2="90%" y2="100%"><stop offset="0" stop-color="#8B4F17"/><stop offset=".5" stop-color="#202B45"/><stop offset="1" stop-color="#D9A742"/></linearGradient>
+<linearGradient id="metal" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0" stop-color="#FFE7A8"/><stop offset=".5" stop-color="#D9A742"/><stop offset="1" stop-color="#8B4F17"/></linearGradient>
+<linearGradient id="glass" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0" stop-color="#E9FDFF" stop-opacity=".70"/><stop offset=".55" stop-color="#75CAE0" stop-opacity=".15"/><stop offset="1" stop-color="#DAFDFF" stop-opacity=".38"/></linearGradient>
+<filter id="halo" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter>
+<clipPath id="cut"><path d="M128 26 L206 57 Q218 64 213 80 L202 164 Q197 187 128 228 Q59 187 54 164 L43 80 Q38 64 50 57 Z"/></clipPath>
+</defs>
+<path d="M128 9 L220 45 Q238 55 235 75 L224 167 Q215 206 128 249 Q41 206 32 167 L21 75 Q18 55 36 45 Z" fill="#FFF3B8" opacity=".26" filter="url(#halo)"/>
+<path d="M128 10 L218 46 Q236 56 231 75 L222 166 Q216 199 128 246 Q40 199 34 166 L25 75 Q20 56 38 46 Z" fill="url(#rim)" stroke="#FFF3B8" stroke-width="5"/>
+<path d="M128 24 L206 55 Q220 62 215 81 L204 161 Q197 190 128 231 Q59 190 52 161 L41 81 Q36 62 50 55 Z" fill="url(#core)" stroke="#FFE7A8" stroke-width="2.5"/>
+<g clip-path="url(#cut)">
+<circle cx="128" cy="128" r="75" fill="none" stroke="#FFF3B8" stroke-opacity=".20" stroke-width="1.5"/>
+<path d="M50 90 L201 64 M45 137 L213 100 M52 176 L203 140" stroke="#FFF3B8" stroke-width="1.4" opacity=".12"/>
+<g stroke-linecap="round" stroke-linejoin="round">
+<path d="M61 156 L73 93 L101 116 L128 70 L156 116 L183 93 L196 156 Z" fill="url(#metal)" stroke="#FFF3C2" stroke-width="6" stroke-linejoin="round"/>
+<path d="M77 156 L180 156 L176 181 Q128 198 81 181 Z" fill="url(#facet)" stroke="#FFE5A3" stroke-width="5"/>
+<path d="M91 146 L165 146" stroke="#FFD777" stroke-width="4" stroke-linecap="round"/>
+<path d="M128 97 L145 127 L128 146 L111 127 Z" fill="#FFF7CD" stroke="#C97826" stroke-width="3"/>
+<circle cx="78" cy="105" r="8" fill="#FFFFFF"/><circle cx="183" cy="106" r="8" fill="#FFF4C4"/>
+<path d="M97 174 L128 168 L159 174" fill="none" stroke="#FFF4C1" stroke-width="3"/>
+<g fill="#FFF6D5"><path d="M128 38 L134 53 L148 59 L133 65 L128 80 L122 65 L107 59 L122 53 Z"/><path d="M64 72 L69 85 L82 90 L69 96 L64 109 L59 96 L46 90 L59 85 Z"/><path d="M193 72 L198 85 L211 90 L198 96 L193 109 L188 96 L175 90 L188 85 Z"/></g>
+<circle cx="91" cy="191" r="6" fill="#FFE698"/><circle cx="109" cy="201" r="6" fill="#FFE698"/><circle cx="128" cy="205" r="6" fill="#FFF7CD"/><circle cx="147" cy="201" r="6" fill="#FFE698"/><circle cx="165" cy="191" r="6" fill="#FFE698"/></g>
+</g>
+<path d="M128 18 L211 50 Q225 57 222 78 L211 166 Q200 194 128 238 Q56 194 45 166 L34 78 Q31 57 45 50 Z" fill="none" stroke="#FFF3B8" stroke-opacity=".72" stroke-width="2"/>
+<path d="M44 67 L61 61 M195 61 L212 67" stroke="#FFE7A8" stroke-width="4" stroke-linecap="round"/>
+<path d="M128 25 L134 34 L128 43 L122 34 Z" fill="#FFD26F"/>
+</svg>
