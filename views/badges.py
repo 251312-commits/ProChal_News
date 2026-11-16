@@ -37,7 +37,7 @@ def _apply_equipped_badge(target: str) -> None:
     st.rerun()
 
 
-@st.dialog("BADGE ARCHIVE  ·  배지 컬렉션", width="large")
+@st.dialog("BADGE ARCHIVE  ·  배지 컬렉션", width="small")
 def badge_gallery_dialog() -> None:
     if not st.session_state.get("badge_gallery_synced"):
         try:
@@ -56,12 +56,11 @@ def badge_gallery_dialog() -> None:
         selected_id = equipped if equipped != "0" else BADGES[0].id
         st.session_state["badge_gallery_selected"] = selected_id
 
-    st.markdown(
+    st.html(
         '<div class="pc-badge-count">'
         f'획득 <b>{len(owned)} / {len(BADGES)}</b> '
         '· 컬러 = 획득 · 어두운 회색 = 미획득'
         '</div>',
-        unsafe_allow_html=True,
     )
 
     # A 4-column grid stays usable on narrow phones, with vertically
@@ -88,10 +87,9 @@ def badge_gallery_dialog() -> None:
                         ):
                             selected_id = badge.id
                             st.session_state["badge_gallery_selected"] = selected_id
-                        st.markdown(
+                        st.html(
                             '<div class="pc-badge-tile-name '
                             f'{name_class}">{escape(badge.title)}</div>',
-                            unsafe_allow_html=True,
                         )
 
     # Generate the selected-card border after processing the current click.
@@ -102,7 +100,7 @@ def badge_gallery_dialog() -> None:
     badge_status = "장착 중" if selected_id == equipped else (
         "획득 완료" if unlocked else "미획득"
     )
-    st.markdown(
+    st.html(
         f'<div class="pc-badge-detail">'
         f'<div class="pc-badge-detail-icon" style="color:{color}">'
         f'{escape(badge_symbol(selected_id))}</div>'
@@ -111,7 +109,6 @@ def badge_gallery_dialog() -> None:
         f'<div class="pc-badge-detail-title">{escape(chosen.title)}</div>'
         f'<div class="pc-badge-detail-condition">해금 조건: '
         f'{escape(chosen.description)}</div></div></div>',
-        unsafe_allow_html=True,
     )
 
     if not unlocked:
