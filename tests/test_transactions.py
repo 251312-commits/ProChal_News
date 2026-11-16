@@ -131,58 +131,56 @@ class ClientTests(unittest.TestCase):
             self.assertEqual(self.session.game_4_round_id, original)
             self.assertEqual(self.session.current_user_data["코인"], 5000)
 
-    def test_badge_sync_recovers_existing_bankruptcy_on_gallery_open(self):
-        probe = self.status(coins=500, loan=10000, principal=10000)
-        probe.json.return_value["badge_capabilities"] = {"equip": True, "sync": True}
+    def test_badge_sync_recovers_existing_bankruptcy_in_one_request(self):
         receipt = self.response(coins=500, loan=10000)
         receipt.json.return_value["badges"] = {
             "equipped": "0", "owned": ["bankrupt"], "unlocked": ["bankrupt"],
         }
-        with patch.object(tx.requests, "post", side_effect=[probe, receipt]) as post:
+        with patch.object(tx.requests, "post", return_value=receipt) as post:
             unlocked = tx.sync_badges_from_gateway()
         self.assertEqual(unlocked, ("bankrupt",))
-        self.assertEqual(post.call_count, 2)
-        self.assertEqual(post.call_args_list[1].kwargs["json"]["kind"], "badge_sync")
-        self.assertTrue(post.call_args_list[1].kwargs["json"]["transaction_id"].startswith("badge_sync:"))
+        post.assert_called_once()
+        self.assertEqual(post.call_args.kwargs["json"]["kind"], "badge_sync")
+        self.assertTrue(post.call_args.kwargs["json"]["transaction_id"].startswith("badge_sync:"))
         self.assertEqual(self.session.current_user_data["보유배지"], "bankrupt")
 
-    def test_badge_sync_old_server_uses_read_only_capability_check(self):
-        with patch.object(tx.requests, "post", return_value=self.status()) as post:
+    def test_badge_sync_unsupported_server_fails_without_extra_request(self):
+        rejected = self.response()
+        rejected.json.return_value = {"ok": False, "code": "INVALID_REQUEST"}
+        with patch.object(tx.requests, "post", return_value=rejected) as post:
             with self.assertRaises(tx.TransactionError) as raised:
                 tx.sync_badges_from_gateway()
         self.assertEqual(raised.exception.code, "OUTDATED_BADGE_GATEWAY")
         post.assert_called_once()
+        self.assertEqual(post.call_args.kwargs["json"]["kind"], "badge_sync")
 
-    def test_badge_equip_checks_capability_then_persists_user_selection(self):
+    def test_badge_equip_persists_user_selection_in_one_request(self):
         self.session.current_user_data.update({"장착배지": "0", "보유배지": "first_round"})
-        probe = self.status()
-        probe.json.return_value.update({
-            "badge_capabilities": {"equip": True},
-            "badges": {"equipped": "0", "owned": ["first_round"]},
-        })
         commit = self.response()
         commit.json.return_value["badges"] = {
             "equipped": "first_round", "owned": ["first_round"], "unlocked": [],
         }
         txid = "equip:" + "a" * 32
-        with patch.object(tx.requests, "post", side_effect=[probe, commit]) as post:
+        with patch.object(tx.requests, "post", return_value=commit) as post:
             selected = tx.equip_badge("first_round", request_id=txid)
         self.assertEqual(selected["equipped"], "first_round")
-        self.assertEqual(post.call_count, 2)
-        self.assertEqual(post.call_args_list[1].kwargs["json"]["kind"], "equip")
-        self.assertEqual(post.call_args_list[1].kwargs["json"]["transaction_id"], txid)
-        self.assertEqual(post.call_args_list[1].kwargs["json"]["badge_id"], "first_round")
+        post.assert_called_once()
+        self.assertEqual(post.call_args.kwargs["json"]["kind"], "equip")
+        self.assertEqual(post.call_args.kwargs["json"]["transaction_id"], txid)
+        self.assertEqual(post.call_args.kwargs["json"]["badge_id"], "first_round")
         self.assertEqual(self.session.current_user_data["장착배지"], "first_round")
         self.assertEqual(self.session.current_user_data["보유배지"], "first_round")
 
     def test_old_v3_server_blocks_badge_equip_only(self):
         self.session.current_user_data.update({"장착배지": "0", "보유배지": "first_round"})
-        with patch.object(tx.requests, "post", return_value=self.status()) as post:
+        rejected = self.response()
+        rejected.json.return_value = {"ok": False, "code": "INVALID_REQUEST"}
+        with patch.object(tx.requests, "post", return_value=rejected) as post:
             with self.assertRaises(tx.TransactionError) as raised:
                 tx.equip_badge("first_round")
         self.assertEqual(raised.exception.code, "OUTDATED_BADGE_GATEWAY")
         post.assert_called_once()
-        self.assertEqual(post.call_args.kwargs["json"]["kind"], "status")
+        self.assertEqual(post.call_args.kwargs["json"]["kind"], "equip")
 
     def test_equipping_unknown_badge_never_calls_server(self):
         with patch.object(tx.requests, "post") as post:
@@ -191,19 +189,26 @@ class ClientTests(unittest.TestCase):
         post.assert_not_called()
 
     def test_equip_stale_receipt_does_not_claim_success(self):
-        probe = self.status()
-        probe.json.return_value.update({
-            "badge_capabilities": {"equip": True},
-            "badges": {"equipped": "0", "owned": ["first_round"]},
-        })
         receipt = self.response(replayed=True)
         receipt.json.return_value["badges"] = {
             "equipped": "0", "owned": ["first_round"], "unlocked": [],
         }
-        with patch.object(tx.requests, "post", side_effect=[probe, receipt]):
+        with patch.object(tx.requests, "post", return_value=receipt) as post:
             with self.assertRaises(tx.TransactionError) as raised:
                 tx.equip_badge("first_round")
         self.assertEqual(raised.exception.code, "STALE_BADGE")
+        post.assert_called_once()
+
+    def test_equip_rejects_unowned_badge_without_session_mutation(self):
+        self.session.current_user_data.update({"장착배지": "0", "보유배지": "first_round"})
+        rejected = self.response()
+        rejected.json.return_value = {"ok": False, "code": "BADGE_NOT_OWNED"}
+        with patch.object(tx.requests, "post", return_value=rejected) as post:
+            with self.assertRaises(tx.TransactionError) as raised:
+                tx.equip_badge("g1_hit")
+        self.assertEqual(raised.exception.code, "BADGE_NOT_OWNED")
+        self.assertEqual(self.session.current_user_data["장착배지"], "0")
+        post.assert_called_once()
 
     def test_interest_posts_one_round_id_and_refreshes_balances(self):
         self.session.game_1_round_id = "f" * 32
