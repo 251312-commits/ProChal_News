@@ -301,6 +301,7 @@ def apply_round_interest(game: str) -> dict:
     if loan_after - loan_before != charged:
         raise TransactionError("이자 계산 기록이 일치하지 않습니다.")
     update_session_balances(result["balances"])
+    _update_session_badges(result.get("badges"))
     return {
         "charged": charged, "loan_before": loan_before,
         "new_loan": loan_after, "replayed": bool(result.get("replayed")),
@@ -328,6 +329,7 @@ def bank_transaction(kind: str, amount: int, tx_id: str) -> dict:
     if "principal" not in result["balances"]:
         raise TransactionError("거래 서버에 대출원금 관리 기능이 적용되지 않았습니다.", code="NOT_CONFIGURED")
     update_session_balances(result["balances"])
+    _update_session_badges(result.get("badges"))
     return result
 
 
