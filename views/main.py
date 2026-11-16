@@ -3,9 +3,11 @@ from pathlib import Path
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 from st_clickable_images import clickable_images
+from modules.badges import BADGES, parse_owned
+from modules.badge_display import NAMEPLATE_CSS, nameplate_html
 from modules.db_handler import init_gspread
-from modules.nickname import html_nickname
 from modules.ui_components import change_page, load_local_image_url
+from views.badges import open_badge_gallery
 
 ws = init_gspread()
 
@@ -26,7 +28,21 @@ def show_main_page():
     if not user:
         change_page('login')
         return
-    
+
+    st.html(NAMEPLATE_CSS)
+    if st.session_state.get("badge_flash_message"):
+        st.toast(st.session_state.pop("badge_flash_message"))
+
+    # The icon gallery lives above the existing casino promo banner.
+    owned_count = len(parse_owned(user.get("보유배지", "")))
+    with st.container(key="badge_header_controls"):
+        if st.button(
+            f"✦  배지 컬렉션   {owned_count} / {len(BADGES)}   ·   장착 변경",
+            key="open_badge_gallery",
+            use_container_width=True,
+        ):
+            open_badge_gallery()
+
     st.markdown(
         f"""
         <div style="color: white; font-weight: bold; font-size: 0.9rem; margin-bottom: -5px;">안전의대명사 뉴스에이전놀이터</div>
@@ -35,7 +51,7 @@ def show_main_page():
         <div class="neon-promo-banner">
             <div class="neon-left-box">
                 <div class="neon-numbers">
-                    VIP <span>{html_nickname(user.get('아이디', '알 수 없음'))}</span><br>
+                    VIP <span>{nameplate_html(user.get('아이디', '알 수 없음'), user.get('장착배지', '0'), user.get('보유배지', ''))}</span><br>
                     보유 <span>{user.get('코인', 0)}</span> C<br>
                     🔥<span>{user.get('연승', 0)}</span> 연승중🔥
                 </div>
