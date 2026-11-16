@@ -9,10 +9,12 @@ def round_(i, game="game_1", won=False, **kwargs):
 
 
 class BadgeTests(unittest.TestCase):
-    def test_catalog_has_twenty_unique_badges(self):
-        self.assertEqual(len(BADGES), 20)
-        self.assertEqual(len(BADGE_BY_ID), 20)
-        self.assertEqual(sum(b.rarity == "legendary" for b in BADGES), 4)
+    def test_catalog_has_twenty_five_unique_badges(self):
+        self.assertEqual(len(BADGES), 25)
+        self.assertEqual(len(BADGE_BY_ID), 25)
+        self.assertEqual(sum(b.rarity == "legendary" for b in BADGES), 5)
+        self.assertEqual(sum(b.rarity == "mythic" for b in BADGES), 2)
+        self.assertEqual([b.id for b in BADGES][-5:], ["all_legendary", "bankrupt", "loan_survivor", "first_borrow", "first_repay"])
 
     def test_owned_and_equip_validation(self):
         self.assertEqual(parse_owned("g1_hit unknown g1_hit first_round"), ("g1_hit", "first_round"))
