@@ -16,8 +16,17 @@ const BADGE_IDS = [
   'g1_within_ten', 'g1_within_three', 'g1_exact_ten', 'g1_exact_one',
   'g1_hit', 'g2_ten_wins', 'g2_both_fifteen',
   'g3_both_five', 'g3_five_streak', 'g4_five_wins',
-  'g4_four_streak', 'g5_three_wins', 'g5_three_streak'
+  'g4_four_streak', 'g5_three_wins', 'g5_three_streak',
+  'all_legendary', 'bankrupt', 'loan_survivor', 'first_borrow', 'first_repay'
 ];
+// Mythic collector requires the FIVE Legendary badges, not either Mythic badge.
+const LEGENDARY_REQUIRED_IDS = [
+  'streak_eight_mixed', 'g1_hit', 'g4_four_streak', 'g5_three_streak',
+  'loan_survivor'
+];
+const BANK_LEGENDARY_BORROW_MIN = 5000; // single borrow
+const BANK_LEGENDARY_TURN_MIN = 5; // confirmed interest:<round_id> receipts
+const GAME_MIN_BET = 1000; // same as current gateway minimum bet
 const BADGE_ID_SET = new Set(BADGE_IDS);
 
 /**
@@ -210,13 +219,20 @@ function evaluateBadgesFromSettlements_(settlements) {
   return BADGE_IDS.filter(id => earned.has(id));
 }
 
-function badgeSettlements_(ledger, studentId, newSettleRow) {
+/**
+ * Read the authoritative ledger once under ScriptLock. The not-yet-committed
+ * current row is included exactly once in the same order as it will be stored.
+ */
+function badgeHistoryRows_(ledger, studentId, newRow) {
   const n = Math.max(0, ledger.getLastRow() - 1);
   const all = n ? ledger.getRange(2, 1, n, HEADERS.length).getValues() : [];
-  if (newSettleRow) all.push(newSettleRow);
-  return all.filter(row =>
+  if (newRow) all.push(newRow);
+  return all.filter(row => sid_(row[2]) === studentId);
+}
+
+function badgeSettlementsFromRows_(rows) {
+  return rows.filter(row =>
     String(row[3]) === 'settle' &&
-    sid_(row[2]) === studentId &&
     Object.prototype.hasOwnProperty.call(RULES, String(row[4]))
   ).map(row => ({
     round_id: String(row[5]),
@@ -226,13 +242,72 @@ function badgeSettlements_(ledger, studentId, newSettleRow) {
   }));
 }
 
-function awardBadges_(ledger, users, user, studentId, newSettleRow) {
+/**
+ * Bank achievements use only successfully committed ledger entries, never
+ * untrusted client "turn" counters. Full payoff means total debt is ZERO.
+ */
+function badgeFinanceFromRows_(rows, after) {
+  const earned = new Set();
+  let largeBorrowActive = false;
+  let completedTurns = 0;
+  const countedTurns = new Set();
+
+  rows.forEach(row => {
+    const kind = String(row[3]);
+    if (kind === 'borrow') {
+      earned.add('first_borrow');
+      const amount = Number(row[7]);
+      if (Number.isSafeInteger(amount) && amount >= BANK_LEGENDARY_BORROW_MIN &&
+          !largeBorrowActive) {
+        largeBorrowActive = true;
+        completedTurns = 0;
+        countedTurns.clear();
+      }
+    } else if (kind === 'interest') {
+      const roundId = String(row[5] || '');
+      // A turn must have finished *after* the qualifying loan was borrowed,
+      // while debt was still outstanding. Avoid duplicate round receipts.
+      if (largeBorrowActive && Number(row[13]) > 0 &&
+          /^[a-f0-9]{32}$/.test(roundId) && !countedTurns.has(roundId)) {
+        countedTurns.add(roundId);
+        completedTurns++;
+      }
+    } else if (kind === 'repay') {
+      if (Number(row[7]) < 0) earned.add('first_repay');
+      // Paying interest only, or repaying just some principal, is insufficient.
+      if (Number(row[14]) === 0) {
+        if (largeBorrowActive && completedTurns >= BANK_LEGENDARY_TURN_MIN) {
+          earned.add('loan_survivor');
+        }
+        largeBorrowActive = false;
+        completedTurns = 0;
+        countedTurns.clear();
+      }
+    }
+  });
+
+  // Bankruptcy is based on the committed wallet + outstanding *principal*.
+  // Total debt may exceed 10,000C due to compound interest; the credit cap is
+  // based on principal. Borrow requests require increments of 1,000C.
+  if (after && after.coins < GAME_MIN_BET &&
+      MAX_PRINCIPAL - after.principal < 1000) {
+    earned.add('bankrupt');
+  }
+  return earned;
+}
+
+function awardBadges_(ledger, users, user, studentId, newRow, after) {
   const profile = badgeProfile_(users, user.rowIndex);
-  const earned = evaluateBadgesFromSettlements_(badgeSettlements_(ledger, studentId, newSettleRow));
+  const rows = badgeHistoryRows_(ledger, studentId, newRow);
+  const earned = new Set(evaluateBadgesFromSettlements_(badgeSettlementsFromRows_(rows)));
+  badgeFinanceFromRows_(rows, after).forEach(id => earned.add(id));
+  const all = new Set(profile.owned.concat(Array.from(earned)));
+  if (LEGENDARY_REQUIRED_IDS.every(id => all.has(id))) {
+    all.add('all_legendary');
+  }
   const before = new Set(profile.owned);
-  const unlocked = earned.filter(id => !before.has(id));
+  const unlocked = BADGE_IDS.filter(id => all.has(id) && !before.has(id));
   if (!unlocked.length) return {profile: profile, unlocked: [], request: null};
-  const all = new Set(profile.owned.concat(unlocked));
   const updated = {equipped: profile.equipped, owned: BADGE_IDS.filter(id => all.has(id))};
   return {profile: updated, unlocked: unlocked, request: badgeProfileWrite_(users, user.rowIndex, updated)};
 }
