@@ -55,8 +55,9 @@ class ResultMusicTests(unittest.TestCase):
         assert "Math.sqrt(settings.volume) * 2" in js  # louder than squared BGM mix
         assert "const songGain = localMuted ? 0 : settings.volume;" in js
         assert "failSound.volume = failGain" in js
-        assert "function primeFailSound()" in js
-        assert "primeFailSound(); // Pre-unlock" in js
+        # Automatic playback no longer depends on a start-button gesture.
+        assert "pending = song.play()" in js
+        assert "if (!silentMode) playFailSound()" in js
         assert 'failSound.preload = "auto"' in js
         assert "failSound.load();" in js
         assert "function failNow()" in js
