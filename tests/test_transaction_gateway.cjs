@@ -466,7 +466,7 @@ test('status probe returns gateway version and C/D/G/H without writing to sheets
   const e = environment([['11011', 'Alice', 5000, 2, '', 'pw', 9600, 8000]]);
   const result = e.call({kind: 'status', transaction_id: 'status:' + hex('9')});
   assert.equal(result.ok, true);
-  assert.equal(result.gateway_version, 2);
+  assert.equal(result.gateway_version, 3);
   assert.equal(result.balances.coins, 5000);
   assert.equal(result.balances.streak, 2);
   assert.equal(result.balances.loan, 9600);
