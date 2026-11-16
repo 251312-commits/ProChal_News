@@ -1,4 +1,4 @@
-# 20개 배지 일러스트 시안
+# 25개 배지 일러스트 시안
 
 기존 Unicode 심볼이 아니라 **업적 칭호가 환기하는 사물·장면**을 기반으로 만든 개별 SVG 이미지이다. 게임의 검은 배경에 어울리도록 홀로그램 에나멜 휘장으로 디자인했다.
 
@@ -24,3 +24,11 @@
 - 장착: 메인·랭킹 닉네임 옆에 축소된 이미지 표시
 
 각 아이콘은 `assets/badges/<배지ID>.svg`의 256×256 벡터 이미지다. 향후 디자인 변경 시 같은 파일명만 교체하면 업적 ID·등급·구글 시트 데이터를 수정할 필요가 없다.
+## 추가 배지 5개
+
+| | | | | |
+|:---:|:---:|:---:|:---:|:---:|
+| <img src="../assets/badges/all_legendary.svg" width="95" alt="전설의 정복자"> | <img src="../assets/badges/bankrupt.svg" width="95" alt="파산 선고"> | <img src="../assets/badges/loan_survivor.svg" width="95" alt="금리의 생존자"> | <img src="../assets/badges/first_borrow.svg" width="95" alt="첫 신용"> | <img src="../assets/badges/first_repay.svg" width="95" alt="첫 상환"> |
+| 전설의 정복자 | 파산 선고 | 금리의 생존자 | 첫 신용 | 첫 상환 |
+
+MYTHIC은 Legendary보다 상위 등급으로, 황금색 ‘전설의 정복자’와 적색 ‘파산 선고’가 각기 다른 효과를 갖는다.

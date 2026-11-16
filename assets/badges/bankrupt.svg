@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="파산 선고">
+<title>파산 선고</title>
+<defs>
+<linearGradient id="rim" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0" stop-color="#FFC1CB"/><stop offset=".28" stop-color="#DA354D"/><stop offset=".55" stop-color="#6D0D25"/><stop offset=".8" stop-color="#DA354D"/><stop offset="1" stop-color="#FFC1CB"/></linearGradient>
+<radialGradient id="core" cx="49%" cy="34%" r="80%"><stop offset="0" stop-color="#253552"/><stop offset=".62" stop-color="#14172E"/><stop offset="1" stop-color="#090B1B"/></radialGradient>
+<linearGradient id="facet" x1="0%" y1="0%" x2="90%" y2="100%"><stop offset="0" stop-color="#6D0D25"/><stop offset=".5" stop-color="#202B45"/><stop offset="1" stop-color="#DA354D"/></linearGradient>
+<linearGradient id="metal" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0" stop-color="#FFC1CB"/><stop offset=".5" stop-color="#DA354D"/><stop offset="1" stop-color="#6D0D25"/></linearGradient>
+<linearGradient id="glass" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0" stop-color="#E9FDFF" stop-opacity=".70"/><stop offset=".55" stop-color="#75CAE0" stop-opacity=".15"/><stop offset="1" stop-color="#DAFDFF" stop-opacity=".38"/></linearGradient>
+<filter id="halo" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter>
+<clipPath id="cut"><path d="M128 26 L206 57 Q218 64 213 80 L202 164 Q197 187 128 228 Q59 187 54 164 L43 80 Q38 64 50 57 Z"/></clipPath>
+</defs>
+<path d="M128 9 L220 45 Q238 55 235 75 L224 167 Q215 206 128 249 Q41 206 32 167 L21 75 Q18 55 36 45 Z" fill="#FF748D" opacity=".26" filter="url(#halo)"/>
+<path d="M128 10 L218 46 Q236 56 231 75 L222 166 Q216 199 128 246 Q40 199 34 166 L25 75 Q20 56 38 46 Z" fill="url(#rim)" stroke="#FF748D" stroke-width="5"/>
+<path d="M128 24 L206 55 Q220 62 215 81 L204 161 Q197 190 128 231 Q59 190 52 161 L41 81 Q36 62 50 55 Z" fill="url(#core)" stroke="#FFC1CB" stroke-width="2.5"/>
+<g clip-path="url(#cut)">
+<circle cx="128" cy="128" r="75" fill="none" stroke="#FF748D" stroke-opacity=".20" stroke-width="1.5"/>
+<path d="M50 90 L201 64 M45 137 L213 100 M52 176 L203 140" stroke="#FF748D" stroke-width="1.4" opacity=".12"/>
+<g stroke-linecap="round" stroke-linejoin="round">
+<circle cx="128" cy="132" r="68" fill="url(#metal)" stroke="#FFD4D9" stroke-width="6"/>
+<circle cx="128" cy="132" r="51" fill="#3A0C1C" stroke="#FF5871" stroke-width="5"/>
+<circle cx="128" cy="132" r="28" fill="#731529" stroke="#FF8C9B" stroke-width="4"/>
+<circle cx="128" cy="132" r="8" fill="#FFF0EC"/>
+<path d="M128 81 L128 103 M128 159 L128 182 M78 132 L103 132 M154 132 L180 132" stroke="#FFABAF" stroke-width="7" stroke-linecap="round"/>
+<path d="M102 64 L130 105 L112 125 L144 149 L119 198" fill="none" stroke="#2C0313" stroke-width="15" stroke-linejoin="round"/>
+<path d="M102 64 L130 105 L112 125 L144 149 L119 198" fill="none" stroke="#FF3F5B" stroke-width="6" stroke-linejoin="round"/>
+<path d="M170 75 L195 63 L187 92 Z" fill="#FF6678"/><path d="M67 180 L48 170 L58 200 Z" fill="#FF7285"/>
+<path d="M128 40 L146 70 L110 70 Z" fill="#FF6982" stroke="#FFD8D2" stroke-width="4"/><circle cx="128" cy="58" r="3" fill="#FFF4E8"/>
+<path d="M185 177 L201 192 L180 198Z" fill="#F84C62" stroke="#FFC6D2" stroke-width="3"/>
+</g>
+</g>
+<path d="M128 18 L211 50 Q225 57 222 78 L211 166 Q200 194 128 238 Q56 194 45 166 L34 78 Q31 57 45 50 Z" fill="none" stroke="#FF748D" stroke-opacity=".72" stroke-width="2"/>
+<path d="M44 67 L61 61 M195 61 L212 67" stroke="#FFC1CB" stroke-width="4" stroke-linecap="round"/>
+<path d="M128 25 L134 34 L128 43 L122 34 Z" fill="#FB455F"/>
+</svg>

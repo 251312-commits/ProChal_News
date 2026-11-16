@@ -303,8 +303,8 @@ function process_(request) {
     game: String(request.game || ''),
     round_id: String(request.round_id || '')
   };
-  if (!/^(bet|settle|interest|borrow|repay|register|register_teacher|status|equip):[a-f0-9]{32}$/.test(tx.transaction_id) ||
-      !['bet', 'settle', 'interest', 'borrow', 'repay', 'register', 'register_teacher', 'status', 'equip'].includes(tx.kind) ||
+  if (!/^(bet|settle|interest|borrow|repay|register|register_teacher|status|equip|badge_sync):[a-f0-9]{32}$/.test(tx.transaction_id) ||
+      !['bet', 'settle', 'interest', 'borrow', 'repay', 'register', 'register_teacher', 'status', 'equip', 'badge_sync'].includes(tx.kind) ||
       (tx.kind === 'register_teacher' ? tx.student_id !== '' : !/^[0-9]{5}$/.test(tx.student_id)) ||
       tx.transaction_id.split(':', 1)[0] !== tx.kind) {
     fail_('INVALID_REQUEST', 'Invalid transaction ID, student ID, or operation');
@@ -361,7 +361,7 @@ function process_(request) {
       const account = findUser_(users, tx.student_id);
       return Object.assign(result_(balance_(account.values), null, false), {
         badges: badgeProfile_(users, account.rowIndex),
-        badge_capabilities: {equip: true}
+        badge_capabilities: {equip: true, sync: true}
       });
     }
 
@@ -400,7 +400,8 @@ function process_(request) {
         fail_('IDEMPOTENCY_CONFLICT', 'Equipped badge changed on replay');
       }
       const replay = result_(balance_(current.values), previous, true);
-      if (tx.kind === 'settle' || tx.kind === 'equip') {
+      if (tx.kind === 'settle' || tx.kind === 'equip' || tx.kind === 'badge_sync' ||
+          tx.kind === 'borrow' || tx.kind === 'repay' || tx.kind === 'interest') {
         replay.badges = Object.assign(badgeProfile_(users, current.rowIndex), {unlocked: []});
       }
       return tx.kind === 'register_teacher' ?
@@ -450,6 +451,17 @@ function process_(request) {
 
     const user = findUser_(users, tx.student_id);
     const before = balance_(user.values);
+    if (tx.kind === 'badge_sync') {
+      // Safe recovery for already-bankrupt players and historic bank actions.
+      // Status remains strictly read-only; sync is a separately authenticated
+      // operation and writes only when a missing award is actually found.
+      const award = awardBadges_(ledger, users, user, tx.student_id, null, before);
+      const record = award.request ? record_(tx, before, before, 'badge-sync') : null;
+      if (record) commit_(ss, [award.request, append_(ledger, [record])]);
+      return Object.assign(result_(before, record, false), {
+        badges: Object.assign(award.profile, {unlocked: award.unlocked})
+      });
+    }
     if (tx.kind === 'equip') {
       // Recheck owned badges while holding the same lock as achievement grants.
       const profile = badgeProfile_(users, user.rowIndex);
@@ -533,8 +545,11 @@ function process_(request) {
       (tx.kind === 'settle' ? badgeDetail_(badgeEvidence_(tx.game, request.badge_evidence, tx.is_win)) : '');
     const row = record_(tx, before, after, detail);
     const requests = tx.kind === 'bet' ? [] : walletUpdate_(users, user.rowIndex, after);
-    // Award and money settlement are committed as one atomic Sheets batch.
-    const badgeAward = tx.kind === 'settle' ? awardBadges_(ledger, users, user, tx.student_id, row) : null;
+    // Award badges on *every* completed wallet operation, not only game wins.
+    // Successful borrow/repay, turn-end interest and bankruptcy share the same
+    // atomic Sheets batch as wallet balance + immutable ledger event.
+    const badgeAward = ['settle', 'borrow', 'repay', 'interest'].includes(tx.kind) ?
+      awardBadges_(ledger, users, user, tx.student_id, row, after) : null;
     if (badgeAward && badgeAward.request) requests.push(badgeAward.request);
     requests.push(append_(ledger, [row]));
     commit_(ss, requests);

@@ -16,17 +16,17 @@ from modules.badge_display import (
 class BadgeGalleryTests(unittest.TestCase):
     def test_every_badge_has_a_replaceable_symbol(self):
         self.assertEqual(set(BADGE_SYMBOLS), {badge.id for badge in BADGES})
-        self.assertEqual(len(BADGE_SYMBOLS), 20)
-        self.assertEqual(len(set(BADGE_SYMBOLS.values())), 20)
+        self.assertEqual(len(BADGE_SYMBOLS), 25)
+        self.assertEqual(len(set(BADGE_SYMBOLS.values())), 25)
         self.assertEqual(badge_symbol("g1_hit"), "◈")
 
-    def test_all_twenty_artworks_are_valid_standalone_svg_images(self):
+    def test_all_twenty_five_artworks_are_valid_standalone_svg_images(self):
         import base64
         from xml.etree import ElementTree as ET
         from modules.badge_display import BADGE_ART_DIR, badge_image_data_uri
 
         assets = sorted(BADGE_ART_DIR.glob("*.svg"))
-        self.assertEqual(len(assets), 20)
+        self.assertEqual(len(assets), 25)
         seen = set()
         for badge in BADGES:
             with self.subTest(badge=badge.id):
@@ -49,7 +49,7 @@ class BadgeGalleryTests(unittest.TestCase):
         from modules.badge_display import badge_gallery_css
 
         css = badge_gallery_css("first_round g1_hit", "g1_hit")
-        self.assertEqual(css.count("background-image:url('data:image/svg+xml;base64,"), 20)
+        self.assertEqual(css.count("background-image:url('data:image/svg+xml;base64,"), 25)
         self.assertIn("grayscale(1) brightness(.30)", css)
         self.assertIn("background-repeat:no-repeat", css)
         self.assertIn("background-size:contain", css)
@@ -71,12 +71,22 @@ class BadgeGalleryTests(unittest.TestCase):
         self.assertNotIn("badge_symbol(badge.id),", source)
 
     def test_legendary_effects_are_unique(self):
-        self.assertEqual(len(LEGENDARY_ACCENTS), 4)
+        self.assertEqual(len(LEGENDARY_ACCENTS), 5)
         for badge in BADGES:
             if badge.rarity == "legendary":
                 self.assertIn(badge.id, LEGENDARY_ACCENTS)
                 self.assertIn("pc-effect-" + badge.effect, NAMEPLATE_CSS)
         self.assertIn("prefers-reduced-motion", NAMEPLATE_CSS)
+
+    def test_mythic_gold_and_red_have_distinct_effects(self):
+        gold = nameplate_html("Collector", "all_legendary", "all_legendary")
+        red = nameplate_html("Bankrupt", "bankrupt", "bankrupt")
+        self.assertIn("pc-tier-mythic", gold)
+        self.assertIn("pc-effect-golden_crown", gold)
+        self.assertIn("pc-effect-scarlet_alarm", red)
+        self.assertEqual(badge_accent("all_legendary"), "#FFE172")
+        self.assertEqual(badge_accent("bankrupt"), "#FF526A")
+        self.assertIn("pc-effect-loan_hourglass", NAMEPLATE_CSS)
 
     def test_unearned_badge_can_never_change_displayed_nameplate(self):
         self.assertEqual(nameplate_html("User", "g1_hit", "first_round"), "User")

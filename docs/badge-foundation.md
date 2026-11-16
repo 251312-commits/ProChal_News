@@ -72,3 +72,11 @@ hundredth difference. A hit is separate from a near miss.
 Read the returned `badges` profile on the main/ranking view, add an icon-only
 nameplate and a modal for equip/unequip, and implement Legendary CSS effects.
 The server-side equip endpoint is deliberately not included in this PR.
+
+## 25-item extension
+
+Five badges are appended to the original 20 without changing the existing
+owned/equipped IDs. The fifth rarity is `mythic`, one tier above Legendary.
+The bank badges are server-awarded from immutable Transactions history,
+not editable client counters. See [badge-gallery.md](badge-gallery.md)
+for the exact 5,000C / five settled turns / full payoff rule and deployment.
