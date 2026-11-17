@@ -39,8 +39,9 @@ class SimilarityLoadingTests(TestCase):
         loader, empty = self._loader()
         with loader():
             placeholder = empty.return_value
-            placeholder.markdown.assert_called_once()
-            html = placeholder.markdown.call_args.args[0]
+            placeholder.html.assert_called_once()
+            placeholder.markdown.assert_not_called()
+            html = placeholder.html.call_args.args[0]
             self.assertIn('id="pc-sim-load"', html)
             self.assertIn("@keyframes pc-sim-scan", html)
             self.assertIn("animation: pc-sim-reveal 1ms step-end 200ms forwards", html)
@@ -93,6 +94,38 @@ class SimilarityLoadingTests(TestCase):
         self.assertIn('doc.addEventListener("click", toggleSound)', bridge)
         self.assertIn('video.muted = !turnOn', bridge)
         self.assertIn('video.play()', bridge)
+
+    def test_video_html_is_rendered_as_html_not_markdown_code(self):
+        video = """
+          <div class="pc-sim-video-frame">
+            <video class="pc-sim-video" controls muted playsinline>
+              <source src="https://example.invalid/Video1.mp4" type="video/mp4">
+            </video>
+          </div>
+        """
+        with patch.object(loader_module, "_similarity_video_markup", return_value=video):
+            with patch.object(loader_module.st, "empty") as empty:
+                with patch.object(loader_module.components, "html") as bridge:
+                    with loader_module.similarity_analysis_loading():
+                        rendered = empty.return_value.html.call_args.args[0]
+                        self.assertIn('<video class="pc-sim-video"', rendered)
+                        self.assertIn('<source src="https://example.invalid/Video1.mp4"', rendered)
+                        self.assertNotIn("PC_SIM_VIDEO_SLOT", rendered)
+                        empty.return_value.html.assert_called_once()
+                        empty.return_value.markdown.assert_not_called()
+                    empty.return_value.empty.assert_called_once()
+                    bridge.assert_called_once()
+
+    def test_no_video_still_renders_original_newspaper_as_html(self):
+        with patch.object(loader_module, "_similarity_video_markup", return_value=""):
+            with patch.object(loader_module.st, "empty") as empty:
+                with patch.object(loader_module.components, "html") as bridge:
+                    with loader_module.similarity_analysis_loading():
+                        rendered = empty.return_value.html.call_args.args[0]
+                        self.assertIn('pc-sim-paper-left', rendered)
+                        self.assertIn('pc-sim-paper-right', rendered)
+                        empty.return_value.markdown.assert_not_called()
+                    bridge.assert_not_called()
 
     def test_random_clip_stays_small_autoplays_muted_and_keeps_sound_controls(self):
         with TemporaryDirectory() as folder:

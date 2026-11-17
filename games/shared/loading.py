@@ -129,10 +129,10 @@ def similarity_analysis_loading():
     css = Path(__file__).with_name("similarity_loading.css").read_text(encoding="utf-8")
     video = _similarity_video_markup()
     markup = _SIMILARITY_LOADING_HTML.replace("<!-- PC_SIM_VIDEO_SLOT -->", video)
-    placeholder.markdown(
-        f"<style>{css}</style>{markup}",
-        unsafe_allow_html=True,
-    )
+    # Dynamic video markup includes blank lines and nested indentation.
+    # Markdown can interpret it as a fenced/indented code block and print
+    # literal HTML tags. st.html bypasses the Markdown parser entirely.
+    placeholder.html(f"<style>{css}</style>{markup}")
     if video:
         # Streamlit markdown does not execute JS; a tiny component binds the
         # user-gesture sound toggle in the parent document.
