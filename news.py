@@ -91,4 +91,4 @@ else:
         show_pending_badge_award()
 
 # A fresh render token clears client feedback after work has completed.
-render_loading_feedback()
+render_loading_feedback(enabled=st.session_state.page != "login")
