@@ -399,3 +399,10 @@ html, body { overflow:hidden; overscroll-behavior:none; }
 @media (prefers-reduced-motion:reduce) {
   .analysis-meter-fill { transition:none; }
 }
+
+/* Only shown when browser policy blocks both automatic audio paths. */
+.actions > .unblock-audio { grid-column:1 / -1; width:100%; border-color:#efc16c;
+  color:#ffe0a2; background:#47243b; box-shadow:0 0 10px #d39d5a58; }
+@media (orientation:landscape) and (max-height:570px) {
+  .actions > .unblock-audio { flex:1 1 0; width:auto; grid-column:auto; }
+}
