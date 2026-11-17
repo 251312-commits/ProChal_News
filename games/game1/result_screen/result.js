@@ -40,6 +40,7 @@ const ui = {
   analysisAnswer: Array.from(document.querySelectorAll(".analysis-answer-digit")),
   analysisVerdict: document.querySelector(".analysis-verdict"),
   skip: screen.querySelector(".skip"),
+  unlockAudio: screen.querySelector(".unblock-audio"),
   explain: screen.querySelector(".explain"),
   afterActions: screen.querySelector(".after-actions"),
   again: screen.querySelector(".again"),
@@ -75,6 +76,42 @@ let silentStart = null;
 let silentMode = false;
 let badgeAwardTimer = 0;
 let awardsShown = false;
+let bridgePending = false;
+let bridgeActive = false;
+let bridgeSeen = false;
+let bridgePendingSince = 0;
+let bridgePosition = 0;
+let fallbackAttempted = false;
+let manualSoundChoice = false;
+const AUDIO_CHANNEL = "prochal:game1-result-audio-v1";
+
+function bridgeCommand(action, extra) {
+  if (!roundId) return;
+  window.parent.postMessage(Object.assign({channel: AUDIO_CHANNEL,
+    action: action, round_id: roundId}, extra || {}), "*");
+}
+function localAudioFallback() {
+  if (!started || fullyFinished || fallbackAttempted) return;
+  fallbackAttempted = true;
+  bridgePending = false;
+  bridgeActive = false;
+  silentMode = true;
+  silentStart = performance.now();
+  let playing;
+  try { playing = song.play(); }
+  catch (error) { playing = Promise.reject(error); }
+  Promise.resolve(playing).then(() => {
+    if (fullyFinished || bridgeActive) { song.pause(); return; }
+    silentMode = false;
+    ui.unlockAudio.hidden = true;
+    ui.status.textContent = "음악과 함께 결과 공개 중";
+  }).catch(() => {
+    if (!fullyFinished && !localMuted) {
+      ui.unlockAudio.hidden = false;
+      ui.status.textContent = "브라우저 자동재생 제한 · 화면에서 음악 켜기";
+    }
+  });
+}
 
 function send(type, payload) {
   window.parent.postMessage({isStreamlitMessage: true, type, ...payload}, hostOrigin);
@@ -89,6 +126,9 @@ function sendAction(action) {
   });
 }
 function stopMedia() {
+  bridgeCommand("stop");
+  bridgePending = false;
+  bridgeActive = false;
   cancelAnimationFrame(animationFrame);
   if (song) song.pause();
   if (failSound) failSound.pause();
@@ -137,6 +177,7 @@ function applySound() {
   }
   ui.soundSwitch.textContent = localMuted ? "♫ 음악 꺼짐" : "♫ 음악 켜짐";
   ui.soundSwitch.setAttribute("aria-pressed", String(localMuted));
+  if (bridgeActive || bridgePending) bridgeCommand("mute", {muted: localMuted});
 }
 
 // On mobile, playing a second audio element after a long asynchronous
@@ -307,12 +348,25 @@ function failNow() {
   ui.skip.hidden = true;
   publishOutcome();
   fullyFinished = true;
-  if (!silentMode) playFailSound();
+  ui.unlockAudio.hidden = true;
+  if (bridgeActive) bridgeCommand("fail");
+  else if (!silentMode) playFailSound();
   scheduleBadgeAwards();
 }
 function tick() {
   if (!started || fullyFinished || !args || !song) return;
-  const position = silentMode ? Math.max(0, (performance.now() - silentStart) / 1000) : song.currentTime;
+  if (bridgePending) {
+    // Parent controller replies immediately; only fall back if absent or stalled.
+    const limit = bridgeSeen ? 10000 : 1200;
+    if (performance.now() - bridgePendingSince >= limit) {
+      bridgeCommand("stop");
+      localAudioFallback();
+    }
+    animationFrame = requestAnimationFrame(tick);
+    return;
+  }
+  const position = bridgeActive ? bridgePosition : silentMode ?
+    Math.max(0, (performance.now() - silentStart) / 1000) : song.currentTime;
   const spec = args.track;
   ui.progress.style.width = Math.min(100, position / spec.end * 100) + "%";
   rollIdleNumbers(performance.now());
@@ -347,6 +401,9 @@ function onSongEnded() {
   fullyFinished = true;
   cancelAnimationFrame(animationFrame);
   if (song && !song.ended) song.pause(); // Honour the configured track ending.
+  if (bridgeActive) bridgeCommand("stop");
+  bridgeActive = false;
+  ui.unlockAudio.hidden = true;
   publishOutcome();
   ui.skip.hidden = true;
   if (Boolean(args.win)) ui.status.textContent = "피날레 완료 · 최종 점수 공개";
@@ -358,6 +415,7 @@ function skip() {
   fullyFinished = true;
   publishOutcome();
   ui.skip.hidden = true;
+  ui.unlockAudio.hidden = true;
   ui.status.textContent = "연출 건너뛰기 · 최종 점수 공개";
   scheduleBadgeAwards();
 }
@@ -384,22 +442,16 @@ function start() {
   started = true;
   ui.skip.hidden = false;
   ui.status.textContent = "빌드업 · AI 유사도를 계산했습니다";
-  // Autoplay is attempted immediately. Mobile browsers may block unprompted audio:
-  // keep the original drop timing with a silent visual clock in that case.
-  silentStart = performance.now();
-  silentMode = false;
-  let pending;
-  try { pending = song.play(); }
-  catch (_) { pending = Promise.reject(_); }
-  if (pending && typeof pending.catch === "function") {
-    pending.catch(() => {
-      if (!fullyFinished && started) {
-        silentMode = true;
-        silentStart = performance.now();
-        ui.status.textContent = "자동 재생 제한 · 무음으로 결과 공개 중";
-      }
-    });
-  }
+  // The parent window owns the persistent BGM media element. Borrow that
+  // already gesture-activated element via postMessage (works across iframes).
+  bridgePending = true;
+  bridgeActive = false;
+  bridgeSeen = false;
+  fallbackAttempted = false;
+  bridgePosition = 0;
+  bridgePendingSince = performance.now();
+  ui.status.textContent = "배경음악 플레이어로 결과 음악 연결 중";
+  bridgeCommand("start", {track_url: args.track.url, fail_url: args.fail_url});
   animationFrame = requestAnimationFrame(tick);
 }
 // Reconstruct the earlier sigmoid visualization from the *stored* model output.
@@ -496,6 +548,12 @@ function setup(data) {
   args = data;
   matchCount = (data.matches || []).filter(Boolean).length;
   started = false;
+  bridgePending = false;
+  bridgeActive = false;
+  bridgeSeen = false;
+  bridgePosition = 0;
+  fallbackAttempted = false;
+  manualSoundChoice = false;
   silentMode = false;
   silentStart = null;
   revealFinished = false;
@@ -528,6 +586,7 @@ function setup(data) {
   ui.analysis.hidden = true;
   ui.explain.setAttribute("aria-expanded", "false");
   ui.skip.hidden = true;
+  ui.unlockAudio.hidden = true;
   ui.explain.hidden = true;
   ui.explain.textContent = "판정 이유 · 그래프 보기";
   ui.afterActions.hidden = true;
@@ -544,7 +603,7 @@ function setup(data) {
     document.body.style.setProperty("--background", 'url("' + data.art.background + '")');
   }
   initializeTrack(data);
-  primeFailSound(); // Pre-unlock the failure effect when autoplay is permitted.
+  // Failure sound is played on the same unlocked parent BGM element when possible.
   applySound();
   pauseMainBgm();
   screen.hidden = false;
@@ -552,6 +611,32 @@ function setup(data) {
   send("streamlit:setFrameHeight", {height: window.innerHeight || 700});
 }
 ui.skip.addEventListener("click", skip);
+ui.unlockAudio.addEventListener("click", () => {
+  if (!started || fullyFinished) return;
+  // A real tap in this iframe can unlock audio when the browser rejected
+  // the parent and iframe autoplay attempts.
+  manualSoundChoice = true;
+  const elapsed = silentMode ? Math.max(0, (performance.now() - silentStart) / 1000) : 0;
+  if (bridgeActive) bridgeCommand("stop");
+  bridgePending = false;
+  bridgeActive = false;
+  ui.unlockAudio.hidden = true;
+  applySound();
+  try { song.currentTime = Math.min(elapsed, args.track.end - 0.3); } catch (_) {}
+  primeFailSound();
+  let playing;
+  try { playing = song.play(); } catch (error) { playing = Promise.reject(error); }
+  Promise.resolve(playing).then(() => {
+    if (fullyFinished) { song.pause(); return; }
+    silentMode = false;
+    ui.status.textContent = "음악과 함께 결과 공개 중";
+  }).catch(() => {
+    if (!fullyFinished) {
+      ui.unlockAudio.hidden = false;
+      ui.status.textContent = "재생 제한 · 연출은 무음으로 계속됩니다";
+    }
+  });
+});
 ui.explain.addEventListener("click", openExplanation);
 ui.analysisClose.addEventListener("click", closeExplanation);
 badgeUI.close.addEventListener("click", dismissBadgeAwards);
@@ -588,16 +673,58 @@ ui.again.addEventListener("click", () => sendAction("again"));
 ui.home.addEventListener("click", () => sendAction("home"));
 ui.soundSwitch.addEventListener("click", () => {
   localMuted = !localMuted;
+  manualSoundChoice = true;
   applySound();
+  // An explicit music-on tap also unlocks the local fallback if needed.
+  if (!localMuted && !ui.unlockAudio.hidden) ui.unlockAudio.click();
 });
 document.addEventListener("visibilitychange", () => {
   if (!song || !started || fullyFinished) return;
+  if (bridgePending || bridgeActive) return; // Parent controller handles visibility.
   if (document.hidden) song.pause();
   else if (!silentMode) song.play().catch(() => {
     silentMode = true;
     silentStart = performance.now();
     ui.status.textContent = "자동 재생 제한 · 무음으로 결과 공개 중";
   });
+});
+// The parent reports the real audio clock; each digit lands on the soundtrack.
+window.addEventListener("message", event => {
+  const data = event.data;
+  if (event.source !== window.parent || data?.channel !== AUDIO_CHANNEL ||
+      data.round_id !== roundId || !started) return;
+  // A failure stinger can be rejected after the verdict is already visible.
+  if (fullyFinished && data.type !== "fail-blocked") return;
+  if (data.type === "loading") {
+    bridgeSeen = true;
+    if (typeof data.muted === "boolean" && !manualSoundChoice) {
+      localMuted = data.muted;
+      applySound();
+    }
+  } else if (data.type === "playing") {
+    bridgeSeen = true;
+    bridgePending = false;
+    bridgeActive = true;
+    silentMode = false;
+    ui.unlockAudio.hidden = true;
+    song.pause(); // Never overlap the iframe fallback with the BGM audio.
+    if (Number.isFinite(data.seconds)) bridgePosition = data.seconds;
+    if (typeof data.muted === "boolean" && !manualSoundChoice) {
+      localMuted = data.muted;
+      applySound();
+    }
+    ui.status.textContent = "결과 음악 재생 중";
+  } else if (data.type === "time") {
+    if (bridgeActive && Number.isFinite(data.seconds)) bridgePosition = data.seconds;
+  } else if (data.type === "paused") {
+    if (bridgeActive && Number.isFinite(data.seconds)) bridgePosition = data.seconds;
+  } else if (data.type === "blocked" || data.type === "unavailable") {
+    localAudioFallback();
+  } else if (data.type === "ended") {
+    onSongEnded();
+  } else if (data.type === "fail-blocked") {
+    if (!localMuted) ui.retryFail.hidden = false;
+  }
 });
 window.addEventListener("pagehide", stopMedia);
 window.addEventListener("message", event => {
