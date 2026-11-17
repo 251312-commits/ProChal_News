@@ -5,11 +5,11 @@ from streamlit_autorefresh import st_autorefresh
 from st_clickable_images import clickable_images
 from modules.badges import BADGES, parse_owned
 from modules.badge_display import NAMEPLATE_CSS, badge_gallery_art_css, nameplate_html
-from modules.db_handler import init_gspread
+from modules.db_handler import deferred_user_sheet
 from modules.ui_components import change_page, load_local_image_url
 from views.badges import open_badge_gallery
 
-ws = init_gspread()
+ws = deferred_user_sheet()
 
 # 정의된 함수: show_main_page
     
