@@ -17,6 +17,10 @@ function finish(action) {
   sent = true;
   clearInterval(interval);
   for (const button of scene.querySelectorAll("button")) button.disabled = true;
+  window.parent.postMessage({
+    type: "pc:loading:start",
+    label: action === "predict" ? "예측 화면 준비 중…" : "은행으로 이동 중…"
+  }, hostOrigin);
   send("streamlit:setComponentValue", {value: {action, round_id: roundId}, dataType: "json"});
 }
 
