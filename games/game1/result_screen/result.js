@@ -598,7 +598,9 @@ document.addEventListener("visibilitychange", () => {
 window.addEventListener("message", event => {
   const data = event.data;
   if (event.source !== window.parent || data?.channel !== AUDIO_CHANNEL ||
-      data.round_id !== roundId || !started || fullyFinished) return;
+      data.round_id !== roundId || !started) return;
+  // A failure stinger can be rejected after the verdict is already visible.
+  if (fullyFinished && data.type !== "fail-blocked") return;
   if (data.type === "loading") {
     bridgeSeen = true;
     if (typeof data.muted === "boolean" && !manualSoundChoice) {
