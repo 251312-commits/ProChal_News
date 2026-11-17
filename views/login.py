@@ -1,12 +1,12 @@
 import streamlit as st
 from modules.account_math import account_amount
 from modules.account_ids import is_valid_student_id, is_valid_teacher_id
-from modules.db_handler import init_gspread
+from modules.db_handler import deferred_user_sheet
 from modules.nickname import is_valid_nickname, normalize_nickname
 from modules.transactions import TransactionError, register_player, register_teacher, transaction_id
 from modules.ui_components import change_page
 
-ws = init_gspread()
+ws = deferred_user_sheet()
 
 # 정의된 함수: show_login_page
 
