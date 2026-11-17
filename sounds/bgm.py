@@ -9,6 +9,7 @@ from pathlib import Path
 import streamlit.components.v1 as components
 
 _SCORE_ROLL_JS = json.dumps(Path(__file__).with_name("score_roll.js").read_text(encoding="utf-8"))
+_RESULT_AUDIO_JS = json.dumps(Path(__file__).with_name("game1_result_audio.js").read_text(encoding="utf-8"))
 
 
 def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False, suspend_for_result: bool = False):
@@ -68,12 +69,13 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
 
           function updateAudio(player) {{
             const gain = player.muted ? 0 : volumeGain(player.volume);
-            player.intro.volume = gain;
-            player.loop.volume = gain;
+            if (player.resultBorrowed !== player.intro) player.intro.volume = gain;
+            if (player.resultBorrowed !== player.loop) player.loop.volume = gain;
             host.__newsScoreRoll?.setVolume(gain);
           }}
 
           function stop(player) {{
+            host.__newsGame1ResultPlayer?.stop();
             player.intro.pause();
             player.loop.pause();
             player.intro.currentTime = 0;
@@ -100,6 +102,7 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
                 return;
               }}
               player.playing = true;
+              player.activeElement = selected;
               host.__bgm_playing = true;
             }}).catch(() => {{
               // Autoplay is gated until a user gesture. Never restart muted music.
@@ -158,6 +161,7 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
                   host.__newsResultActive || doc.visibilityState === "hidden") return;
               loopAudio.play().then(() => {{
                 player.playing = true;
+                player.activeElement = loopAudio;
                 host.__bgm_playing = true;
               }}).catch(() => {{
                 player.playing = false;
@@ -193,12 +197,22 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
           updateAudio(player);
           // Streamlit reruns update the UI, never create duplicate audio tracks.
           if (player.muted || player.volume <= 0 || host.__newsResultActive) {{
-            player.intro.pause();
-            player.loop.pause();
+            // A result track borrows one of the unlocked BGM media elements.
+            // Never pause that element on a rerun of this sound bootstrap.
+            if (!host.__newsGame1ResultPlayer?.isBorrowed(player.intro)) player.intro.pause();
+            if (!host.__newsGame1ResultPlayer?.isBorrowed(player.loop)) player.loop.pause();
             player.playing = false;
             host.__bgm_playing = false;
           }} else {{
             start(player);
+          }}
+
+          // Install the result sound bridge in the persistent parent window,
+          // sharing its already-unlocked BGM audio element rather than a new iframe audio.
+          if (!host.__newsGame1ResultPlayer) {{
+            const resultController = doc.createElement("script");
+            resultController.textContent = {_RESULT_AUDIO_JS};
+            doc.head.appendChild(resultController).remove();
           }}
 
           // Install in the app document so gesture and DOM callbacks outlive this iframe.
@@ -330,6 +344,7 @@ def stop_bgm():
         <script>
         (function () {
           var host = window.parent;
+          host.__newsGame1ResultPlayer?.stop();
           host.__newsScoreRoll?.cancel();
           var player = host.__newsBgmPlayer;
           if (player) {
