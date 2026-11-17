@@ -9,8 +9,94 @@
 <linearGradient id="glass" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0" stop-color="#E9FDFF" stop-opacity=".70"/><stop offset=".55" stop-color="#75CAE0" stop-opacity=".15"/><stop offset="1" stop-color="#DAFDFF" stop-opacity=".38"/></linearGradient>
 <filter id="halo" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter>
 <clipPath id="cut"><path d="M128 26 L206 57 Q218 64 213 80 L202 164 Q197 187 128 228 Q59 187 54 164 L43 80 Q38 64 50 57 Z"/></clipPath>
+<linearGradient id="wingFeather" x1="3%" y1="0%" x2="100%" y2="100%">
+ <stop offset="0%" stop-color="#FFF1CD"/>
+ <stop offset="38%" stop-color="#DAB76C"/>
+ <stop offset="71%" stop-color="#805A2D"/>
+ <stop offset="100%" stop-color="#DAB76C"/>
+</linearGradient>
+<linearGradient id="wingShadow" x1="0%" y1="0%" x2="100%" y2="100%">
+ <stop offset="0%" stop-color="#805A2D"/>
+ <stop offset="52%" stop-color="#DAB76C"/>
+ <stop offset="100%" stop-color="#FFF1CD"/>
+</linearGradient>
+<filter id="wingHalo" x="-60%" y="-60%" width="220%" height="220%">
+ <feGaussianBlur stdDeviation="5"/>
+</filter>
 </defs>
-<path d="M128 9 L220 45 Q238 55 235 75 L224 167 Q215 206 128 249 Q41 206 32 167 L21 75 Q18 55 36 45 Z" fill="#FFF2BF" opacity=".26" filter="url(#halo)"/>
+<g id="legendary-wings" aria-hidden="true" stroke-linejoin="round">
+<g opacity=".44" filter="url(#wingHalo)">
+ <path d="M112 153 C71 126 18 105 24 27 C53 63 85 55 107 101 L112 153Z" fill="#FFE0A0"/>
+ <path d="M144 153 C185 126 238 105 232 27 C203 63 171 55 149 101 L144 153Z" fill="#FFE0A0"/>
+</g>
+<g id="wing-left">
+<!-- Outer scalloped feathers are readable at 48px icons. -->
+<path d="M101 150
+ C82 136 56 132 30 116 C17 108 7 95 7 82
+ C23 88 44 97 60 100
+ C34 84 16 71 15 43
+ C35 54 54 68 71 74
+ C54 54 46 36 51 15
+ C76 39 97 53 108 86
+ C117 112 112 136 101 150 Z"
+ fill="url(#wingShadow)" stroke="#FFE0A0" stroke-width="3" stroke-linejoin="round"/>
+<path d="M100 105
+ C87 74 72 46 52 19 C49 44 59 65 78 86
+ C88 98 96 103 100 105 Z" fill="url(#wingFeather)" stroke="#FFF1CD" stroke-width="2.6"/>
+<path d="M100 121
+ C78 94 45 68 16 47 C14 73 33 96 59 113
+ C77 124 90 127 100 121 Z" fill="url(#wingFeather)" stroke="#FFF1CD" stroke-width="2.7"/>
+<path d="M100 140
+ C74 116 38 100 8 90 C11 116 31 132 59 143
+ C79 150 94 147 100 140 Z" fill="url(#wingFeather)" stroke="#FFF1CD" stroke-width="2.7"/>
+<path d="M95 155
+ C69 140 42 130 22 129 C36 153 58 166 80 165
+ C88 164 93 161 95 155 Z" fill="url(#wingFeather)" stroke="#FFF1CD" stroke-width="2.4"/>
+<path d="M102 112 Q83 69 58 38 M102 125 Q73 97 36 69
+ M98 141 Q67 125 27 107 M93 156 Q67 150 43 143"
+ fill="none" stroke="#805A2D" stroke-width="2.2" opacity=".65" stroke-linecap="round"/>
+<path d="M102 106 Q87 77 62 54 M101 123 Q73 102 37 85
+ M99 141 Q67 126 24 107"
+ fill="none" stroke="#FFE0A0" stroke-width="1.5" opacity=".82" stroke-linecap="round"/>
+</g>
+<g id="wing-right" transform="translate(256 0) scale(-1 1)">
+<!-- Outer scalloped feathers are readable at 48px icons. -->
+<path d="M101 150
+ C82 136 56 132 30 116 C17 108 7 95 7 82
+ C23 88 44 97 60 100
+ C34 84 16 71 15 43
+ C35 54 54 68 71 74
+ C54 54 46 36 51 15
+ C76 39 97 53 108 86
+ C117 112 112 136 101 150 Z"
+ fill="url(#wingShadow)" stroke="#FFE0A0" stroke-width="3" stroke-linejoin="round"/>
+<path d="M100 105
+ C87 74 72 46 52 19 C49 44 59 65 78 86
+ C88 98 96 103 100 105 Z" fill="url(#wingFeather)" stroke="#FFF1CD" stroke-width="2.6"/>
+<path d="M100 121
+ C78 94 45 68 16 47 C14 73 33 96 59 113
+ C77 124 90 127 100 121 Z" fill="url(#wingFeather)" stroke="#FFF1CD" stroke-width="2.7"/>
+<path d="M100 140
+ C74 116 38 100 8 90 C11 116 31 132 59 143
+ C79 150 94 147 100 140 Z" fill="url(#wingFeather)" stroke="#FFF1CD" stroke-width="2.7"/>
+<path d="M95 155
+ C69 140 42 130 22 129 C36 153 58 166 80 165
+ C88 164 93 161 95 155 Z" fill="url(#wingFeather)" stroke="#FFF1CD" stroke-width="2.4"/>
+<path d="M102 112 Q83 69 58 38 M102 125 Q73 97 36 69
+ M98 141 Q67 125 27 107 M93 156 Q67 150 43 143"
+ fill="none" stroke="#805A2D" stroke-width="2.2" opacity=".65" stroke-linecap="round"/>
+<path d="M102 106 Q87 77 62 54 M101 123 Q73 102 37 85
+ M99 141 Q67 126 24 107"
+ fill="none" stroke="#FFE0A0" stroke-width="1.5" opacity=".82" stroke-linecap="round"/>
+</g>
+<!-- Connecting saddle is mostly covered by the original shield; tips remain visible. -->
+<path d="M88 144 Q128 123 168 144 L152 174 Q128 166 104 174Z"
+ fill="url(#wingShadow)" stroke="#DAB76C" stroke-width="3"/>
+</g>
+<circle cx="128" cy="30" r="19" fill="none" stroke="#FFE0A0" stroke-width="3"/>
+ <path d="M118 20 H138 M118 40 H138 M120 22 L136 38 M136 22 L120 38" stroke="#FFF1CD" stroke-width="2.3" stroke-linecap="round"/>
+ <path d="M128 48 V58" stroke="#DAB76C" stroke-width="3"/>
+<g id="legendary-center" transform="translate(34.56 32) scale(.73)"><path d="M128 9 L220 45 Q238 55 235 75 L224 167 Q215 206 128 249 Q41 206 32 167 L21 75 Q18 55 36 45 Z" fill="#FFF2BF" opacity=".26" filter="url(#halo)"/>
 <path d="M128 10 L218 46 Q236 56 231 75 L222 166 Q216 199 128 246 Q40 199 34 166 L25 75 Q20 56 38 46 Z" fill="url(#rim)" stroke="#FFF2BF" stroke-width="5"/>
 <path d="M128 24 L206 55 Q220 62 215 81 L204 161 Q197 190 128 231 Q59 190 52 161 L41 81 Q36 62 50 55 Z" fill="url(#core)" stroke="#FFE1A1" stroke-width="2.5"/>
 <g clip-path="url(#cut)">
@@ -32,5 +118,5 @@
 </g>
 <path d="M128 18 L211 50 Q225 57 222 78 L211 166 Q200 194 128 238 Q56 194 45 166 L34 78 Q31 57 45 50 Z" fill="none" stroke="#FFF2BF" stroke-opacity=".72" stroke-width="2"/>
 <path d="M44 67 L61 61 M195 61 L212 67" stroke="#FFE1A1" stroke-width="4" stroke-linecap="round"/>
-<path d="M128 25 L134 34 L128 43 L122 34 Z" fill="#F0B95B"/>
+<path d="M128 25 L134 34 L128 43 L122 34 Z" fill="#F0B95B"/></g>
 </svg>
