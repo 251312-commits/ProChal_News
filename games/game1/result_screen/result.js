@@ -74,6 +74,7 @@ function sendAction(action) {
   if (!roundId || locked) return;
   locked = true;
   stopMedia();
+  window.parent.postMessage({type: "pc:loading:start", label: "화면 이동 중…"}, hostOrigin);
   send("streamlit:setComponentValue", {
     value: {round_id: roundId, action: action},
     dataType: "json"
