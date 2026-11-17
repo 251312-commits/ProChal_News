@@ -85,6 +85,15 @@ class SimilarityLoadingTests(TestCase):
         self.assertIn('pc-sim-meter', html)
         self.assertIn('PC_SIM_VIDEO_SLOT', html)
 
+    def test_video_audio_button_uses_browser_click_bridge(self):
+        source = COMMON.read_text(encoding="utf-8")
+        bridge = (COMMON.parent / "similarity_video_controls.js").read_text(encoding="utf-8")
+        self.assertIn('components.html(f"<script>{_VIDEO_SOUND_JS}</script>"', source)
+        self.assertIn('pc-sim-sound-toggle', source)
+        self.assertIn('doc.addEventListener("click", toggleSound)', bridge)
+        self.assertIn('video.muted = !turnOn', bridge)
+        self.assertIn('video.play()', bridge)
+
     def test_random_clip_stays_small_autoplays_muted_and_keeps_sound_controls(self):
         with TemporaryDirectory() as folder:
             source = Path(folder)
