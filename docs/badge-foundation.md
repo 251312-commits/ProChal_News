@@ -80,3 +80,12 @@ owned/equipped IDs. The fifth rarity is `mythic`, one tier above Legendary.
 The bank badges are server-awarded from immutable Transactions history,
 not editable client counters. See [badge-gallery.md](badge-gallery.md)
 for the exact 5,000C / five settled turns / full payoff rule and deployment.
+
+## 27 badges — referral extension
+
+An Epic `invite_one` and winged Legendary `invite_three` are appended.
+Both are automatically awarded to the existing referrer on successful,
+distinct student registrations through the locked wallet gateway. No new
+Users sheet columns are needed. `all_legendary` requires six Legendary
+awards for future recipients; historical owners keep the Mythic badge.
+See [badge-gallery.md](badge-gallery.md) for deployment and verified-count rules.

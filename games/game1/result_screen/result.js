@@ -48,6 +48,13 @@ const ui = {
   retryFail: screen.querySelector(".retry-fail")
 };
 
+const badgeUI = {
+  layer: document.querySelector(".badge-awards"),
+  heading: document.querySelector("#badge-awards-heading"),
+  items: document.querySelector(".badge-awards-items"),
+  close: document.querySelector(".badge-awards-close")
+};
+
 let roundId = null;
 let args = null;
 let hostOrigin = "*";
@@ -66,6 +73,8 @@ let localMuted = false;
 let locked = false;
 let silentStart = null;
 let silentMode = false;
+let badgeAwardTimer = 0;
+let awardsShown = false;
 
 function send(type, payload) {
   window.parent.postMessage({isStreamlitMessage: true, type, ...payload}, hostOrigin);
@@ -194,6 +203,72 @@ function rollIdleNumbers(time) {
     }
   }
 }
+function showBadgeAwards() {
+  if (!fullyFinished || !revealFinished || awardsShown ||
+      !Array.isArray(args?.badge_awards) || !args.badge_awards.length) return;
+  awardsShown = true;
+  if (!ui.analysis.hidden) closeExplanation();
+  badgeUI.items.replaceChildren();
+  for (const award of args.badge_awards) {
+    if (!award || typeof award.id !== "string") continue;
+    const card = document.createElement("article");
+    card.className = "badge-awards-card";
+    card.setAttribute("role", "listitem");
+    card.style.setProperty("--badge-accent", String(award.accent || "#f9d783"));
+
+    const art = document.createElement("div");
+    art.className = "badge-awards-art";
+    if (typeof award.image === "string" &&
+        award.image.startsWith("data:image/svg+xml;base64,")) {
+      const img = document.createElement("img");
+      img.src = award.image;
+      img.alt = "";
+      art.append(img);
+    } else {
+      art.textContent = String(award.symbol || "✦");
+    }
+
+    const details = document.createElement("div");
+    details.className = "badge-awards-details";
+    for (const [cls, tag, value] of [
+      ["badge-awards-rarity", "div", award.rarity],
+      ["badge-awards-title", "h3", award.title],
+      ["badge-awards-description", "p", award.description]
+    ]) {
+      const node = document.createElement(tag);
+      node.className = cls;
+      node.textContent = String(value || "");
+      details.append(node);
+    }
+    card.append(art, details);
+    badgeUI.items.append(card);
+  }
+  if (!badgeUI.items.children.length) {
+    ui.afterActions.hidden = false;
+    return;
+  }
+  badgeUI.heading.textContent = "새로운 배지 " + badgeUI.items.children.length + "개 획득!";
+  badgeUI.layer.hidden = false;
+  badgeUI.close.focus({preventScroll: true});
+}
+function scheduleBadgeAwards() {
+  if (awardsShown || !Array.isArray(args?.badge_awards) || !args.badge_awards.length) return;
+  clearTimeout(badgeAwardTimer);
+  // Give the final score a moment on-screen; soundtrack/drop timing is unchanged.
+  badgeAwardTimer = window.setTimeout(showBadgeAwards, 850);
+}
+function dismissBadgeAwards() {
+  if (badgeUI.layer.hidden) return;
+  badgeUI.layer.hidden = true;
+  ui.afterActions.hidden = false;
+  ui.home.focus({preventScroll: true});
+  send("streamlit:setComponentValue", {
+    value: {round_id: roundId, action: "badge_dismissed",
+            badge_ids: args.badge_awards.map(award => award.id)},
+    dataType: "json"
+  });
+}
+
 function publishOutcome() {
   if (revealFinished) return;
   revealFinished = true;
@@ -202,7 +277,8 @@ function publishOutcome() {
   if (!args.win || fullyFinished) ui.progress.style.width = "100%";
   ui.outcome.hidden = false;
   ui.explain.hidden = false;
-  ui.afterActions.hidden = false;
+  // Keep exit actions locked until earned badges have been acknowledged.
+  ui.afterActions.hidden = Boolean(args.badge_awards?.length);
   ui.wallet.hidden = false;
   ui.balance.textContent = Number(args.coins).toLocaleString("ko-KR") + " C";
   const win = Boolean(args.win);
@@ -233,6 +309,7 @@ function failNow() {
   publishOutcome();
   fullyFinished = true;
   if (!silentMode) playFailSound();
+  scheduleBadgeAwards();
 }
 function tick() {
   if (!started || fullyFinished || !args || !song) return;
@@ -274,6 +351,7 @@ function onSongEnded() {
   publishOutcome();
   ui.skip.hidden = true;
   if (Boolean(args.win)) ui.status.textContent = "피날레 완료 · 최종 점수 공개";
+  scheduleBadgeAwards();
 }
 function skip() {
   if (!started) return;
@@ -282,6 +360,7 @@ function skip() {
   publishOutcome();
   ui.skip.hidden = true;
   ui.status.textContent = "연출 건너뛰기 · 최종 점수 공개";
+  scheduleBadgeAwards();
 }
 function initializeTrack(data) {
   if (song) song.pause();
@@ -427,6 +506,10 @@ function setup(data) {
   revealed = [false, false];
   lastRoll = 0;
   locked = false;
+  clearTimeout(badgeAwardTimer);
+  awardsShown = false;
+  badgeUI.layer.hidden = true;
+  badgeUI.items.replaceChildren();
   const prefs = soundSettings();
   localMuted = prefs.muted;
   applySound();
@@ -472,10 +555,21 @@ function setup(data) {
 ui.skip.addEventListener("click", skip);
 ui.explain.addEventListener("click", openExplanation);
 ui.analysisClose.addEventListener("click", closeExplanation);
+badgeUI.close.addEventListener("click", dismissBadgeAwards);
 ui.analysis.addEventListener("click", event => {
   if (event.target === ui.analysis) closeExplanation(); // Backdrop click.
 });
 document.addEventListener("keydown", event => {
+  if (!badgeUI.layer.hidden) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      dismissBadgeAwards();
+    } else if (event.key === "Tab") {
+      event.preventDefault();
+      badgeUI.close.focus();
+    }
+    return;
+  }
   if (ui.analysis.hidden) return;
   if (event.key === "Escape") {
     event.preventDefault();

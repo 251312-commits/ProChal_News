@@ -44,6 +44,8 @@ def show_main_page():
             # Static SVG image backgrounds belong to the parent page.
             # Dialog-only reruns then transmit just lightweight state CSS.
             st.html(badge_gallery_art_css())
+            # The gallery is itself a dialog; never open an award modal alongside it.
+            st.session_state["_badge_gallery_opened_this_run"] = True
             open_badge_gallery()
 
     st.markdown(

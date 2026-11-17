@@ -11,6 +11,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from modules.ui_components import change_page, load_local_image_url
+from modules.badge_notifications import acknowledge_badge_awards, pending_badge_cards
 
 
 RESULT_TRACKS = (
@@ -129,11 +130,15 @@ def render_game1_result_reveal(res: dict) -> None:
             fail_url=_SOUND_ROOT + "fail.mp3",
             model=model,
             art=art,
+            badge_awards=pending_badge_cards(),
             default=None,
         )
     if not isinstance(event, dict) or event.get("round_id") != reveal_id:
         return
     action = event.get("action")
+    if action == "badge_dismissed":
+        acknowledge_badge_awards(event.get("badge_ids"))
+        return
     if action not in ("again", "home"):
         return
     reset_game1_round()

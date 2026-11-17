@@ -438,10 +438,17 @@ function process_(request) {
         const prior = balance_(ref.values);
         const next = {coins: prior.coins + 3000, streak: prior.streak, loan: prior.loan, principal: prior.principal};
         requests.push.apply(requests, walletUpdate_(users, ref.rowIndex, next));
-        logs.push(record_({
+        const referralRow = record_({
           transaction_id: 'referrer:' + tx.transaction_id.split(':')[1],
           student_id: referrerId, kind: 'referrer', delta: 3000
-        }, prior, next, 'referral:' + tx.student_id));
+        }, prior, next, 'referral:' + tx.student_id);
+        logs.push(referralRow);
+        // The referral bonus, invited account and new badges are committed
+        // in the SAME atomic Sheets batch. Never trust a client invite counter.
+        const referrerBadges = awardBadges_(
+          ledger, users, ref, referrerId, referralRow, next
+        );
+        if (referrerBadges.request) requests.push(referrerBadges.request);
       }
       requests.push(append_(ledger, logs));
       commit_(ss, requests);
