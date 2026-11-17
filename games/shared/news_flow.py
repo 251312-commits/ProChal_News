@@ -47,7 +47,8 @@ def _remember_article(url):
 
 def _get_news_candidates(candidates_key):
     if candidates_key not in st.session_state:
-        raw_records = ws_news.get_all_records()
+        with st.spinner("기사 후보를 확인하는 중…"):
+            raw_records = ws_news.get_all_records()
         news_data = []
         state = st.session_state
         user = state.get("current_user_data") or {}
@@ -98,7 +99,8 @@ def _get_news_candidates(candidates_key):
 
 def _open_chosen_article(item, news_key, candidates_key, *, include_image=False):
     new_count = item['count'] + 1
-    ws_news.update_cell(item['row_idx'], 2, new_count)
+    with st.spinner("기사 선택을 저장하는 중…"):
+        ws_news.update_cell(item['row_idx'], 2, new_count)
 
     image_url = ''
     with st.spinner("선택 기사 읽어오는 중..."):
