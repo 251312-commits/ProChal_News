@@ -17,12 +17,14 @@ const BADGE_IDS = [
   'g1_hit', 'g2_ten_wins', 'g2_both_fifteen',
   'g3_both_five', 'g3_five_streak', 'g4_five_wins',
   'g4_four_streak', 'g5_three_wins', 'g5_three_streak',
-  'all_legendary', 'bankrupt', 'loan_survivor', 'first_borrow', 'first_repay'
+  'all_legendary', 'bankrupt', 'loan_survivor', 'first_borrow', 'first_repay',
+  'invite_one', 'invite_three'
 ];
-// Mythic collector requires the FIVE Legendary badges, not either Mythic badge.
+// Mythic collector requires ALL SIX Legendary badges (including referrals).
+// Existing players who already own it retain their historic award.
 const LEGENDARY_REQUIRED_IDS = [
   'streak_eight_mixed', 'g1_hit', 'g4_four_streak', 'g5_three_streak',
-  'loan_survivor'
+  'loan_survivor', 'invite_three'
 ];
 const BANK_LEGENDARY_BORROW_MIN = 5000; // single borrow
 const BANK_LEGENDARY_TURN_MIN = 5; // confirmed interest:<round_id> receipts
@@ -296,11 +298,35 @@ function badgeFinanceFromRows_(rows, after) {
   return earned;
 }
 
+/**
+ * Count distinct invitees from real, successful registration bonus entries.
+ * Only Code.gs' locked registration flow creates kind='referrer' rows.
+ * A referral must be a real student account (not self/teacher), with the
+ * canonical bonus and stable registration transaction ID. A repeated
+ * receipt or duplicate student ID can never increment the threshold.
+ */
+function badgeReferralsFromRows_(rows, referrerId) {
+  const invitees = new Set();
+  rows.forEach(row => {
+    if (String(row[3]) !== 'referrer' ||
+        !/^referrer:[a-f0-9]{32}$/.test(String(row[0] || '')) ||
+        Number(row[7]) !== 3000) return;
+    const match = /^referral:([0-9]{5})$/.exec(String(row[15] || ''));
+    if (!match || !isStudentId_(match[1]) || match[1] === referrerId) return;
+    invitees.add(match[1]);
+  });
+  const earned = new Set();
+  if (invitees.size >= 1) earned.add('invite_one');
+  if (invitees.size >= 3) earned.add('invite_three');
+  return earned;
+}
+
 function awardBadges_(ledger, users, user, studentId, newRow, after) {
   const profile = badgeProfile_(users, user.rowIndex);
   const rows = badgeHistoryRows_(ledger, studentId, newRow);
   const earned = new Set(evaluateBadgesFromSettlements_(badgeSettlementsFromRows_(rows)));
   badgeFinanceFromRows_(rows, after).forEach(id => earned.add(id));
+  badgeReferralsFromRows_(rows, studentId).forEach(id => earned.add(id));
   const all = new Set(profile.owned.concat(Array.from(earned)));
   if (LEGENDARY_REQUIRED_IDS.every(id => all.has(id))) {
     all.add('all_legendary');
