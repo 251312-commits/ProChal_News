@@ -81,7 +81,7 @@ class BadgeGalleryTests(unittest.TestCase):
         self.assertNotIn("badge_symbol(badge.id),", source)
 
     def test_legendary_effects_are_unique(self):
-        self.assertEqual(len(LEGENDARY_ACCENTS), 5)
+        self.assertEqual(len(LEGENDARY_ACCENTS), 6)
         for badge in BADGES:
             if badge.rarity == "legendary":
                 self.assertIn(badge.id, LEGENDARY_ACCENTS)
