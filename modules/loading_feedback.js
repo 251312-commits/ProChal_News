@@ -14,13 +14,22 @@
 
   const KEY = "__pcOperationLoadingV1";
   if (host[KEY]) {
-    host[KEY].complete(pcRunToken);
+    if (host[KEY].version !== 2) {
+      // Legacy listener was installed without a removable handler.
+      // Reset the page once rather than keeping the immediate-click overlay.
+      host[KEY].clear();
+      host.location.reload();
+      return;
+    }
+    host[KEY].complete(pcRunToken, pcEnabled);
     return;
   }
 
   const STYLE_ID = "pc-operation-loading-style";
   const OVERLAY_ID = "pc-operation-loading";
-  let active = false, longWaitTimer = null, lastRunToken = null;
+  const SHOW_DELAY_MS = 200;
+  let enabled = Boolean(pcEnabled);
+  let active = false, showTimer = null, longWaitTimer = null, lastRunToken = null;
 
   function ensureStyle() {
     if (doc.getElementById(STYLE_ID)) return;
@@ -32,6 +41,9 @@
         place-items:center; background:rgba(5,0,13,.86); padding:20px;
         -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
         color:#fff; font-family:system-ui,-apple-system,sans-serif;
+      }
+      body:has(#pc-sim-load) #pc-operation-loading {
+        visibility:hidden!important; pointer-events:none!important;
       }
       #pc-operation-loading .pc-loading-card {
         width:min(100%,360px); padding:30px 25px 26px;
@@ -81,17 +93,25 @@
     doc.head.appendChild(style);
   }
 
+  function hasSimilarityLoader() {
+    return Boolean(doc.getElementById("pc-sim-load"));
+  }
+
   function clear() {
     active = false;
+    if (showTimer !== null) host.clearTimeout(showTimer);
     if (longWaitTimer !== null) host.clearTimeout(longWaitTimer);
+    showTimer = null;
     longWaitTimer = null;
     doc.getElementById(OVERLAY_ID)?.remove();
   }
 
-  function start(label) {
-    if (active) return; // Ignore duplicate taps while the server is busy.
+  function show(label) {
+    if (!active || !enabled || hasSimilarityLoader()) {
+      clear();
+      return;
+    }
     ensureStyle();
-    active = true;
     const overlay = doc.createElement("div");
     overlay.id = OVERLAY_ID;
     overlay.setAttribute("role", "status");
@@ -120,8 +140,23 @@
     }, 25000);
   }
 
-  function complete(token) {
-    if (token === lastRunToken) return;
+  function start(label) {
+    if (!enabled || active || hasSimilarityLoader()) return;
+    // Reserve the action immediately to block double-clicks, but do not
+    // show a full-screen overlay for sub-200ms Streamlit reruns.
+    active = true;
+    showTimer = host.setTimeout(() => {
+      showTimer = null;
+      show(label);
+    }, SHOW_DELAY_MS);
+  }
+
+  function complete(token, nextEnabled) {
+    enabled = Boolean(nextEnabled);
+    if (token === lastRunToken) {
+      if (!enabled) clear();
+      return;
+    }
     lastRunToken = token;
     clear();
   }
@@ -141,11 +176,25 @@
     return "요청 처리 중…";
   }
 
+  function isSimilarityTrigger(button) {
+    const label = (button.innerText || button.textContent || "").trim();
+    // These actions enter the existing similarity-analysis loader. Do not
+    // obscure it with the generic processing overlay.
+    return /유사도\s*(분석|판정|계산)/.test(label) ||
+      /\b(?:HIGH|LOW)\s*\((?:이상|미만)/.test(label);
+  }
+
   doc.addEventListener("click", (event) => {
-    if (active || !(event.target instanceof host.Element)) return;
+    if (!enabled || !(event.target instanceof host.Element)) return;
     const button = event.target.closest("button");
     if (!button || button.disabled || button.getAttribute("aria-disabled") === "true") return;
     if (!button.closest('[data-testid="stButton"], [data-testid="stFormSubmitButton"]')) return;
+    if (active) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      return;
+    }
+    if (isSimilarityTrigger(button)) return;
     start(labelFor(button));
   }, true);
 
@@ -162,7 +211,7 @@
       '.st-key-shared-news-stage iframe, .st-key-shared-article-reader iframe,' +
       ' .st-key-game1-prediction-screen iframe, .st-key-game1-result-reveal-screen iframe'
     )) {
-      start(data.label);
+      if (data.mode !== "similarity") start(data.label);
     } else if (data.type === "streamlit:setComponentValue" &&
       sourceIsFrame(event.source, '.st-key-main_menu_banners iframe') &&
       Number.isInteger(data.value) && data.value >= 0) {
@@ -170,7 +219,14 @@
     }
   });
 
+  // Existing similarity screen wins even when Streamlit inserts its markup
+  // after a generic click has already scheduled a loader.
+  const similarityObserver = new host.MutationObserver(() => {
+    if (active && hasSimilarityLoader()) clear();
+  });
+  similarityObserver.observe(doc.body, {childList:true, subtree:true});
+
   host.addEventListener("pagehide", clear);
-  host[KEY] = {start, complete, clear, version:1};
-  complete(pcRunToken);
+  host[KEY] = {start, complete, clear, version:2};
+  complete(pcRunToken, pcEnabled);
 })();

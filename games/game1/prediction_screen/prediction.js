@@ -43,6 +43,7 @@ function finish(action) {
   for (const button of screen.querySelectorAll("button")) button.disabled = true;
   window.parent.postMessage({
     type: "pc:loading:start",
+    mode: action === "confirm" ? "similarity" : "navigation",
     label: action === "confirm" ? "예측 결과 계산 중…" : "화면 이동 중…"
   }, hostOrigin);
   sendValue(action);

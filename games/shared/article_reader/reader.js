@@ -6,7 +6,7 @@ const bodyCopy = document.querySelector("#copy");
 const timer = document.querySelector("#timer");
 const progress = document.querySelector("#progress");
 const number = new Intl.NumberFormat("ko-KR");
-let roundId, hostOrigin = "*", interval, deadline, sent = false;
+let roundId, hostOrigin = "*", interval, deadline, sent = false, nextIsSimilarity = false;
 
 function send(type, payload) {
   window.parent.postMessage({isStreamlitMessage: true, type, ...payload}, hostOrigin);
@@ -19,6 +19,7 @@ function finish(action) {
   for (const button of scene.querySelectorAll("button")) button.disabled = true;
   window.parent.postMessage({
     type: "pc:loading:start",
+    mode: action === "predict" && nextIsSimilarity ? "similarity" : "navigation",
     label: action === "predict" ? "예측 화면 준비 중…" : "은행으로 이동 중…"
   }, hostOrigin);
   send("streamlit:setComponentValue", {value: {action, round_id: roundId}, dataType: "json"});
@@ -63,6 +64,7 @@ function setArticleImage(url) {
 function showArticle(args) {
   clearInterval(interval);
   roundId = args.round_id;
+  nextIsSimilarity = args.next_is_similarity === true;
   sent = false;
   for (const button of scene.querySelectorAll("button")) button.disabled = false;
 
