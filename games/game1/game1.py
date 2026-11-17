@@ -6,7 +6,6 @@ import streamlit.components.v1 as components
 
 import streamlit as st
 from modules.news_ai import summary, similarity_check
-from modules.db_handler import init_news_sheet
 from modules.ui_components import change_page, load_local_image_url
 from views.ranking import fetch_ranking_data
 from games.shared.result import show_summary_before_score
@@ -16,8 +15,6 @@ from games.shared.betting import render_betting_ui
 from games.shared.loading import similarity_analysis_loading
 from games.shared.interest import apply_end_of_turn_interest
 from modules.transactions import BalanceChanged, TransactionError, settle_game_round, update_session_balances
-
-ws_news = init_news_sheet()
 
 # 순이익(잔액 증가액) 배율. UI 예상 코인과 실제 승리 정산에 공통 적용.
 GAME_1_WIN_MULTIPLIER = 100.0

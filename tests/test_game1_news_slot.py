@@ -28,6 +28,9 @@ class NewsSlotTests(unittest.TestCase):
         self.component.return_value = None
         self.sheet = db.init_news_sheet.return_value
         self.users_sheet = db.init_gspread.return_value
+        # Deferred worksheet constructors should resolve to these same mocked sheets.
+        db.deferred_news_sheet.return_value = self.sheet
+        db.deferred_user_sheet.return_value = self.users_sheet
         self.sheet.get_all_records.return_value = [
             {"Title": "첫 기사", "URL": "url-1", "Count": 4},
             {"Title": "둘째 기사", "URL": "url-2", "Count": 7},

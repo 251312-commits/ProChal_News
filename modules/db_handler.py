@@ -199,3 +199,28 @@ def init_news_sheet():
         return news_ws
     ensure_news_schema(news_ws)
     return news_ws
+
+
+class _DeferredWorksheet:
+    """Resolve a cached Google worksheet on first use, not during module import.
+
+    This prevents a slow Google Sheets API request from blocking Streamlit's
+    initial script-health check while it imports all game and view modules.
+    Each attribute forwards to the existing st.cache_resource connection.
+    """
+
+    def __init__(self, factory):
+        self._factory = factory
+
+    def __getattr__(self, name):
+        return getattr(self._factory(), name)
+
+
+def deferred_user_sheet():
+    """Lightweight Users worksheet handle; does not open a network connection."""
+    return _DeferredWorksheet(init_gspread)
+
+
+def deferred_news_sheet():
+    """Lightweight News worksheet handle; does not open a network connection."""
+    return _DeferredWorksheet(init_news_sheet)
