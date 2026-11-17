@@ -12,7 +12,7 @@ import streamlit as st
 from games.shared.betting import check_user_coins_or_pop_bank
 from games.shared.betting import render_betting_ui
 from games.shared.loading import similarity_analysis_loading
-from modules.db_handler import init_news_sheet
+from modules.db_handler import deferred_news_sheet
 from games.shared.interest import apply_end_of_turn_interest
 from modules.transactions import BalanceChanged, TransactionError, settle_game_round, update_session_balances
 from modules.news_ai import bring_article, pick_5_lowest_count_news, similarity_check, summary
@@ -25,7 +25,7 @@ GAME_5_MIN_BET = 1000
 GAME_5_SCORE_MAX = 99.99
 GAME_5_TARGET_RANGE_WIDTH = 2.0
 
-ws_news = init_news_sheet()
+ws_news = deferred_news_sheet()
 
 
 def _reset_game_5_state() -> None:
