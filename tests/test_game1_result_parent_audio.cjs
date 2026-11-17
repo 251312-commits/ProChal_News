@@ -82,6 +82,9 @@ function element() {
   const attrs = {}, listeners = {}, classes = new Set();
   return {
     hidden: false, textContent: "", className: "", offsetWidth: 90,
+    children: [],
+    append(...nodes) { this.children.push(...nodes); },
+    replaceChildren(...nodes) { this.children.splice(0, this.children.length, ...nodes); },
     attrs, style: {setProperty() {}}, parentElement: {setAttribute() {}},
     classList: {
       add(...names) { names.forEach(n => classes.add(n)); },
@@ -98,6 +101,8 @@ function element() {
 }
 function frontend({blockedLocal=false, guess=4, units=8704}={}) {
   const nodes={}, arrays={}, docListeners={}, windowListeners={}, calls=[];
+  const timers = new Map();
+  let nextTimer = 0;
   const frames = new Map();
   let seq = 0, now = 1000;
   const get = selector => nodes[selector] ||= element();
@@ -109,6 +114,7 @@ function frontend({blockedLocal=false, guess=4, units=8704}={}) {
   get(".analysis").hidden = true;
   const doc = {
     querySelector: get, querySelectorAll: getAll,
+    createElement: () => element(),
     body: {style: {setProperty() {}}},
     hidden: false,
     addEventListener(type,fn) { (docListeners[type] ||= []).push(fn); }
@@ -119,6 +125,7 @@ function frontend({blockedLocal=false, guess=4, units=8704}={}) {
   };
   const win = {
     parent, innerHeight:760,
+    setTimeout(fn) { timers.set(++nextTimer, fn); return nextTimer; },
     addEventListener(type,fn) { (windowListeners[type] ||= []).push(fn); }
   };
   const tracks = [];
@@ -130,7 +137,8 @@ function frontend({blockedLocal=false, guess=4, units=8704}={}) {
   vm.runInNewContext(frontendSource, {
     window:win, document:doc, Audio:LocalAudio,
     requestAnimationFrame:raf, cancelAnimationFrame:cancel,
-    performance:{now:()=>now}, Promise
+    performance:{now:()=>now}, Promise,
+    clearTimeout(id) { timers.delete(id); }
   });
   const predicted = String(guess).padStart(2,"0");
   const actual = String(units % 100).padStart(2,"0");
@@ -154,7 +162,12 @@ function frontend({blockedLocal=false, guess=4, units=8704}={}) {
     frames.clear();
     for (const callback of callbacks) callback(now);
   }
-  return {start,audio,advance,get,getAll,calls,tracks,args};
+  function flushTimers() {
+    const current=[...timers.values()];
+    timers.clear();
+    current.forEach(fn=>fn());
+  }
+  return {start,audio,advance,get,getAll,calls,tracks,args,flushTimers};
 }
 test("Result bridge takes over the *already used* parent BGM media", async () => {
   const h=parent();
@@ -236,6 +249,28 @@ test("Loss cuts borrowed song before first drop and can retry blocked stinger", 
   assert.ok(h.calls.find(c=>c.action==="fail"));
   h.audio("fail-blocked");
   assert.equal(h.get(".retry-fail").hidden,false);
+});
+test("Badge award dialog remains functional alongside the borrowed result audio", () => {
+  const h=frontend();
+  h.args.badge_awards=[{
+    id:"legendary-test", rarity:"LEGENDARY", title:"테스트 배지",
+    description:"승리 배지", accent:"#ffdd66", symbol:"★"
+  }];
+  h.start();
+  h.audio("playing",{seconds:0});
+  h.audio("time",{seconds:13.2});
+  h.advance(1200);
+  assert.equal(h.get(".outcome").hidden,false);
+  assert.equal(h.get(".after-actions").hidden,true);
+  h.audio("ended");
+  h.flushTimers();
+  assert.equal(h.get(".badge-awards").hidden,false);
+  assert.equal(h.get(".badge-awards-items").children.length,1);
+  h.get(".badge-awards-close").click();
+  assert.equal(h.get(".badge-awards").hidden,true);
+  assert.equal(h.get(".after-actions").hidden,false);
+  assert.ok(h.calls.find(c=>c.type==="streamlit:setComponentValue" &&
+    c.value?.action==="badge_dismissed"));
 });
 test("Bootstrap installs controller once and never pauses a borrowed media on rerun", () => {
   const bgm=fs.readFileSync(path.join(ROOT,"sounds/bgm.py"),"utf8");
