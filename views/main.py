@@ -4,7 +4,7 @@ import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 from st_clickable_images import clickable_images
 from modules.badges import BADGES, parse_owned
-from modules.badge_display import NAMEPLATE_CSS, nameplate_html
+from modules.badge_display import NAMEPLATE_CSS, badge_gallery_art_css, nameplate_html
 from modules.db_handler import init_gspread
 from modules.ui_components import change_page, load_local_image_url
 from views.badges import open_badge_gallery
@@ -41,6 +41,9 @@ def show_main_page():
             key="open_badge_gallery",
             use_container_width=True,
         ):
+            # Static SVG image backgrounds belong to the parent page.
+            # Dialog-only reruns then transmit just lightweight state CSS.
+            st.html(badge_gallery_art_css())
             open_badge_gallery()
 
     st.markdown(

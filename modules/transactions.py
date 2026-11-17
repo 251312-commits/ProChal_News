@@ -207,12 +207,23 @@ def sync_badges_from_gateway() -> tuple[str, ...]:
     players who are already bankrupt can still collect their Mythic badge.
     A stale gateway is detected before attempting any server mutation.
     """
-    refresh_account_from_gateway(require_badge_sync=True)
-    result = _request({
-        "transaction_id": transaction_id("badge_sync"),
-        "kind": "badge_sync",
-        "student_id": _student_id(),
-    })
+    # Server validates the authenticated account under ScriptLock and returns
+    # fresh wallet + badge data. A separate read-only status request here was
+    # redundant and doubled the latency of opening the collection.
+    try:
+        result = _request({
+            "transaction_id": transaction_id("badge_sync"),
+            "kind": "badge_sync",
+            "student_id": _student_id(),
+        })
+    except TransactionError as exc:
+        if exc.code == "INVALID_REQUEST":
+            # Older v3 deployments reject this operation before any mutation.
+            raise TransactionError(
+                "업적 동기화를 지원하지 않는 거래 서버입니다. 최신 Apps Script를 배포하세요.",
+                code="OUTDATED_BADGE_GATEWAY",
+            ) from exc
+        raise
     profile = result.get("badges")
     if not isinstance(profile, dict):
         raise TransactionError("배지 동기화 결과를 확인할 수 없습니다.", code="BAD_RESPONSE")
@@ -230,15 +241,22 @@ def equip_badge(badge_id: str, *, request_id: str | None = None) -> dict:
 
     if badge_id != "0" and badge_id not in BADGE_BY_ID:
         raise ValueError("Unknown badge identifier")
-    # Old version-3 gateways can settle bets but cannot yet equip badges.
-    # Check the optional feature flag before sending any mutation.
-    refresh_account_from_gateway(require_badge_equip=True)
-    result = _request({
-        "transaction_id": request_id or transaction_id("equip"),
-        "kind": "equip",
-        "student_id": _student_id(),
-        "badge_id": badge_id,
-    })
+    # The equip handler itself checks Users!K ownership under ScriptLock and
+    # returns the latest profile. It needs no separate status probe.
+    try:
+        result = _request({
+            "transaction_id": request_id or transaction_id("equip"),
+            "kind": "equip",
+            "student_id": _student_id(),
+            "badge_id": badge_id,
+        })
+    except TransactionError as exc:
+        if exc.code == "INVALID_REQUEST":
+            raise TransactionError(
+                "배지 장착을 지원하지 않는 거래 서버입니다. 최신 Apps Script를 배포하세요.",
+                code="OUTDATED_BADGE_GATEWAY",
+            ) from exc
+        raise
     profile = result.get("badges")
     if not isinstance(profile, dict):
         raise TransactionError("장착한 배지 정보를 확인할 수 없습니다.", code="BAD_RESPONSE")

@@ -7,6 +7,7 @@ from modules.badge_display import (
     LEGENDARY_ACCENTS,
     NAMEPLATE_CSS,
     badge_accent,
+    badge_gallery_art_css,
     badge_gallery_css,
     badge_symbol,
     nameplate_html,
@@ -45,14 +46,23 @@ class BadgeGalleryTests(unittest.TestCase):
                 seen.add(raw)
         self.assertEqual(badge_image_data_uri("../../unsafe"), "")
 
-    def test_gallery_renders_local_badge_art_with_locked_filter(self):
-        from modules.badge_display import badge_gallery_css
+    def test_gallery_artwork_is_loaded_once_separately_from_button_state(self):
+        static = badge_gallery_art_css()
+        state_css = badge_gallery_css("first_round g1_hit", "g1_hit")
+        self.assertEqual(static.count("background-image:url('data:image/svg+xml;base64,"), 25)
+        self.assertIn("background-repeat:no-repeat", static)
+        self.assertIn("background-size:contain", static)
+        self.assertIn("grayscale(1) brightness(.30)", state_css)
+        self.assertNotIn("data:image/svg+xml;base64,", state_css)
+        self.assertLess(len(state_css), 20000)
+        self.assertIs(badge_gallery_art_css(), static)
+        self.assertIs(badge_gallery_css("first_round g1_hit", "g1_hit"), state_css)
 
-        css = badge_gallery_css("first_round g1_hit", "g1_hit")
-        self.assertEqual(css.count("background-image:url('data:image/svg+xml;base64,"), 25)
-        self.assertIn("grayscale(1) brightness(.30)", css)
-        self.assertIn("background-repeat:no-repeat", css)
-        self.assertIn("background-size:contain", css)
+    def test_parent_injects_art_before_opening_dialog(self):
+        from pathlib import Path
+        main = (Path(__file__).resolve().parents[1] / "views" / "main.py").read_text(encoding="utf-8")
+        self.assertIn("st.html(badge_gallery_art_css())", main)
+        self.assertLess(main.index("st.html(badge_gallery_art_css())"), main.index("open_badge_gallery()", main.index("st.html(badge_gallery_art_css())")))
 
     def test_equipped_badge_uses_image_not_symbol(self):
         nameplate = nameplate_html("Player", "g1_hit", "g1_hit")
