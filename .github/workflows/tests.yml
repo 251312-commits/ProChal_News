@@ -31,5 +31,5 @@ jobs:
           node --check games/shared/article_reader/reader.js
           node --check games/game1/prediction_screen/prediction.js
           node --check games/game1/result_screen/result.js
-      - name: Test serialized ledger with mocked Sheets API
-        run: node --test tests/test_transaction_gateway.cjs
+      - name: Test serialized ledger and Game 1 parent audio controller
+        run: node --test tests/test_transaction_gateway.cjs tests/test_game1_result_parent_audio.cjs
