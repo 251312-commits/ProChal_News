@@ -5,6 +5,7 @@ from time import monotonic
 import streamlit as st
 
 from modules.badges import BADGES, BADGE_BY_ID, parse_owned, serialize_owned
+from modules.loading_feedback import render_loading_feedback
 from modules.badge_display import (
     RARITY_LABELS, badge_accent, badge_gallery_css, badge_image_data_uri, badge_symbol,
 )
@@ -49,7 +50,8 @@ def _apply_equipped_badge(target: str) -> None:
         pending = {"badge_id": target, "request_id": transaction_id("equip")}
         st.session_state["badge_pending_equip"] = pending
     try:
-        equip_badge(target, request_id=pending["request_id"])
+        with st.spinner("배지 장착 정보를 저장하는 중…"):
+            equip_badge(target, request_id=pending["request_id"])
     except TransactionError as exc:
         st.error(f"배지를 저장하지 못했다: {exc}")
         st.caption("네트워크 오류라면 같은 버튼을 다시 눌러 저장을 재시도할 수 있다.")
@@ -79,7 +81,8 @@ def badge_gallery_dialog() -> None:
     if badge_sync_due(st.session_state, now, force=refresh_now):
         st.session_state["badge_gallery_checked_at"] = now
         try:
-            sync_badges_from_gateway()
+            with st.spinner("최신 배지 정보를 불러오는 중…"):
+                sync_badges_from_gateway()
             st.session_state["badge_gallery_synced"] = True
             st.session_state["badge_gallery_sync_error"] = False
             st.session_state["badge_gallery_sync_message"] = ""
@@ -197,6 +200,10 @@ def badge_gallery_dialog() -> None:
     if equipped != "0" and selected_id != equipped and not st.session_state.get("badge_gallery_sync_error"):
         if st.button("배지 착용 안 함", key="badge_none", use_container_width=True):
             _apply_equipped_badge("0")
+
+
+    # Badge clicks rerun only this dialog fragment, not the page router.
+    render_loading_feedback()
 
 
 def open_badge_gallery() -> None:
