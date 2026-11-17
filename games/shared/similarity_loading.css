@@ -1,5 +1,14 @@
 
 /* Full-screen, animated similarity-analysis overlay. Scoped to #pc-sim-load. */
+/* Retain the original design, but do not flash it for work under 200 ms. */
+#pc-sim-load {
+  visibility: hidden;
+  animation: pc-sim-reveal 1ms step-end 200ms forwards;
+}
+@keyframes pc-sim-reveal {
+  0% { visibility: hidden; }
+  100% { visibility: visible; }
+}
 #pc-sim-load {
   position: fixed; inset: 0; z-index: 2147483000; width: 100%;
   height: 100vh; height: 100dvh; overflow: auto; overscroll-behavior: contain;
