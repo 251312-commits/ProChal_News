@@ -40,11 +40,13 @@ BADGES = (
     Badge("g5_three_wins", "기사 감별사", "game_5", "게임 5 누적 3회 적중", "rare"),
     Badge("g5_three_streak", "특종의 눈", "game_5", "게임 5에서 3연승", "legendary", "scanline"),
     # Additional IDs are appended, preserving every existing earned badge ID.
-    Badge("all_legendary", "전설의 정복자", "common", "Legendary 배지 5종 모두 획득", "mythic", "golden_crown"),
+    Badge("all_legendary", "전설의 정복자", "common", "Legendary 배지 6종 모두 획득", "mythic", "golden_crown"),
     Badge("bankrupt", "파산 선고", "common", "코인 1,000C 미만, 추가 대출 가능액 1,000C 미만", "mythic", "scarlet_alarm"),
     Badge("loan_survivor", "금리의 생존자", "common", "한 번에 5,000C 이상 대출 → 5턴 이상 경과 후 대출금 전액 상환", "legendary", "loan_hourglass"),
     Badge("first_borrow", "첫 신용", "common", "은행에서 처음 대출받음", "common"),
     Badge("first_repay", "첫 상환", "common", "은행에 1C 이상 상환", "common"),
+    Badge("invite_one", "첫 동맹", "common", "내 추천인 코드로 친구 1명이 신규 가입", "epic"),
+    Badge("invite_three", "세 명의 지원군", "common", "내 추천인 코드로 서로 다른 친구 3명이 신규 가입", "legendary", "referral_sparks"),
 )
 BADGE_BY_ID = {badge.id: badge for badge in BADGES}
 RARITIES = ("common", "rare", "epic", "legendary", "mythic")

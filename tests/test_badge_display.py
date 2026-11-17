@@ -17,17 +17,17 @@ from modules.badge_display import (
 class BadgeGalleryTests(unittest.TestCase):
     def test_every_badge_has_a_replaceable_symbol(self):
         self.assertEqual(set(BADGE_SYMBOLS), {badge.id for badge in BADGES})
-        self.assertEqual(len(BADGE_SYMBOLS), 25)
-        self.assertEqual(len(set(BADGE_SYMBOLS.values())), 25)
+        self.assertEqual(len(BADGE_SYMBOLS), 27)
+        self.assertEqual(len(set(BADGE_SYMBOLS.values())), 27)
         self.assertEqual(badge_symbol("g1_hit"), "◈")
 
-    def test_all_twenty_five_artworks_are_valid_standalone_svg_images(self):
+    def test_all_twenty_seven_artworks_are_valid_standalone_svg_images(self):
         import base64
         from xml.etree import ElementTree as ET
         from modules.badge_display import BADGE_ART_DIR, badge_image_data_uri
 
         assets = sorted(BADGE_ART_DIR.glob("*.svg"))
-        self.assertEqual(len(assets), 25)
+        self.assertEqual(len(assets), 27)
         seen = set()
         for badge in BADGES:
             with self.subTest(badge=badge.id):
@@ -49,7 +49,7 @@ class BadgeGalleryTests(unittest.TestCase):
     def test_gallery_artwork_is_loaded_once_separately_from_button_state(self):
         static = badge_gallery_art_css()
         state_css = badge_gallery_css("first_round g1_hit", "g1_hit")
-        self.assertEqual(static.count("background-image:url('data:image/svg+xml;base64,"), 25)
+        self.assertEqual(static.count("background-image:url('data:image/svg+xml;base64,"), 27)
         self.assertIn("background-repeat:no-repeat", static)
         self.assertIn("background-size:contain", static)
         self.assertIn("grayscale(1) brightness(.30)", state_css)
@@ -81,12 +81,21 @@ class BadgeGalleryTests(unittest.TestCase):
         self.assertNotIn("badge_symbol(badge.id),", source)
 
     def test_legendary_effects_are_unique(self):
-        self.assertEqual(len(LEGENDARY_ACCENTS), 5)
+        self.assertEqual(len(LEGENDARY_ACCENTS), 6)
         for badge in BADGES:
             if badge.rarity == "legendary":
                 self.assertIn(badge.id, LEGENDARY_ACCENTS)
                 self.assertIn("pc-effect-" + badge.effect, NAMEPLATE_CSS)
         self.assertIn("prefers-reduced-motion", NAMEPLATE_CSS)
+
+    def test_referral_tiers_use_unique_art_and_legendary_glow(self):
+        self.assertEqual(badge_accent("invite_one"), "#B78BFF")
+        self.assertEqual(badge_accent("invite_three"), "#71F4D1")
+        self.assertIn("pc-effect-referral_sparks", NAMEPLATE_CSS)
+        html = nameplate_html("Inviter", "invite_three", "invite_one invite_three")
+        self.assertIn("pc-tier-legendary", html)
+        self.assertIn("pc-effect-referral_sparks", html)
+        self.assertIn('class="pc-nameplate-art"', html)
 
     def test_mythic_gold_and_red_have_distinct_effects(self):
         gold = nameplate_html("Collector", "all_legendary", "all_legendary")
@@ -141,7 +150,7 @@ class BadgeGalleryTests(unittest.TestCase):
         self.assertIn("overflow-x:hidden", css)
 
     def test_badge_list_alone_is_a_square_scrollport(self):
-        # The 25-card gallery must scroll without moving the selected details
+        # The 27-card gallery must scroll without moving the selected details
         # or equip controls. Keep those widgets outside the keyed container.
         from pathlib import Path
         source = (Path(__file__).resolve().parents[1] / "views" / "badges.py").read_text(encoding="utf-8")

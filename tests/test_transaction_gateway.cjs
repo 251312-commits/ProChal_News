@@ -843,17 +843,31 @@ test('Legendary finance badge needs a single 5000C+ borrow, five settled turns, 
     expected_principal:0}), /different arguments/);
 });
 
-test('Mythic gold requires all five Legendary badges and not Mythic itself', () => {
-  const e = environment([['11011','Alice',50000,0,'','pw',0]]);
-  e.rows.users[1][10] = 'streak_eight_mixed g1_hit g4_four_streak g5_three_streak';
-  e.call({kind:'borrow',transaction_id:'borrow:'+hex('a'),amount:5000,
-    expected_coins:50000,expected_loan:0,expected_principal:0});
-  for(let i=1;i<=5;i++) bankRound(e,i);
-  const last = repayAll(e,'b');
-  assert.ok(last.badges.unlocked.includes('loan_survivor'));
-  assert.ok(last.badges.unlocked.includes('all_legendary'));
-  assert.ok(!last.badges.unlocked.includes('bankrupt'));
+test('Mythic gold requires all SIX Legendary badges including 3 successful referrals', () => {
+  const e = environment([['20102','Bob',5000,0,'','pw',0]]);
+  e.rows.users[1][10] =
+    'streak_eight_mixed g1_hit g4_four_streak g5_three_streak loan_survivor';
+  const before = e.call({kind:'badge_sync',
+    student_id:'20102',transaction_id:'badge_sync:'+hex('a')});
+  assert.ok(!before.badges.owned.includes('all_legendary'));
+  // A mere pre-existing collection of five Legendary badges no longer
+  // unlocks the Mythic collector for players who haven't earned it.
+  ['30103','30104','30105'].forEach((student_id, i) => {
+    const r = e.call({kind:'register',transaction_id:'register:'+hex(String(i+1)),
+      student_id,nickname:'초대한 친구',password:'pw',referrer_id:'20102'});
+    assert.equal(r.balances.coins,6000);
+    assert.equal(e.rows.users[1][10].includes('all_legendary'), i===2);
+  });
+  assert.ok(e.rows.users[1][10].includes('invite_three'));
   assert.ok(e.rows.users[1][10].includes('all_legendary'));
+
+  // Once earned under the old 5-Legendary rule, the Mythic badge is
+  // never revoked: awards are permanent.
+  const old = environment([['20102','Bob',5000,0,'','pw',0]]);
+  old.rows.users[1][10]='all_legendary';
+  old.call({kind:'badge_sync',
+    student_id:'20102',transaction_id:'badge_sync:'+hex('d')});
+  assert.ok(old.rows.users[1][10].includes('all_legendary'));
 });
 
 test('bank badge write failure is atomic and replay never duplicates milestone', () => {
@@ -903,4 +917,106 @@ test('badge_sync can recover historic first borrow and repayment records', () =>
   assert.ok(recovered.badges.unlocked.includes('first_borrow'));
   assert.ok(recovered.badges.unlocked.includes('first_repay'));
   assert.equal(e.rows.users[1][10], 'first_borrow first_repay');
+});
+
+
+function registerReferral(e, studentId, txDigit, referrerId='20102') {
+  return e.call({kind:'register',transaction_id:'register:'+hex(txDigit),
+    student_id:studentId,nickname:'새 친구',password:'pw',
+    referrer_id:referrerId});
+}
+
+test('one verified referral grants Epic and three distinct referrals grant winged Legendary', () => {
+  const e=environment([['20102','Bob',4000,0,'','pw',0]]);
+  assert.equal(registerReferral(e,'30103','a').balances.coins,6000);
+  assert.equal(e.rows.users[1][2],7000);
+  assert.ok(e.rows.users[1][10].includes('invite_one'));
+  assert.ok(!e.rows.users[1][10].includes('invite_three'));
+  assert.equal(e.rows.ledger.filter(r=>r[3]==='referrer').length,1);
+  assert.equal(registerReferral(e,'30104','b').balances.coins,6000);
+  assert.ok(!e.rows.users[1][10].includes('invite_three'));
+  assert.equal(registerReferral(e,'30105','c').balances.coins,6000);
+  assert.equal(e.rows.users[1][2],13000);
+  assert.ok(e.rows.users[1][10].includes('invite_one'));
+  assert.ok(e.rows.users[1][10].includes('invite_three'));
+  assert.equal(e.rows.ledger.filter(r=>r[3]==='referrer').length,3);
+  assert.equal(e.rows.ledger.filter(r=>r[3]==='register').length,3);
+  const sync=e.call({kind:'badge_sync',student_id:'20102',
+    transaction_id:'badge_sync:'+hex('f')});
+  assert.equal(sync.badges.unlocked.length,0);
+});
+
+test('duplicate request, duplicate student ID and malformed referral logs never inflate count', () => {
+  const e=environment([['20102','Bob',4000,0,'','pw',0]]);
+  const payload={kind:'register',transaction_id:'register:'+hex('a'),
+    student_id:'30103',nickname:'새 친구',password:'pw',referrer_id:'20102'};
+  e.call(payload);
+  assert.equal(e.call(payload).replayed,true);
+  assert.throws(()=>e.call({...payload,transaction_id:'register:'+hex('b')}),
+    /Player exists/);
+  const duplicate = [...e.rows.ledger.find(row=>row[3]==='referrer')];
+  duplicate[0]='referrer:'+hex('c');
+  e.rows.ledger.push(duplicate); // same invitee ID -> should count once
+  const forged=[...duplicate];
+  forged[0]='referrer:'+hex('d');
+  forged[15]='referral:40101'; // teacher ID -> must not count
+  e.rows.ledger.push(forged);
+  const malformed=[...duplicate];
+  malformed[0]='referrer:'+hex('e');
+  malformed[15]='incomplete referral';
+  e.rows.ledger.push(malformed);
+  const sync=e.call({kind:'badge_sync',student_id:'20102',
+    transaction_id:'badge_sync:'+hex('f')});
+  assert.equal(sync.badges.owned.includes('invite_one'),true);
+  assert.equal(sync.badges.owned.includes('invite_three'),false);
+  assert.equal(e.rows.users[1][2],7000);
+});
+
+test('self referral, invalid referrer and teacher do not earn referral badges', () => {
+  const e=environment([['20102','Bob',4000,0,'','pw',0],
+    ['40101','Teacher',5000,0,'','pw',0]]);
+  registerReferral(e,'30103','a','30103'); // self
+  registerReferral(e,'30104','b','40101'); // teacher
+  registerReferral(e,'30105','c','30109'); // missing account
+  assert.equal(e.rows.ledger.filter(row=>row[3]==='referrer').length,0);
+  assert.equal(e.rows.users[1][10],'');
+  assert.equal(e.rows.users[2][10],'');
+  assert.equal(e.rows.users[1][2],4000);
+});
+
+test('referral badge + credit + registered friend commit atomically and retries safely', () => {
+  const e=environment([['20102','Bob',4000,0,'','pw',0]]);
+  const req={kind:'register',transaction_id:'register:'+hex('a'),
+    student_id:'30103',nickname:'새 친구',password:'pw',referrer_id:'20102'};
+  e.state.failedBatch=true;
+  assert.throws(()=>e.call(req),/Simulated atomic batch failure/);
+  assert.equal(e.rows.users.length,2);
+  assert.equal(e.rows.users[1][2],4000);
+  assert.equal(e.rows.users[1][10],'');
+  assert.equal(e.rows.ledger.length,1);
+  e.state.failedBatch=false;
+  e.call(req);
+  assert.equal(e.rows.users.length,3);
+  assert.equal(e.rows.users[1][2],7000);
+  assert.equal(e.rows.users[1][10],'invite_one');
+  assert.equal(e.call(req).replayed,true);
+  assert.equal(e.rows.ledger.filter(row=>row[3]==='referrer').length,1);
+  assert.equal(e.state.batches,1);
+});
+
+test('badge_sync retroactively awards proven historical friend referrals only', () => {
+  const e=environment([['20102','Bob',4000,0,'','pw',0]]);
+  registerReferral(e,'30103','a');
+  registerReferral(e,'30104','b');
+  registerReferral(e,'30105','c');
+  e.rows.users[1][10]=''; // historical rewards from before badge release
+  const result=e.call({kind:'badge_sync',student_id:'20102',
+    transaction_id:'badge_sync:'+hex('f')});
+  assert.ok(result.badges.unlocked.includes('invite_one'));
+  assert.ok(result.badges.unlocked.includes('invite_three'));
+  assert.equal(e.rows.users[1][10],'invite_one invite_three');
+  assert.equal(e.rows.users[1][2],13000); // sync grants no bonus coins
+  const second=e.call({kind:'badge_sync',student_id:'20102',
+    transaction_id:'badge_sync:'+hex('e')});
+  assert.equal(second.badges.unlocked.length,0);
 });

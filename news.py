@@ -11,6 +11,7 @@ from views.login import show_login_page
 from views.main import show_main_page
 from views.ranking import show_ranking
 from views.bank import show_bank
+from modules.badge_notifications import show_pending_badge_award
 
 from games.game1.game1 import show_game_1, show_game_1_tutorial
 from games.game2 import show_game_2
@@ -80,3 +81,14 @@ else:
         _show_result()
     elif st.session_state.page == 'game_5_tutorial':
         show_game_5_tutorial()
+
+    # Show queued achievements after the active page has rendered. Game 1's
+    # fullscreen musical reveal displays the same cards only after the finale.
+    gallery_opened = st.session_state.pop("_badge_gallery_opened_this_run", False)
+    result = st.session_state.get("game_1_result") or {}
+    game1_cinematic = (
+        st.session_state.page == "game_1" and isinstance(result, dict)
+        and "predicted_digits" in result
+    )
+    if not gallery_opened and not game1_cinematic:
+        show_pending_badge_award()

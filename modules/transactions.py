@@ -12,6 +12,7 @@ import requests
 import streamlit as st
 
 from modules.account_math import account_amount
+from modules.badge_notifications import queue_badge_awards
 from modules.account_ids import is_valid_student_id, is_valid_teacher_id
 from modules.nickname import normalize_nickname
 
@@ -197,7 +198,7 @@ def _update_session_badges(profile: object) -> tuple[str, ...]:
     unlocked = profile.get("unlocked", [])
     if not isinstance(unlocked, list):
         return ()
-    return tuple(item for item in unlocked if isinstance(item, str) and item in BADGE_BY_ID)
+    return tuple(item for item in unlocked if isinstance(item, str) and item in BADGE_BY_ID and item in owned)
 
 
 def sync_badges_from_gateway() -> tuple[str, ...]:
@@ -228,7 +229,9 @@ def sync_badges_from_gateway() -> tuple[str, ...]:
     if not isinstance(profile, dict):
         raise TransactionError("배지 동기화 결과를 확인할 수 없습니다.", code="BAD_RESPONSE")
     update_session_balances(result["balances"])
-    return _update_session_badges(profile)
+    unlocked = _update_session_badges(profile)
+    queue_badge_awards(unlocked)
+    return unlocked
 
 
 def equip_badge(badge_id: str, *, request_id: str | None = None) -> dict:
@@ -304,18 +307,20 @@ def settle_game_round(game: str, amount: int, is_win: bool, *, badge_evidence: d
         "badge_evidence": badge_evidence or {},
     })
     update_session_balances(result["balances"])
-    newly_unlocked = _update_session_badges(result.get("badges"))
     committed = result.get("settlement")
     if not isinstance(committed, dict):
         raise TransactionError("정산 기록의 잔액을 확인하지 못했습니다.")
-    return {
+    receipt = {
         "reward": account_amount(committed["delta"], strict=True),
         "new_coins": account_amount(committed["coins"], strict=True),
         "new_streak": account_amount(committed["streak"], strict=True),
         "new_loan": account_amount(committed["loan"], strict=True),
         "replayed": bool(result.get("replayed")),
-        "unlocked_badges": newly_unlocked,
     }
+    newly_unlocked = _update_session_badges(result.get("badges"))
+    receipt["unlocked_badges"] = newly_unlocked
+    queue_badge_awards(newly_unlocked)
+    return receipt
 
 
 def apply_round_interest(game: str) -> dict:
@@ -345,7 +350,7 @@ def apply_round_interest(game: str) -> dict:
     if loan_after - loan_before != charged:
         raise TransactionError("이자 계산 기록이 일치하지 않습니다.")
     update_session_balances(result["balances"])
-    _update_session_badges(result.get("badges"))
+    queue_badge_awards(_update_session_badges(result.get("badges")))
     return {
         "charged": charged, "loan_before": loan_before,
         "new_loan": loan_after, "replayed": bool(result.get("replayed")),
@@ -373,7 +378,7 @@ def bank_transaction(kind: str, amount: int, tx_id: str) -> dict:
     if "principal" not in result["balances"]:
         raise TransactionError("거래 서버에 대출원금 관리 기능이 적용되지 않았습니다.", code="NOT_CONFIGURED")
     update_session_balances(result["balances"])
-    _update_session_badges(result.get("badges"))
+    queue_badge_awards(_update_session_badges(result.get("badges")))
     return result
 
 

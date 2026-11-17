@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="세 명의 지원군">
+<title>세 명의 지원군</title>
+<defs>
+<linearGradient id="rim" x1="0%" x2="100%" y1="0%" y2="100%"><stop offset="0" stop-color="#E5FFF7"/><stop offset=".25" stop-color="#72DCC8"/><stop offset=".55" stop-color="#164F62"/><stop offset=".8" stop-color="#72DCC8"/><stop offset="1" stop-color="#E5FFF7"/></linearGradient>
+<radialGradient id="core" cx="49%" cy="34%" r="80%"><stop offset="0" stop-color="#253552"/><stop offset=".62" stop-color="#14172E"/><stop offset="1" stop-color="#090B1B"/></radialGradient>
+<linearGradient id="gem" x1="0%" y1="0%" x2="90%" y2="100%"><stop offset="0" stop-color="#164F62"/><stop offset=".5" stop-color="#202B45"/><stop offset="1" stop-color="#72DCC8"/></linearGradient>
+<linearGradient id="metal" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0" stop-color="#E5FFF7"/><stop offset=".5" stop-color="#72DCC8"/><stop offset="1" stop-color="#164F62"/></linearGradient>
+<linearGradient id="flame" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".55" stop-color="#A6FFE6"/><stop offset="1" stop-color="#FC668C"/></linearGradient>
+<filter id="halo" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter>
+<clipPath id="cut"><path d="M128 26 L206 57 Q218 64 213 80 L202 164 Q197 187 128 228 Q59 187 54 164 L43 80 Q38 64 50 57 Z"/></clipPath>
+<linearGradient id="wingFeather" x1="3%" y1="0%" x2="100%" y2="100%">
+ <stop offset="0%" stop-color="#CFFFEF"/>
+ <stop offset="38%" stop-color="#63E9C8"/>
+ <stop offset="71%" stop-color="#18586D"/>
+ <stop offset="100%" stop-color="#63E9C8"/>
+</linearGradient>
+<linearGradient id="wingShadow" x1="0%" y1="0%" x2="100%" y2="100%">
+ <stop offset="0%" stop-color="#18586D"/>
+ <stop offset="52%" stop-color="#63E9C8"/>
+ <stop offset="100%" stop-color="#CFFFEF"/>
+</linearGradient>
+<filter id="wingHalo" x="-60%" y="-60%" width="220%" height="220%">
+ <feGaussianBlur stdDeviation="5"/>
+</filter>
+</defs>
+<g id="legendary-wings" aria-hidden="true" stroke-linejoin="round">
+<g opacity=".44" filter="url(#wingHalo)">
+ <path d="M112 153 C71 126 18 105 24 27 C53 63 85 55 107 101 L112 153Z" fill="#6EF5D7"/>
+ <path d="M144 153 C185 126 238 105 232 27 C203 63 171 55 149 101 L144 153Z" fill="#6EF5D7"/>
+</g>
+<g id="wing-left">
+<!-- Outer scalloped feathers are readable at 48px icons. -->
+<path d="M101 150
+ C82 136 56 132 30 116 C17 108 7 95 7 82
+ C23 88 44 97 60 100
+ C34 84 16 71 15 43
+ C35 54 54 68 71 74
+ C54 54 46 36 51 15
+ C76 39 97 53 108 86
+ C117 112 112 136 101 150 Z"
+ fill="url(#wingShadow)" stroke="#6EF5D7" stroke-width="3" stroke-linejoin="round"/>
+<path d="M100 105
+ C87 74 72 46 52 19 C49 44 59 65 78 86
+ C88 98 96 103 100 105 Z" fill="url(#wingFeather)" stroke="#CFFFEF" stroke-width="2.6"/>
+<path d="M100 121
+ C78 94 45 68 16 47 C14 73 33 96 59 113
+ C77 124 90 127 100 121 Z" fill="url(#wingFeather)" stroke="#CFFFEF" stroke-width="2.7"/>
+<path d="M100 140
+ C74 116 38 100 8 90 C11 116 31 132 59 143
+ C79 150 94 147 100 140 Z" fill="url(#wingFeather)" stroke="#CFFFEF" stroke-width="2.7"/>
+<path d="M95 155
+ C69 140 42 130 22 129 C36 153 58 166 80 165
+ C88 164 93 161 95 155 Z" fill="url(#wingFeather)" stroke="#CFFFEF" stroke-width="2.4"/>
+<path d="M102 112 Q83 69 58 38 M102 125 Q73 97 36 69
+ M98 141 Q67 125 27 107 M93 156 Q67 150 43 143"
+ fill="none" stroke="#18586D" stroke-width="2.2" opacity=".65" stroke-linecap="round"/>
+<path d="M102 106 Q87 77 62 54 M101 123 Q73 102 37 85
+ M99 141 Q67 126 24 107"
+ fill="none" stroke="#6EF5D7" stroke-width="1.5" opacity=".82" stroke-linecap="round"/>
+</g>
+<g id="wing-right" transform="translate(256 0) scale(-1 1)">
+<!-- Outer scalloped feathers are readable at 48px icons. -->
+<path d="M101 150
+ C82 136 56 132 30 116 C17 108 7 95 7 82
+ C23 88 44 97 60 100
+ C34 84 16 71 15 43
+ C35 54 54 68 71 74
+ C54 54 46 36 51 15
+ C76 39 97 53 108 86
+ C117 112 112 136 101 150 Z"
+ fill="url(#wingShadow)" stroke="#6EF5D7" stroke-width="3" stroke-linejoin="round"/>
+<path d="M100 105
+ C87 74 72 46 52 19 C49 44 59 65 78 86
+ C88 98 96 103 100 105 Z" fill="url(#wingFeather)" stroke="#CFFFEF" stroke-width="2.6"/>
+<path d="M100 121
+ C78 94 45 68 16 47 C14 73 33 96 59 113
+ C77 124 90 127 100 121 Z" fill="url(#wingFeather)" stroke="#CFFFEF" stroke-width="2.7"/>
+<path d="M100 140
+ C74 116 38 100 8 90 C11 116 31 132 59 143
+ C79 150 94 147 100 140 Z" fill="url(#wingFeather)" stroke="#CFFFEF" stroke-width="2.7"/>
+<path d="M95 155
+ C69 140 42 130 22 129 C36 153 58 166 80 165
+ C88 164 93 161 95 155 Z" fill="url(#wingFeather)" stroke="#CFFFEF" stroke-width="2.4"/>
+<path d="M102 112 Q83 69 58 38 M102 125 Q73 97 36 69
+ M98 141 Q67 125 27 107 M93 156 Q67 150 43 143"
+ fill="none" stroke="#18586D" stroke-width="2.2" opacity=".65" stroke-linecap="round"/>
+<path d="M102 106 Q87 77 62 54 M101 123 Q73 102 37 85
+ M99 141 Q67 126 24 107"
+ fill="none" stroke="#6EF5D7" stroke-width="1.5" opacity=".82" stroke-linecap="round"/>
+</g>
+<!-- Connecting saddle is mostly covered by the original shield; tips remain visible. -->
+<path d="M88 144 Q128 123 168 144 L152 174 Q128 166 104 174Z"
+ fill="url(#wingShadow)" stroke="#63E9C8" stroke-width="3"/>
+</g>
+<!-- Three shining contacts converge above the crest. -->
+<path d="M95 37 L128 12 L161 37 L128 58 Z" fill="none" stroke="#E5FFF7" stroke-width="3"/>
+<circle cx="96" cy="36" r="7" fill="#CFFFEF" stroke="#68FADD" stroke-width="2"/>
+<circle cx="128" cy="13" r="9" fill="#E5FFF7" stroke="#68FADD" stroke-width="2"/>
+<circle cx="161" cy="36" r="7" fill="#CFFFEF" stroke="#68FADD" stroke-width="2"/>
+<path d="M128 24 L133 33 L128 42 L123 33 Z" fill="#FFF2B1"/>
+<g id="legendary-center" transform="translate(34.56 32) scale(.73)">
+<path d="M128 9 L220 45 Q238 55 235 75 L224 167 Q215 206 128 249 Q41 206 32 167 L21 75 Q18 55 36 45Z" fill="#A6FFE6" opacity=".27" filter="url(#halo)"/>
+<path d="M128 10 L218 46 Q236 56 231 75 L222 166 Q216 199 128 246 Q40 199 34 166 L25 75 Q20 56 38 46Z" fill="url(#rim)" stroke="#6EF5D7" stroke-width="5"/>
+<path d="M128 24 L206 55 Q220 62 215 81 L204 161 Q197 190 128 231 Q59 190 52 161 L41 81 Q36 62 50 55Z" fill="url(#core)" stroke="#E5FFF7" stroke-width="3"/>
+<g clip-path="url(#cut)" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="128" cy="128" r="73" fill="none" stroke="#6EF5D7" stroke-width="2" opacity=".36"/>
+  <path d="M128 77 L80 142 L175 142 Z" fill="none" stroke="#A2FCE3" stroke-width="6"/>
+  <path d="M128 92 L95 142 L159 142Z" fill="#1F6772" opacity=".6"/>
+  <circle cx="128" cy="95" r="20" fill="url(#metal)" stroke="#E5FFF7" stroke-width="5"/>
+  <path d="M94 135 Q97 115 115 115 Q128 115 140 115 Q159 119 161 135" fill="#1D6B78" stroke="#CFFFEF" stroke-width="4"/>
+  <circle cx="80" cy="149" r="19" fill="url(#metal)" stroke="#E5FFF7" stroke-width="5"/>
+  <path d="M53 182 Q55 163 79 163 Q105 163 109 182 Z" fill="#176C78" stroke="#CCFFF1" stroke-width="4"/>
+  <circle cx="175" cy="149" r="19" fill="url(#metal)" stroke="#E5FFF7" stroke-width="5"/>
+  <path d="M148 182 Q152 163 175 163 Q201 163 203 182 Z" fill="#176C78" stroke="#CCFFF1" stroke-width="4"/>
+  <circle cx="128" cy="148" r="21" fill="#0E495C" stroke="#98FFE4" stroke-width="5"/>
+  <path d="M117 150 L124 158 L140 138" fill="none" stroke="#E8FFF8" stroke-width="6"/>
+  <circle cx="128" cy="74" r="7" fill="#FFFFFF"/>
+  <path d="M128 187 L135 201 L151 205 L135 210 L128 224 L121 210 L105 205 L121 201Z" fill="#D3FFF3"/>
+  <circle cx="58" cy="116" r="7" fill="#72EBD2"/>
+  <circle cx="198" cy="116" r="7" fill="#72EBD2"/>
+</g>
+<path d="M128 18 L211 50 Q225 57 222 78 L211 166 Q200 194 128 238 Q56 194 45 166 L34 78 Q31 57 45 50Z" fill="none" stroke="#6EF5D7" stroke-opacity=".8" stroke-width="2"/>
+<path d="M45 66 L62 60 M194 60 L211 66" stroke="#CFFFEF" stroke-width="4" stroke-linecap="round"/>
+</g>
+</svg>

@@ -1,8 +1,8 @@
 # Badge collection and equip deployment
 
 This change adds a **mobile-friendly BADGE ARCHIVE** button above the main
-promo banner. The popup shows all 25 permanent achievements in one grid:
-- Earned: rarity color (Common silver, Rare cyan, Epic purple, five Legendary colors, and two Mythic colors).
+promo banner. The popup shows all 27 permanent achievements in one grid:
+- Earned: rarity color (Common silver, Rare cyan, Epic purple, six Legendary colors, and two Mythic colors).
 - Locked: dark-grey symbol and label; tap to inspect unlock requirement.
 - Tap an earned symbol to inspect its title, rarity, and condition; select
   **이 배지 장착** to persist the equipped ID to Users!J.
@@ -55,11 +55,11 @@ batch, replays, cross-user ownership, locked badges, and client capability
 probing. Manual mobile browser checks remain necessary for actual dialog
 layout and animations.
 
-## New bank and Mythic achievements (25 total)
+## Bank and Mythic achievements (existing release)
 
 | Badge | Tier | Server-confirmed unlock |
 |---|---|---|
-| 전설의 정복자 | MYTHIC / gold | Own all **five** Legendary badges (including 금리의 생존자); Mythic badges are excluded from the requirement |
+| 전설의 정복자 | MYTHIC / gold | Own all **six** Legendary badges (now including 세 명의 지원군); Mythic badges are excluded from the requirement |
 | 파산 선고 | MYTHIC / red | Coins < 1,000C **and** remaining principal credit < 1,000C (no minimum additional borrowing) |
 | 금리의 생존자 | LEGENDARY | A single borrowing of at least 5,000C, followed by **five distinct settled turn-end interest receipts while debt remains outstanding**, then repay the **entire loan including interest** |
 | 첫 신용 | COMMON | First successful bank borrowing |
@@ -88,7 +88,46 @@ recovers from bankruptcy.
    into the existing Apps Script project.
 3. Publish a **new web-app deployment version**.
 4. Merge the GitHub PR and restart/redeploy Streamlit.
-5. Verify successful bank borrow/repay awards and the new 25-item gallery.
+5. Verify successful bank borrow/repay awards and the new 27-item gallery.
 
 The Python UI continues to accept the previous 20 permanent IDs. The new IDs
 are appended, never renumbered or reused.
+
+## Referral achievements — 27 badges total
+
+| ID | Name | Tier | Verified condition |
+|---|---|---|---|
+| `invite_one` | 첫 동맹 | EPIC (purple) | One distinct **new student account** successfully registers with this player's recommendation ID |
+| `invite_three` | 세 명의 지원군 | LEGENDARY (mint, winged) | Three distinct new student accounts register with this player's recommendation ID |
+
+Only an authenticated server registration that grants the existing **3,000C
+referrer bonus** generates a `Transactions.kind=referrer` receipt. A link sent
+without registration is not counted. Student IDs must be new and valid,
+self-referrals and teacher accounts do not count. The same invitee ID or
+the same registration request cannot count twice. The referral bonus,
+new account, and newly unlocked badges are committed atomically.
+
+Invitations recorded *before* this version are recovered from the existing
+ledger when the player opens the collection and runs `badge_sync` (or completes
+a future transaction). Past referrals without a corresponding trusted
+`Transactions` receipt cannot be inferred solely from the editable
+`Users.추천인` text field.
+
+**Mythic `all_legendary`** now requires six Legendary badges for new earners,
+including `invite_three`. Players who already earned the Mythic badge under
+the five-badge rule **retain it permanently**; achievement revocation is not
+performed.
+
+### Required rollout for this extension
+
+1. Update both `apps_script/Code.gs` and `apps_script/Badges.gs` in the
+   **existing** Google Apps Script project and publish a **new web-app version**.
+2. Merge the PR and redeploy Streamlit.
+3. The existing Users J/K and Transactions A:P schemas remain unchanged.
+4. Check the referrer account's 3,000C bonus, 1- and 3-referral milestones, and
+   legacy referral backfill from `badge_sync`. Observe that the UI stays
+   within its square mobile gallery scroll region.
+
+Only **unique accounts**, not verified unique people, are enforceable in the
+current student-ID registration system. Stricter anti-multi-account checks
+would require identity verification or an additional gameplay threshold.
