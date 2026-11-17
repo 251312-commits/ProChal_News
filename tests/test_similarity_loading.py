@@ -39,6 +39,7 @@ class SimilarityLoadingTests(TestCase):
             html = placeholder.markdown.call_args.args[0]
             self.assertIn('id="pc-sim-load"', html)
             self.assertIn("@keyframes pc-sim-scan", html)
+            self.assertIn("animation: pc-sim-reveal 1ms step-end 200ms forwards", html)
             placeholder.empty.assert_not_called()
         placeholder.empty.assert_called_once()
 
