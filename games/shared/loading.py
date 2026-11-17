@@ -5,6 +5,9 @@ from pathlib import Path
 from random import choice
 
 import streamlit as st
+import streamlit.components.v1 as components
+
+_VIDEO_SOUND_JS = Path(__file__).with_name("similarity_video_controls.js").read_text(encoding="utf-8")
 
 
 # Video clips are stored as regular static assets, not inline Base64. Keep
@@ -44,7 +47,11 @@ def _similarity_video_markup() -> str:
           <source src="{src}" type="video/mp4">
           동영상 재생을 지원하지 않는 브라우저입니다.
         </video>
-        <div class="pc-sim-video-note">소리는 영상의 재생 메뉴에서 켤 수 있습니다.</div>
+        <div class="pc-sim-video-note">
+          <span>로딩 중 영상 방송</span>
+          <button class="pc-sim-sound-toggle" type="button"
+                  aria-pressed="false">소리 켜기</button>
+        </div>
       </div>
     """
 
@@ -126,6 +133,10 @@ def similarity_analysis_loading():
         f"<style>{css}</style>{markup}",
         unsafe_allow_html=True,
     )
+    if video:
+        # Streamlit markdown does not execute JS; a tiny component binds the
+        # user-gesture sound toggle in the parent document.
+        components.html(f"<script>{_VIDEO_SOUND_JS}</script>", height=0, width=0)
     try:
         yield
     finally:
