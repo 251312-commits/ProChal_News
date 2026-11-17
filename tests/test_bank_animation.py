@@ -1,6 +1,7 @@
 """Regression tests for bank navigation and post-save stamping."""
 
 import ast
+from contextlib import nullcontext
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
@@ -59,6 +60,7 @@ class BankAnimationTests(unittest.TestCase):
         user = {"학번": "01234", "코인": "1,250", "대출금": "", "연승": 0}
         session = State(current_user="01234", current_user_data=user)
         st = Mock(session_state=session)
+        st.spinner.return_value = nullcontext()  # UI-only progress during transaction
         def sync(balances):
             user.update({
                 "코인": balances["coins"], "연승": balances["streak"],
