@@ -13,7 +13,7 @@ from google import genai
 from google.genai import types
 
 
-API_KEY = st.secrets["GEMINI_API_KEY"]
+# Access secrets when the first summary is requested, not at import time.
 MODEL_NAME = "gemini-3.5-flash-lite"
 
 MAX_QUEUE_SIZE = int(os.getenv("GEMINI_MAX_QUEUE_SIZE", "200"))
@@ -26,7 +26,7 @@ RETRY_MAX_DELAY = float(os.getenv("GEMINI_RETRY_MAX_DELAY", "30"))
 
 def _new_client():
     return genai.Client(
-        api_key=API_KEY,
+        api_key=st.secrets["GEMINI_API_KEY"],
         http_options=types.HttpOptions(timeout=int(REQUEST_TIMEOUT * 1000)),
     )
 
