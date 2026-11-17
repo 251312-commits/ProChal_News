@@ -34,7 +34,8 @@ def _save_balances(coins: int, loan: int, message: str, *, success_state_key: st
         st.session_state[pending_key] = pending
 
     try:
-        bank_transaction(kind, amount, pending["id"])
+        with st.spinner("은행 거래를 저장하는 중…"):
+            bank_transaction(kind, amount, pending["id"])
     except BalanceChanged as changed:
         # A rejected stale request is safe to abandon. Refresh the UI first.
         update_session_balances(changed.balances)

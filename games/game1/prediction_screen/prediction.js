@@ -41,6 +41,10 @@ function finish(action) {
   if (!roundId || locked) return;
   locked = true;
   for (const button of screen.querySelectorAll("button")) button.disabled = true;
+  window.parent.postMessage({
+    type: "pc:loading:start",
+    label: action === "confirm" ? "예측 결과 계산 중…" : "화면 이동 중…"
+  }, hostOrigin);
   sendValue(action);
 }
 for (const [index, reel] of reels.entries()) {

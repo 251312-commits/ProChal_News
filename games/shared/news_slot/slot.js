@@ -30,6 +30,10 @@ function finish(action, index) {
   if (audio) { audio.close().catch(() => {}); audio = null; }
   const value = {action, round_id: roundId};
   if (action === "choose") value.index = index;
+  window.parent.postMessage({
+    type: "pc:loading:start",
+    label: action === "choose" ? "선택한 기사 불러오는 중…" : "화면 이동 중…"
+  }, hostOrigin);
   send("streamlit:setComponentValue", {value, dataType: "json"});
 }
 
@@ -61,6 +65,7 @@ function submitDirectUrl() {
   const requestId = (crypto.randomUUID?.() || (Date.now() + "-" + Math.random().toString(16).slice(2)));
   urlSubmit.disabled = true;
   setUrlMessage("기사를 확인하는 중…", "loading");
+  window.parent.postMessage({type: "pc:loading:start", label: "기사 링크 확인 중…"}, hostOrigin);
   send("streamlit:setComponentValue", {
     value: {action: "direct_url", round_id: roundId, url, request_id: requestId},
     dataType: "json"

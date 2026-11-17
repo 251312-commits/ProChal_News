@@ -609,7 +609,8 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
             # A recorded confirmation checks the current sheet balance while
             # holding the same distributed lock used by settlement and banking.
             try:
-                confirm_bet(round_key or state_key, bet_val)
+                with st.spinner("베팅을 저장하는 중…"):
+                    confirm_bet(round_key or state_key, bet_val)
             except BalanceChanged as changed:
                 update_session_balances(changed.balances)
                 st.warning(str(changed))

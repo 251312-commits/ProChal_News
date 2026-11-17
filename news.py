@@ -4,6 +4,7 @@ import streamlit.components.v1 as components
 from modules.db_handler import init_gspread, init_news_sheet
 from modules.news_ai import load_ai_model, bring_article, pick_3_lowest_count_news
 from modules.ui_components import change_page, inject_casino_theme
+from modules.loading_feedback import render_loading_feedback
 
 from sounds.bgm import init_seamless_bgm, stop_bgm
 
@@ -92,3 +93,6 @@ else:
     )
     if not gallery_opened and not game1_cinematic:
         show_pending_badge_award()
+
+# A fresh render token clears client feedback after work has completed.
+render_loading_feedback()
