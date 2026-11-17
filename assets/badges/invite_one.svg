@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="첫 동맹">
+<title>첫 동맹</title>
+<defs>
+  <linearGradient id="rim" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#FFE8FF"/><stop offset="30%" stop-color="#CC98FE"/>
+    <stop offset="60%" stop-color="#704098"/><stop offset="82%" stop-color="#BF80FF"/>
+    <stop offset="100%" stop-color="#F1D4FF"/>
+  </linearGradient>
+  <radialGradient id="core" cx="50%" cy="37%" r="76%">
+    <stop offset="0%" stop-color="#34416B"/><stop offset="63%" stop-color="#211631"/>
+    <stop offset="100%" stop-color="#0B0C22"/>
+  </radialGradient>
+  <linearGradient id="metal" x1="0%" y1="0%" x2="90%" y2="100%">
+    <stop offset="0%" stop-color="#F9E1FF"/><stop offset="48%" stop-color="#BC90E8"/>
+    <stop offset="100%" stop-color="#603F9B"/>
+  </linearGradient>
+  <filter id="halo" x="-60%" y="-60%" width="220%" height="220%">
+    <feGaussianBlur stdDeviation="5"/>
+  </filter>
+  <clipPath id="inner"><path d="M128 30 L199 56 Q218 64 211 88 L199 163 Q188 198 128 225 Q68 198 57 163 L45 88 Q38 64 57 56Z"/></clipPath>
+</defs>
+<path d="M128 9 L220 45 Q239 56 235 77 L223 167 Q210 204 128 248 Q46 204 33 167 L21 77 Q17 56 36 45Z" fill="#C67EFF" opacity=".25" filter="url(#halo)"/>
+<path d="M128 10 L219 46 Q237 56 232 76 L221 165 Q211 200 128 248 Q45 200 35 165 L24 76 Q19 56 37 46Z" fill="url(#rim)" stroke="#EEC8FF" stroke-width="5"/>
+<path d="M128 24 L206 55 Q220 63 215 82 L202 162 Q192 190 128 234 Q64 190 54 162 L41 82 Q36 63 50 55Z" fill="url(#core)" stroke="#F1D1FF" stroke-width="2.5"/>
+<g clip-path="url(#inner)" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M68 96 Q128 42 188 96" fill="none" stroke="#D8A0FF" stroke-width="3" opacity=".50"/>
+  <path d="M88 114 Q128 75 168 114" fill="none" stroke="#E9D0FF" stroke-width="3"/>
+  <path d="M88 157 L128 132 L169 157" fill="none" stroke="#BD91FF" stroke-width="5"/>
+  <circle cx="88" cy="122" r="20" fill="url(#metal)" stroke="#FFE2FF" stroke-width="4"/>
+  <circle cx="169" cy="122" r="20" fill="url(#metal)" stroke="#FFE2FF" stroke-width="4"/>
+  <path d="M57 184 Q58 153 88 154 Q117 154 120 183Z" fill="#6D4AB0" stroke="#EBC9FF" stroke-width="4"/>
+  <path d="M137 183 Q139 153 169 154 Q199 154 199 184Z" fill="#6D4AB0" stroke="#EBC9FF" stroke-width="4"/>
+  <path d="M104 171 Q128 147 150 171" fill="none" stroke="#E3B3FF" stroke-width="9"/>
+  <path d="M110 164 L128 182 L147 164" fill="none" stroke="#FCE7FF" stroke-width="6"/>
+  <path d="M128 117 L141 139 L128 156 L115 139Z" fill="#F7DDFF" stroke="#AA63F6" stroke-width="4"/>
+  <circle cx="128" cy="139" r="5" fill="#FFFFFF"/>
+  <path d="M128 56 L136 72 L153 79 L136 87 L128 103 L120 87 L103 79 L120 72Z" fill="#EEC9FF"/>
+  <path d="M75 87 L80 97 L90 101 L80 105 L75 115 L71 105 L60 101 L71 97Z" fill="#CD9FFF"/>
+  <path d="M185 87 L190 97 L200 101 L190 105 L185 115 L181 105 L170 101 L181 97Z" fill="#CD9FFF"/>
+</g>
+<path d="M128 18 L211 51 Q225 58 222 79 L210 166 Q198 196 128 239 Q58 196 46 166 L34 79 Q31 58 45 51Z" fill="none" stroke="#E6BCFF" stroke-width="2"/>
+<path d="M128 24 L134 34 L128 43 L122 34Z" fill="#FFE5FF"/>
+</svg>

@@ -1,6 +1,6 @@
 """Winged Legendary artwork regression tests.
 
-The five Legendary assets must share a recognisable winged silhouette while
+The six Legendary assets must share a recognisable winged silhouette while
 preserving each title-specific central illustration and its original ID.
 Mythic art deliberately stays separate, so the fifth rarity remains higher.
 """
@@ -18,11 +18,12 @@ WING_VARIANTS = {
     "g4_four_streak": "#B38BEA",      # violet portal
     "g5_three_streak": "#EA729B",     # rose-red broadcast eye
     "loan_survivor": "#DAB76C",       # champagne loan survivor
+    "invite_three": "#63E9C8",        # mint-green referral wings
 }
 
 
 class LegendaryWingArtTests(unittest.TestCase):
-    def test_exactly_five_legendary_artworks_have_expanded_mirrored_wings(self):
+    def test_exactly_six_legendary_artworks_have_expanded_mirrored_wings(self):
         self.assertEqual(
             {badge.id for badge in BADGES if badge.rarity == "legendary"},
             set(WING_VARIANTS),
