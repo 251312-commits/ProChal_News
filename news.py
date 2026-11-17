@@ -1,7 +1,6 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-from modules.db_handler import init_gspread, init_news_sheet
 from modules.news_ai import load_ai_model, bring_article, pick_3_lowest_count_news
 from modules.ui_components import change_page, inject_casino_theme
 from modules.loading_feedback import render_loading_feedback
@@ -20,9 +19,6 @@ from games.game3 import show_game_3
 from games.game4 import show_game_4
 from games.game5 import show_game_5, _show_article_detail, _show_result
 from games.game5 import show_game_5_tutorial
-
-ws = init_gspread()
-ws_news = init_news_sheet()
 
 # ==========================================
 # 4. Streamlit 앱 라우팅 및 상태 관리
