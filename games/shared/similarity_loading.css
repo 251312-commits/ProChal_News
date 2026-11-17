@@ -388,3 +388,27 @@
   #pc-sim-load .pc-sim-video-banner {min-height: 18px; padding: 1px 5px;}
   #pc-sim-load .pc-sim-video-note {min-height: 17px; padding: 2px 3px;}
 }
+
+
+#pc-sim-load .pc-sim-video-note {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+#pc-sim-load .pc-sim-sound-toggle {
+  flex:0 0 auto;
+  min-width:73px;
+  border:1px solid #c68bf1;
+  border-radius:6px;
+  padding:3px 7px;
+  background:#36164c;
+  color:#f8e7ff;
+  font:700 10px/1.3 system-ui,sans-serif;
+  cursor:pointer;
+  touch-action:manipulation;
+}
+#pc-sim-load .pc-sim-sound-toggle:focus-visible {
+  outline:2px solid #ffe295;
+  outline-offset:2px;
+}
