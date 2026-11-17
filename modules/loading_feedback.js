@@ -160,7 +160,7 @@
     if (!data || typeof data !== "object") return;
     if (data.type === "pc:loading:start" && sourceIsFrame(event.source,
       '.st-key-shared-news-stage iframe, .st-key-shared-article-reader iframe,' +
-      ' .st-key-game1-prediction-screen iframe, .st-key-game1-result-screen iframe'
+      ' .st-key-game1-prediction-screen iframe, .st-key-game1-result-reveal-screen iframe'
     )) {
       start(data.label);
     } else if (data.type === "streamlit:setComponentValue" &&
