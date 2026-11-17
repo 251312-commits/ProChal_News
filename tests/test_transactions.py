@@ -95,6 +95,7 @@ class ClientTests(unittest.TestCase):
         self.assertEqual(self.session.current_user_data["보유배지"],
                          "first_round g1_exact_one")
         self.assertEqual(self.session.current_user_data["장착배지"], "0")
+        self.assertEqual(self.session["badge_award_queue"], ("first_round", "g1_exact_one"))
 
     def test_badge_schema_not_ready_is_reported_before_betting(self):
         missing = self.response()
@@ -143,6 +144,7 @@ class ClientTests(unittest.TestCase):
         self.assertEqual(post.call_args.kwargs["json"]["kind"], "badge_sync")
         self.assertTrue(post.call_args.kwargs["json"]["transaction_id"].startswith("badge_sync:"))
         self.assertEqual(self.session.current_user_data["보유배지"], "bankrupt")
+        self.assertEqual(self.session["badge_award_queue"], ("bankrupt",))
 
     def test_badge_sync_unsupported_server_fails_without_extra_request(self):
         rejected = self.response()
@@ -259,6 +261,17 @@ class ClientTests(unittest.TestCase):
             self.assertEqual((self.session.current_user_data["코인"],
                               self.session.current_user_data["대출금"],
                               self.session.current_user_data["대출원금"]), (7000, 3000, 3000))
+
+    def test_bank_award_is_queued_without_changing_the_confirmed_balance(self):
+        award = self.response(coins=7000, loan=3000)
+        award.json.return_value["badges"] = {
+            "equipped": "0", "owned": ["first_borrow"], "unlocked": ["first_borrow"],
+        }
+        with patch.object(tx.requests, "post", side_effect=[self.status(), award]):
+            tx.bank_transaction("borrow", 2000, "borrow:" + "d" * 32)
+        self.assertEqual(self.session["badge_award_queue"], ("first_borrow",))
+        self.assertEqual(self.session.current_user_data["코인"], 7000)
+        self.assertEqual(self.session.current_user_data["대출금"], 3000)
 
     def test_borrowing_can_exceed_total_debt_cap_but_not_principal_cap(self):
         self.session.current_user_data.update({"코인": 6000, "대출금": 9600, "대출원금": 8000})

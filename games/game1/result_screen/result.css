@@ -399,3 +399,61 @@ html, body { overflow:hidden; overscroll-behavior:none; }
 @media (prefers-reduced-motion:reduce) {
   .analysis-meter-fill { transition:none; }
 }
+
+
+/* New-award overlay appears only after the music-synchronised result resolves. */
+.badge-awards {
+  position:fixed;inset:0;z-index:70;display:grid;place-items:center;
+  padding:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right))
+          max(10px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));
+  background:#0b041be8;backdrop-filter:blur(13px);-webkit-backdrop-filter:blur(13px);
+  overflow:hidden;
+}
+.badge-awards-panel {
+  width:min(100%,450px);max-height:calc(100dvh - 20px);min-height:0;
+  display:flex;flex-direction:column;align-items:stretch;gap:10px;
+  padding:clamp(14px,4vw,24px);border-radius:21px;
+  border:1px solid #d19beb;background:linear-gradient(155deg,#441552,#180b29 76%);
+  box-shadow:0 0 45px #b14de879,inset 0 1px 0 #f5bfff74;text-align:center;
+}
+.badge-awards-eyebrow {font-size:11px;font-weight:900;letter-spacing:.22em;color:#f8d17b;margin:0;}
+.badge-awards-panel h2 {font-size:clamp(20px,6vw,28px);margin:0;color:#fff5ff;line-height:1.18;}
+.badge-awards-items {
+  display:grid;gap:9px;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;padding:4px 2px;scrollbar-width:thin;
+}
+.badge-awards-card {
+  --badge-accent:#f9d783;
+  display:flex;gap:10px;align-items:center;min-width:0;text-align:left;
+  border-radius:15px;border:1px solid var(--badge-accent);padding:9px;
+  background:linear-gradient(130deg,#421d54,#251036 78%);box-shadow:0 0 15px #cf6fff33;
+}
+.badge-awards-art {
+  flex:none;width:clamp(62px,19vw,94px);height:clamp(62px,19vw,94px);
+  display:grid;place-items:center;color:var(--badge-accent);font-size:39px;
+  filter:drop-shadow(0 0 7px var(--badge-accent));
+  animation:badge-awards-appear .65s ease-out both;
+}
+.badge-awards-art img {width:100%;height:100%;object-fit:contain;}
+.badge-awards-details {min-width:0;overflow-wrap:anywhere;}
+.badge-awards-rarity {color:var(--badge-accent);font-weight:900;font-size:10px;letter-spacing:.13em;}
+.badge-awards-title {color:#fff;font-weight:950;font-size:clamp(16px,4.2vw,20px);margin:3px 0;}
+.badge-awards-description {color:#ddc1e5;font-size:12px;line-height:1.45;margin:0;}
+.badge-awards-hint {margin:0;color:#d4b2e4;font-size:11px;line-height:1.4;}
+.badge-awards-close {
+  width:100%;min-height:45px;flex:none;border:1px solid #e6bcff;border-radius:12px;
+  font-size:clamp(13px,4vw,16px);font-weight:900;
+  background:linear-gradient(110deg,#9f47d6,#6730b3);box-shadow:0 0 14px #a64df258;
+}
+@keyframes badge-awards-appear {
+  from {opacity:0;transform:scale(.72) rotate(-8deg)}
+  to {opacity:1;transform:scale(1)}
+}
+@media (orientation:landscape) and (max-height:570px) {
+  .badge-awards-panel {width:min(100%,610px);gap:6px;padding:10px 14px;}
+  .badge-awards-panel h2 {font-size:20px;}
+  .badge-awards-art {width:59px;height:59px;}
+  .badge-awards-items {grid-template-columns:repeat(auto-fit,minmax(225px,1fr));}
+  .badge-awards-close {min-height:36px;}
+}
+@media (prefers-reduced-motion:reduce) {.badge-awards-art {animation:none;}}
