@@ -12,8 +12,8 @@ from games.shared.roulette import render_news_slot
 from modules.news_ai import bring_article, pick_3_lowest_count_news
 from modules.db_handler import (
     LAST_ARTICLE_HEADER,
-    init_gspread,
-    init_news_sheet,
+    deferred_user_sheet,
+    deferred_news_sheet,
     news_row_is_active,
     normalize_article_url,
     save_last_article_url,
@@ -21,8 +21,8 @@ from modules.db_handler import (
 from modules.ui_components import change_page
 
 
-ws_news = init_news_sheet()
-ws_users = init_gspread()
+ws_news = deferred_news_sheet()
+ws_users = deferred_user_sheet()
 
 
 def _current_student_id():
