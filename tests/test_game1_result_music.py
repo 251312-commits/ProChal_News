@@ -56,7 +56,7 @@ class ResultMusicTests(unittest.TestCase):
         assert "const songGain = localMuted ? 0 : settings.volume;" in js
         assert "failSound.volume = failGain" in js
         assert "function primeFailSound()" in js
-        assert "primeFailSound(); // Pre-unlock" in js
+        assert "primeFailSound();" in js  # Fallback gesture unlocks the local stinger
         assert 'failSound.preload = "auto"' in js
         assert "failSound.load();" in js
         assert "function failNow()" in js
@@ -66,6 +66,7 @@ class ResultMusicTests(unittest.TestCase):
         assert fail_branch.index("pauseMainBgm()") < fail_branch.index("playFailSound()")
         assert "failSound.currentTime = 0" in js
         assert "ui.retryFail.hidden = false" in js
+        assert 'bridgeCommand("fail")' in js  # Parent reuses gesture-activated BGM media
         assert 'class="retry-fail secondary"' in html
 
     def test_score_is_settled_before_visual_reveal_and_bgm_is_suspended(self):
