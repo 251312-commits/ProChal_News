@@ -32,3 +32,19 @@
 | 전설의 정복자 | 파산 선고 | 금리의 생존자 | 첫 신용 | 첫 상환 |
 
 MYTHIC은 Legendary보다 상위 등급으로, 황금색 ‘전설의 정복자’와 적색 ‘파산 선고’가 각기 다른 효과를 갖는다.
+
+
+## Legendary 날개 디자인 (2026-11)
+
+기존 에나멜 방패에 **미러링된 좌우 금속 날개**를 추가했다. 
+최상위 Mythic과 구별되는 Legendary 고유의 위엄을 강화하되, 
+기존 중심 도안(천체 궤도·소수점 왕관·경계 수정·특종의 눈·금리 모래시계)과 배지 ID는 유지한다.
+
+| 무패의 궤도 | 소수점의 지배자 | 경계의 지배자 | 특종의 눈 | 금리의 생존자 |
+|:---:|:---:|:---:|:---:|:---:|
+| <img src="../assets/badges/streak_eight_mixed.svg" width="150" alt="무패의 궤도 날개 배지"> | <img src="../assets/badges/g1_hit.svg" width="150" alt="소수점의 지배자 날개 배지"> | <img src="../assets/badges/g4_four_streak.svg" width="150" alt="경계의 지배자 날개 배지"> | <img src="../assets/badges/g5_three_streak.svg" width="150" alt="특종의 눈 날개 배지"> | <img src="../assets/badges/loan_survivor.svg" width="150" alt="금리의 생존자 날개 배지"> |
+| 천체 금빛 날개 | 냉광 정밀 날개 | 보랏빛 수정 날개 | 붉은 감시 날개 | 샴페인빛 생존 날개 |
+
+모든 날개는 SVG 내부에 포함된 벡터이다. 추가 HTTP 요청·이미지 의존성은 없다.
+모바일 컬렉션에서 기존 256×256 SVG 파일을 그대로 렌더링하므로 스크롤 영역과
+배지 장착/소유 판정, 은행 로직에 변경이 없다. 미획득 상태의 회색 처리도 유지한다.
