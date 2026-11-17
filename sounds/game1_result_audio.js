@@ -143,6 +143,7 @@
     media.volume = Math.min(1, Math.max(0, player.volume ** 2 * 1.7));
     media.muted = entry.userMuted;
     media.load();
+    send(entry, "loading", {muted: media.muted});
     play(entry, "track");
   }
   function message(event) {
