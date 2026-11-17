@@ -38,6 +38,8 @@ BADGE_SYMBOLS = {
     "loan_survivor": "⌛",
     "first_borrow": "▤",
     "first_repay": "✓",
+    "invite_one": "⚭",
+    "invite_three": "✺",
 }
 assert set(BADGE_SYMBOLS) == set(BADGE_BY_ID)
 
@@ -53,6 +55,7 @@ LEGENDARY_ACCENTS = {
     "g4_four_streak": "#C7A4FF",
     "g5_three_streak": "#FF8097",
     "loan_survivor": "#FFD48C",
+    "invite_three": "#71F4D1",
 }
 MYTHIC_ACCENTS = {
     "all_legendary": "#FFE172",
@@ -76,7 +79,7 @@ def badge_symbol(badge_id: str) -> str:
 BADGE_ART_DIR = Path(__file__).resolve().parents[1] / "assets" / "badges"
 
 
-@lru_cache(maxsize=32)
+@lru_cache(maxsize=36)
 def badge_image_data_uri(badge_id: str) -> str:
     """Return a trusted in-repo SVG as an embeddable data URI.
 
@@ -159,6 +162,15 @@ NAMEPLATE_CSS = """
 .pc-nameplate.pc-tier-legendary .pc-nameplate-symbol,
 .pc-nameplate.pc-tier-mythic .pc-nameplate-symbol {
   text-shadow:0 0 6px var(--pc-badge-accent),0 0 13px var(--pc-badge-accent);
+}
+.pc-nameplate.pc-effect-referral_sparks .pc-nameplate-symbol::after {
+  content:"✧✧✧"; position:absolute; font-size:.33em; letter-spacing:-.12em;
+  top:-.7em; right:-.8em; color:#B8FFE8;
+  animation:pc-referral-pulse 2.2s ease-in-out infinite;
+}
+@keyframes pc-referral-pulse {
+  0%,100%{opacity:.36;transform:translateY(3px) scale(.9)}
+  50%{opacity:1;transform:translateY(-2px) scale(1.1)}
 }
 .pc-nameplate.pc-effect-loan_hourglass .pc-nameplate-symbol::after {
   content:"⌛";position:absolute;font-size:.55em;top:-.4em;right:-.38em;
