@@ -18,9 +18,9 @@ be uploaded as-is: GitHub does not automatically unpack it.
 The loader selects only locally present files, so it safely falls back to its
 original two-newspaper artwork until one or more MP4s are checked in.
 
-Clips autoplay **muted** and loop during computation; native controls allow
-the viewer to enable sound using a tap (mobile autoplay with sound is often
-blocked). The current result flow still replaces the loader immediately
+Clips autoplay **muted** and loop during computation; a **소리 켜기** button
+allows the viewer to enable audio through a real tap, with native video
+controls as an alternative (mobile autoplay with sound is often blocked). The current result flow still replaces the loader immediately
 when computation completes.
 
 Clips are served from the raw GitHub `main` asset path after merge, in the
