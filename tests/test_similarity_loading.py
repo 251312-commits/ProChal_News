@@ -2,9 +2,12 @@
 import ast
 from contextlib import contextmanager
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 from unittest import TestCase
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
+
+from games.shared import loading as loader_module
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,6 +30,7 @@ class SimilarityLoadingTests(TestCase):
             "Path": Path,
             "__file__": str(COMMON),
             "_SIMILARITY_LOADING_HTML": '<div id="pc-sim-load">분석 중</div>',
+            "_similarity_video_markup": lambda: "",
         }
         exec(compile(ast.Module(body=[func], type_ignores=[]), str(COMMON), "exec"), scope)
         return scope["similarity_analysis_loading"], scope["st"].empty
@@ -68,3 +72,40 @@ class SimilarityLoadingTests(TestCase):
         self.assertIn("max-height: 620px", css)
         self.assertIn("max-height: 480px", css)
         self.assertIn("min-height: 0;", css)
+        self.assertIn(".pc-sim-video-frame", css)
+        self.assertIn(".pc-sim-video {", css)
+
+    def test_optional_clips_do_not_hide_original_loading_art(self):
+        with TemporaryDirectory() as empty:
+            with patch.object(loader_module, "_VIDEO_DIRECTORY", Path(empty)):
+                self.assertEqual(loader_module._similarity_video_markup(), "")
+        html = loader_module._SIMILARITY_LOADING_HTML
+        self.assertIn('pc-sim-paper-left', html)
+        self.assertIn('pc-sim-paper-right', html)
+        self.assertIn('pc-sim-meter', html)
+        self.assertIn('PC_SIM_VIDEO_SLOT', html)
+
+    def test_video_audio_button_uses_browser_click_bridge(self):
+        source = COMMON.read_text(encoding="utf-8")
+        bridge = (COMMON.parent / "similarity_video_controls.js").read_text(encoding="utf-8")
+        self.assertIn('components.html(f"<script>{_VIDEO_SOUND_JS}</script>"', source)
+        self.assertIn('pc-sim-sound-toggle', source)
+        self.assertIn('doc.addEventListener("click", toggleSound)', bridge)
+        self.assertIn('video.muted = !turnOn', bridge)
+        self.assertIn('video.play()', bridge)
+
+    def test_random_clip_stays_small_autoplays_muted_and_keeps_sound_controls(self):
+        with TemporaryDirectory() as folder:
+            source = Path(folder)
+            for name in ("Video1.mp4", "Video2.mp4", "Video3.mp4"):
+                (source / name).write_bytes(b"test")
+            with patch.object(loader_module, "_VIDEO_DIRECTORY", source):
+                with patch.object(loader_module, "choice", return_value="Video3.mp4") as choose:
+                    html = loader_module._similarity_video_markup()
+            choose.assert_called_once_with(["Video1.mp4", "Video2.mp4", "Video3.mp4"])
+            self.assertIn('class="pc-sim-video"', html)
+            self.assertIn("Video3.mp4?", html)
+            self.assertIn('controls autoplay muted playsinline', html)
+            self.assertIn('loop preload="auto"', html)
+            self.assertIn('--pc-video-aspect:16 / 9', html)
+            self.assertNotIn("data:video", html)

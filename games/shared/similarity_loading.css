@@ -317,3 +317,98 @@
   #pc-sim-load .pc-sim-venn-shapes { transform: scale(.6); }
   #pc-sim-load .pc-sim-rule:nth-of-type(n+6) { display: none; }
 }
+
+
+/* Optional audiovisual clip in the original newspaper comparison area.
+   The rest of the analysis chrome, meter, and checklist remains unchanged. */
+#pc-sim-load .pc-sim-compare:has(.pc-sim-video-frame) .pc-sim-paper {
+  opacity: .35;
+  pointer-events: none;
+}
+#pc-sim-load .pc-sim-compare:has(.pc-sim-video-frame) .pc-sim-rect {
+  opacity: .4;
+  pointer-events: none;
+}
+#pc-sim-load .pc-sim-video-frame {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  height: min(100%, 315px);
+  width: auto;
+  max-width: 94%;
+  aspect-ratio: var(--pc-video-aspect, 4 / 3);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding: 3px;
+  border: 2px solid #c889ff;
+  border-radius: 12px;
+  background: #080510;
+  box-shadow: 0 0 23px #a554e4a8, 0 9px 30px #07030ec9,
+              inset 0 0 13px #a65ceb;
+}
+#pc-sim-load .pc-sim-video-banner {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-height: 23px;
+  padding: 3px 9px;
+  font: 800 clamp(8px, 2vw, 11px)/1.25 ui-monospace, monospace;
+  letter-spacing: .04em;
+  color: #edcafa;
+  background: linear-gradient(90deg, #36114a, #1b0b2b);
+}
+#pc-sim-load .pc-sim-video-banner span:last-child {color:#dfaa74;font-size:9px;}
+#pc-sim-load .pc-sim-video {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  background: #090711;
+  object-fit: contain;
+}
+#pc-sim-load .pc-sim-video-note {
+  flex: 0 0 auto;
+  padding: 4px 6px;
+  min-height: 21px;
+  text-align: center;
+  color: #ddc5ec;
+  background: #1f102e;
+  font: 600 clamp(9px, 2.45vw, 11px)/1.3 system-ui, sans-serif;
+}
+@media (max-height: 620px) {
+  #pc-sim-load .pc-sim-video-frame {height: 100%; border-width: 1px;}
+  #pc-sim-load .pc-sim-video-banner {min-height: 18px; padding: 1px 5px;}
+  #pc-sim-load .pc-sim-video-note {min-height: 17px; padding: 2px 3px;}
+}
+
+
+#pc-sim-load .pc-sim-video-note {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+#pc-sim-load .pc-sim-sound-toggle {
+  flex:0 0 auto;
+  min-width:73px;
+  border:1px solid #c68bf1;
+  border-radius:6px;
+  padding:3px 7px;
+  background:#36164c;
+  color:#f8e7ff;
+  font:700 10px/1.3 system-ui,sans-serif;
+  cursor:pointer;
+  touch-action:manipulation;
+}
+#pc-sim-load .pc-sim-sound-toggle:focus-visible {
+  outline:2px solid #ffe295;
+  outline-offset:2px;
+}
