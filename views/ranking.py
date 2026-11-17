@@ -2,13 +2,13 @@ import streamlit as st
 from streamlit_autorefresh import st_autorefresh  # 1. 모듈 import 추가
 from games.shared.betting import find_player, rank_by_coins, ranking_entries
 from modules.badge_display import NAMEPLATE_CSS, nameplate_html
-from modules.db_handler import init_gspread
+from modules.db_handler import deferred_user_sheet
 from modules.ui_components import change_page
 from views.ranking_display import select_ranking_rows
 
 @st.cache_data(ttl=10) # 10초 동안 캐싱하여 화면 진입 속도 0초 구현
 def fetch_ranking_data():
-    ws = init_gspread()
+    ws = deferred_user_sheet()
     return ws.get_all_records()
 
 def show_ranking():
