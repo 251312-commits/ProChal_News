@@ -19,20 +19,38 @@ class LoadingFeedbackTests(TestCase):
         second = html.call_args_list[1].args[0]
         self.assertNotEqual(first, second)
         self.assertIn("pcRunToken", first)
+        self.assertIn("pcEnabled = true", first)
         self.assertIn("stFormSubmitButton", first)
         self.assertIn("pc:loading:start", first)
         self.assertEqual(html.call_args.kwargs["height"], 0)
 
+    def test_login_screen_disables_generic_feedback(self):
+        with patch.object(loading_feedback.components, "html") as html:
+            loading_feedback.render_loading_feedback(enabled=False)
+        self.assertIn("pcEnabled = false", html.call_args.args[0])
+
     def test_app_footer_clears_after_page_router(self):
         app = (ROOT / "news.py").read_text(encoding="utf-8")
-        self.assertGreater(app.rfind("render_loading_feedback()"),
-                           app.rfind("show_game_5_tutorial()"))
+        call = 'render_loading_feedback(enabled=st.session_state.page != "login")'
+        self.assertIn(call, app)
+        self.assertGreater(app.rfind(call), app.rfind("show_game_5_tutorial()"))
 
     def test_dialog_fragment_renders_completion_hook(self):
         dialog = (ROOT / "views" / "badges.py").read_text(encoding="utf-8")
         self.assertIn("render_loading_feedback()", dialog)
         self.assertLess(dialog.index("render_loading_feedback()"),
                         dialog.index("def open_badge_gallery"))
+
+    def test_similarity_takes_precedence_over_generic_feedback(self):
+        source = (ROOT / "modules" / "loading_feedback.js").read_text(encoding="utf-8")
+        self.assertIn("const SHOW_DELAY_MS = 200", source)
+        self.assertIn('hasSimilarityLoader()', source)
+        self.assertIn('data.mode !== "similarity"', source)
+        self.assertIn('event.stopImmediatePropagation()', source)
+        prediction = (ROOT / "games/game1/prediction_screen/prediction.js").read_text(encoding="utf-8")
+        reader = (ROOT / "games/shared/article_reader/reader.js").read_text(encoding="utf-8")
+        self.assertIn('mode: action === "confirm" ? "similarity"', prediction)
+        self.assertIn('mode: action === "predict" && nextIsSimilarity ?', reader)
 
     def test_custom_game_actions_report_start(self):
         for name in [
