@@ -71,6 +71,8 @@ def render_article_reader(chosen, *, game_id="game_1", reward=None):
             source=source,
             coins=int(user.get("코인", 0) or 0),
             reward=reward,
+            # Game 4 calculates similarity as soon as reading finishes.
+            next_is_similarity=game_id == "game_4",
             art={name: load_local_image_url(str(ASSETS / path)) for name, path in ART.items()},
             default=None,
         )
