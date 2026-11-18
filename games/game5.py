@@ -163,11 +163,11 @@ def _confirm_article_selection(index: int) -> None:
         if st.button("결정하기", key="game_5_confirm_selection", use_container_width=True):
             st.session_state.game_5_selected_index = index
             st.session_state.pop("game_5_pending_selection", None)
-            st.rerun()
+            st.rerun(scope="app")
     with cancel_col:
         if st.button("다시 보기", key="game_5_cancel_selection", use_container_width=True):
             st.session_state.pop("game_5_pending_selection", None)
-            st.rerun()
+            st.rerun(scope="app")
 
 
 def _show_article_detail() -> None:
@@ -372,13 +372,6 @@ def show_game_5():
             box-shadow: 0 0 14px #bf4ce366, inset 0 0 18px #a13dcc35;
             padding: 14px 12px 12px;
         }
-        .st-key-game5-candidate-row-0 [data-testid="stHorizontalBlock"] {
-            max-width: 72%;
-            margin-inline: auto;
-        }
-        .st-key-game5-candidate-row-1 [data-testid="stHorizontalBlock"] {
-            width: 100%;
-        }
         .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"]:hover {
             border-color: #e7a4ff;
             box-shadow: 0 0 18px #d967f099, inset 0 0 18px #a13dcc45;
@@ -412,12 +405,6 @@ def show_game_5():
             .st-key-game5-candidates [data-testid="stHorizontalBlock"] {
                 gap: 8px;
             }
-            .st-key-game5-candidate-row-0 [data-testid="stHorizontalBlock"] {
-                max-width: 78%;
-            }
-            .st-key-game5-candidate-row-1 [data-testid="stHorizontalBlock"] {
-                width: 100%;
-            }
             .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] {
                 min-height: 178px;
                 padding: 11px 9px 10px;
@@ -442,57 +429,58 @@ def show_game_5():
         pending_index = st.session_state.get("game_5_pending_selection")
         if isinstance(pending_index, int):
             _confirm_article_selection(pending_index)
+            return
 
         rows = ((0, 1), (2, 3, 4))
         for row_index, row in enumerate(rows):
             with st.container(key=f"game5-candidate-row-{row_index}", border=False):
                 columns = st.columns(len(row), gap="small")
-            for column, index in zip(columns, row):
-                article = candidates[index]
-                with column:
-                    with st.container(
-                        key=f"game5-card-{index}",
-                        border=True,
-                    ):
-                        st.markdown(
-                            f'<div class="game5-card-number">{index + 1}</div>'
-                            f'<div class="game5-card-title">'
-                            f'{html.escape(article["title"])}</div>',
-                            unsafe_allow_html=True,
-                        )
-                        read_col, select_col = st.columns(2)
-                        with read_col:
-                            if st.button(
-                                "본문 읽기",
-                                key=f"game_5_article_{index}",
-                                use_container_width=True,
-                            ):
-                                if not article.get("text"):
-                                    with st.spinner("뉴스 본문을 불러오는 중..."):
-                                        try:
-                                            _load_article(article)
-                                        except (RuntimeError, ValueError) as exc:
+                for column, index in zip(columns, row):
+                    article = candidates[index]
+                    with column:
+                        with st.container(
+                            key=f"game5-card-{index}",
+                            border=True,
+                        ):
+                            st.markdown(
+                                f'<div class="game5-card-number">{index + 1}</div>'
+                                f'<div class="game5-card-title">'
+                                f'{html.escape(article["title"])}</div>',
+                                unsafe_allow_html=True,
+                            )
+                            read_col, select_col = st.columns(2)
+                            with read_col:
+                                if st.button(
+                                    "본문 읽기",
+                                    key=f"game_5_article_{index}",
+                                    use_container_width=True,
+                                ):
+                                    if not article.get("text"):
+                                        with st.spinner("뉴스 본문을 불러오는 중..."):
                                             try:
-                                                _replace_candidate(candidates, index)
-                                            except ValueError as replacement_exc:
-                                                st.error(
-                                                    "뉴스 본문을 불러오지 못했고 "
-                                                    f"교체할 후보도 없습니다: {replacement_exc}"
-                                                )
+                                                _load_article(article)
+                                            except (RuntimeError, ValueError) as exc:
+                                                try:
+                                                    _replace_candidate(candidates, index)
+                                                except ValueError as replacement_exc:
+                                                    st.error(
+                                                        "뉴스 본문을 불러오지 못했고 "
+                                                        f"교체할 후보도 없습니다: {replacement_exc}"
+                                                    )
+                                                    continue
+                                                st.warning(f"실패한 기사를 교체했습니다: {exc}")
+                                                st.rerun()
                                                 continue
-                                            st.warning(f"실패한 기사를 교체했습니다: {exc}")
-                                            st.rerun()
-                                            continue
-                                st.session_state.game_5_article_index = index
-                                change_page("game_5_article")
-                        with select_col:
-                            if st.button(
-                                "정답 결정",
-                                key=f"game_5_select_{index}",
-                                use_container_width=True,
-                            ):
-                                st.session_state.game_5_pending_selection = index
-                                st.rerun()
+                                    st.session_state.game_5_article_index = index
+                                    change_page("game_5_article")
+                            with select_col:
+                                if st.button(
+                                    "정답 결정",
+                                    key=f"game_5_select_{index}",
+                                    use_container_width=True,
+                                ):
+                                    st.session_state.game_5_pending_selection = index
+                                    st.rerun()
 
     if "game_5_selected_index" not in st.session_state:
         return
