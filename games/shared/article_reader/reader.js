@@ -75,6 +75,10 @@ function showArticle(args) {
   }
   setArticleImage(args.image_url);
   document.querySelector("#headline").textContent = args.title;
+  document.querySelector("#guidance").textContent =
+    args.guidance || "기사를 읽고 제목과 본문의 유사도를 예측하세요.";
+  document.querySelector("#return-label").textContent =
+    args.return_label || "유사도 예측하러 가기";
 
   const source = document.querySelector("#source");
   source.hidden = !(args.source && /^https?:\/\//i.test(args.url));

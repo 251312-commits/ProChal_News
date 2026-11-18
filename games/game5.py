@@ -39,6 +39,8 @@ def _reset_game_5_state() -> None:
         "game_5_pending_selection",
         "game_5_result",
         "game_5_article_index",
+        "game_5_summary_revealed",
+        "game_5_reader_round",
         "bet_slider_val",
     ):
         st.session_state.pop(key, None)
@@ -72,7 +74,7 @@ def _extract_article(url: str) -> tuple[str, str]:
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
-def _calculate_score_cached(article_text: str, title: str) -> float:
+def _analyze_article_cached(article_text: str, title: str) -> dict:
     summary_text = asyncio.run(summary(article_text))
     if not summary_text:
         raise ValueError("뉴스 본문 요약 결과가 비어 있습니다.")
@@ -88,7 +90,15 @@ def _calculate_score_cached(article_text: str, title: str) -> float:
         Decimal("0.01"),
         rounding=ROUND_HALF_UP,
     )
-    return max(0.0, min(float(normalized_score), GAME_5_SCORE_MAX))
+    actual_score = max(0.0, min(float(normalized_score), GAME_5_SCORE_MAX))
+    normalized_details = dict(score_details)
+    normalized_details["score"] = actual_score
+    normalized_details.setdefault("score_hundredths", int(actual_score * 100))
+    return {
+        "summary": summary_text,
+        "score_details": normalized_details,
+        "actual_score": actual_score,
+    }
 
 
 def _load_article(article: dict) -> None:
@@ -103,7 +113,11 @@ def _load_article(article: dict) -> None:
 
 
 def _calculate_score(article: dict) -> float:
-    return _calculate_score_cached(article["text"], article["title"])
+    analysis = _analyze_article_cached(article["text"], article["title"])
+    article["summary"] = analysis["summary"]
+    article["score_details"] = analysis["score_details"]
+    article["score"] = analysis["actual_score"]
+    return analysis["actual_score"]
 
 
 def _replace_candidate(candidates: list[dict], index: int) -> None:
@@ -112,48 +126,6 @@ def _replace_candidate(candidates: list[dict], index: int) -> None:
     if not replacements:
         raise ValueError("교체할 수 있는 뉴스 후보가 없습니다.")
     candidates[index] = replacements[0]
-
-
-def _build_exclusive_range(candidates: list[dict], answer_index: int) -> tuple[float, float]:
-    """Build a narrow score range containing only the selected score."""
-    answer_score = candidates[answer_index]["score"]
-    other_scores = {
-        candidate["score"]
-        for index, candidate in enumerate(candidates)
-        if index != answer_index
-    }
-    if answer_score in other_scores:
-        raise ValueError("후보 뉴스의 일치율이 같아 정답 구간을 분리할 수 없습니다.")
-
-    nearest_gap = min(abs(answer_score - score) for score in other_scores)
-    if nearest_gap <= 0:
-        raise ValueError("후보 뉴스의 일치율로 정답 구간을 만들 수 없습니다.")
-
-    # Keep a generous margin from the neighboring score without falling back
-    # to the impractically wide 0~100% range at the ends of the scale.
-    half_width = min(
-        nearest_gap * (2 / 3),
-        GAME_5_TARGET_RANGE_WIDTH / 2,
-    )
-    lower = max(0.0, answer_score - half_width)
-    upper = min(GAME_5_SCORE_MAX, answer_score + half_width)
-    quantizer = Decimal("0.01")
-    lower = float(Decimal(str(lower)).quantize(quantizer, rounding=ROUND_HALF_UP))
-    upper = float(Decimal(str(upper)).quantize(quantizer, rounding=ROUND_HALF_UP))
-    lower_candidates = [
-        lower,
-        *(score + 0.01 for score in other_scores if score < answer_score),
-    ]
-    upper_candidates = [
-        upper,
-        *(score - 0.01 for score in other_scores if score > answer_score),
-    ]
-    lower = max(lower_candidates)
-    upper = min(upper_candidates)
-    upper = min(upper, lower + GAME_5_TARGET_RANGE_WIDTH)
-    if lower > answer_score or answer_score > upper:
-        raise ValueError("후보 뉴스의 일치율로 정답 구간을 만들 수 없습니다.")
-    return lower, upper
 
 
 def _build_target_range(answer_score: float) -> tuple[float, float]:
@@ -199,6 +171,8 @@ def _confirm_article_selection(index: int) -> None:
 
 
 def _show_article_detail() -> None:
+    from games.shared.article_reader import render_article_reader
+
     candidates = st.session_state.get("game_5_candidates", [])
     article_index = st.session_state.get("game_5_article_index")
     if not isinstance(article_index, int) or not 0 <= article_index < len(candidates):
@@ -222,14 +196,23 @@ def _show_article_detail() -> None:
                 st.session_state.pop("game_5_article_index", None)
                 st.rerun()
                 return
-    st.title(f"📰 후보 {article_index + 1} 본문")
-    st.subheader(article["title"])
-    st.markdown(article["text"])
-    if st.button("⬅️ 후보 목록으로 돌아가기", use_container_width=True):
+    action = render_article_reader(
+        article,
+        game_id="game_5",
+        reward=int(st.session_state.get("game_5_bet", 0)) * int(GAME_5_WIN_MULTIPLIER),
+        guidance="본문을 확인한 뒤 후보 목록으로 돌아가 정답 구간에 해당하는 뉴스를 결정하세요.",
+        return_label="후보 목록으로 돌아가기",
+    )
+    if action == "predict":
+        st.session_state.pop("game_5_article_index", None)
         change_page("game_5")
+    elif action == "bank":
+        change_page("bank")
 
 
 def _show_result() -> None:
+    from games.shared.result import show_summary_before_score
+
     result = st.session_state.get("game_5_result")
     if not result:
         change_page("game_5")
@@ -237,16 +220,39 @@ def _show_result() -> None:
     if not apply_end_of_turn_interest("game_5"):
         return
 
+    show_summary_before_score(
+        result.get("summary", ""),
+        "game_5_summary_revealed",
+        title=result.get("title", ""),
+        score=result["actual_score"],
+        details=result.get("score_details"),
+        score_precision=2,
+    )
     st.title("🏆 게임 5 최종 결과")
     if result["is_win"]:
         st.balloons()
         st.success(f"🎉 정답입니다! +{result['reward']:,} C")
     else:
         st.error(f"❌ 틀렸습니다! {result['reward']:,} C")
-    st.metric("선택한 뉴스의 실제 일치율", f"{result['actual_score']:.2f}%")
-    st.info(f"정답 구간: {result['target_range']}")
-    st.write(f"현재 보유 코인: **{result['new_coins']:,} C**")
-    st.write(f"현재 연승 기록: **{result['new_streak']} 연승**")
+    metric_col, range_col = st.columns(2)
+    with metric_col:
+        st.metric("선택한 뉴스의 실제 일치율", f"{result['actual_score']:.2f}%")
+    with range_col:
+        st.metric("정답 구간", result["target_range"])
+    st.markdown(
+        f"""
+        <div style="background:#110022; border:2px solid #8A2BE2; padding:15px;
+                    border-radius:10px; text-align:center; margin:15px 0;">
+            <p style="color:#ffffff; margin:0; font-weight:bold;">
+                현재 보유 코인: <span style="color:#00ffcc;">{result['new_coins']:,} C</span>
+            </p>
+            <p style="color:#ffffff; margin:0; font-weight:bold;">
+                현재 연승 기록: <span style="color:#ff00ff;">{result['new_streak']} 연승</span>
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     col_retry, col_main = st.columns(2)
     with col_retry:
@@ -261,12 +267,25 @@ def _show_result() -> None:
 
 def show_game_5():
     st.title("🎮 게임 5: 일치율 구간 뉴스 맞히기")
-    if st.button(
-        "📖 게임 5 튜토리얼 다시 보기",
-        key="game_5_show_tutorial",
-        help="게임 진행 방법을 다시 확인합니다.",
-    ):
-        change_page("game_5_tutorial")
+    with st.container(key="game5-betting-top"):
+        st.html(
+            """
+            <style>
+            .st-key-game5-betting-top [data-testid="stButton"] button {
+                min-height: 44px; border: 1px solid #7a4b21 !important;
+                border-radius: 12px; background:#fff6df !important;
+                color:#24132f !important; font-weight:800;
+            }
+            </style>
+            """
+        )
+        if st.button(
+            "📖 게임 5 튜토리얼 다시 보기",
+            key="game_5_show_tutorial",
+            help="게임 진행 방법을 다시 확인합니다.",
+            use_container_width=True,
+        ):
+            change_page("game_5_tutorial")
 
     if "game_5_bet" not in st.session_state:
         if not check_user_coins_or_pop_bank(GAME_5_MIN_BET):
@@ -353,15 +372,12 @@ def show_game_5():
             box-shadow: 0 0 14px #bf4ce366, inset 0 0 18px #a13dcc35;
             padding: 14px 12px 12px;
         }
-        .st-key-game5-candidates .st-key-game5-card-0 {
-            transform: translateX(50%);
-            position: relative;
-            z-index: 1;
+        .st-key-game5-candidate-row-0 [data-testid="stHorizontalBlock"] {
+            max-width: 72%;
+            margin-inline: auto;
         }
-        .st-key-game5-candidates .st-key-game5-card-1 {
-            transform: translateX(-50%);
-            position: relative;
-            z-index: 1;
+        .st-key-game5-candidate-row-1 [data-testid="stHorizontalBlock"] {
+            width: 100%;
         }
         .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"]:hover {
             border-color: #e7a4ff;
@@ -396,6 +412,12 @@ def show_game_5():
             .st-key-game5-candidates [data-testid="stHorizontalBlock"] {
                 gap: 8px;
             }
+            .st-key-game5-candidate-row-0 [data-testid="stHorizontalBlock"] {
+                max-width: 78%;
+            }
+            .st-key-game5-candidate-row-1 [data-testid="stHorizontalBlock"] {
+                width: 100%;
+            }
             .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] {
                 min-height: 178px;
                 padding: 11px 9px 10px;
@@ -421,12 +443,11 @@ def show_game_5():
         if isinstance(pending_index, int):
             _confirm_article_selection(pending_index)
 
-        rows = ((0, None, 1), (2, 3, 4))
-        for row in rows:
-            columns = st.columns(3)
+        rows = ((0, 1), (2, 3, 4))
+        for row_index, row in enumerate(rows):
+            with st.container(key=f"game5-candidate-row-{row_index}", border=False):
+                columns = st.columns(len(row), gap="small")
             for column, index in zip(columns, row):
-                if index is None:
-                    continue
                 article = candidates[index]
                 with column:
                     with st.container(
@@ -512,6 +533,9 @@ def show_game_5():
         new_coins = settled["new_coins"]
         new_streak = settled["new_streak"]
         st.session_state.game_5_result = {
+            "title": selected_article["title"],
+            "summary": selected_article.get("summary", ""),
+            "score_details": selected_article.get("score_details"),
             "actual_score": actual_score,
             "target_range": _format_score_range(target_range),
             "reward": reward,

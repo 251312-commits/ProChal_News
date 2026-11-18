@@ -37,7 +37,14 @@ def _article_source(raw_url):
     return "", ""
 
 
-def render_article_reader(chosen, *, game_id="game_1", reward=None):
+def render_article_reader(
+    chosen,
+    *,
+    game_id="game_1",
+    reward=None,
+    guidance=None,
+    return_label=None,
+):
     """Render the current article and consume at most one navigation event."""
     state = st.session_state
     round_key = f"{game_id}_reader_round"
@@ -71,6 +78,8 @@ def render_article_reader(chosen, *, game_id="game_1", reward=None):
             source=source,
             coins=int(user.get("코인", 0) or 0),
             reward=reward,
+            guidance=guidance or "",
+            return_label=return_label or "",
             # Game 4 calculates similarity as soon as reading finishes.
             next_is_similarity=game_id == "game_4",
             art={name: load_local_image_url(str(ASSETS / path)) for name, path in ART.items()},
