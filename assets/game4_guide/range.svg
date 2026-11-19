@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 300" width="560" height="300" role="img" aria-labelledby="title"><title id="title">셋째 단계: 세 구간에서 한 곳 선택</title><defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#291045"/><stop offset=".48" stop-color="#150b31"/><stop offset="1" stop-color="#110823"/></linearGradient>
+  <radialGradient id="halo"><stop stop-color="#a32fdf" stop-opacity=".51"/><stop offset="1" stop-color="#a32fdf" stop-opacity="0"/></radialGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff1a4"/><stop offset=".33" stop-color="#f9c75f"/><stop offset=".65" stop-color="#bd722b"/><stop offset="1" stop-color="#ffdd80"/></linearGradient>
+  <linearGradient id="purple" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#922cca"/><stop offset=".55" stop-color="#40105c"/><stop offset="1" stop-color="#271141"/></linearGradient>
+  <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fffaf4"/><stop offset="1" stop-color="#d9c2ec"/></linearGradient>
+  <filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="4"/></filter>
+  <filter id="shadow" x="-40%" y="-40%" width="200%" height="200%"><feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#0d031b" flood-opacity=".88"/></filter>
+</defs>
+<rect x="4" y="4" width="552" height="292" rx="34" fill="url(#bg)" stroke="#9860ba" stroke-width="3"/>
+<ellipse cx="280" cy="155" rx="265" ry="140" fill="url(#halo)"/>
+<path d="M38 265H520" stroke="#ad68d1" stroke-opacity=".3" stroke-width="2"/>
+<g fill="#ffd981" opacity=".82"><path d="M84 34l3 10 10 3-10 3-3 10-3-10-10-3 10-3z"/><path d="M460 27l2 8 8 2-8 2-2 8-2-8-8-2 8-2z"/><circle cx="437" cy="235" r="2.5"/><circle cx="128" cy="248" r="2"/><path d="M499 161l2 7 7 2-7 2-2 7-2-7-7-2 7-2z"/></g>
+  <g filter="url(#shadow)"><rect x="52" y="92" width="179" height="122" rx="25" fill="#2a0a4b" stroke="url(#gold)" stroke-width="5"/>
+  <rect x="63" y="102" width="157" height="102" rx="17" fill="url(#purple)" stroke="#b64eec" stroke-width="2"/>
+  <text x="142" y="174" text-anchor="middle" fill="#ffe69a" font-size="72" font-weight="900" font-family="Arial,sans-serif">??</text></g>
+  <path d="M284 52v195" stroke="#ffe49c" stroke-width="5" stroke-linecap="round"/><path d="M276 61h16m-16 178h16" stroke="#ffe49c" stroke-width="5"/>
+  <circle cx="284" cy="155" r="10" fill="#cf65ff" stroke="#ffe2a3" stroke-width="3"/>
+  <g filter="url(#shadow)">
+  <rect x="314" y="46" width="188" height="70" rx="19" fill="#220a40" stroke="#f4be6c" stroke-width="4"/>
+  <rect x="314" y="121" width="188" height="70" rx="19" fill="#7830b6" stroke="#fff0aa" stroke-width="5"/>
+  <rect x="314" y="196" width="188" height="70" rx="19" fill="#220a40" stroke="#f4be6c" stroke-width="4"/>
+  </g>
+  <g font-family="Arial,sans-serif" text-anchor="middle" fill="#f6dfff" font-weight="900" font-size="24">
+    <text x="409" y="88">HIGH</text><text x="409" y="162" fill="#fff0af">MID</text><text x="409" y="238">LOW</text>
+  </g>
+  <circle cx="489" cy="156" r="16" fill="#ffe49a" stroke="#fff9e7" stroke-width="3"/>
+  <path d="M481 155l5 5 9-11" fill="none" stroke="#653087" stroke-width="4" stroke-linecap="round"/>
+  <path d="M241 155h31" stroke="#f7dc94" stroke-width="3" stroke-dasharray="5 5"/>
+</svg>
