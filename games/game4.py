@@ -28,7 +28,8 @@ GAME_4_MIN_BET = 1_000
 GAME_4_SCORE_MAX = 99.99
 GAME_4_RANGE_WIDTH = 2.0
 GAME_4_RANGE_COUNT = 3
-_GAME4_PICKER_DIR = Path(__file__).with_name("game4_picker")
+_GAME4_UI_DIR = Path(__file__).with_name("game4_ui")
+_GAME4_PICKER_DIR = _GAME4_UI_DIR / "picker"
 _game4_picker_component = components.declare_component(
     "game4_range_picker", path=str(_GAME4_PICKER_DIR)
 )
@@ -257,7 +258,7 @@ def _show_game_4_result() -> None:
 
     # The animation already happened in the original three-range picker.
     # This is an immediate, non-animated outcome screen.
-    st.html(Path(__file__).with_name("game4_picker.css"))
+    st.html(_GAME4_UI_DIR / "result.css")
     score_text = f"{result['actual_score']:.2f}%"
     with st.container(key="game4_result_shell"):
         st.html(
@@ -313,7 +314,7 @@ def show_game_4_tutorial() -> None:
         for number, (name, title, caption) in enumerate(steps, 1)
     )
     with st.container(key="game4-guide", gap=None):
-        st.html(Path(__file__).with_name("game4_tutorial.css"))
+        st.html(_GAME4_UI_DIR / "tutorial.css")
         with st.container(key="game4-guide-nav", horizontal=True, gap=None):
             if st.button("메인으로", key="game4-guide-back"):
                 change_page("main")
