@@ -25,10 +25,22 @@ Keep the existing gcp_service_account for read-only account views and News sheet
 - Immediately before displaying a settled game's result, the shared turn-end helper requests **20% compound interest** on the current outstanding loan (Users!G). The interest is rounded **up to the next whole coin**: 1,000C → 1,200C → 1,440C after two turns. It never subtracts from wallet coins (Users!C) or changes the streak (Users!D).
 - Interest requires a matching committed settlement for the same player, game, and round. Even a 0C loan gets an interest ledger entry, preventing an old results screen from charging a loan taken later.
 - The stake is not deducted on confirmation (existing behavior). Settlement verifies a matching confirmed bet and available coins again; another tab may consume the balance between steps, in which case no settlement occurs.
-- The server enforces payout rules: game 1 +100×; games 2/3 +1×; game 4 +2×; game 5 +5×. Game 3 losses cost half the bet; other losses cost the whole bet. Winning increments the streak; losing resets it.
+- The server enforces payout rules: game 1 +100×; games 2/3 +1×; game 4 +3×; game 5 +5×. Game 3 losses cost half the bet; other losses cost the whole bet. Winning increments the streak; losing resets it.
 - Borrowing and repayment compare the current C/G/H wallet, total debt and principal to the displayed snapshot under lock. The 10,000C borrowing cap applies **only to unpaid borrowed principal (Users!H)**. Interest is added only to Users!G and may take total debt beyond 10,000C. Example: 8,000C principal + 1,600C interest = 9,600C total, yet 2,000C additional borrowing is available and leads to 10,000C principal / 11,600C total. Repayments pay accumulated interest first, then principal. Borrowing uses 1,000C increments (or final small repayment).
 - C/D/G/H and a ledger row are submitted in one Sheets spreadsheets.batchUpdate request. Google Sheets applies all requests in a batch atomically. Registration and referral credits are also bundled in a single batch.
 - On timeout the transaction might have committed. The client retains its transaction ID for a safe retry.
+
+## Game 4 payout correction (+2× → +3×)
+
+The Streamlit Game 4 betting preview and reader use a +3× **net coin gain** on a win, but the historical gateway rule was +2×. Update `apps_script/Code.gs` to the new `game_4: 3` rule **and publish a new Apps Script web app version**. Changing Python or merging GitHub code alone does not update the running /exec endpoint.
+
+1. Open the Apps Script project currently deployed as the transaction gateway.
+2. Copy the updated `apps_script/Code.gs` (keep any other script files, such as `Badges.gs`, in place).
+3. Use **Deploy → Manage deployments → Edit → Version: New version → Deploy**. When editing the existing deployment, the /exec URL normally remains unchanged; otherwise update private `transaction_endpoint`.
+4. Test a fresh Game 4 win with a 1,000C stake. The confirmed net gain should be **+3,000C**. The stake is not deducted when confirming the bet. Check the new `Transactions` settlement row and Users!C.
+5. Check that replaying a **previously settled** Game 4 win keeps its original +2× receipt without an extra credit. The compatibility check accepts legacy receipts for idempotency only; new wins pay +3×.
+
+This changes neither past balances nor historical ledger entries. Never compensate old wins automatically without an explicit audit.
 
 ## Troubleshooting live failures
 
