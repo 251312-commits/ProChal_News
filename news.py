@@ -16,7 +16,7 @@ from modules.badge_notifications import show_pending_badge_award
 from games.game1.game1 import show_game_1, show_game_1_tutorial
 from games.game2 import show_game_2
 from games.game3 import show_game_3
-from games.game4 import show_game_4
+from games.game4 import show_game_4, show_game_4_tutorial
 from games.game5 import show_game_5, _show_article_detail, _show_result
 from games.game5 import show_game_5_tutorial
 
@@ -68,6 +68,8 @@ else:
         show_game_2()
     elif st.session_state.page == 'game_3':
         show_game_3()
+    elif st.session_state.page == 'game_4_tutorial':
+        show_game_4_tutorial()
     elif st.session_state.page == 'game_4':
         show_game_4()
     elif st.session_state.page == 'game_5':
