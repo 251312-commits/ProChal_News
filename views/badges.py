@@ -69,16 +69,9 @@ def _apply_equipped_badge(target: str) -> None:
 
 @st.dialog("BADGE ARCHIVE  ·  배지 컬렉션", width="small")
 def badge_gallery_dialog() -> None:
-    # A manual refresh remains available when awards arrive from another tab.
-    count_col, refresh_col = st.columns([7, 1], gap="small")
-    with refresh_col:
-        refresh_now = st.button(
-            "↻", key="badge_refresh_now", help="최신 배지와 업적 다시 불러오기",
-            use_container_width=True,
-        )
-
+    # No manual refresh control: sync on first open, cache expiry or game activity.
     now = monotonic()
-    if badge_sync_due(st.session_state, now, force=refresh_now):
+    if badge_sync_due(st.session_state, now):
         st.session_state["badge_gallery_checked_at"] = now
         try:
             with st.spinner("최신 배지 정보를 불러오는 중…"):
@@ -122,13 +115,12 @@ def badge_gallery_dialog() -> None:
         selected_id = equipped if equipped != "0" else BADGES[0].id
         st.session_state["badge_gallery_selected"] = selected_id
 
-    with count_col:
-        st.html(
-            '<div class="pc-badge-count">'
-            f'획득 <b>{len(owned)} / {len(BADGES)}</b> '
-            '· 컬러 = 획득 · 어두운 회색 = 미획득'
-            '</div>',
-        )
+    st.html(
+        '<div class="pc-badge-count">'
+        f'획득 <b>{len(owned)} / {len(BADGES)}</b> '
+        '· 컬러 = 획득 · 어두운 회색 = 미획득'
+        '</div>',
+    )
 
     # Only this square panel scrolls. The count, selected badge details,
     # equip/unequip actions, and the dialog close button stay OUTSIDE it.
@@ -175,6 +167,17 @@ def badge_gallery_dialog() -> None:
     badge_status = "장착 중" if selected_id == equipped else (
         "획득 완료" if unlocked else "미획득"
     )
+    progress = (st.session_state.get("badge_gallery_progress") or {}).get(selected_id, [])
+    progress_markup = ""
+    if progress:
+        items = [
+            f'{escape(part["label"])} {part["current"]}/{part["target"]}'
+            for part in progress
+        ]
+        progress_markup = (
+            '<div class="pc-badge-detail-progress">진행도: '
+            + ' · '.join(items) + '</div>'
+        )
     st.html(
         f'<div class="pc-badge-detail">'
         f'<div class="pc-badge-detail-icon" style="color:{color}">'
@@ -183,7 +186,8 @@ def badge_gallery_dialog() -> None:
         f'{RARITY_LABELS[chosen.rarity]} · {badge_status}</div>'
         f'<div class="pc-badge-detail-title">{escape(chosen.title)}</div>'
         f'<div class="pc-badge-detail-condition">해금 조건: '
-        f'{escape(chosen.description)}</div></div></div>',
+        f'{escape(chosen.description)}</div>'
+        f'{progress_markup}</div></div>',
     )
 
     if not unlocked:
@@ -215,6 +219,7 @@ def open_badge_gallery() -> None:
         for key in (
             "badge_gallery_synced", "badge_gallery_sync_error",
             "badge_gallery_checked_at", "badge_gallery_sync_message",
+            "badge_gallery_progress",
         ):
             st.session_state.pop(key, None)
     st.session_state["badge_gallery_owner"] = student_id
