@@ -20,7 +20,7 @@ function finish(action) {
   window.parent.postMessage({
     type: "pc:loading:start",
     mode: action === "predict" && nextIsSimilarity ? "similarity" : "navigation",
-    label: action === "predict" ? "예측 화면 준비 중…" : "은행으로 이동 중…"
+    label: action === "predict" ? "다음 단계 준비 중…" : "은행으로 이동 중…"
   }, hostOrigin);
   send("streamlit:setComponentValue", {value: {action, round_id: roundId}, dataType: "json"});
 }
@@ -76,9 +76,9 @@ function showArticle(args) {
   setArticleImage(args.image_url);
   document.querySelector("#headline").textContent = args.title;
   document.querySelector("#guidance").textContent =
-    args.guidance || "기사를 읽고 제목과 본문의 유사도를 예측하세요.";
+    args.guidance || "기사를 읽고 다음 단계로 진행하세요.";
   document.querySelector("#return-label").textContent =
-    args.return_label || "유사도 예측하러 가기";
+    args.return_label || "다음 단계로";
 
   const source = document.querySelector("#source");
   source.hidden = !(args.source && /^https?:\/\//i.test(args.url));

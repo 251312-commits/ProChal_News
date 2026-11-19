@@ -46,7 +46,7 @@ def show_game_1():
             current_nickname=current_nickname,
             bg_image_path=str(Path(__file__).resolve().parents[2] / "assets" / "bet_background.jpg"),
             payout_multiplier=GAME_1_WIN_MULTIPLIER,
-            title="title",  # 나중에 실제 게임 제목으로 교체
+            title="게임 1 · 일치율 소수점 맞히기",
             state_key="game_1",
         )
 
