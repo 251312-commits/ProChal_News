@@ -11,10 +11,11 @@ and rebuilt 25 embedded SVG image backgrounds whenever a badge was selected.
   updates the wallet and badge profile directly from the authoritative Apps
   Script server. The server still holds ScriptLock and checks existing ledger
   rows; no earned badge is calculated from a client-side counter.
-- **Reopening / selecting:** the confirmed profile stays in Streamlit session
-  state for 90 seconds, per authenticated player. No gateway call is needed for
-  ordinary selection or a quick reopen. Cross-tab changes can be fetched via
-  the small ↻ button at the top right of the popup.
+- **Reopening / selecting:** the confirmed profile and server-computed badge
+  progress stay in Streamlit session state for 90 seconds, per authenticated
+  player. No gateway call is needed for ordinary selection or a quick reopen.
+  The manual ↻ button has been removed; the next cache expiry or completed
+  game/bank operation automatically requests fresh progress.
 - **Equipping / unequipping:** one `equip` request. The server checks ownership
   against Users!K under the same transaction lock before updating Users!J.
   The confirmed response updates session state and the short-lived cache.
@@ -24,8 +25,12 @@ and rebuilt 25 embedded SVG image backgrounds whenever a badge was selected.
   message. An old server can still return read-only badge status when the
   gallery opens, without losing earned items.
 - **Network errors:** for a temporary sync failure the popup displays its
-  last known data but disables equip and automatically retries after 20 s;
-  the ↻ button retries immediately.
+  last known data but disables equip and automatically retries after 20 s.
+- **Milestone progress:** the selected badge displays validated `current/target`
+  figures derived from authenticated historical ledger rows. This includes
+  lifetime best streaks, win/play counts, both sides of choice-based goals,
+  distinct-game streak criteria, loans, referrals and legendary collection.
+  One-off precision/bankruptcy conditions remain descriptive only.
 - **SVG rendering:** artwork backgrounds are injected once into the main page
   only when opening the collection. Dialog fragment reruns transmit only small
   ownership/selection CSS, not the 25 base64-embedded illustrations. Cached
@@ -33,9 +38,11 @@ and rebuilt 25 embedded SVG image backgrounds whenever a badge was selected.
 
 ## Scope and limitations
 
-No change is required to `apps_script/Code.gs`, `Badges.gs`, the Google
-spreadsheet, badge IDs, wallet rules, or earned records. This change requires
-only the Streamlit app to be redeployed.
+This progress update changes `apps_script/Code.gs` and `Badges.gs` as well
+as the Streamlit app. **Redeploy both Apps Script files** to expose progress
+in the `badge_sync` response. An older deployment still supports the existing
+badge gallery, but will not show numeric progress. No spreadsheet migration,
+new badge ID, wallet rule change or modification to earned records is needed.
 
 The **first** badge sync still requires a full authoritative ledger scan on
 the Apps Script side. Its wall-clock latency will depend on the current size
@@ -49,5 +56,5 @@ an atomic checkpoint instead of recomputing all historical events.
 Run `python -m unittest discover -s tests -v` and
 `node --test tests/test_transaction_gateway.cjs`.
 In the browser, check initial archive open, repeated opens within 90 s,
-↻ refresh, new badge unlock, equip/unequip (including locked rejection),
+automatic refresh after a completed round, new badge unlock, equip/unequip (including locked rejection),
 phone scroll/square area, other-tab changes and old-server compatibility.
