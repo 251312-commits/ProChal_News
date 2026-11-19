@@ -13,7 +13,7 @@ class GameFourPickerTests(unittest.TestCase):
         self.ui = MagicMock()
         self.ui.load_local_image_url.return_value = "https://cdn.example.org/art.png"
         self.st.columns.side_effect = (
-            lambda *_args, **_kwargs: [MagicMock(), MagicMock()]
+            lambda widths, **_kwargs: [MagicMock() for _ in widths]
         )
         modules = {
             "streamlit": self.st,
@@ -54,7 +54,11 @@ class GameFourPickerTests(unittest.TestCase):
             call.args[0] for call in self.st.html.call_args_list
             if isinstance(call.args[0], str)
         )
-        self.assertIn("1,250 C", markup)
+        self.assertIn("1,250", markup)
+        self.assertIn("cb-balance", markup)
+        self.assertIn("cb-coin-symbol", markup)
+        self.assertIn("cb-game-title", markup)
+        self.assertIn("BET 로고", markup)
         self.assertIn("75.99%", markup)
         self.assertIn("70.00%", markup)
         self.assertIn("숨겨진 일치율", markup)
@@ -63,7 +67,7 @@ class GameFourPickerTests(unittest.TestCase):
         paths = [call.args[0] for call in self.ui.load_local_image_url.call_args_list]
         self.assertTrue(any(path.endswith("bet_background.jpg") for path in paths))
         self.assertTrue(any(path.endswith("bet_crown.png") for path in paths))
-        self.assertEqual(len(paths), 5)
+        self.assertEqual(len(paths), 4)
 
     def test_cancel_without_confirmation_does_not_select(self):
         self.st.button.return_value = False
@@ -84,13 +88,27 @@ class GameFourPickerTests(unittest.TestCase):
         self.ui.change_page.assert_called_once_with("main")
         self.st.radio.assert_not_called()
 
+    def test_bank_navigation_leaves_selection_unset(self):
+        self.st.button.side_effect = lambda _label, **kwargs: (
+            kwargs.get("key") == "game4_picker_bank"
+        )
+        chosen = self.picker(
+            ["70.00~71.99%", "72.00~73.99%", "74.00~75.99%"], 2000
+        )
+        self.assertIsNone(chosen)
+        self.ui.change_page.assert_called_once_with("bank")
+        self.st.radio.assert_not_called()
+
     def test_style_has_mobile_and_focus_rules(self):
         css = Path(__file__).resolve().parents[1] / "games" / "game4_picker.css"
         sheet = css.read_text(encoding="utf-8")
         self.assertIn("@media (max-width: 355px)", sheet)
         self.assertIn("label:focus-within", sheet)
         self.assertIn("label:has(input:checked)", sheet)
-        self.assertIn("flex-direction: row !important", sheet)
+        self.assertIn("grid-template-columns: minmax(0,42%) minmax(0,1fr)", sheet)
+        self.assertIn("padding: 24px 1px 24px 53px", sheet)
+        self.assertIn("g4-reel-rotate", sheet)
+        self.assertIn("prefers-reduced-motion: reduce", sheet)
 
 
 if __name__ == "__main__":

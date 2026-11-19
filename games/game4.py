@@ -100,10 +100,6 @@ def _render_game_4_range_picker(ranges: list[str], balance: int) -> int | None:
     """Mobile-first range picker using native, keyboard-accessible Streamlit radio."""
     asset_root = Path(__file__).resolve().parents[1] / "assets"
     bg = escape(load_local_image_url(str(asset_root / "bet_background.jpg")), quote=True)
-    coin = escape(
-        load_local_image_url(str(asset_root / "game1_article" / "icons" / "coin.png")),
-        quote=True,
-    )
     crown = escape(load_local_image_url(str(asset_root / "bet_crown.png")), quote=True)
     laurel_left = escape(
         load_local_image_url(str(asset_root / "game1_article" / "icons" / "laurel-left.png")),
@@ -129,28 +125,34 @@ def _render_game_4_range_picker(ranges: list[str], balance: int) -> int | None:
     range_labels = {2: "상위 구간", 1: "중간 구간", 0: "하위 구간"}
 
     with st.container(key="game4_picker_shell"):
-        back_col, wallet_col = st.columns([1, 3], gap="small", vertical_alignment="center")
+        back_col, balance_col, bank_col = st.columns(
+            [0.8, 3.2, 0.8], gap="small", vertical_alignment="center"
+        )
         with back_col:
-            if st.button("❮", key="game4_picker_back", help="메인으로 돌아가기"):
+            if st.button("❮", key="game4_picker_back", help="메인으로"):
                 change_page("main")
                 return None
-        with wallet_col:
+        with balance_col:
             st.html(
-                '<div class="g4-wallet" aria-label="현재 보유 코인">'
-                f'<img src="{coin}" alt="" loading="eager">'
-                f'<strong>{balance:,} C</strong>'
-                '</div>'
+                '<div class="cb-balance" aria-label="현재 보유 코인">'
+                '<span class="cb-coin-symbol" aria-hidden="true">$</span>'
+                f'{balance:,}</div>'
             )
+        with bank_col:
+            if st.button("+", key="game4_picker_bank", help="은행으로"):
+                change_page("bank")
+                return None
 
         st.html(
-            '<header class="g4-heading">'
-            f'<img src="{crown}" class="g4-crown" alt="" loading="eager">'
+            '<header class="g4-heading cb-hero">'
+            f'<img src="{crown}" class="cb-logo g4-bet-logo" alt="BET 로고" loading="eager">'
+            '<p class="cb-game-title">게임 4 · 일치율 구간 예측</p>'
             '<div class="g4-title-row">'
             f'<img src="{laurel_left}" alt="" class="g4-laurel">'
             '<h1>구간 맞히기</h1>'
             f'<img src="{laurel_right}" alt="" class="g4-laurel">'
             '</div>'
-            '<p>숨겨진 일치율이 어느 구간에 있을까?</p>'
+            '<p class="cb-description">숨겨진 일치율이 어느 구간에 있을까?</p>'
             '</header>'
         )
 
@@ -228,28 +230,42 @@ def _show_game_4_result() -> None:
     result = st.session_state.game_4_result
     if not apply_end_of_turn_interest("game_4"):
         return
-    st.subheader("🏆 최종 결과")
-    if result["is_win"]:
-        st.balloons()
-        st.success(f"🎉 정답입니다! +{result['reward']:,} C")
-    else:
-        st.error(f"❌ 틀렸습니다! {result['reward']:,} C")
 
-    st.metric("실제 일치율", f"{result['actual_score']:.2f}%")
-    st.write(f"선택한 구간: **{result['selected_range']}**")
-    st.info(f"정답 구간: **{result['target_range']}**")
-    st.write(f"현재 보유 코인: **{result['new_coins']:,} C**")
-    st.write(f"현재 연승 기록: **{result['new_streak']} 연승**")
+    # The score is already settled. CSS animates the mystery card before
+    # revealing it; no timer or rerun can duplicate the ledger transaction.
+    st.html(Path(__file__).with_name("game4_picker.css"))
+    score_text = f"{result['actual_score']:.2f}%"
+    with st.container(key="game4_result_shell"):
+        st.html(
+            '<section class="g4-result-scene" aria-label="실제 뉴스 일치율 공개">'
+            '<div class="g4-result-heading">숨겨진 일치율 공개</div>'
+            '<div class="g4-reel-window" role="img" '
+            f'aria-label="실제 일치율 {escape(score_text, quote=True)}">'
+            '<span class="g4-reel-mystery" aria-hidden="true">??</span>'
+            f'<strong class="g4-reel-value" aria-hidden="true">{escape(score_text)}</strong>'
+            '</div>'
+            '<p class="g4-reel-caption">AI 일치율 분석 결과</p>'
+            '</section>'
+        )
+        with st.container(key="game4_result_details"):
+            if result["is_win"]:
+                st.success(f"정답입니다! +{result['reward']:,} C")
+            else:
+                st.error(f"틀렸습니다! {result['reward']:,} C")
+            st.write(f"선택한 구간: **{result['selected_range']}**")
+            st.info(f"정답 구간: **{result['target_range']}**")
+            st.write(f"현재 보유 코인: **{result['new_coins']:,} C**")
+            st.write(f"현재 연승 기록: **{result['new_streak']} 연승**")
 
-    col_retry, col_main = st.columns(2)
-    with col_retry:
-        if st.button("🔄 다시 도전하기", use_container_width=True):
-            _reset_game_4_state()
-            st.rerun()
-    with col_main:
-        if st.button("⬅️ 메인으로 돌아가기", use_container_width=True):
-            _reset_game_4_state()
-            change_page("main")
+            col_retry, col_main = st.columns(2)
+            with col_retry:
+                if st.button("다시 도전하기", key="game4_result_retry", use_container_width=True):
+                    _reset_game_4_state()
+                    st.rerun()
+            with col_main:
+                if st.button("메인으로", key="game4_result_main", use_container_width=True):
+                    _reset_game_4_state()
+                    change_page("main")
 
 
 def show_game_4():
@@ -273,7 +289,9 @@ def show_game_4():
             st.rerun()
         return
 
-    title, article_text, _ = get_game_news_selection("game_4")
+    title, article_text, _ = get_game_news_selection(
+        "game_4", win_multiplier=GAME_4_WIN_MULTIPLIER, immersive_reader=True
+    )
     if not title:
         return
 
