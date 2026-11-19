@@ -518,6 +518,11 @@ function process_(request) {
       if (tx.kind === 'settle' || tx.kind === 'equip' || tx.kind === 'badge_sync' ||
           tx.kind === 'borrow' || tx.kind === 'repay' || tx.kind === 'interest') {
         replay.badges = Object.assign(badgeProfile_(users, current.rowIndex), {unlocked: []});
+        if (tx.kind === 'badge_sync') {
+          // A retry must still return progress, without granting duplicate awards.
+          replay.badges.progress = badgeProgressFromRows_(
+            badgeHistoryRows_(ledger, tx.student_id, null), replay.badges.owned);
+        }
       }
       return tx.kind === 'register_teacher' ?
         Object.assign(replay, {student_id: accountId}) : replay;
@@ -577,11 +582,11 @@ function process_(request) {
       // Safe recovery for already-bankrupt players and historic bank actions.
       // Status remains strictly read-only; sync is a separately authenticated
       // operation and writes only when a missing award is actually found.
-      const award = awardBadges_(ledger, users, user, tx.student_id, null, before);
+      const award = awardBadges_(ledger, users, user, tx.student_id, null, before, true);
       const record = award.request ? record_(tx, before, before, 'badge-sync') : null;
       if (record) commit_(ss, [award.request, append_(ledger, [record])]);
       return Object.assign(result_(before, record, false), {
-        badges: Object.assign(award.profile, {unlocked: award.unlocked})
+        badges: Object.assign(award.profile, {unlocked: award.unlocked, progress: award.progress})
       });
     }
     if (tx.kind === 'equip') {

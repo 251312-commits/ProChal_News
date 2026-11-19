@@ -387,6 +387,8 @@ def badge_gallery_css(owned: str, selected_id: str) -> str:
 .pc-badge-detail-rarity {font-size:.7rem;font-weight:800;letter-spacing:.16em}
 .pc-badge-detail-title {font-size:1.05rem;font-weight:800;margin-top:2px}
 .pc-badge-detail-condition {font-size:.82rem;line-height:1.5;color:#D6CDDF;margin-top:3px}
+.pc-badge-detail-progress {font-size:.8rem;line-height:1.5;color:#80E3FF;
+  font-weight:750;margin-top:5px;overflow-wrap:anywhere}
 .pc-badge-count {color:#D3BDFD;font-size:.86rem;margin:4px 0 12px}
 """
     ]
