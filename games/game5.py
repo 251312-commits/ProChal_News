@@ -76,10 +76,17 @@ def _extract_article(url: str) -> tuple[str, str]:
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
-def _analyze_article_cached(article_text: str, title: str) -> dict:
+def _summarize_article_cached(article_text: str) -> str:
     summary_text = asyncio.run(summary(article_text))
     if not summary_text:
         raise ValueError("뉴스 본문 요약 결과가 비어 있습니다.")
+    return summary_text
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def _analyze_article_cached(article_text: str, title: str) -> dict:
+    # If inference fails, an already successful Gemini summary stays cached.
+    summary_text = _summarize_article_cached(article_text)
     score_details = similarity_check(summary_text, title)
     score = score_details.get("score")
     if (

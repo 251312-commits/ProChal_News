@@ -97,6 +97,7 @@ class RoundAnalysisTests(unittest.TestCase):
 class RoundSettlementRegressionTests(unittest.TestCase):
     def _fakes(self):
         st, ai, tx = MagicMock(), MagicMock(), MagicMock()
+        st.button.return_value = False
         st.columns.side_effect = lambda sizes, **_kw: [
             MagicMock() for _ in range(sizes if isinstance(sizes, int) else len(sizes))
         ]
@@ -169,6 +170,25 @@ class RoundSettlementRegressionTests(unittest.TestCase):
         self.assertEqual(tx.settle_game_round.call_count, 2)
         self.assertIn("game_3_result", st.session_state)
 
+    def test_game4_reuses_summary_if_scoring_fails_and_is_retried(self):
+        st, ai, tx, deps = self._fakes()
+        st.session_state = Session(
+            current_user="1", current_user_data={"코인": 5000}, game_4_bet=1000,
+        )
+        ai.similarity_check.side_effect = [
+            RuntimeError("inference unavailable"),
+            {"score": 74.25, "score_hundredths": 7425},
+        ]
+        with patch.dict(sys.modules, deps):
+            show = run_module("games.game4")["show_game_4"]
+            show.__globals__["_render_game_4_range_picker"] = Mock(return_value=None)
+            show()
+            self.assertNotIn("game_4_score", st.session_state)
+            show()
+        ai.summary.assert_awaited_once_with("기사 본문")
+        self.assertEqual(ai.similarity_check.call_count, 2)
+        self.assertEqual(st.session_state["game_4_score"], 74.25)
+
     def test_game5_candidate_analysis_is_once_per_article(self):
         st, ai, tx, deps = self._fakes()
         with patch.dict(sys.modules, deps):
@@ -198,7 +218,7 @@ class ObsoleteCodeContracts(unittest.TestCase):
 
     def test_all_game_rounds_keep_checkpoints_isolated(self):
         root = Path(__file__).resolve().parents[1]
-        for game in (1, 2, 3):
+        for game in (1, 2, 3, 4):
             path = ("games/game1/game1.py" if game == 1 else f"games/game{game}.py")
             code = (root / path).read_text(encoding="utf-8")
             self.assertIn("analyze_round_once(", code)

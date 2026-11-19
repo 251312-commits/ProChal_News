@@ -1,6 +1,5 @@
 """뉴스 제목과 본문의 일치율 구간을 맞히는 게임."""
 
-import asyncio
 from html import escape
 from uuid import uuid4
 import streamlit.components.v1 as components
@@ -15,6 +14,7 @@ from games.shared.betting import check_user_coins_or_pop_bank
 from games.shared.news_flow import get_game_news_selection
 from games.shared.betting import render_betting_ui
 from games.shared.loading import similarity_analysis_loading
+from games.shared.round_analysis import analyze_round_once
 from games.shared.interest import apply_end_of_turn_interest
 from modules.transactions import BalanceChanged, TransactionError, settle_game_round, update_session_balances
 from modules.news_ai import similarity_check, summary
@@ -47,6 +47,7 @@ def _reset_game_4_state() -> None:
         "game4_picker_round",
         "game4_reveal_done",
         "game_4_summary",
+        "game_4_analysis_checkpoint",
         "game_4_score_details",
         "game_4_ranges",
         "game_4_score",
@@ -366,11 +367,10 @@ def show_game_4():
     if "game_4_score" not in st.session_state:
         with similarity_analysis_loading():
             try:
-                summary_text = asyncio.run(summary(article_text))
-                if not summary_text:
-                    st.error("뉴스 본문 요약에 실패해 일치율 구간을 만들 수 없습니다.")
-                    return
-                score_details = similarity_check(summary_text, title)
+                summary_text, score_details = analyze_round_once(
+                    st.session_state, "game_4", title=title, article_text=article_text,
+                    summarize=summary, similarity=similarity_check,
+                )
                 score = _normalize_score(score_details["score"])
                 ranges, answer_index = _build_dynamic_ranges(score)
             except (RuntimeError, ValueError, TypeError, KeyError) as exc:
