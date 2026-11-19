@@ -163,6 +163,9 @@ function soundSettings() {
 }
 function applySound() {
   const settings = soundSettings();
+  // Never permit an independent result-screen mute preference to override the
+  // site's music/video volume bar.
+  localMuted = settings.muted;
   // The BGM control stores a squared, very quiet media gain (30% -> 0.09).
   // The failure stinger needs its own much louder mix, while retaining the
   // listener's volume preference and respecting mute/zero-volume.
@@ -176,9 +179,6 @@ function applySound() {
     failSound.muted = localMuted;
     failSound.volume = failGain;
   }
-  ui.soundSwitch.textContent = localMuted ? "♫ 음악 꺼짐" : "♫ 음악 켜짐";
-  ui.soundSwitch.setAttribute("aria-pressed", String(localMuted));
-  if (bridgeActive || bridgePending) bridgeCommand("mute", {muted: localMuted});
 }
 
 // On mobile, playing a second audio element after a long asynchronous
@@ -672,13 +672,6 @@ ui.retryFail.addEventListener("click", () => {
 });
 ui.again.addEventListener("click", () => sendAction("again"));
 ui.home.addEventListener("click", () => sendAction("home"));
-ui.soundSwitch.addEventListener("click", () => {
-  localMuted = !localMuted;
-  manualSoundChoice = true;
-  applySound();
-  // An explicit music-on tap also unlocks the local fallback if needed.
-  if (!localMuted && !ui.unlockAudio.hidden) ui.unlockAudio.click();
-});
 document.addEventListener("visibilitychange", () => {
   if (!song || !started || fullyFinished) return;
   if (bridgePending || bridgeActive) return; // Parent controller handles visibility.
@@ -695,6 +688,10 @@ window.addEventListener("message", event => {
   if (event.source !== window.parent || data?.channel !== AUDIO_CHANNEL ||
       data.round_id !== roundId || !started) return;
   // A failure stinger can be rejected after the verdict is already visible.
+  if (data.type === "sound") {
+    applySound();
+    return;
+  }
   if (fullyFinished && data.type !== "fail-blocked") return;
   if (data.type === "loading") {
     bridgeSeen = true;

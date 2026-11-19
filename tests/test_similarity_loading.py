@@ -86,14 +86,16 @@ class SimilarityLoadingTests(TestCase):
         self.assertIn('pc-sim-meter', html)
         self.assertIn('PC_SIM_VIDEO_SLOT', html)
 
-    def test_video_audio_button_uses_browser_click_bridge(self):
+    def test_video_playlist_uses_shared_soundtrack_instead_of_own_toggle(self):
         source = COMMON.read_text(encoding="utf-8")
         bridge = (COMMON.parent / "similarity_video_controls.js").read_text(encoding="utf-8")
         self.assertIn('components.html(f"<script>{_VIDEO_SOUND_JS}</script>"', source)
-        self.assertIn('pc-sim-sound-toggle', source)
-        self.assertIn('doc.addEventListener("click", toggleSound)', bridge)
-        self.assertIn('video.muted = !turnOn', bridge)
-        self.assertIn('video.play()', bridge)
+        self.assertNotIn('pc-sim-sound-toggle', source)
+        self.assertIn('state.bus?.hold?.(HOLD_ID)', bridge)
+        self.assertIn('state.bus?.release?.(HOLD_ID)', bridge)
+        self.assertIn('state.bus?.subscribe?.(applySound)', bridge)
+        self.assertIn('video.addEventListener("ended", handler)', bridge)
+        self.assertIn('preload(1 - next, (state.index + 1) % state.clips.length)', bridge)
 
     def test_video_html_is_rendered_as_html_not_markdown_code(self):
         video = """
@@ -127,7 +129,7 @@ class SimilarityLoadingTests(TestCase):
                         empty.return_value.markdown.assert_not_called()
                     bridge.assert_not_called()
 
-    def test_random_clip_stays_small_autoplays_muted_and_keeps_sound_controls(self):
+    def test_random_start_rotates_all_clips_with_sound_on_by_default(self):
         with TemporaryDirectory() as folder:
             source = Path(folder)
             for name in ("Video1.mp4", "Video2.mp4", "Video3.mp4"):
@@ -136,9 +138,15 @@ class SimilarityLoadingTests(TestCase):
                 with patch.object(loader_module, "choice", return_value="Video3.mp4") as choose:
                     html = loader_module._similarity_video_markup()
             choose.assert_called_once_with(["Video1.mp4", "Video2.mp4", "Video3.mp4"])
-            self.assertIn('class="pc-sim-video"', html)
+            self.assertIn('class="pc-sim-video is-active"', html)
+            self.assertEqual(html.count('<video class="pc-sim-video'), 2)
             self.assertIn("Video3.mp4?", html)
-            self.assertIn('controls autoplay muted playsinline', html)
-            self.assertIn('loop preload="auto"', html)
+            self.assertIn("Video1.mp4?", html)
+            self.assertIn("Video2.mp4?", html)
+            self.assertIn('autoplay playsinline', html)
+            self.assertIn('data-playlist=', html)
+            self.assertNotIn('autoplay muted', html)
+            self.assertNotIn('controls autoplay', html)
+            self.assertNotIn('pc-sim-sound-toggle', html)
             self.assertIn('--pc-video-aspect:16 / 9', html)
             self.assertNotIn("data:video", html)

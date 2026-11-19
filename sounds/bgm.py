@@ -72,6 +72,24 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
             if (player.resultBorrowed !== player.intro) player.intro.volume = gain;
             if (player.resultBorrowed !== player.loop) player.loop.volume = gain;
             host.__newsScoreRoll?.setVolume(gain);
+            // A single sound preference governs BGM, result songs and video.
+            const prefs = {{volume: gain, muted: player.muted || player.volume === 0}};
+            host.__newsGame1ResultPlayer?.setPreferences?.(prefs);
+            player.soundSubscribers?.forEach((listener) => {{
+              try {{ listener(prefs); }} catch (_) {{}}
+            }});
+          }}
+
+          function pauseBgm(player) {{
+            if (!host.__newsGame1ResultPlayer?.isBorrowed(player.intro)) player.intro.pause();
+            if (!host.__newsGame1ResultPlayer?.isBorrowed(player.loop)) player.loop.pause();
+            player.pending = false;
+            player.playing = false;
+            host.__bgm_playing = false;
+          }}
+
+          function held(player) {{
+            return Boolean(player.holds?.size);
           }}
 
           function stop(player) {{
@@ -83,19 +101,20 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
             player.playing = false;
             player.pending = false;
             player.stopped = true;
+            player.holds?.clear();
             host.__bgm_playing = false;
           }}
 
           function start(player) {{
             if (player.stopped || player.muted || player.volume <= 0 ||
-                host.__newsResultActive || doc.visibilityState === "hidden") return;
+                host.__newsResultActive || held(player) || doc.visibilityState === "hidden") return;
             if (player.playing || player.pending) return;
             player.pending = true;
             const selected = player.intro.ended ? player.loop : player.intro;
             selected.play().then(() => {{
               player.pending = false;
               if (player.stopped || player.muted || player.volume <= 0 ||
-                  host.__newsResultActive || doc.visibilityState === "hidden") {{
+                  host.__newsResultActive || held(player) || doc.visibilityState === "hidden") {{
                 selected.pause();
                 player.playing = false;
                 host.__bgm_playing = false;
@@ -118,12 +137,8 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
             player.stopped = false;
             updateAudio(player);
             savePrefs(player);
-            if (player.muted || player.volume === 0) {{
-              player.intro.pause();
-              player.loop.pause();
-              player.pending = false;
-              player.playing = false;
-              host.__bgm_playing = false;
+            if (player.muted || player.volume === 0 || held(player)) {{
+              pauseBgm(player);
             }} else {{
               start(player);
             }}
@@ -150,7 +165,8 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
             player = {{
               intro: introAudio, loop: loopAudio, introURL, loopURL,
               volume: prefs.volume, muted: prefs.muted,
-              playing: false, pending: false, stopped: false
+              playing: false, pending: false, stopped: false,
+              holds: new Set(), soundSubscribers: new Set()
             }};
             host.__newsBgmPlayer = player;
             host.__bgm_intro = introAudio;
@@ -158,7 +174,7 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
             updateAudio(player);
             introAudio.addEventListener("ended", () => {{
               if (player.stopped || player.muted || player.volume === 0 ||
-                  host.__newsResultActive || doc.visibilityState === "hidden") return;
+                  host.__newsResultActive || held(player) || doc.visibilityState === "hidden") return;
               loopAudio.play().then(() => {{
                 player.playing = true;
                 player.activeElement = loopAudio;
@@ -178,11 +194,8 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
             player.listeners = {{gesture}};
             const visibility = () => {{
               if (doc.visibilityState === "hidden") {{
-                player.intro.pause();
-                player.loop.pause();
-                player.playing = false;
-                host.__bgm_playing = false;
-              }} else if (!player.stopped && !host.__newsResultActive) {{
+                pauseBgm(player);
+              }} else if (!player.stopped && !host.__newsResultActive && !held(player)) {{
                 start(player);
               }}
             }};
@@ -194,15 +207,33 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
             player.listeners.teardown = teardown;
           }}
           player.stopped = false;
+          player.holds ||= new Set();
+          player.soundSubscribers ||= new Set();
+          host.__newsSoundtrack = {{
+            getPreferences: () => ({{
+              volume: player.muted ? 0 : volumeGain(player.volume),
+              muted: player.muted || player.volume <= 0
+            }}),
+            subscribe: (listener) => {{
+              player.soundSubscribers.add(listener);
+              listener(host.__newsSoundtrack.getPreferences());
+              return () => player.soundSubscribers.delete(listener);
+            }},
+            hold: (reason) => {{
+              player.holds.add(String(reason));
+              pauseBgm(player);
+            }},
+            release: (reason) => {{
+              player.holds.delete(String(reason));
+              if (!held(player)) start(player);
+            }}
+          }};
           updateAudio(player);
           // Streamlit reruns update the UI, never create duplicate audio tracks.
-          if (player.muted || player.volume <= 0 || host.__newsResultActive) {{
+          if (player.muted || player.volume <= 0 || host.__newsResultActive || held(player)) {{
             // A result track borrows one of the unlocked BGM media elements.
             // Never pause that element on a rerun of this sound bootstrap.
-            if (!host.__newsGame1ResultPlayer?.isBorrowed(player.intro)) player.intro.pause();
-            if (!host.__newsGame1ResultPlayer?.isBorrowed(player.loop)) player.loop.pause();
-            player.playing = false;
-            host.__bgm_playing = false;
+            pauseBgm(player);
           }} else {{
             start(player);
           }}
@@ -284,9 +315,9 @@ def init_seamless_bgm(intro_url: str, loop_url: str, show_controls: bool = False
             root.innerHTML =
               '<button class="news-bgm-toggle" type="button" aria-label="음악 음량 조절" aria-expanded="false"></button>' +
               '<div class="news-bgm-panel" hidden>' +
-                '<div class="news-bgm-caption"><span>배경음악</span><output class="news-bgm-value"></output></div>' +
-                '<input class="news-bgm-slider" type="range" min="0" max="100" step="1" aria-label="배경음악 음량">' +
-                '<label class="news-bgm-mute"><input type="checkbox"> 음악 끄기</label>' +
+                '<div class="news-bgm-caption"><span>음악·영상</span><output class="news-bgm-value"></output></div>' +
+                '<input class="news-bgm-slider" type="range" min="0" max="100" step="1" aria-label="음악과 영상 음량">' +
+                '<label class="news-bgm-mute"><input type="checkbox"> 음악·영상 끄기</label>' +
               '</div>';
             doc.body.appendChild(root);
             const toggle = root.querySelector(".news-bgm-toggle");
@@ -355,6 +386,7 @@ def stop_bgm():
             player.loop.currentTime = 0;
             player.playing = false;
             player.pending = false;
+            player.holds?.clear();
           }
           if (host.__bgm_intro) host.__bgm_intro.pause();
           if (host.__bgm_loop) host.__bgm_loop.pause();

@@ -146,6 +146,16 @@
     send(entry, "loading", {muted: media.muted});
     play(entry, "track");
   }
+  function setPreferences(prefs) {
+    if (!active || active.restored) return;
+    const volume = Math.max(0, Math.min(1, Number(prefs?.volume) || 0));
+    active.userMuted = Boolean(prefs?.muted) || volume <= 0;
+    active.media.muted = active.userMuted;
+    active.media.volume = active.phase === "fail"
+      ? Math.min(1, Math.sqrt(volume) * 2)
+      : Math.min(1, volume * 1.7);
+    send(active, "sound", {muted: active.userMuted, volume: volume});
+  }
   function message(event) {
     const data = event.data;
     if (!data || data.channel !== CHANNEL || typeof data.round_id !== "string") return;
@@ -160,10 +170,6 @@
     if (!entry || entry.frame !== event.source || entry.roundId !== data.round_id) return;
     if (data.action === "stop") {
       restore(entry);
-    } else if (data.action === "mute") {
-      entry.userMuted = Boolean(data.muted);
-      entry.media.muted = entry.userMuted;
-      send(entry, "muted", {muted: entry.userMuted});
     } else if (data.action === "fail" && entry.phase === "track") {
       stopClock();
       entry.media.pause();
@@ -191,6 +197,7 @@
   });
   host.__newsGame1ResultPlayer = {
     isBorrowed: audio => Boolean(active && active.media === audio && !active.restored),
+    setPreferences: setPreferences,
     stop: stop
   };
 })(window);

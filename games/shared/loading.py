@@ -1,6 +1,7 @@
 """Reusable similarity-analysis loading display."""
 from contextlib import contextmanager
 from html import escape
+import json
 from pathlib import Path
 from random import choice
 
@@ -22,39 +23,45 @@ _PUBLIC_VIDEO_BASE = (
 
 
 def _similarity_video_markup() -> str:
-    """Select one available user-provided clip without downloading all three.
+    """Play every available clip in sequence during similarity analysis.
 
-    Default-muted autoplay is essential on iOS; native controls let the player
-    enable audio with a genuine tap. A short clip loops while analysis runs.
+    A pair of video elements lets the next asset preload while the current one
+    plays. The parent browser soundtrack controller owns volume/mute and BGM
+    ducking; no independent video sound toggle is rendered.
     """
     available = [name for name in _VIDEO_FILENAMES if (_VIDEO_DIRECTORY / name).is_file()]
     if not available:
-        return ""  # The existing newspaper animation stays visible.
+        return ""  # Keep the existing newspaper animation.
 
-    name = choice(available)
-    stat = (_VIDEO_DIRECTORY / name).stat()
-    version = f"{stat.st_mtime_ns:x}-{stat.st_size:x}"
-    src = escape(f"{_PUBLIC_VIDEO_BASE}{name}?v={version}", quote=True)
-    aspect = _VIDEO_ASPECTS[name]
+    first = choice(available)
+    start = available.index(first)
+    ordered = available[start:] + available[:start]
+    playlist = []
+    for name in ordered:
+        stat = (_VIDEO_DIRECTORY / name).stat()
+        version = f"{stat.st_mtime_ns:x}-{stat.st_size:x}"
+        playlist.append({
+            "src": f"{_PUBLIC_VIDEO_BASE}{name}?v={version}",
+            "aspect": _VIDEO_ASPECTS[name],
+        })
+    playlist_attr = escape(json.dumps(playlist), quote=True)
+    first_src = escape(playlist[0]["src"], quote=True)
     return f"""
-      <div class="pc-sim-video-frame" style="--pc-video-aspect:{aspect}">
+      <div class="pc-sim-video-frame" style="--pc-video-aspect:{playlist[0]['aspect']}"
+           data-playlist="{playlist_attr}">
         <div class="pc-sim-video-banner" aria-hidden="true">
           <span>PROCHAL TV</span><span>ADVERTISEMENT / ANALYZING</span>
         </div>
-        <video class="pc-sim-video" controls autoplay muted playsinline
-               loop preload="auto" controlslist="nodownload noplaybackrate"
-               aria-label="유사도 분석 중 재생되는 짧은 광고 영상">
-          <source src="{src}" type="video/mp4">
-          동영상 재생을 지원하지 않는 브라우저입니다.
-        </video>
-        <div class="pc-sim-video-note">
-          <span>로딩 중 영상 방송</span>
-          <button class="pc-sim-sound-toggle" type="button"
-                  aria-pressed="false">소리 켜기</button>
+        <div class="pc-sim-video-viewport">
+          <video class="pc-sim-video is-active" autoplay playsinline
+                 preload="auto" src="{first_src}"
+                 aria-label="유사도 분석 중 재생되는 짧은 광고 영상"></video>
+          <video class="pc-sim-video" playsinline preload="auto"
+                 aria-hidden="true"></video>
         </div>
+        <div class="pc-sim-video-note">로딩 중 영상 방송</div>
       </div>
     """
-
 
 
 # Shared animated waiting screen for title-to-summary similarity analysis.
@@ -134,8 +141,8 @@ def similarity_analysis_loading():
     # literal HTML tags. st.html bypasses the Markdown parser entirely.
     placeholder.html(f"<style>{css}</style>{markup}")
     if video:
-        # Streamlit markdown does not execute JS; a tiny component binds the
-        # user-gesture sound toggle in the parent document.
+        # A tiny component installs the parent-window playlist/sound bridge.
+        # It is persistent across Streamlit reruns and unmounts cleanly.
         components.html(f"<script>{_VIDEO_SOUND_JS}</script>", height=0, width=0)
     try:
         yield

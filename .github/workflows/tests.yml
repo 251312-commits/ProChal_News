@@ -34,4 +34,4 @@ jobs:
           node --check games/game1/prediction_screen/prediction.js
           node --check games/game1/result_screen/result.js
       - name: Test serialized ledger and Game 1 parent audio controller
-        run: node --test tests/test_transaction_gateway.cjs tests/test_game1_result_parent_audio.cjs tests/test_loading_feedback.cjs
+        run: node --test tests/test_transaction_gateway.cjs tests/test_game1_result_parent_audio.cjs tests/test_loading_feedback.cjs tests/test_similarity_video_audio.cjs

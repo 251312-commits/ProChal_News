@@ -36,6 +36,17 @@ class BgmSettingsTests(unittest.TestCase):
         self.assertIn("player.intro.volume = gain;", source)
         self.assertIn("player.loop.volume = gain;", source)
 
+    def test_shared_volume_bus_can_pause_and_restore_bgm_without_reset(self):
+        source = self.rendered_script()
+        self.assertIn("host.__newsSoundtrack = ", source)
+        self.assertIn("soundSubscribers", source)
+        self.assertIn("player.holds.add(String(reason))", source)
+        self.assertIn("player.holds.delete(String(reason))", source)
+        self.assertIn("held(player)", source)
+        self.assertIn("pauseBgm(player)", source)
+        self.assertIn("host.__newsGame1ResultPlayer?.setPreferences?.(prefs)", source)
+        self.assertIn("음악·영상", source)
+
     def test_urls_are_safely_json_quoted(self):
         source = self.rendered_script()
         self.assertIn('const introURL = "https://example.org/intro.mp3"', source)
