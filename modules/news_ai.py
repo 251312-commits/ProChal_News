@@ -82,6 +82,9 @@ def bring_article(url: str, *, include_image=False):
     domain = urlparse(url).netloc
     title = get_clean_title(article_obj, domain)
     clean_article = clean_common_text(article_obj.text)
+    # A blank/blocked publisher page must not be accepted as a playable article.
+    if not str(title or "").strip() or len("".join(str(clean_article or "").split())) < 40:
+        raise ValueError("기사 제목 또는 본문을 정상적으로 추출하지 못했습니다.")
     if include_image:
         return title, clean_article, _article_image_url(article_obj, url)
     return title, clean_article
