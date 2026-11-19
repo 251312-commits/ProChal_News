@@ -44,9 +44,9 @@ class GameFourPickerTests(unittest.TestCase):
         self.assertEqual(
             [kwargs["format_func"](index) for index in kwargs["options"]],
             [
-                "**상위 구간**  \\n(74.00~75.99%)",
-                "**중간 구간**  \\n(72.00~73.99%)",
-                "**하위 구간**  \\n(70.00~71.99%)",
+                "**상위 구간**  \n(74.00~75.99%)",
+                "**중간 구간**  \n(72.00~73.99%)",
+                "**하위 구간**  \n(70.00~71.99%)",
             ],
         )
 
