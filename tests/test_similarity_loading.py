@@ -139,7 +139,7 @@ class SimilarityLoadingTests(TestCase):
                     html = loader_module._similarity_video_markup()
             choose.assert_called_once_with(["Video1.mp4", "Video2.mp4", "Video3.mp4"])
             self.assertIn('class="pc-sim-video is-active"', html)
-            self.assertEqual(html.count('class="pc-sim-video'), 2)
+            self.assertEqual(html.count('<video class="pc-sim-video'), 2)
             self.assertIn("Video3.mp4?", html)
             self.assertIn("Video1.mp4?", html)
             self.assertIn("Video2.mp4?", html)
