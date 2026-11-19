@@ -321,7 +321,145 @@ function badgeReferralsFromRows_(rows, referrerId) {
   return earned;
 }
 
-function awardBadges_(ledger, users, user, studentId, newRow, after) {
+
+/**
+ * Report partial milestone progress from committed ledger rows only.
+ * Streak progress records historical best runs, not just the active streak.
+ * Composite badges expose each independent requirement; a score-specific
+ * one-off achievement has no misleading fractional progress.
+ */
+function badgeProgressFromRows_(rows, owned) {
+  const games = ['game_1', 'game_2', 'game_3', 'game_4', 'game_5'];
+  const plays = {}, wins = {}, streak = {}, bestStreak = {};
+  games.forEach(game => {
+    plays[game] = 0;
+    wins[game] = 0;
+    streak[game] = 0;
+    bestStreak[game] = 0;
+  });
+  const choices = {game_2: {HIGH: 0, LOW: 0}, game_3: {'홀': 0, '짝': 0}};
+  const seen = new Set();
+  let winningRun = [];
+  let bestGlobal = 0;
+  const mixed = {5: {wins: 0, kinds: 0}, 8: {wins: 0, kinds: 0}};
+
+  badgeSettlementsFromRows_(rows).forEach(event => {
+    const id = String(event.round_id || '');
+    const game = event.game;
+    if (!id || seen.has(id) || !games.includes(game) || typeof event.is_win !== 'boolean') return;
+    seen.add(id);
+    plays[game]++;
+    if (event.is_win) {
+      wins[game]++;
+      streak[game]++;
+      bestStreak[game] = Math.max(bestStreak[game], streak[game]);
+      winningRun.push(game);
+      bestGlobal = Math.max(bestGlobal, winningRun.length);
+      [5, 8].forEach(target => {
+        const count = Math.min(winningRun.length, target);
+        const kinds = new Set(winningRun.slice(-target)).size;
+        const best = mixed[target];
+        if (count > best.wins || (count === best.wins && kinds > best.kinds)) {
+          mixed[target] = {wins: count, kinds: kinds};
+        }
+      });
+      const choice = (event.evidence || {}).choice;
+      if (game === 'game_2' && (choice === 'HIGH' || choice === 'LOW')) choices.game_2[choice]++;
+      if (game === 'game_3' && (choice === '홀' || choice === '짝')) choices.game_3[choice]++;
+    } else {
+      streak[game] = 0;
+      winningRun = [];
+    }
+  });
+
+  let firstBorrow = false;
+  let firstRepay = false;
+  let qualifyingBorrow = false;
+  let activeLoan = false;
+  let loanTurns = 0;
+  let bestLoanTurns = 0;
+  let repaidQualifyingLoan = false;
+  const countedLoanTurns = new Set();
+  const invitees = new Set();
+  rows.forEach(row => {
+    const kind = String(row[3]);
+    if (kind === 'borrow') {
+      firstBorrow = true;
+      const amount = Number(row[7]);
+      if (Number.isSafeInteger(amount) && amount >= BANK_LEGENDARY_BORROW_MIN &&
+          !activeLoan) {
+        qualifyingBorrow = true;
+        activeLoan = true;
+        loanTurns = 0;
+        countedLoanTurns.clear();
+      }
+    } else if (kind === 'interest') {
+      const round = String(row[5] || '');
+      if (activeLoan && Number(row[13]) > 0 &&
+          /^[a-f0-9]{32}$/.test(round) && !countedLoanTurns.has(round)) {
+        countedLoanTurns.add(round);
+        loanTurns++;
+        bestLoanTurns = Math.max(bestLoanTurns, loanTurns);
+      }
+    } else if (kind === 'repay') {
+      if (Number(row[7]) < 0) firstRepay = true;
+      if (Number(row[14]) === 0) {
+        if (activeLoan && loanTurns >= BANK_LEGENDARY_TURN_MIN) repaidQualifyingLoan = true;
+        activeLoan = false;
+        loanTurns = 0;
+        countedLoanTurns.clear();
+      }
+    } else if (kind === 'referrer' &&
+               /^referrer:[a-f0-9]{32}$/.test(String(row[0] || '')) &&
+               Number(row[7]) === 3000) {
+      const match = /^referral:([0-9]{5})$/.exec(String(row[15] || ''));
+      // Transactions are already filtered to this authenticated referrer.
+      const owner = String(row[2] || '').trim();
+      if (match && isStudentId_(match[1]) && match[1] !== owner) invitees.add(match[1]);
+    }
+  });
+
+  const ownedSet = new Set(owned);
+  const result = {};
+  function add(id, label, current, target) {
+    // Some legacy awards predate detailed evidence: ownership is decisive.
+    const achieved = ownedSet.has(id);
+    const value = achieved ? target : Math.max(0, Math.min(target, current));
+    if (!result[id]) result[id] = [];
+    result[id].push({label: label, current: value, target: target});
+  }
+  const totalPlays = games.reduce((sum, game) => sum + plays[game], 0);
+  add('first_round', '게임 완료', totalPlays, 1);
+  add('all_games', '플레이한 게임 종류', games.filter(game => plays[game] > 0).length, 5);
+  add('thirty_rounds', '누적 플레이', totalPlays, 30);
+  add('streak_three', '최장 공통 연승', bestGlobal, 3);
+  add('streak_five_mixed', '최장 공통 연승', mixed[5].wins, 5);
+  add('streak_five_mixed', '연승 중 게임 종류', mixed[5].kinds, 2);
+  add('streak_eight_mixed', '최장 공통 연승', mixed[8].wins, 8);
+  add('streak_eight_mixed', '연승 중 게임 종류', mixed[8].kinds, 3);
+  add('g1_ten', '게임 1 플레이', plays.game_1, 10);
+  add('g2_ten_wins', '게임 2 승리', wins.game_2, 10);
+  add('g2_both_fifteen', 'HIGH 적중', choices.game_2.HIGH, 15);
+  add('g2_both_fifteen', 'LOW 적중', choices.game_2.LOW, 15);
+  add('g3_both_five', '홀 적중', choices.game_3['홀'], 5);
+  add('g3_both_five', '짝 적중', choices.game_3['짝'], 5);
+  add('g3_five_streak', '게임 3 최장 연승', bestStreak.game_3, 5);
+  add('g4_five_wins', '게임 4 승리', wins.game_4, 5);
+  add('g4_four_streak', '게임 4 최장 연승', bestStreak.game_4, 4);
+  add('g5_three_wins', '게임 5 승리', wins.game_5, 3);
+  add('g5_three_streak', '게임 5 최장 연승', bestStreak.game_5, 3);
+  add('all_legendary', '전설 배지 획득', LEGENDARY_REQUIRED_IDS.filter(id => ownedSet.has(id)).length, 6);
+  add('loan_survivor', '5,000C 이상 단일 대출', qualifyingBorrow ? 1 : 0, 1);
+  add('loan_survivor', '대출 후 완료한 턴', bestLoanTurns, BANK_LEGENDARY_TURN_MIN);
+  add('loan_survivor', '조건 충족 후 전액 상환', repaidQualifyingLoan ? 1 : 0, 1);
+  add('first_borrow', '대출 완료', firstBorrow ? 1 : 0, 1);
+  add('first_repay', '상환 완료', firstRepay ? 1 : 0, 1);
+  add('invite_one', '가입한 추천 친구', invitees.size, 1);
+  add('invite_three', '가입한 추천 친구', invitees.size, 3);
+  return result;
+}
+
+function awardBadges_(ledger, users, user, studentId, newRow, after, includeProgress) {
   const profile = badgeProfile_(users, user.rowIndex);
   const rows = badgeHistoryRows_(ledger, studentId, newRow);
   const earned = new Set(evaluateBadgesFromSettlements_(badgeSettlementsFromRows_(rows)));
@@ -333,7 +471,10 @@ function awardBadges_(ledger, users, user, studentId, newRow, after) {
   }
   const before = new Set(profile.owned);
   const unlocked = BADGE_IDS.filter(id => all.has(id) && !before.has(id));
-  if (!unlocked.length) return {profile: profile, unlocked: [], request: null};
+  const progress = includeProgress ?
+    badgeProgressFromRows_(rows, BADGE_IDS.filter(id => all.has(id))) : null;
+  if (!unlocked.length) return {profile: profile, unlocked: [], request: null, progress: progress};
   const updated = {equipped: profile.equipped, owned: BADGE_IDS.filter(id => all.has(id))};
-  return {profile: updated, unlocked: unlocked, request: badgeProfileWrite_(users, user.rowIndex, updated)};
+  return {profile: updated, unlocked: unlocked,
+    request: badgeProfileWrite_(users, user.rowIndex, updated), progress: progress};
 }
