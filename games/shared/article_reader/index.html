@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>선택한 뉴스 · BET</title>
+  <title>뉴스 챌린지 · 기사 읽기</title>
   <link rel="stylesheet" href="reader.css">
   <script defer src="reader.js"></script>
 </head>
@@ -20,12 +20,12 @@
           <button class="bank" type="button" aria-label="은행으로 이동"><img data-art="add-balance" alt=""></button>
         </div>
       </nav>
-      <div class="label"><img data-art="die" alt="">선택한 뉴스</div>
+      <div class="label"><img data-art="die" alt="">기사 읽기</div>
     </header>
 
     <article class="card" aria-labelledby="headline">
       <div class="countdown" role="timer" aria-label="기사 읽기 타이머">
-        <span>예측 화면 자동 이동까지</span>
+        <span>다음 단계까지</span>
         <strong id="timer"></strong>
       </div>
       <div class="pages" tabindex="0" role="region" aria-label="기사 읽기 영역">
@@ -42,13 +42,13 @@
 
     <aside class="guidance" aria-label="게임 안내">
       <img class="clipboard" data-art="clipboard" alt="">
-      <p id="guidance">기사를 읽고 제목과 본문의 유사도를 예측하세요.</p>
+      <p id="guidance">기사를 읽고 다음 단계로 진행하세요.</p>
       <div class="reward" hidden>
         <span><img data-art="reward-crown" alt="">적중 보상</span>
         <strong id="reward"></strong>
       </div>
     </aside>
-    <button class="predict" type="button"><img data-art="target" alt=""><span id="return-label">유사도 예측하러 가기</span></button>
+    <button class="predict" type="button"><img data-art="target" alt=""><span id="return-label">다음 단계로</span></button>
   </main>
 </body>
 </html>
