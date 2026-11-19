@@ -99,7 +99,10 @@ class GameFourPickerTests(unittest.TestCase):
         self.assertIn('@media (max-width: 359px)', html)
         self.assertIn('@media (max-height: 620px)', html)
         self.assertIn('aria-pressed="true"', html)
-        self.assertIn('if (action === "choose") value.index = selected', html)
+        js = (ROOT / "games/game4_picker/picker.js").read_text(encoding="utf-8")
+        self.assertIn('if (action === "choose") value.index = selected', js)
+        self.assertIn('event.origin === "null" ? "*" : event.origin', js)
+        self.assertIn('<script defer src="./picker.js"></script>', html)
         self.assertNotIn("st.radio", html)
         self.assertNotIn("st.columns", html)
 
