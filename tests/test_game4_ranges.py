@@ -12,6 +12,8 @@ class GameFourRangeTests(unittest.TestCase):
     def setUpClass(cls):
         dependencies = {
             "streamlit": MagicMock(),
+            "streamlit.components": MagicMock(),
+            "streamlit.components.v1": MagicMock(),
             "games.shared.betting": MagicMock(),
             "games.shared.news_flow": MagicMock(),
             "games.shared.loading": MagicMock(),
