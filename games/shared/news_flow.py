@@ -1,7 +1,7 @@
 """Shared news candidate retrieval and article-reading flow.
 
 The immersive_reader option enables a full-screen roulette/reader pairing.
-Legacy Streamlit screens remain the default for existing games 2-4.
+The legacy Streamlit screen remains available for non-immersive callers.
 """
 import streamlit as st
 import streamlit.components.v1 as components
@@ -164,9 +164,9 @@ def get_game_news_selection(game_id: str, *, win_multiplier=None, immersive_read
             if candidates:
                 index = render_news_slot(
                     candidates, game_id=game_id,
-                    continuous_reel=(game_id == "game_1"),
-                    allow_back=(game_id != "game_1"),
-                    allow_direct_url=(game_id == "game_1"),
+                    continuous_reel=True,
+                    allow_back=(game_id not in {"game_1", "game_3"}),
+                    allow_direct_url=True,
                 )
                 if index is not None:
                     _open_chosen_article(candidates[index], news_key, candidates_key, include_image=True)
