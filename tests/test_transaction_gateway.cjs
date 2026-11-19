@@ -247,7 +247,7 @@ test('legacy blank streak and debt columns behave as zero', () => {
   assert.equal(res.balances.loan, 0);
   const won = e.call({kind:'settle',transaction_id:'settle:'+id,
     round_id:id,game:'game_2',bet:1000,is_win:true});
-  assert.equal(won.balances.coins, 6000);
+  assert.equal(won.balances.coins, 7000);
   assert.equal(won.balances.streak, 1);
   assert.equal(e.rows.users[1][6], 0);
 });
@@ -331,7 +331,7 @@ test('zero-debt turn records an idempotent receipt even if player borrows later'
   assert.equal(first.interest.charged, 0);
   assert.equal(e.rows.ledger.filter(row => row[3] === 'interest').length, 1);
   e.call({kind: 'borrow', transaction_id: 'borrow:' + hex('5'),
-    amount: 1000, expected_coins: 6000, expected_loan: 0, expected_principal: 0});
+    amount: 1000, expected_coins: 7000, expected_loan: 0, expected_principal: 0});
   const replay = e.call(request);
   assert.equal(replay.replayed, true);
   assert.equal(replay.interest.loan_after, 0);
@@ -369,14 +369,14 @@ test('8000 borrowed + 1600 interest still permits 2000 new borrowing', () => {
   assert.equal(interest.balances.loan, 9600);
   assert.equal(interest.balances.principal, 8000);
   const more = e.call({kind:'borrow',transaction_id:'borrow:'+hex('8'),amount:2000,
-    expected_coins:6000,expected_loan:9600,expected_principal:8000});
-  assert.equal(more.balances.coins, 8000);
+    expected_coins:7000,expected_loan:9600,expected_principal:8000});
+  assert.equal(more.balances.coins, 9000);
   assert.equal(more.balances.loan, 11600);
   assert.equal(more.balances.principal, 10000);
   assert.equal(e.rows.users[1][6], 11600);
   assert.equal(e.rows.users[1][7], 10000);
   assert.throws(() => e.call({kind:'borrow',transaction_id:'borrow:'+hex('9'),
-    amount:1000,expected_coins:8000,expected_loan:11600,expected_principal:10000}),
+    amount:1000,expected_coins:9000,expected_loan:11600,expected_principal:10000}),
   /Borrowed principal limit exceeded/);
 });
 
@@ -1191,4 +1191,64 @@ test('game 4 historical +2x settled receipt replays without changing the wallet'
   assert.equal(e.rows.users[1][2], 7000);
   assert.equal(e.rows.ledger.filter(row => row[3] === 'settle').length, 1);
   assert.throws(() => e.call({...request, is_win: false}), /different arguments/);
+});
+
+test('all five winning games pay the configured net multiplier, not gross stake return', () => {
+  const configured = [
+    ['game_1', 100], ['game_2', 2], ['game_3', 2],
+    ['game_4', 3], ['game_5', 5],
+  ];
+  for (const [game, multiplier] of configured) {
+    const e = environment();
+    const id = hex('a');
+    e.call({kind: 'bet', transaction_id: 'bet:' + id,
+      round_id: id, game, bet: 1000});
+    const request = {kind: 'settle', transaction_id: 'settle:' + id,
+      round_id: id, game, bet: 1000, is_win: true};
+    const win = e.call(request);
+    assert.equal(win.settlement.delta, 1000 * multiplier, game);
+    assert.equal(win.balances.coins, 5000 + 1000 * multiplier, game);
+    assert.equal(e.rows.ledger.filter(row => row[3] === 'settle').length, 1);
+    const repeated = e.call(request);
+    assert.equal(repeated.replayed, true, game);
+    assert.equal(repeated.settlement.delta, 1000 * multiplier, game);
+    assert.equal(e.rows.ledger.filter(row => row[3] === 'settle').length, 1);
+  }
+});
+
+test('prior game 2 and game 3 +1x wins replay their original receipts without new credits', () => {
+  for (const game of ['game_2', 'game_3']) {
+    const e = environment(), id = hex('d');
+    e.call({kind: 'bet', transaction_id: 'bet:' + id, round_id: id,
+      game, bet: 1000});
+    // Existing ledger history from the old +1x gateway must remain immutable.
+    e.rows.ledger.push([
+      'settle:' + id, '2026-11-01T00:00:00Z', '11011', 'settle',
+      game, id, 1000, 1000, true, 5000, 6000, 1, 2, 0, 0, '',
+    ]);
+    e.rows.users[1][2] = 6000;
+    e.rows.users[1][3] = 2;
+    const oldRows = e.rows.ledger.length;
+    const request = {kind: 'settle', transaction_id: 'settle:' + id,
+      round_id: id, game, bet: 1000, is_win: true};
+    const replay = e.call(request);
+    assert.equal(replay.replayed, true, game);
+    assert.equal(replay.settlement.delta, 1000, game);
+    assert.equal(replay.balances.coins, 6000, game);
+    assert.equal(e.rows.ledger.length, oldRows);
+    assert.equal(e.rows.users[1][2], 6000, game);
+    assert.throws(() => e.call({...request, is_win: false}), /different arguments/);
+  }
+});
+
+test('game 3 keeps half-stake losses and game 2 keeps full-stake losses', () => {
+  for (const [game, delta] of [['game_3', -500], ['game_2', -1000]]) {
+    const e = environment(), id = hex('f');
+    e.call({kind: 'bet', transaction_id: 'bet:' + id, round_id: id,
+      game, bet: 1000});
+    const loss = e.call({kind: 'settle', transaction_id: 'settle:' + id,
+      round_id: id, game, bet: 1000, is_win: false});
+    assert.equal(loss.settlement.delta, delta, game);
+    assert.equal(loss.balances.coins, 5000 + delta, game);
+  }
 });
