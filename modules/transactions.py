@@ -195,6 +195,28 @@ def _update_session_badges(profile: object) -> tuple[str, ...]:
     if isinstance(user, dict):
         user["장착배지"] = equipped
         user["보유배지"] = serialize_owned(owned)
+    # Numeric progress is accepted only from the authenticated gateway.
+    # Older deployments may omit this optional response field.
+    raw_progress = profile.get("progress")
+    if isinstance(raw_progress, dict):
+        progress = {}
+        for badge_id, entries in raw_progress.items():
+            if badge_id not in BADGE_BY_ID or not isinstance(entries, list):
+                continue
+            valid = []
+            for entry in entries:
+                if not isinstance(entry, dict):
+                    continue
+                label, current, target = (
+                    entry.get("label"), entry.get("current"), entry.get("target")
+                )
+                if (isinstance(label, str) and len(label) <= 80
+                        and type(current) is int and type(target) is int
+                        and 0 <= current <= target <= 1000000):
+                    valid.append({"label": label, "current": current, "target": target})
+            if valid:
+                progress[badge_id] = valid
+        st.session_state["badge_gallery_progress"] = progress
     unlocked = profile.get("unlocked", [])
     if not isinstance(unlocked, list):
         return ()
@@ -230,6 +252,8 @@ def sync_badges_from_gateway() -> tuple[str, ...]:
         raise TransactionError("배지 동기화 결과를 확인할 수 없습니다.", code="BAD_RESPONSE")
     update_session_balances(result["balances"])
     unlocked = _update_session_badges(profile)
+    if "progress" not in profile:
+        st.session_state.pop("badge_gallery_progress", None)
     queue_badge_awards(unlocked)
     return unlocked
 
@@ -320,6 +344,7 @@ def settle_game_round(game: str, amount: int, is_win: bool, *, badge_evidence: d
     newly_unlocked = _update_session_badges(result.get("badges"))
     receipt["unlocked_badges"] = newly_unlocked
     queue_badge_awards(newly_unlocked)
+    st.session_state.pop("badge_gallery_checked_at", None)
     return receipt
 
 
@@ -351,6 +376,7 @@ def apply_round_interest(game: str) -> dict:
         raise TransactionError("이자 계산 기록이 일치하지 않습니다.")
     update_session_balances(result["balances"])
     queue_badge_awards(_update_session_badges(result.get("badges")))
+    st.session_state.pop("badge_gallery_checked_at", None)
     return {
         "charged": charged, "loan_before": loan_before,
         "new_loan": loan_after, "replayed": bool(result.get("replayed")),
@@ -379,6 +405,7 @@ def bank_transaction(kind: str, amount: int, tx_id: str) -> dict:
         raise TransactionError("거래 서버에 대출원금 관리 기능이 적용되지 않았습니다.", code="NOT_CONFIGURED")
     update_session_balances(result["balances"])
     queue_badge_awards(_update_session_badges(result.get("badges")))
+    st.session_state.pop("badge_gallery_checked_at", None)
     return result
 
 
