@@ -547,8 +547,8 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
             <section class="cb-hero" aria-label="베팅 금액 선택">
               {logo_html}
               <p class="cb-game-title">{safe_title}</p>
-              <h2 class="cb-heading">얼마를 걸까요?</h2>
-              <p class="cb-description">베팅하면 뉴스가 공개됩니다</p>
+              <h2 class="cb-heading">베팅 금액 선택</h2>
+              <p class="cb-description">금액을 정하고 다음 단계로 진행하세요</p>
               <div class="cb-scene">{news_html}{podium_html}</div>
             </section>
             ''', unsafe_allow_html=True,
