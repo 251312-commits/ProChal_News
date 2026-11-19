@@ -177,7 +177,7 @@ def _render_game_4_range_picker(ranges: list[str], balance: int) -> int | None:
                         "예상 일치율 구간 선택",
                         options=[2, 1, 0],
                         format_func=lambda idx: (
-                            f"**{range_labels[idx]}**  \\n({ranges[idx]})"
+                            f"**{range_labels[idx]}**  \n({ranges[idx]})"
                         ),
                         key="game_4_range_picker",
                         index=1,
