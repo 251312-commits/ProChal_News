@@ -19,6 +19,8 @@ class GameFourSharedAndRevealTests(unittest.TestCase):
         self.tx = MagicMock()
         deps = {
             "streamlit": self.st,
+            "streamlit.components": self.st.components,
+            "streamlit.components.v1": self.st.components.v1,
             "games.shared.betting": MagicMock(),
             "games.shared.news_flow": self.news,
             "games.shared.loading": MagicMock(),

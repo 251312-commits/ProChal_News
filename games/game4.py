@@ -2,6 +2,8 @@
 
 import asyncio
 from html import escape
+from uuid import uuid4
+import streamlit.components.v1 as components
 from pathlib import Path
 from decimal import Decimal, ROUND_HALF_UP
 import math
@@ -25,6 +27,10 @@ GAME_4_MIN_BET = 1_000
 GAME_4_SCORE_MAX = 99.99
 GAME_4_RANGE_WIDTH = 2.0
 GAME_4_RANGE_COUNT = 3
+_GAME4_PICKER_DIR = Path(__file__).with_name("game4_picker")
+_game4_picker_component = components.declare_component(
+    "game4_range_picker", path=str(_GAME4_PICKER_DIR)
+)
 
 
 def _reset_game_4_state() -> None:
@@ -36,6 +42,7 @@ def _reset_game_4_state() -> None:
         "read_done_game_4",
         "game_4_range",
         "game_4_range_picker",
+        "game4_picker_round",
         "game_4_ranges",
         "game_4_score",
         "game_4_answer_index",
@@ -97,105 +104,70 @@ def _build_dynamic_ranges(score: float) -> tuple[list[str], int]:
 
 
 def _render_game_4_range_picker(ranges: list[str], balance: int) -> int | None:
-    """Mobile-first range picker using native, keyboard-accessible Streamlit radio."""
+    """Show the entire selection screen in one viewport-sized component.
+
+    Native Streamlit columns/radio controls have minimum widths which are
+    incompatible with this two-panel mobile layout. The standalone frontend
+    owns all placement; only a confirmed, round-bound index reaches Python.
+    """
+    round_key = "game4_picker_round"
+    if round_key not in st.session_state:
+        st.session_state[round_key] = uuid4().hex
+    round_id = st.session_state[round_key]
     asset_root = Path(__file__).resolve().parents[1] / "assets"
-    bg = escape(load_local_image_url(str(asset_root / "bet_background.jpg")), quote=True)
-    crown = escape(load_local_image_url(str(asset_root / "bet_crown.png")), quote=True)
-    laurel_left = escape(
-        load_local_image_url(str(asset_root / "game1_article" / "icons" / "laurel-left.png")),
-        quote=True,
-    )
-    laurel_right = escape(
-        load_local_image_url(str(asset_root / "game1_article" / "icons" / "laurel-right.png")),
-        quote=True,
-    )
+    artwork = {
+        "background": load_local_image_url(str(asset_root / "bet_background.jpg")),
+        "logo": load_local_image_url(str(asset_root / "bet_crown.png")),
+        "laurel_left": load_local_image_url(
+            str(asset_root / "game1_article/icons/laurel-left.png")
+        ),
+        "laurel_right": load_local_image_url(
+            str(asset_root / "game1_article/icons/laurel-right.png")
+        ),
+    }
 
-    st.html(Path(__file__).with_name("game4_picker.css"))
-    st.html(
-        '<style>.st-key-game4_picker_shell {'
-        f'background-image: radial-gradient(circle at 50% 40%, rgba(104,22,164,.33), transparent 68%),'
-        f'linear-gradient(180deg, rgba(17,5,38,.88), rgba(15,3,38,.94)),'
-        f'url("{bg}") !important;'
-        'background-size: cover !important; background-position: center !important;'
-        '}</style>'
-    )
-
-    high = escape(ranges[-1].split("~", 1)[-1])
-    low = escape(ranges[0].split("~", 1)[0] + "%")
-    range_labels = {2: "상위 구간", 1: "중간 구간", 0: "하위 구간"}
-
-    with st.container(key="game4_picker_shell"):
-        back_col, balance_col, bank_col = st.columns(
-            [0.8, 3.2, 0.8], gap="small", vertical_alignment="center"
-        )
-        with back_col:
-            if st.button("❮", key="game4_picker_back", help="메인으로"):
-                change_page("main")
-                return None
-        with balance_col:
-            st.html(
-                '<div class="cb-balance" aria-label="현재 보유 코인">'
-                '<span class="cb-coin-symbol" aria-hidden="true">$</span>'
-                f'{balance:,}</div>'
-            )
-        with bank_col:
-            if st.button("+", key="game4_picker_bank", help="은행으로"):
-                change_page("bank")
-                return None
-
-        st.html(
-            '<header class="g4-heading cb-hero">'
-            f'<img src="{crown}" class="cb-logo g4-bet-logo" alt="BET 로고" loading="eager">'
-            '<p class="cb-game-title">게임 4 · 일치율 구간 예측</p>'
-            '<div class="g4-title-row">'
-            f'<img src="{laurel_left}" alt="" class="g4-laurel">'
-            '<h1>구간 맞히기</h1>'
-            f'<img src="{laurel_right}" alt="" class="g4-laurel">'
-            '</div>'
-            '<p class="cb-description">숨겨진 일치율이 어느 구간에 있을까?</p>'
-            '</header>'
+    with st.container(key="game4-picker-stage"):
+        st.html("""
+            <style>
+            .st-key-game4-picker-stage {
+                position: fixed; inset: 0; z-index: 1000;
+                width: 100%; height: 100vh; height: 100dvh;
+                overflow: hidden; background: #160622;
+            }
+            .st-key-game4-picker-stage iframe {
+                display: block; border: 0; width: 100%;
+                height: 100vh !important; height: 100dvh !important;
+            }
+            [data-testid="stApp"]:has(.st-key-game4-picker-stage)
+            [data-testid="stHeader"] { display: none; }
+            [data-testid="stMain"]:has(.st-key-game4-picker-stage) {
+                overflow: hidden;
+            }
+            </style>
+        """)
+        event = _game4_picker_component(
+            key=f"game4-picker-{round_id}",
+            round_id=round_id,
+            ranges=ranges,
+            coins=int(balance),
+            art=artwork,
+            default=None,
         )
 
-        with st.container(key="game4_picker_board"):
-            hidden_col, scale_col = st.columns(
-                [0.78, 1.35], gap="small", vertical_alignment="center"
-            )
-            with hidden_col:
-                st.html(
-                    '<div class="g4-mystery" aria-label="실제 일치율은 숨겨져 있습니다">'
-                    '<div class="g4-mystery-label">숨겨진 일치율</div>'
-                    '<strong>??</strong>'
-                    '<span class="g4-mystery-unit">%</span>'
-                    '</div>'
-                )
-            with scale_col:
-                with st.container(key="game4_picker_axis"):
-                    st.html(
-                        f'<div class="g4-axis-cap g4-axis-cap-top">{high}</div>'
-                    )
-                    # Descending display order matches the vertical scale.
-                    # Returned values remain original list indexes for scoring.
-                    selected = st.radio(
-                        "예상 일치율 구간 선택",
-                        options=[2, 1, 0],
-                        format_func=lambda idx: (
-                            f"**{range_labels[idx]}**  \n({ranges[idx]})"
-                        ),
-                        key="game_4_range_picker",
-                        index=1,
-                        label_visibility="collapsed",
-                    )
-                    st.html(
-                        f'<div class="g4-axis-cap g4-axis-cap-bottom">{low}</div>'
-                    )
-
-        if st.button(
-            "✓  선택하기",
-            key="game4_picker_submit",
-            use_container_width=True,
-            type="primary",
-        ):
-            return selected
+    if not isinstance(event, dict) or event.get("round_id") != round_id:
+        return None
+    action = event.get("action")
+    if action == "back":
+        st.session_state.pop(round_key, None)
+        change_page("main")
+    elif action == "bank":
+        st.session_state.pop(round_key, None)
+        change_page("bank")
+    elif action == "choose":
+        index = event.get("index")
+        if type(index) is int and 0 <= index < len(ranges):
+            st.session_state.pop(round_key, None)
+            return index
     return None
 
 
