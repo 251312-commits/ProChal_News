@@ -565,14 +565,14 @@ def show_game_5_tutorial():
                         <p>게임에 사용할 코인을<br><b>최소 1,000 C</b>부터 베팅한다.</p>
                     </li>
                     <li>
-                        <h2><span>02</span>정답 구간 확인</h2>
+                        <h2><span>02</span>구간 확인</h2>
                         <div class="game5-guide-icon">%</div>
-                        <p>서로 다른 뉴스의 일치율을 가르는<br>정답 구간이 제시된다.</p>
+                        <p>정답 뉴스가 포함되는<br>일치율 구간이 제시된다.</p>
                     </li>
                     <li>
                         <h2><span>03</span>뉴스 선택</h2>
                         <div class="game5-guide-icon">?</div>
-                        <p>후보 뉴스 <b>5개</b>를 읽고<br>구간에 해당하는 한 편을 고른다.</p>
+                        <p>후보 뉴스 <b>5개</b>를 읽고<br>구간에 해당할 것 같은<br>뉴스를 선택한다.</p>
                     </li>
                     <li>
                         <h2><span>04</span>결과 확인</h2>
