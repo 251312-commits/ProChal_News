@@ -62,38 +62,36 @@ def _format_range(lower: float, upper: float) -> str:
 
 
 def _build_dynamic_ranges(score: float) -> tuple[list[str], int]:
-    """Create three narrow, adjacent ranges around the hidden score."""
-    total_width = GAME_4_RANGE_WIDTH * GAME_4_RANGE_COUNT
-    start = min(
-        max(0.0, score - total_width),
-        GAME_4_SCORE_MAX - total_width,
-    )
-    start = float(
-        Decimal(str(start)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-    )
+    """Build three sorted 2pp ranges with a randomized correct numeric position."""
+    # Use hundredths to keep the displayed boundaries identical to scoring.
+    width_units = int(Decimal(str(GAME_4_RANGE_WIDTH)) * 100)
+    max_score_units = int(Decimal(str(GAME_4_SCORE_MAX)) * 100)
+    score_units = int(Decimal(str(_normalize_score(score))) * 100)
+    score_bin = score_units // width_units
 
-    ranges = []
-    for index in range(GAME_4_RANGE_COUNT):
-        lower = start + index * GAME_4_RANGE_WIDTH
-        upper = min(
-            GAME_4_SCORE_MAX,
-            start + (index + 1) * GAME_4_RANGE_WIDTH - 0.01,
+    # Only complete, nonnegative bins are shown. Near 0% or 99.99%
+    # not every numeric position is possible without invalid ranges.
+    max_start_bin = (
+        max_score_units + 1 - width_units * GAME_4_RANGE_COUNT
+    ) // width_units
+    valid_positions = [
+        index
+        for index in range(GAME_4_RANGE_COUNT)
+        if 0 <= score_bin - index <= max_start_bin
+    ]
+    if not valid_positions:
+        raise ValueError("일치율에 맞는 구간을 생성할 수 없습니다.")
+
+    answer_index = random.choice(valid_positions)
+    first_bin = score_bin - answer_index
+    ranges = [
+        _format_range(
+            (first_bin + index) * width_units / 100,
+            ((first_bin + index + 1) * width_units - 1) / 100,
         )
-        ranges.append(_format_range(lower, upper))
-
-    answer_index = next(
-        (
-            index
-            for index in range(GAME_4_RANGE_COUNT)
-            if start + index * GAME_4_RANGE_WIDTH <= score
-            <= start + (index + 1) * GAME_4_RANGE_WIDTH
-        ),
-        GAME_4_RANGE_COUNT - 1,
-    )
-    order = list(range(GAME_4_RANGE_COUNT))
-    random.shuffle(order)
-    shuffled_ranges = [ranges[index] for index in order]
-    return shuffled_ranges, order.index(answer_index)
+        for index in range(GAME_4_RANGE_COUNT)
+    ]
+    return ranges, answer_index
 
 
 def _settle_game_4(
