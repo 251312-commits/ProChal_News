@@ -14,7 +14,7 @@ const headers = [
 ];
 const hex = char => char.repeat(32);
 
-function environment(usersRows = [['11011', 'Alice', 5000, 1, '', 'pw', 0]]) {
+function environment(usersRows = [['11011', 'Alice', 5000, 1, '', 'pw', 0]], newsRows = []) {
   const state = {failedBatch: false, batches: 0, locked: false};
   const rows = {
     users: [
@@ -25,6 +25,11 @@ function environment(usersRows = [['11011', 'Alice', 5000, 1, '', 'pw', 0]]) {
       }),
     ],
     ledger: [headers],
+    news: [
+      ['URL', 'Count', 'Title', 'SubmittedBy', 'SubmittedByName',
+        'SourceType', 'AddedAt', 'Active', 'URLHash'],
+      ...newsRows.map(row => [...row]),
+    ],
   };
   function fakeSheet(id) {
     return {
@@ -52,11 +57,12 @@ function environment(usersRows = [['11011', 'Alice', 5000, 1, '', 'pw', 0]]) {
       },
     };
   }
-  const sheetObjects = {users: fakeSheet('users'), ledger: fakeSheet('ledger')};
+  const sheetObjects = {users: fakeSheet('users'), ledger: fakeSheet('ledger'), news: fakeSheet('news')};
   const ss = {
     getSheetByName(name) {
       return name === 'Users' ? sheetObjects.users :
-        name === 'Transactions' ? sheetObjects.ledger : null;
+        name === 'Transactions' ? sheetObjects.ledger :
+        name === 'News' ? sheetObjects.news : null;
     },
     getId() {return 'test-spreadsheet';},
   };
@@ -81,6 +87,7 @@ function environment(usersRows = [['11011', 'Alice', 5000, 1, '', 'pw', 0]]) {
       const snapshot = {
         users: rows.users.map(r => [...r]),
         ledger: rows.ledger.map(r => [...r]),
+        news: rows.news.map(r => [...r]),
       };
       const value = cell => cell.userEnteredValue.numberValue ??
         cell.userEnteredValue.boolValue ?? cell.userEnteredValue.stringValue;
@@ -101,6 +108,7 @@ function environment(usersRows = [['11011', 'Alice', 5000, 1, '', 'pw', 0]]) {
       }
       rows.users = snapshot.users;
       rows.ledger = snapshot.ledger;
+      rows.news = snapshot.news;
       state.batches++;
     }}},
     console: {error() {}},
@@ -1019,4 +1027,68 @@ test('badge_sync retroactively awards proven historical friend referrals only', 
   const second=e.call({kind:'badge_sync',student_id:'20102',
     transaction_id:'badge_sync:'+hex('e')});
   assert.equal(second.badges.unlocked.length,0);
+});
+
+
+test('article failure counter is global, replay-safe, and disables every matching row at 3', () => {
+  const one = ['https://www.yna.co.kr/view/AKR1?utm_source=x', 0, '첫 기사', '', '', '', '', true, ''];
+  const duplicate = ['https://www.yna.co.kr/view/AKR1', 0, '중복 기사', '', '', '', '', true, ''];
+  const other = ['https://www.yna.co.kr/view/AKR2', 0, '다른 기사', '', '', '', '', true, ''];
+  const e = environment(undefined, [one, duplicate, other]);
+  const request = {
+    kind: 'article_failure',
+    url: 'https://www.yna.co.kr/view/AKR1',
+    url_hash: '1'.repeat(64),
+    event_id: 'a'.repeat(32)
+  };
+  const first = e.call({...request, student_id: '11011'});
+  assert.equal(first.failure_count, 1);
+  assert.equal(first.disabled, false);
+  assert.equal(e.rows.news[1][9], 1);
+  assert.equal(e.rows.news[2][9], 1);
+  assert.equal(e.rows.news[1][7], true);
+
+  const replay = e.call({...request, student_id: '22022'});
+  assert.equal(replay.failure_count, 1);
+  assert.equal(replay.replayed, true);
+  assert.equal(e.rows.news[1][9], 1);
+
+  const second = e.call({...request, event_id: 'b'.repeat(32), student_id: '22022'});
+  assert.equal(second.failure_count, 2);
+  const third = e.call({...request, event_id: 'c'.repeat(32), student_id: '33033'});
+  assert.equal(third.failure_count, 3);
+  assert.equal(third.disabled, true);
+  assert.equal(e.rows.news[1][7], false);
+  assert.equal(e.rows.news[2][7], false);
+  assert.equal(e.rows.news[3][7], true);
+  assert.equal(e.rows.news[3][9] || 0, 0);
+  assert.equal(e.rows.news[0][9], 'FailureCount');
+  assert.equal(e.rows.news[0][10], 'FailureEventIds');
+});
+
+test('article failure count and deactivation are atomic on Sheets errors', () => {
+  const e = environment(undefined, [
+    ['https://www.yna.co.kr/view/AKR3', 0, '기사', '', '', '', '', true, '']
+  ]);
+  const req = {kind:'article_failure',url:'https://www.yna.co.kr/view/AKR3',
+    url_hash:'3'.repeat(64),event_id:'d'.repeat(32)};
+  e.state.failedBatch = true;
+  assert.throws(() => e.call(req), /Simulated atomic batch failure/);
+  assert.equal(e.rows.news[1][9] || 0, 0);
+  assert.equal(e.rows.news[1][7], true);
+  e.state.failedBatch = false;
+  assert.equal(e.call(req).failure_count, 1);
+  assert.equal(e.rows.news[1][9], 1);
+});
+
+test('article failures require a valid request and never modify wallet balances', () => {
+  const e = environment(undefined, [
+    ['https://www.yna.co.kr/view/AKR4', 0, '기사', '', '', '', '', true, '']
+  ]);
+  const base = {kind:'article_failure',url:'https://www.yna.co.kr/view/AKR4',
+    url_hash:'4'.repeat(64),event_id:'e'.repeat(32)};
+  assert.throws(() => e.call({...base, event_id:'bad'}), /Article failure request/);
+  assert.equal(e.call(base).tracked, true);
+  assert.equal(e.rows.users[1][2], 5000);
+  assert.equal(e.rows.ledger.length, 1);
 });
