@@ -96,6 +96,10 @@ def reset_game_3_state():
         "candidates_game_3",
         "read_done_game_3",
         "game_3_article_data",
+        "game_3_slot_round",
+        "game_3_reader_round",
+        "game_3_direct_url_error",
+        "game_3_direct_url_request_id",
     ]
 
     for key in keys:
@@ -103,71 +107,6 @@ def reset_game_3_state():
 
     st.session_state.game_3_round = old_round + 1
     st.session_state.game_3_screen = "choice"
-
-
-# ==========================================
-# 슬롯 디자인
-# ==========================================
-
-def fix_game_3_slot_animation():
-
-    st.markdown(
-        """
-        <style>
-
-        .st-key-btn_game_3_0 button,
-        .st-key-btn_game_3_1 button,
-        .st-key-btn_game_3_2 button {
-
-            position: relative !important;
-            overflow: hidden !important;
-
-            min-height: 85px !important;
-
-            background-color: #ffffff !important;
-            color: #2d1842 !important;
-
-            border: 3px solid #2d1842 !important;
-            border-radius: 8px !important;
-
-            padding: 15px !important;
-
-            font-size: 16px !important;
-            font-weight: 900 !important;
-
-            text-align: left !important;
-            white-space: normal !important;
-
-            box-shadow: 4px 4px 0px #2d1842 !important;
-
-            transition: all 0.2s ease !important;
-        }
-
-        .st-key-btn_game_3_0 button p,
-        .st-key-btn_game_3_1 button p,
-        .st-key-btn_game_3_2 button p {
-
-            color: #2d1842 !important;
-            font-weight: 900 !important;
-            line-height: 1.5 !important;
-            white-space: normal !important;
-            word-break: keep-all !important;
-        }
-
-        .st-key-btn_game_3_0 button:hover,
-        .st-key-btn_game_3_1 button:hover,
-        .st-key-btn_game_3_2 button:hover {
-
-            background-color: #f3e8ff !important;
-            border-color: #a855f7 !important;
-            transform: translateY(-2px);
-            box-shadow: 5px 5px 0px #2d1842 !important;
-        }
-
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
 
 
 # ==========================================
@@ -190,7 +129,7 @@ def load_game_3_article():
 
     try:
 
-        selection = get_game_news_selection("game_3")
+        selection = get_game_news_selection("game_3", immersive_reader=True)
 
         if selection is None:
             return None, None, None
@@ -366,30 +305,12 @@ def show_bet_screen(ws):
 # ==========================================
 
 def show_news_screen():
-
-    st.markdown("### 📰 STEP 3. 뉴스 기사 선택")
-
-    st.info("슬롯이 멈추면 분석할 뉴스 기사를 선택하세요.")
-
-    fix_game_3_slot_animation()
-
+    # The shared news slot and timed reader own the entire news stage.
     title, article_text, url = load_game_3_article()
-
     if not title or not article_text or not url:
         return
 
-    st.markdown("---")
-    st.markdown("### 📄 선택한 뉴스 기사")
-
-    st.markdown(f"**뉴스 제목: {title}**")
-
-    with st.expander("뉴스 본문 확인하기", expanded=True):
-        st.write(article_text)
-
-    st.markdown(f"[기사 원문 열기]({url})")
-
     st.session_state.game_3_screen = "analysis"
-
     st.rerun()
 
 

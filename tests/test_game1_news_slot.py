@@ -194,6 +194,22 @@ class NewsSlotTests(unittest.TestCase):
         self.assertEqual(self.component.call_args.kwargs["titles"], ["둘째 기사"])
         self.assertNotEqual(self.component.call_args.kwargs["round_id"], first_round)
 
+    def test_games_two_to_four_enable_shared_continuous_reel_and_direct_url(self):
+        for game_id in ("game_2", "game_3", "game_4"):
+            with self.subTest(game_id=game_id):
+                self.component.return_value = None
+                self.assertEqual(
+                    self.select(game_id, immersive_reader=True),
+                    (None, None, None),
+                )
+                args = self.component.call_args.kwargs
+                self.assertIs(args["continuous_reel"], True)
+                self.assertIs(args["allow_direct_url"], True)
+                self.assertIn("연합뉴스", args["supported_sources"])
+                # Game 3 uses an explicit screen state and cannot return to bets
+                # through the generic roulette back handler.
+                self.assertIs(args["allow_back"], game_id != "game_3")
+
     def test_game2_slot_still_returns_to_betting(self):
         render_slot = self.shared_slot_render
         self.st.session_state.game_2_bet = 500

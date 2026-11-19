@@ -1,7 +1,7 @@
 """Reusable news roulette screen for each game's article candidates.
 
-Game 1 defaults to continuous spin and direct URL support; Game 2 retains its
-return-to-bet behavior. Callers may override these presentation flags.
+News-slot screens use one continuous reel and support direct article URLs by
+default. Callers may override these flags; back navigation is game-specific.
 """
 from pathlib import Path
 from uuid import uuid4
@@ -139,9 +139,9 @@ def render_news_slot(
     if allow_back is None:
         allow_back = game_id != "game_1"
     if continuous_reel is None:
-        continuous_reel = game_id == "game_1"
+        continuous_reel = True
     if allow_direct_url is None:
-        allow_direct_url = game_id == "game_1"
+        allow_direct_url = True
 
     state = st.session_state
     round_key = f"{game_id}_slot_round"

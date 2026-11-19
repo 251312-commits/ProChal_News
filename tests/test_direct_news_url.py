@@ -76,6 +76,36 @@ class DirectGameOneUrlTests(unittest.TestCase):
         self.assertIn("연합뉴스", args["supported_sources"])
         return args["round_id"], candidates
 
+    def test_other_news_games_can_submit_direct_article_urls(self):
+        for game_id in ("game_2", "game_3", "game_4"):
+            with self.subTest(game_id=game_id):
+                candidates = [
+                    {"title": "후보", "url": "url-1", "count": 0, "row_idx": 2}
+                ]
+                self.st.session_state[f"candidates_{game_id}"] = candidates
+                self.component.return_value = None
+                self.render(candidates, game_id=game_id)
+                args = self.component.call_args.kwargs
+                self.assertIs(args["continuous_reel"], True)
+                self.assertIs(args["allow_direct_url"], True)
+                url = f"https://www.yna.co.kr/view/AKR{game_id[-1]}23"
+                self.ai.bring_article.return_value = (
+                    f"직접 입력 기사 {game_id}",
+                    "기사 본문이 정상적으로 추출되었음을 검증하기에 충분한 길이로 작성한 테스트 문자열입니다.",
+                    "https://img.yna.co.kr/test.jpg",
+                )
+                self.component.return_value = {
+                    "action": "direct_url",
+                    "round_id": args["round_id"],
+                    "request_id": f"{game_id}-direct",
+                    "url": url,
+                }
+                self.render(candidates, game_id=game_id)
+                chosen = self.st.session_state[f"selected_news_{game_id}"]
+                self.assertEqual(chosen["url"], url)
+                self.assertNotIn(f"candidates_{game_id}", self.st.session_state)
+                self.assertNotIn(f"{game_id}_slot_round", self.st.session_state)
+
     def test_invalid_domain_returns_popup_error_without_loading_article(self):
         round_id, candidates = self._round()
         self.component.return_value = {
