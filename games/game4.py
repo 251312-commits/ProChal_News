@@ -18,6 +18,7 @@ from games.shared.loading import similarity_analysis_loading
 from games.shared.interest import apply_end_of_turn_interest
 from modules.transactions import BalanceChanged, TransactionError, settle_game_round, update_session_balances
 from modules.news_ai import similarity_check, summary
+from games.shared.result import _score_diagram
 from modules.ui_components import change_page, load_local_image_url
 from views.ranking import fetch_ranking_data
 
@@ -43,6 +44,9 @@ def _reset_game_4_state() -> None:
         "game_4_range",
         "game_4_range_picker",
         "game4_picker_round",
+        "game4_reveal_done",
+        "game_4_summary",
+        "game_4_score_details",
         "game_4_ranges",
         "game_4_score",
         "game_4_answer_index",
@@ -103,7 +107,10 @@ def _build_dynamic_ranges(score: float) -> tuple[list[str], int]:
     return ranges, answer_index
 
 
-def _render_game_4_range_picker(ranges: list[str], balance: int) -> int | None:
+def _render_game_4_range_picker(
+    ranges: list[str], balance: int, *, selected_index: int | None = None,
+    actual_score: float | None = None, answer_index: int | None = None,
+) -> int | str | None:
     """Show the entire selection screen in one viewport-sized component.
 
     Native Streamlit columns/radio controls have minimum widths which are
@@ -125,6 +132,16 @@ def _render_game_4_range_picker(ranges: list[str], balance: int) -> int | None:
             str(asset_root / "game1_article/icons/laurel-right.png")
         ),
     }
+
+    revealing = (
+        selected_index is not None and actual_score is not None
+        and answer_index is not None
+    )
+    reveal_payload = {
+        "score": f"{actual_score:.2f}",
+        "answer_index": int(answer_index),
+        "selected_index": int(selected_index),
+    } if revealing else None
 
     with st.container(key="game4-picker-stage"):
         st.html("""
@@ -151,23 +168,23 @@ def _render_game_4_range_picker(ranges: list[str], balance: int) -> int | None:
             ranges=ranges,
             coins=int(balance),
             art=artwork,
+            reveal=reveal_payload,
             default=None,
         )
 
     if not isinstance(event, dict) or event.get("round_id") != round_id:
         return None
     action = event.get("action")
-    if action == "back":
+    if action in ("back", "bank") and not revealing:
         st.session_state.pop(round_key, None)
-        change_page("main")
-    elif action == "bank":
-        st.session_state.pop(round_key, None)
-        change_page("bank")
-    elif action == "choose":
+        change_page("main" if action == "back" else "bank")
+    elif action == "choose" and not revealing:
         index = event.get("index")
         if type(index) is int and 0 <= index < len(ranges):
-            st.session_state.pop(round_key, None)
+            # Preserve the component instance across settlement and reveal.
             return index
+    elif action == "reveal_complete" and revealing:
+        return "reveal_complete"
     return None
 
 
@@ -198,23 +215,56 @@ def _settle_game_4(
     }
 
 
+@st.dialog("AI 판정 근거 · 점수 시각화")
+def _show_game_4_evidence() -> None:
+    """Inspect the saved input and score, not a newly generated model result."""
+    result = st.session_state.get("game_4_result") or {}
+    details = result.get("score_details") or {}
+    st.markdown("**기사 제목**")
+    st.write(result.get("title") or "기사 제목 정보 없음")
+    st.markdown("**AI 요약문**")
+    st.write(result.get("summary") or "저장된 AI 요약문이 없다.")
+    st.metric("최종 일치율", f"{result.get('actual_score', 0):.2f}%")
+    st.write(f"내가 선택한 구간: **{result.get('selected_range', '—')}**")
+    st.write(f"정답 구간: **{result.get('target_range', '—')}**")
+    if all(key in details for key in ("model_name", "token_count", "logit", "normalized")):
+        st.caption(
+            f"모델: {details['model_name']} · 입력 토큰 {details['token_count']}개"
+        )
+        st.write(
+            f"관련성 원점수(logit): {details['logit']:.4f} · "
+            f"시그모이드 변환값: {details['normalized']:.6f}"
+        )
+        st.html(
+            '<style>.g4-evidence-chart{max-width:100%}'
+            'img.score-diagram{width:100%;max-width:440px;height:auto;display:block;margin:auto}</style>'
+        )
+        st.html(_score_diagram(details, False))
+    else:
+        st.caption("이 라운드의 AI 세부 계산값은 저장되어 있지 않다.")
+    st.caption(
+        "이 자료는 입력 문장과 모델 점수의 산출 과정을 보여준다. "
+        "개별 표현이 판단에 미친 인과적 이유를 증명하지는 않는다."
+    )
+    if st.button("결과로 돌아가기", key="game4_evidence_close", use_container_width=True):
+        st.rerun()
+
+
 def _show_game_4_result() -> None:
     result = st.session_state.game_4_result
     if not apply_end_of_turn_interest("game_4"):
         return
 
-    # The score is already settled. CSS animates the mystery card before
-    # revealing it; no timer or rerun can duplicate the ledger transaction.
+    # The animation already happened in the original three-range picker.
+    # This is an immediate, non-animated outcome screen.
     st.html(Path(__file__).with_name("game4_picker.css"))
     score_text = f"{result['actual_score']:.2f}%"
     with st.container(key="game4_result_shell"):
         st.html(
-            '<section class="g4-result-scene" aria-label="실제 뉴스 일치율 공개">'
-            '<div class="g4-result-heading">숨겨진 일치율 공개</div>'
-            '<div class="g4-reel-window" role="img" '
-            f'aria-label="실제 일치율 {escape(score_text, quote=True)}">'
-            '<span class="g4-reel-mystery" aria-hidden="true">??</span>'
-            f'<strong class="g4-reel-value" aria-hidden="true">{escape(score_text)}</strong>'
+            '<section class="g4-result-scene" aria-label="최종 일치율과 결과">'
+            '<div class="g4-result-heading">최종 결과</div>'
+            '<div class="g4-reel-window">'
+            f'<strong class="g4-final-value">{escape(score_text)}</strong>'
             '</div>'
             '<p class="g4-reel-caption">AI 일치율 분석 결과</p>'
             '</section>'
@@ -228,6 +278,12 @@ def _show_game_4_result() -> None:
             st.info(f"정답 구간: **{result['target_range']}**")
             st.write(f"현재 보유 코인: **{result['new_coins']:,} C**")
             st.write(f"현재 연승 기록: **{result['new_streak']} 연승**")
+            if st.button(
+                "판정 근거 · 점수 그래프 보기",
+                key="game4_result_evidence",
+                use_container_width=True,
+            ):
+                _show_game_4_evidence()
 
             col_retry, col_main = st.columns(2)
             with col_retry:
@@ -274,11 +330,14 @@ def show_game_4():
                 if not summary_text:
                     st.error("뉴스 본문 요약에 실패해 일치율 구간을 만들 수 없습니다.")
                     return
-                score = _normalize_score(similarity_check(summary_text, title)["score"])
+                score_details = similarity_check(summary_text, title)
+                score = _normalize_score(score_details["score"])
                 ranges, answer_index = _build_dynamic_ranges(score)
             except (RuntimeError, ValueError, TypeError, KeyError) as exc:
                 st.error(f"일치율 구간을 준비하지 못했습니다: {exc}")
                 return
+        st.session_state.game_4_summary = summary_text
+        st.session_state.game_4_score_details = score_details
         st.session_state.game_4_score = score
         st.session_state.game_4_ranges = ranges
         st.session_state.game_4_answer_index = answer_index
@@ -310,6 +369,29 @@ def show_game_4():
         except (TransactionError, RuntimeError, ValueError, TypeError, KeyError) as exc:
             st.error(f"게임 결과를 처리하지 못했습니다: {exc}")
             return
+        result["title"] = title
+        result["summary"] = st.session_state.get("game_4_summary", "")
+        result["score_details"] = st.session_state.get("game_4_score_details", {})
         st.session_state.game_4_result = result
 
+    # Reveal only after the wallet was settled and end-of-turn interest applied.
+    # The animation runs in the *same* picker used for the player's choice.
+    if not st.session_state.get("game4_reveal_done", False):
+        if not apply_end_of_turn_interest("game_4"):
+            return
+        state = st.session_state
+        event = _render_game_4_range_picker(
+            state.game_4_ranges,
+            int((state.get("current_user_data") or {}).get("코인", 0)),
+            selected_index=state.game_4_range,
+            actual_score=state.game_4_result["actual_score"],
+            answer_index=state.game_4_answer_index,
+        )
+        if event == "reveal_complete":
+            state.game4_reveal_done = True
+            state.pop("game4_picker_round", None)
+            st.rerun()
+        return
+
     _show_game_4_result()
+
