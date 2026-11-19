@@ -10,7 +10,7 @@ class GameFourSharedAndRevealTests(unittest.TestCase):
     def setUp(self):
         self.st = MagicMock()
         self.st.columns.side_effect = lambda sizes, **_kwargs: [
-            MagicMock() for _ in sizes
+            MagicMock() for _ in range(sizes if isinstance(sizes, int) else len(sizes))
         ]
         self.st.button.return_value = False
         self.news = MagicMock()
