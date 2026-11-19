@@ -12,10 +12,11 @@ import streamlit as st
 from games.shared.betting import check_user_coins_or_pop_bank
 from games.shared.betting import render_betting_ui
 from games.shared.loading import similarity_analysis_loading
-from modules.db_handler import deferred_news_sheet
+from modules.db_handler import deferred_news_sheet, news_row_is_active, normalize_article_url
+from modules.article_failures import excluded_article_urls, report_article_failure
 from games.shared.interest import apply_end_of_turn_interest
 from modules.transactions import BalanceChanged, TransactionError, settle_game_round, update_session_balances
-from modules.news_ai import bring_article, pick_5_lowest_count_news, similarity_check, summary
+from modules.news_ai import bring_article, pick_lowest_count_news, similarity_check, summary
 from modules.ui_components import change_page
 from views.ranking import fetch_ranking_data
 
@@ -46,14 +47,15 @@ def _reset_game_5_state() -> None:
         st.session_state.pop(key, None)
 
 
-def _load_candidates(excluded_urls: set[str] | None = None) -> list[dict]:
-    excluded_urls = excluded_urls or set()
+def _load_candidates(excluded_urls: set[str] | None = None, *, limit: int = 5) -> list[dict]:
+    excluded_urls = {normalize_article_url(url) for url in (excluded_urls or set())}
+    excluded_urls.update(excluded_article_urls())
     records = ws_news.get_all_records()
     news_list = []
     for row_index, item in enumerate(records, start=2):
-        url = str(item.get("URL", "")).strip()
+        url = normalize_article_url(item.get("URL", ""))
         title = str(item.get("Title", "")).strip()
-        if not url or not title or url in excluded_urls:
+        if not url or not title or url in excluded_urls or not news_row_is_active(item):
             continue
         try:
             count = int(float(item.get("Count", 0) or 0))
@@ -61,9 +63,9 @@ def _load_candidates(excluded_urls: set[str] | None = None) -> list[dict]:
             count = 0
         news_list.append({"url": url, "title": title, "count": count, "row_idx": row_index})
 
-    candidates = pick_5_lowest_count_news(news_list)
-    if len(candidates) < 5:
-        raise ValueError("게임 5에 필요한 뉴스 후보가 5개 미만입니다.")
+    candidates = pick_lowest_count_news(news_list, limit)
+    if len(candidates) < limit:
+        raise ValueError(f"게임 5에 필요한 뉴스 후보가 {limit}개 미만입니다.")
 
     return [{**item, "text": ""} for item in candidates]
 
@@ -104,10 +106,11 @@ def _analyze_article_cached(article_text: str, title: str) -> dict:
 def _load_article(article: dict) -> None:
     try:
         title, text = _extract_article(article["url"])
+        if not str(title or "").strip() or not str(text or "").strip():
+            raise ValueError("제목 또는 본문이 비어 있는 뉴스가 후보에 포함되어 있습니다.")
     except Exception as exc:
+        report_article_failure(article["url"], exc)
         raise RuntimeError(f"뉴스 본문을 불러오지 못했습니다: {exc}") from exc
-    if not title or not text:
-        raise ValueError("제목 또는 본문이 비어 있는 뉴스가 후보에 포함되어 있습니다.")
     article["title"] = title
     article["text"] = text
 
@@ -122,7 +125,7 @@ def _calculate_score(article: dict) -> float:
 
 def _replace_candidate(candidates: list[dict], index: int) -> None:
     excluded_urls = {candidate["url"] for candidate in candidates}
-    replacements = _load_candidates(excluded_urls)
+    replacements = _load_candidates(excluded_urls, limit=1)
     if not replacements:
         raise ValueError("교체할 수 있는 뉴스 후보가 없습니다.")
     candidates[index] = replacements[0]
