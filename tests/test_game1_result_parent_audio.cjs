@@ -179,8 +179,12 @@ test("Result bridge takes over the *already used* parent BGM media", async () =>
   assert.equal(h.last("playing").seconds,0);
   h.clock(9.7);
   assert.equal(h.last("time").seconds,9.7);
-  h.send("mute",{muted:true});
+  h.host.__newsGame1ResultPlayer.setPreferences({volume:0.04,muted:true});
   assert.equal(h.intro.muted,true);
+  assert.ok(Math.abs(h.intro.volume - 0.068) < 0.0001);
+  h.host.__newsGame1ResultPlayer.setPreferences({volume:0.09,muted:false});
+  assert.equal(h.intro.muted,false);
+  assert.ok(Math.abs(h.intro.volume - 0.153) < 0.0001);
   h.send("fail");
   await settle();
   assert.equal(h.intro.src,base+"fail.mp3");
@@ -278,4 +282,10 @@ test("Bootstrap installs controller once and never pauses a borrowed media on re
   assert.match(bgm,/if \(!host\.__newsGame1ResultPlayer\)/);
   assert.match(bgm,/isBorrowed\(player\.intro\)/);
   assert.match(bgm,/isBorrowed\(player\.loop\)/);
+});
+
+test("Result screen no longer offers an independent sound toggle", () => {
+  const html=fs.readFileSync(path.join(ROOT,"games/game1/result_screen/index.html"),"utf8");
+  assert.doesNotMatch(html,/class="sound-switch"/);
+  assert.doesNotMatch(frontendSource,/ui\\.soundSwitch\\.addEventListener/);
 });
