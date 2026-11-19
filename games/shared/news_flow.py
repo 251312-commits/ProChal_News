@@ -10,6 +10,7 @@ from games.shared.betting import calculate_expected_gain
 from games.shared.article_reader import render_article_reader
 from games.shared.roulette import render_news_slot
 from modules.news_ai import bring_article, pick_3_lowest_count_news
+from modules.article_failures import excluded_article_urls, report_article_failure
 from modules.db_handler import (
     LAST_ARTICLE_HEADER,
     deferred_user_sheet,
@@ -61,6 +62,8 @@ def _get_news_candidates(candidates_key):
                 if not url or not news_row_is_active(row):
                     continue
                 canonical = normalize_article_url(url)
+                if canonical in excluded_article_urls():
+                    continue
                 if last_seen and canonical == last_seen:
                     continue
                 submitted_by = str(row.get("SubmittedBy", "") or "").strip().removesuffix(".0")
@@ -98,10 +101,6 @@ def _get_news_candidates(candidates_key):
 
 
 def _open_chosen_article(item, news_key, candidates_key, *, include_image=False):
-    new_count = item['count'] + 1
-    with st.spinner("기사 선택을 저장하는 중…"):
-        ws_news.update_cell(item['row_idx'], 2, new_count)
-
     image_url = ''
     with st.spinner("선택 기사 읽어오는 중..."):
         try:
@@ -109,9 +108,26 @@ def _open_chosen_article(item, news_key, candidates_key, *, include_image=False)
                 title, clean_text, image_url = bring_article(item['url'], include_image=True)
             else:
                 title, clean_text = bring_article(item['url'])
+            if not str(title or "").strip() or not str(clean_text or "").strip():
+                raise ValueError("기사 제목 또는 본문이 비어 있습니다.")
+        except Exception as exc:
+            # Keep the confirmed bet. A broken article must never become
+            # the playable reader with an error message as its body.
+            report_article_failure(item['url'], exc)
+            st.session_state.pop(candidates_key, None)
+            st.session_state[f"{news_key}_load_error"] = (
+                "선택한 기사를 불러오지 못해 후보에서 제외했다. 다른 기사를 선택해 주세요."
+            )
+            st.rerun()
+            return
+
+    # A view is counted only after article text was obtained successfully.
+    # Metadata write failures should not discard a readable article.
+    with st.spinner("기사 선택을 저장하는 중…"):
+        try:
+            ws_news.update_cell(item['row_idx'], 2, item['count'] + 1)
         except Exception:
-            title = item['title']
-            clean_text = "본문 내용을 가져오는 데 실패했습니다."
+            pass
 
     st.session_state[news_key] = {
         'title': title,
@@ -133,6 +149,10 @@ def get_game_news_selection(game_id: str, *, win_multiplier=None, immersive_read
     if st.session_state.get(read_done_key, False):
         chosen = st.session_state[news_key]
         return chosen['title'], chosen['text'], chosen['url']
+
+    notice = st.session_state.pop(f"{news_key}_load_error", None)
+    if notice:
+        st.toast(notice, icon="⚠️")
 
     if immersive_reader is None:
         immersive_reader = game_id == "game_1"

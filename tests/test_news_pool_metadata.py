@@ -28,6 +28,7 @@ from modules.db_handler import (
     article_url_hash,
     ensure_news_schema,
     normalize_article_url,
+    news_row_is_active,
     register_user_article,
     save_last_article_url,
 )
@@ -120,6 +121,12 @@ class NewsPoolMetadataTests(unittest.TestCase):
         self.assertFalse(created2)
         self.assertEqual(row2, 3)
         self.assertEqual(len(ws.appends), 1)
+
+    def test_three_failures_exclude_news_without_removing_audit_row(self):
+        self.assertTrue(news_row_is_active({"URL": "https://news.example/x"}))
+        self.assertTrue(news_row_is_active({"FailureCount": 2, "Active": True}))
+        self.assertFalse(news_row_is_active({"FailureCount": 3, "Active": True}))
+        self.assertFalse(news_row_is_active({"FailureCount": 0, "Active": False}))
 
     def test_last_article_uses_users_i_without_touching_loan_columns(self):
         headers = ["학번", "아이디", "코인", "연승", "추천인", "비밀번호", "대출금", "대출원금"]

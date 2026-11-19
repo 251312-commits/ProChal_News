@@ -9,7 +9,7 @@ from google.oauth2.service_account import Credentials
 
 NEWS_HEADERS = (
     "URL", "Count", "Title", "SubmittedBy", "SubmittedByName",
-    "SourceType", "AddedAt", "Active", "URLHash",
+    "SourceType", "AddedAt", "Active", "URLHash", "FailureCount", "FailureEventIds",
 )
 LAST_ARTICLE_HEADER = "마지막기사URL"
 LAST_ARTICLE_COLUMN = 9  # Users!I. G=대출금, H=대출원금 are reserved by the ledger.
@@ -132,7 +132,12 @@ def article_url_hash(url: str) -> str:
 
 def news_row_is_active(row: dict) -> bool:
     value = str(row.get("Active", "")).strip().casefold()
-    return value not in {"false", "0", "no", "n", "off", "inactive"}
+    if value in {"false", "0", "no", "n", "off", "inactive"}:
+        return False
+    try:
+        return int(float(row.get("FailureCount", 0) or 0)) < 3
+    except (ValueError, TypeError):
+        return True
 
 
 def register_user_article(

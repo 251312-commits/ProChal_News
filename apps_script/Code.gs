@@ -292,10 +292,115 @@ function turnInterest_(loan) {
   return Math.floor(loan / 5) + (loan % 5 === 0 ? 0 : 1);
 }
 
+/**
+ * One locked, idempotent counter per canonical URL, shared by all accounts.
+ * News!J stores FailureCount, News!K remembers event IDs for replay safety.
+ * A row is retained for audit, but News!H Active becomes FALSE at 3 failures.
+ */
+function canonicalNewsUrl_(raw) {
+  const clean = String(raw == null ? '' : raw).trim().split('#')[0];
+  const match = /^(https?):\/\/([^/?#]+)(\/[^?#]*)?(\?[^#]*)?$/i.exec(clean);
+  if (!match) return clean;
+  const scheme = match[1].toLowerCase();
+  let host = match[2].toLowerCase().replace(/\.$/, '');
+  if (scheme === 'http') host = host.replace(/:80$/, '');
+  if (scheme === 'https') host = host.replace(/:443$/, '');
+  const path = match[3] || '/';
+  const parts = (match[4] || '').slice(1).split('&').filter(function (part) {
+    if (!part) return false;
+    let name = part.split('=')[0];
+    try {name = decodeURIComponent(name.replace(/\+/g, ' '));} catch (_) {}
+    return !/^utm_/i.test(name) && !/^(fbclid|gclid|dclid|igshid)$/i.test(name);
+  }).sort();
+  return scheme + '://' + host + path + (parts.length ? '?' + parts.join('&') : '');
+}
+
+function ensureArticleFailureColumns_(news) {
+  if (news.getMaxColumns() < 11) {
+    news.insertColumnsAfter(news.getMaxColumns(), 11 - news.getMaxColumns());
+  }
+  const existing = news.getRange(1, 10, 1, 2).getValues()[0];
+  if ((existing[0] && existing[0] !== 'FailureCount') ||
+      (existing[1] && existing[1] !== 'FailureEventIds')) {
+    fail_('NOT_CONFIGURED', 'News!J:K are reserved for article failure tracking');
+  }
+  if (existing[0] !== 'FailureCount' || existing[1] !== 'FailureEventIds') {
+    news.getRange(1, 10, 1, 2).setValues([['FailureCount', 'FailureEventIds']]);
+  }
+}
+
+function reportArticleFailure_(request) {
+  const eventId = String(request.event_id || '');
+  const url = canonicalNewsUrl_(request.url);
+  const digest = String(request.url_hash || '').toLowerCase();
+  if (!/^[a-f0-9]{32}$/.test(eventId) ||
+      !/^https?:\/\/[^/]+\/.+/i.test(url) ||
+      !/^[a-f0-9]{64}$/.test(digest)) {
+    fail_('INVALID_REQUEST', 'Article failure request requires a URL, hash and event ID');
+  }
+
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(20000)) fail_('BUSY', 'Article failure counter is busy');
+  try {
+    const ss = SpreadsheetApp.openById(property_('SPREADSHEET_ID'));
+    const news = ss.getSheetByName('News');
+    if (!news) fail_('NOT_CONFIGURED', 'News sheet is missing');
+    ensureArticleFailureColumns_(news);
+    if (news.getLastRow() < 2) return {ok: true, tracked: false, failure_count: 0};
+
+    const data = news.getRange(2, 1, news.getLastRow() - 1, 11).getValues();
+    const indexes = [];
+    const previousEvents = new Set();
+    let previousCount = 0;
+    data.forEach(function (row, index) {
+      const sameHash = String(row[8] || '').toLowerCase() === digest;
+      const sameUrl = canonicalNewsUrl_(row[0]) === url;
+      if (!sameHash && !sameUrl) return;
+      indexes.push(index);
+      const count = Number(row[9]);
+      if (Number.isFinite(count)) previousCount = Math.max(previousCount, Math.max(0, Math.floor(count)));
+      try {
+        const ids = JSON.parse(String(row[10] || '[]'));
+        if (Array.isArray(ids)) ids.forEach(function (id) {
+          if (typeof id === 'string' && /^[a-f0-9]{32}$/.test(id)) previousEvents.add(id);
+        });
+      } catch (_) {}
+    });
+    if (!indexes.length) return {ok: true, tracked: false, failure_count: 0};
+
+    const replayed = previousEvents.has(eventId);
+    const failureCount = Math.min(3, Math.max(previousCount, previousEvents.size) +
+      (!replayed && previousCount < 3 ? 1 : 0));
+    previousEvents.add(eventId);
+    const events = JSON.stringify(Array.from(previousEvents).slice(-3));
+    const requests = [];
+    indexes.forEach(function (index) {
+      requests.push({updateCells: {
+        start: {sheetId: news.getSheetId(), rowIndex: index + 1, columnIndex: 9},
+        rows: [{values: [cell_(failureCount), cell_(events)]}],
+        fields: 'userEnteredValue'
+      }});
+      if (failureCount >= 3) {
+        requests.push({updateCells: {
+          start: {sheetId: news.getSheetId(), rowIndex: index + 1, columnIndex: 7},
+          rows: [{values: [cell_(false)]}],
+          fields: 'userEnteredValue'
+        }});
+      }
+    });
+    commit_(ss, requests);
+    return {ok: true, tracked: true, replayed: replayed,
+      failure_count: failureCount, disabled: failureCount >= 3};
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function process_(request) {
   if (!request || typeof request !== 'object') fail_('INVALID_REQUEST', 'Invalid JSON');
   const token = property_('TRANSACTION_TOKEN');
   if (request.token !== token) fail_('UNAUTHORIZED', 'Invalid transaction token');
+  if (request.kind === 'article_failure') return reportArticleFailure_(request);
   const tx = {
     transaction_id: String(request.transaction_id || ''),
     student_id: sid_(request.student_id),
