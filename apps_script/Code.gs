@@ -16,7 +16,16 @@ const HEADERS = [
   'bet', 'coin_delta', 'is_win', 'coins_before', 'coins_after',
   'streak_before', 'streak_after', 'loan_before', 'loan_after', 'detail'
 ];
-const RULES = {game_1: 100, game_2: 1, game_3: 1, game_4: 2, game_5: 5};
+const RULES = {game_1: 100, game_2: 1, game_3: 1, game_4: 3, game_5: 5};
+
+// Historical game_4 wins were settled at +2x. Keep the original receipts
+// replayable after upgrading the payout to +3x; never award a second delta.
+function settlementDeltaMatches_(game, bet, isWin, storedDelta) {
+  const expected = isWin ? bet * RULES[game] :
+    -(game === 'game_3' ? Math.floor(bet / 2) : bet);
+  return storedDelta === expected ||
+    (game === 'game_4' && isWin && storedDelta === bet * 2);
+}
 const MAX_PRINCIPAL = 10000; // The limit is on unpaid borrowed principal, not interest.
 const GATEWAY_VERSION = 3; // v3 also installs/awards user badges from settled rounds.
 const MAX_NICKNAME_LENGTH = 80;
@@ -479,8 +488,9 @@ function process_(request) {
         (tx.bet === undefined || Number(previous[6]) === tx.bet) &&
         (tx.kind !== 'settle' || (
           previous[8] === request.is_win &&
-          Number(previous[7]) === (request.is_win ? tx.bet * RULES[tx.game] :
-            -(tx.game === 'game_3' ? Math.floor(tx.bet / 2) : tx.bet))
+          settlementDeltaMatches_(
+            tx.game, tx.bet, request.is_win, Number(previous[7])
+          )
         )) &&
         (!['borrow', 'repay'].includes(tx.kind) || Number(previous[7]) ===
           (tx.kind === 'borrow' ? tx.amount : -tx.amount));
