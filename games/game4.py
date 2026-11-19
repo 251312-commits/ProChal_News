@@ -1,6 +1,8 @@
 """뉴스 제목과 본문의 일치율 구간을 맞히는 게임."""
 
 import asyncio
+from html import escape
+from pathlib import Path
 from decimal import Decimal, ROUND_HALF_UP
 import math
 import random
@@ -14,7 +16,7 @@ from games.shared.loading import similarity_analysis_loading
 from games.shared.interest import apply_end_of_turn_interest
 from modules.transactions import BalanceChanged, TransactionError, settle_game_round, update_session_balances
 from modules.news_ai import similarity_check, summary
-from modules.ui_components import change_page
+from modules.ui_components import change_page, load_local_image_url
 from views.ranking import fetch_ranking_data
 
 
@@ -92,6 +94,107 @@ def _build_dynamic_ranges(score: float) -> tuple[list[str], int]:
         for index in range(GAME_4_RANGE_COUNT)
     ]
     return ranges, answer_index
+
+
+def _render_game_4_range_picker(ranges: list[str], balance: int) -> int | None:
+    """Mobile-first range picker using native, keyboard-accessible Streamlit radio."""
+    asset_root = Path(__file__).resolve().parents[1] / "assets"
+    bg = escape(load_local_image_url(str(asset_root / "bet_background.jpg")), quote=True)
+    coin = escape(
+        load_local_image_url(str(asset_root / "game1_article" / "icons" / "coin.png")),
+        quote=True,
+    )
+    crown = escape(load_local_image_url(str(asset_root / "bet_crown.png")), quote=True)
+    laurel_left = escape(
+        load_local_image_url(str(asset_root / "game1_article" / "icons" / "laurel-left.png")),
+        quote=True,
+    )
+    laurel_right = escape(
+        load_local_image_url(str(asset_root / "game1_article" / "icons" / "laurel-right.png")),
+        quote=True,
+    )
+
+    st.html(Path(__file__).with_name("game4_picker.css"))
+    st.html(
+        '<style>.st-key-game4_picker_shell {'
+        f'background-image: radial-gradient(circle at 50% 40%, rgba(104,22,164,.33), transparent 68%),'
+        f'linear-gradient(180deg, rgba(17,5,38,.88), rgba(15,3,38,.94)),'
+        f'url("{bg}") !important;'
+        'background-size: cover !important; background-position: center !important;'
+        '}</style>'
+    )
+
+    high = escape(ranges[-1].split("~", 1)[-1])
+    low = escape(ranges[0].split("~", 1)[0] + "%")
+    range_labels = {2: "상위 구간", 1: "중간 구간", 0: "하위 구간"}
+
+    with st.container(key="game4_picker_shell"):
+        back_col, wallet_col = st.columns([1, 3], gap="small", vertical_alignment="center")
+        with back_col:
+            if st.button("❮", key="game4_picker_back", help="메인으로 돌아가기"):
+                change_page("main")
+                return None
+        with wallet_col:
+            st.html(
+                '<div class="g4-wallet" aria-label="현재 보유 코인">'
+                f'<img src="{coin}" alt="" loading="eager">'
+                f'<strong>{balance:,} C</strong>'
+                '</div>'
+            )
+
+        st.html(
+            '<header class="g4-heading">'
+            f'<img src="{crown}" class="g4-crown" alt="" loading="eager">'
+            '<div class="g4-title-row">'
+            f'<img src="{laurel_left}" alt="" class="g4-laurel">'
+            '<h1>구간 맞히기</h1>'
+            f'<img src="{laurel_right}" alt="" class="g4-laurel">'
+            '</div>'
+            '<p>숨겨진 일치율이 어느 구간에 있을까?</p>'
+            '</header>'
+        )
+
+        with st.container(key="game4_picker_board"):
+            hidden_col, scale_col = st.columns(
+                [0.78, 1.35], gap="small", vertical_alignment="center"
+            )
+            with hidden_col:
+                st.html(
+                    '<div class="g4-mystery" aria-label="실제 일치율은 숨겨져 있습니다">'
+                    '<div class="g4-mystery-label">숨겨진 일치율</div>'
+                    '<strong>??</strong>'
+                    '<span class="g4-mystery-unit">%</span>'
+                    '</div>'
+                )
+            with scale_col:
+                with st.container(key="game4_picker_axis"):
+                    st.html(
+                        f'<div class="g4-axis-cap g4-axis-cap-top">{high}</div>'
+                    )
+                    # Descending display order matches the vertical scale.
+                    # Returned values remain original list indexes for scoring.
+                    selected = st.radio(
+                        "예상 일치율 구간 선택",
+                        options=[2, 1, 0],
+                        format_func=lambda idx: (
+                            f"**{range_labels[idx]}**  \\n({ranges[idx]})"
+                        ),
+                        key="game_4_range_picker",
+                        index=1,
+                        label_visibility="collapsed",
+                    )
+                    st.html(
+                        f'<div class="g4-axis-cap g4-axis-cap-bottom">{low}</div>'
+                    )
+
+        if st.button(
+            "✓  선택하기",
+            key="game4_picker_submit",
+            use_container_width=True,
+            type="primary",
+        ):
+            return selected
+    return None
 
 
 def _settle_game_4(
@@ -174,9 +277,6 @@ def show_game_4():
     if not title:
         return
 
-    st.title("🎮 게임 4: 일치율 구간 뉴스 맞히기")
-    st.caption("뉴스 제목과 본문의 일치율이 어느 구간에 속하는지 선택하세요.")
-
     if "game_4_score" not in st.session_state:
         with similarity_analysis_loading():
             try:
@@ -195,16 +295,11 @@ def show_game_4():
         st.rerun()
 
     if "game_4_range" not in st.session_state:
-        ranges = st.session_state.game_4_ranges
-        st.subheader("🎯 예상 일치율 구간")
-        selected_range = st.radio(
-            "일치율 구간을 선택하세요.",
-            options=range(len(ranges)),
-            format_func=lambda value: f"{value + 1}번: {ranges[value]}",
-            key="game_4_range_picker",
-            horizontal=True,
+        selected_range = _render_game_4_range_picker(
+            st.session_state.game_4_ranges,
+            int(st.session_state.get("current_user_data", {}).get("코인", 0)),
         )
-        if st.button("🎯 이 구간에 배팅하기", use_container_width=True):
+        if selected_range is not None:
             st.session_state.game_4_range = selected_range
             st.rerun()
         return
