@@ -125,7 +125,7 @@ class GameFourPickerTests(unittest.TestCase):
                 self.assertNotIn("game4_picker_round", self.st.session_state)
 
     def test_frontend_grid_has_no_streamlit_columns_or_radio(self):
-        html = (ROOT / "games/game4_picker/index.html").read_text(encoding="utf-8")
+        html = (ROOT / "games/game4_ui/picker/index.html").read_text(encoding="utf-8")
         self.assertIn('grid-template-columns: minmax(0, 40fr) minmax(0, 60fr)', html)
         self.assertIn('grid-template-rows: repeat(3, minmax(0, 1fr))', html)
         self.assertIn('grid-template-columns: clamp(35px, 10vw, 49px) minmax(0, 1fr)', html)
@@ -136,7 +136,7 @@ class GameFourPickerTests(unittest.TestCase):
         self.assertIn('@media (max-width: 359px)', html)
         self.assertIn('@media (max-height: 620px)', html)
         self.assertIn('aria-pressed="true"', html)
-        js = (ROOT / "games/game4_picker/picker.js").read_text(encoding="utf-8")
+        js = (ROOT / "games/game4_ui/picker/picker.js").read_text(encoding="utf-8")
         self.assertIn('if (action === "choose") value.index = selected', js)
         self.assertIn('finish("reveal_complete")', js)
         self.assertIn('payload.answer_index', js)

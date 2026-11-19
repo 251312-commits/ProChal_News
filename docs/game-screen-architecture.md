@@ -44,3 +44,18 @@ game1~4는 공통 룰렛에서 연속 회전 및 지원 언론사 기사 URL 직
 - `games/game1/game1_tutorial.css`: 튜토리얼 스타일
 - `games/game1/prediction_screen/`: 예측 화면 HTML·CSS·JavaScript
 - 예측 화면 이미지는 기존 프로젝트 루트 `assets/` 폴더를 계속 사용한다.
+
+
+## Game 4 전용 UI 파일 위치 (2026-11)
+
+- `games/game4.py`: 게임 규칙, 점수 계산, 정산, 화면 이벤트 처리. 기존 import 경로를 유지한다.
+- `games/game4_ui/picker/index.html`: 세 구간 선택과 결과 착지 애니메이션의 전용 HTML/CSS.
+- `games/game4_ui/picker/picker.js`: 선택·공개 이벤트와 `round_id` 확인을 위한 브라우저 코드.
+- `games/game4_ui/tutorial.css`: 게임 4 튜토리얼의 Streamlit 스타일.
+- `games/game4_ui/result.css`: 게임 4 최종 결과 화면 스타일(이전 `game4_picker.css`).
+- `assets/game4_guide/`: 튜토리얼 SVG 원본. 공용 이미지 폴더 구조를 유지한다.
+
+이 구조는 화면 자산만 정리한 것이다. 게임 로직과 배율, Apps Script 거래 규칙,
+공통 룰렛의 동작은 변경하지 않았다. Game 4의 `result.css`에는
+이전 Streamlit 기반 선택 화면용 스타일이 남아 있을 수 있으므로,
+실제 브라우저 회귀 확인 후 별도 변경에서 제거한다.

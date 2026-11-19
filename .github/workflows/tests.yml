@@ -29,7 +29,7 @@ jobs:
           node --check modules/loading_feedback.js
           node --check games/shared/similarity_video_controls.js
           node --check games/shared/news_slot/slot.js
-          node --check games/game4_picker/picker.js
+          node --check games/game4_ui/picker/picker.js
           node --check games/shared/article_reader/reader.js
           node --check games/game1/prediction_screen/prediction.js
           node --check games/game1/result_screen/result.js

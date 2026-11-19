@@ -6,7 +6,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const script = fs.readFileSync(
-  path.join(__dirname, '..', 'games/game4_picker/picker.js'), 'utf8'
+  path.join(__dirname, '..', 'games/game4_ui/picker/picker.js'), 'utf8'
 );
 
 function makeElement(top = 0, height = 100) {

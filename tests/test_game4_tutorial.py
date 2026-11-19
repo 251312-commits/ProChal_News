@@ -79,7 +79,7 @@ class GameFourTutorialTests(unittest.TestCase):
                 self.assertTrue(root.find("{http://www.w3.org/2000/svg}title") is not None)
 
     def test_tutorial_css_remains_responsive_and_isolated(self):
-        style = (ROOT / "games" / "game4_tutorial.css").read_text(encoding="utf-8")
+        style = (ROOT / "games" / "game4_ui" / "tutorial.css").read_text(encoding="utf-8")
         self.assertIn(".st-key-game4-guide", style)
         self.assertIn(".game4-guide-sheet li img", style)
         self.assertIn("max-width: 380px", style)
