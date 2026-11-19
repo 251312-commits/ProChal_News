@@ -10,6 +10,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from modules.news_ai import bring_article
+from modules.article_failures import report_article_failure
 from modules.db_handler import (
     LAST_ARTICLE_HEADER,
     init_gspread,
@@ -67,7 +68,9 @@ def _open_direct_url(raw_url, game_id="game_1"):
 
     try:
         title, text, image_url = bring_article(url, include_image=True)
-    except Exception:
+    except Exception as exc:
+        # A direct URL may already exist in the shared News pool.
+        report_article_failure(canonical, exc)
         return _reject_direct_url(
             "기사 내용을 불러올 수 없습니다. 지원 언론사의 기사 상세 페이지 URL인지 확인해 주세요.", game_id
         )
@@ -75,6 +78,7 @@ def _open_direct_url(raw_url, game_id="game_1"):
     title = str(title or "").strip()
     text = str(text or "").strip()
     if not title or len("".join(text.split())) < 40:
+        report_article_failure(canonical, ValueError("기사 본문이 비어 있거나 너무 짧습니다."))
         return _reject_direct_url(
             "기사 내용을 확인할 수 없습니다. 기사 상세 페이지 URL을 입력해 주세요.", game_id
         )
