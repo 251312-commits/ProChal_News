@@ -21,6 +21,7 @@ from modules.transactions import BalanceChanged, TransactionError, settle_game_r
 # ==========================================
 
 MIN_BET = 1000
+GAME_3_WIN_MULTIPLIER = 2.0
 
 
 # ==========================================
@@ -129,7 +130,7 @@ def load_game_3_article():
 
     try:
 
-        selection = get_game_news_selection("game_3", immersive_reader=True)
+        selection = get_game_news_selection("game_3", win_multiplier=GAME_3_WIN_MULTIPLIER, immersive_reader=True)
 
         if selection is None:
             return None, None, None
@@ -276,7 +277,7 @@ def show_bet_screen(ws):
         return
 
     st.success(f"내 선택: {st.session_state.game_3_choice}")
-    st.caption("정답 시 순이익 +베팅액, 오답 시 손실 −베팅액의 절반")
+    st.caption("정답 시 순이익 +베팅액의 2배, 오답 시 손실 −베팅액의 절반")
     round_number = st.session_state.get("game_3_round", 0)
     user = st.session_state.get("current_user_data") or {}
     confirmed_bet = render_betting_ui(
@@ -285,7 +286,7 @@ def show_bet_screen(ws):
         current_sid=current_sid,
         current_nickname=str(user.get("아이디", user_info.get("아이디", ""))),
         min_bet=MIN_BET,
-        payout_multiplier=1.0,
+        payout_multiplier=GAME_3_WIN_MULTIPLIER,
         title="게임 3: 홀짝 예측",
         state_key=f"game_3_{round_number}",
         round_key="game_3",
@@ -397,7 +398,7 @@ def analyze_game_3(ws):
                 is_win = user_choice == ai_result
 
                 if is_win:
-                    reward = bet_coin
+                    reward = int(bet_coin * GAME_3_WIN_MULTIPLIER)
                 else:
                     reward = -(bet_coin // 2)
 
