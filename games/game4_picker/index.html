@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>게임 4 · 구간 맞히기</title>
+<style>
+:root { color-scheme: dark; font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 100%; height: 100%; }
+body {
+  background: #160622;
+  color: #fff2ff;
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
+}
+button { font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+button:focus-visible { outline: 3px solid #ffe29e; outline-offset: 2px; }
+button:disabled { cursor: default; }
+img { display: block; object-fit: contain; user-select: none; pointer-events: none; }
+.scene[hidden] { display: none; }
+.scene {
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  width: min(100%, 500px);
+  margin: auto;
+  padding: max(5px, env(safe-area-inset-top)) max(9px, env(safe-area-inset-right))
+    max(11px, env(safe-area-inset-bottom)) max(9px, env(safe-area-inset-left));
+  display: grid;
+  grid-template-rows: auto auto minmax(285px, 1fr) auto;
+  gap: clamp(5px, 1.2dvh, 12px);
+  background:
+    radial-gradient(ellipse at 50% 43%, #76228b55, transparent 59%),
+    linear-gradient(180deg, #14051fe9, #1b0825eb),
+    var(--background) center / cover no-repeat;
+  isolation: isolate;
+}
+.nav {
+  min-height: 40px;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 4px;
+}
+.nav button {
+  width: 38px; height: 38px; min-height: 38px;
+  display: grid; place-items: center;
+  border: 1.5px solid #ac41ec; border-radius: 50%;
+  background: #1c082edc; box-shadow: 0 0 10px #9c31e06b;
+  color: #f6e1ff; font-size: 26px; line-height: 1;
+}
+.nav .bank { justify-self: end; }
+.balance {
+  display: flex; align-items: center; justify-content: center;
+  min-width: 0; gap: 8px; white-space: nowrap;
+  font-size: clamp(14px, 4vw, 21px); font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 8px #140022;
+}
+.coin {
+  display: inline-grid; place-items: center; flex: none;
+  width: clamp(27px, 7vw, 35px); height: clamp(27px, 7vw, 35px);
+  border-radius: 50%; border: 2px solid #ffdd73; color: #ba6e05;
+  background: radial-gradient(circle at 29% 19%, #fff6bb, #ffcd36 45%, #ba6207);
+  box-shadow: inset 0 0 0 1px #ffe59b, 0 0 11px #f3af456a;
+  font-size: clamp(15px, 4vw, 20px); text-shadow: none;
+}
+.hero { text-align: center; min-width: 0; }
+.logo {
+  display: block; width: auto; max-width: 75%;
+  height: clamp(36px, 7dvh, 62px); margin: 0 auto;
+  filter: drop-shadow(0 0 11px #af48f18c);
+}
+.kicker {
+  margin: 2px 0 0; color: #ffdda4; font-size: clamp(10px, 2.8vw, 14px);
+  font-weight: 800; letter-spacing: .04em;
+}
+.heading {
+  display: flex; align-items: center; justify-content: center;
+  gap: clamp(5px, 2.5vw, 15px);
+  width: 100%; min-width: 0; margin: 1px auto 0;
+}
+.heading h1 {
+  margin: 0; white-space: nowrap;
+  color: #fff1ff; font-size: clamp(24px, 7.6vw, 40px);
+  line-height: 1.12; letter-spacing: -.05em; font-weight: 950;
+  text-shadow: 0 2px 8px #a431cc9a;
+}
+.laurel {
+  width: clamp(29px, 8.8vw, 47px);
+  height: clamp(46px, 14vw, 72px);
+  flex: none;
+  filter: drop-shadow(0 0 7px #ffb63d77);
+}
+.subtitle {
+  margin: 1px 0 0; color: #e6ccf4;
+  font-size: clamp(11px, 3.3vw, 16px); font-weight: 600;
+  word-break: keep-all;
+}
+.stage {
+  min-width: 0; min-height: 0;
+  display: grid; place-items: center;
+}
+.board {
+  display: grid;
+  grid-template-columns: minmax(0, 40fr) minmax(0, 60fr);
+  gap: clamp(11px, 3.7vw, 21px);
+  align-items: center;
+  width: 100%; max-width: 455px; height: 100%; max-height: 500px;
+  padding: 2px 0;
+  min-width: 0;
+}
+.mystery {
+  position: relative; min-width: 0; width: 100%;
+  min-height: 142px; padding: 18px 2px 12px;
+  border: 2px solid #f6b564; border-radius: 22px;
+  background: radial-gradient(ellipse at 50% 9%, #a52cb34f, transparent 65%),
+    linear-gradient(160deg,#401153,#1b0c35 84%);
+  box-shadow: inset 0 0 0 3px #9c39b669, 0 0 19px #fc9c524e;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center;
+}
+.mystery:before {
+  content: "♛"; position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+  display: grid; place-items: center; width: 48px; height: 33px;
+  border: 1px solid #f2b763; border-radius: 50%;
+  background: linear-gradient(130deg, #6b247c,#270a3b);
+  color: #fbd183; font-size: 27px; line-height: 1;
+  box-shadow: 0 0 12px #f8a24177;
+}
+.mystery .label { font-size: clamp(10px, 3.3vw, 16px); font-weight: 850; white-space: nowrap; }
+.mystery strong {
+  color: #ffe2a1; font-size: clamp(43px, 13.5vw, 74px);
+  font-weight: 950; line-height: 1.13; letter-spacing: -.06em;
+  text-shadow: 0 1px 10px #d78a4088;
+}
+.mystery .unit { color: #f9d18a; font-size: 13px; font-weight: 850; }
+.ruler {
+  display: grid;
+  grid-template-columns: clamp(35px, 10vw, 49px) minmax(0, 1fr);
+  gap: clamp(8px, 2.5vw, 15px);
+  align-items: stretch; min-height: 0; height: 100%;
+  width: 100%;
+}
+.ticks { position: relative; min-width: 0; min-height: 0; }
+.ticks:before {
+  content: ""; position: absolute; left: 50%; top: 11px; bottom: 11px; width: 2px;
+  transform: translateX(-50%);
+  background: linear-gradient(#ffe18e, #df7bf8 50%, #ffe5a0);
+  box-shadow: 0 0 8px #db4fe4;
+}
+.ticks:after {
+  content: "◆"; position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  color: #ffdc92; font-size: 15px;
+  text-shadow: 0 0 8px #e842ff;
+}
+.tick-label {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  z-index: 2; white-space: nowrap;
+  padding: 2px 0; font-variant-numeric: tabular-nums;
+  color: #ffe5a4; background: #251034;
+  font-size: clamp(9px, 2.45vw, 13px); font-weight: 900;
+  text-shadow: 0 0 6px #edb45588;
+}
+.tick-label.top { top: 0; }
+.tick-label.bottom { bottom: 0; }
+.frame {
+  display: grid; grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: clamp(5px, 1dvh, 8px);
+  padding: clamp(6px, 1.5vw, 9px);
+  min-width: 0; width: 100%; min-height: 0; height: 100%;
+  border: 3px solid #f7bc72; border-radius: 29px;
+  background: linear-gradient(170deg,#ffd88d,#a85627 25%,#f4b85c 57%,#fff5a2 76%,#a45724);
+  box-shadow: inset 0 0 3px #fff8c6, 0 0 14px #ffb55866, 0 10px 22px #09031190;
+}
+.segment {
+  width: 100%; min-width: 0; min-height: 0; padding: 7px 2px 5px;
+  border: 1.5px solid #b64be8; border-radius: 21px;
+  background: radial-gradient(ellipse at 50% 2%, #7e238f6b, transparent 70%), linear-gradient(#401156,#22083a);
+  box-shadow: inset 0 0 10px #cb5cf42d;
+  color: #fff1fd;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px;
+  -webkit-appearance: none; appearance: none;
+}
+.segment .segment-title {
+  font-size: clamp(12px, 3.4vw, 19px); font-weight: 900;
+  white-space: nowrap; line-height: 1.2;
+}
+.segment .segment-range {
+  font-size: clamp(10px, 2.8vw, 15px); line-height: 1.2;
+  color: #f2c9f3; font-weight: 750; font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.segment .check {
+  display: none; width: 22px; height: 22px; line-height: 20px;
+  border: 1.5px solid #fff; border-radius: 50%;
+  color: #6e1697; background: linear-gradient(#fff7ff,#e5a7ff);
+  box-shadow: 0 0 10px #f5a8ff;
+  font-size: 16px; font-weight: 950;
+}
+.segment[aria-pressed="true"] {
+  border-color: #ffddf5;
+  background: radial-gradient(ellipse at 50% 30%, #bf2dff, #63209b 75%, #3f0d64);
+  box-shadow: 0 0 12px 2px #f082ffb5, inset 0 0 14px #ffa2ff61;
+}
+.segment[aria-pressed="true"] .check { display: inline-block; }
+.segment[aria-pressed="true"] .segment-title { transform: translateY(-1px); }
+.footer { padding: 0 max(5px, 2vw); }
+.confirm {
+  width: 100%; min-height: clamp(53px, 7.5dvh, 69px);
+  border: 2px solid #ffe0ff; border-radius: 999px;
+  background: linear-gradient(180deg,#c43efb,#6609b2 68%,#8c1ee6);
+  box-shadow: inset 0 3px 8px #ffd6ff8c,0 0 23px #c62dffa6,0 8px 17px #0c0018a0;
+  color: #fff; font-size: clamp(19px, 5vw, 27px); font-weight: 950;
+  text-shadow: 0 1px 6px #40015c;
+}
+.confirm:disabled { opacity: .65; }
+@media (max-width: 359px) {
+  .scene { padding-inline: 7px; gap: 4px; }
+  .nav { grid-template-columns: 38px minmax(0,1fr) 38px; }
+  .nav button { width: 35px; height: 35px; }
+  .heading { gap: 4px; }
+  .laurel { width: 26px; height: 48px; }
+  .board { gap: 9px; grid-template-columns: minmax(0,39fr) minmax(0,61fr); }
+  .ruler { grid-template-columns: 35px minmax(0,1fr); gap: 6px; }
+  .frame { padding: 5px; border-width: 2px; }
+  .segment .segment-title { font-size: 12px; }
+  .segment .segment-range { font-size: 9.5px; }
+}
+@media (max-height: 620px) {
+  .scene { grid-template-rows: auto auto minmax(260px, 1fr) auto; }
+  .logo { height: 33px; }
+  .laurel { height: 43px; }
+  .heading h1 { font-size: clamp(23px, 6.6vw, 31px); }
+  .segment { gap: 1px; }
+  .segment .check { width: 19px; height: 19px; line-height: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *:before, *:after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<main class="scene" hidden>
+  <nav class="nav" aria-label="게임 메뉴">
+    <button class="back" type="button" aria-label="메인으로 돌아가기">‹</button>
+    <div class="balance"><span class="coin" aria-hidden="true">$</span><span class="coins" aria-label="보유 코인">0</span></div>
+    <button class="bank" type="button" aria-label="은행으로 이동">+</button>
+  </nav>
+  <header class="hero">
+    <img class="logo" alt="BET">
+    <p class="kicker">게임 4 · 일치율 구간 예측</p>
+    <div class="heading">
+      <img class="laurel left" alt="">
+      <h1>구간 맞히기</h1>
+      <img class="laurel right" alt="">
+    </div>
+    <p class="subtitle">숨겨진 일치율이 어느 구간에 있을까?</p>
+  </header>
+  <section class="stage" aria-label="일치율 구간 선택">
+    <div class="board">
+      <div class="mystery" aria-label="숨겨진 일치율">
+        <span class="label">숨겨진 일치율</span>
+        <strong>??</strong><span class="unit">%</span>
+      </div>
+      <div class="ruler">
+        <div class="ticks" aria-label="현재 구간의 최댓값과 최솟값">
+          <span class="tick-label top"></span>
+          <span class="tick-label bottom"></span>
+        </div>
+        <div class="frame" role="group" aria-label="예상 일치율 구간">
+          <button class="segment" type="button" data-index="2" aria-pressed="false"><span class="segment-title">상위 구간</span><span class="segment-range"></span><span class="check">✓</span></button>
+          <button class="segment" type="button" data-index="1" aria-pressed="true"><span class="segment-title">중간 구간</span><span class="segment-range"></span><span class="check">✓</span></button>
+          <button class="segment" type="button" data-index="0" aria-pressed="false"><span class="segment-title">하위 구간</span><span class="segment-range"></span><span class="check">✓</span></button>
+        </div>
+      </div>
+    </div>
+  </section>
+  <footer class="footer"><button class="confirm" type="button">✓ 선택하기</button></footer>
+</main>
+<script>
+"use strict";
+const scene = document.querySelector(".scene");
+const buttons = Array.from(document.querySelectorAll(".segment"));
+const confirmButton = document.querySelector(".confirm");
+const numberFormat = new Intl.NumberFormat("ko-KR");
+let roundId = null;
+let selected = 1;
+let sending = false;
+let hostOrigin = "*";
+
+function send(type, payload) {
+  window.parent.postMessage({isStreamlitMessage: true, type, ...payload}, hostOrigin);
+}
+function finish(action) {
+  if (!roundId || sending) return;
+  sending = true;
+  confirmButton.disabled = true;
+  for (const button of scene.querySelectorAll("button")) button.disabled = true;
+  window.parent.postMessage({
+    type: "pc:loading:start",
+    label: action === "choose" ? "선택한 구간 확인 중…" : "화면 이동 중…"
+  }, hostOrigin);
+  const value = {action, round_id: roundId};
+  if (action === "choose") value.index = selected;
+  send("streamlit:setComponentValue", {value, dataType: "json"});
+}
+function select(index) {
+  if (sending || !Number.isInteger(index) || index < 0 || index > 2) return;
+  selected = index;
+  buttons.forEach(button => button.setAttribute("aria-pressed", String(Number(button.dataset.index) === selected)));
+}
+function render(args) {
+  if (!args || !Array.isArray(args.ranges) || args.ranges.length !== 3 || !args.round_id || !args.art) return;
+  if (roundId !== args.round_id) {
+    roundId = args.round_id; sending = false; selected = 1;
+  }
+  for (const b of scene.querySelectorAll("button")) b.disabled = false;
+  document.body.style.setProperty("--background", 'url("' + args.art.background + '")');
+  document.querySelector(".logo").src = args.art.logo;
+  document.querySelector(".laurel.left").src = args.art.laurel_left;
+  document.querySelector(".laurel.right").src = args.art.laurel_right;
+  document.querySelector(".coins").textContent = numberFormat.format(Number(args.coins || 0));
+  const top = String(args.ranges[2]).split("~")[1];
+  const bottom = String(args.ranges[0]).split("~")[0] + "%";
+  document.querySelector(".tick-label.top").textContent = top || "";
+  document.querySelector(".tick-label.bottom").textContent = bottom;
+  buttons.forEach(button => {
+    const index = Number(button.dataset.index);
+    button.querySelector(".segment-range").textContent = String(args.ranges[index]);
+  });
+  select(selected);
+  scene.hidden = false;
+}
+buttons.forEach(button => button.addEventListener("click", () => select(Number(button.dataset.index))));
+confirmButton.addEventListener("click", () => finish("choose"));
+document.querySelector(".back").addEventListener("click", () => finish("back"));
+document.querySelector(".bank").addEventListener("click", () => finish("bank"));
+window.addEventListener("message", event => {
+  if (event.source !== window.parent || event.data?.type !== "streamlit:render") return;
+  hostOrigin = event.origin || "*";
+  render(event.data.args);
+});
+send("streamlit:componentReady", {apiVersion: 1});
+send("streamlit:setFrameHeight", {height: window.innerHeight});
+</script>
+</body>
+</html>
