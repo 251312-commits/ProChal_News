@@ -11,9 +11,6 @@ import re
 from uuid import uuid4
 
 import requests
-import streamlit as st
-
-from modules.db_handler import article_url_hash, normalize_article_url
 
 LOGGER = logging.getLogger(__name__)
 EXCLUDED_URLS_KEY = "_unavailable_article_urls"
@@ -38,6 +35,8 @@ def is_transient_article_error(error: Exception | None) -> bool:
 
 
 def excluded_article_urls() -> set[str]:
+    import streamlit as st
+
     return set(st.session_state.get(EXCLUDED_URLS_KEY, set()))
 
 
@@ -48,6 +47,9 @@ def report_article_failure(url: str, error: Exception | None = None, *, event_id
     callers safely retry confirmation without counting the same attempt twice.
     Returns an acknowledgment when the deployed Apps Script supports tracking.
     """
+    import streamlit as st
+    from modules.db_handler import article_url_hash, normalize_article_url
+
     canonical = normalize_article_url(url)
     if not canonical:
         return None
