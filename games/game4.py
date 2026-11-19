@@ -18,7 +18,7 @@ from modules.ui_components import change_page
 from views.ranking import fetch_ranking_data
 
 
-GAME_4_WIN_MULTIPLIER = 2.0
+GAME_4_WIN_MULTIPLIER = 3.0
 GAME_4_MIN_BET = 1_000
 GAME_4_SCORE_MAX = 99.99
 GAME_4_RANGE_WIDTH = 2.0
