@@ -358,7 +358,7 @@ def show_game_4():
         return
 
     title, article_text, _ = get_game_news_selection(
-        "game_4", win_multiplier=GAME_4_WIN_MULTIPLIER, immersive_reader=True
+        "game_4", win_multiplier=GAME_4_WIN_MULTIPLIER
     )
     if not title:
         return

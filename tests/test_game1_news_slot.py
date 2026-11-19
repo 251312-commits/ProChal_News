@@ -137,14 +137,16 @@ class NewsSlotTests(unittest.TestCase):
         self.assertEqual([item["url"] for item in filtered], ["url-other", "url-base"])
         self.assertEqual([item["source_type"] for item in filtered], ["user", "base"])
 
-    def test_other_games_still_use_their_existing_reader(self):
+    def test_game_two_uses_the_shared_reader_by_default(self):
         self.st.session_state.selected_news_game_2 = {
             "title": "제목", "text": "본문", "url": "url-2",
         }
-        self.st.button.return_value = True
+        self.assertEqual(self.select("game_2"), (None, None, None))
+        self.assertEqual(self.component.call_args.kwargs["title"], "제목")
+        round_id = self.component.call_args.kwargs["round_id"]
+        self.component.return_value = {"action": "predict", "round_id": round_id}
         self.assertEqual(self.select("game_2"), (None, None, None))
         self.assertEqual(self.select("game_2"), ("제목", "본문", "url-2"))
-        self.component.assert_not_called()
 
     def test_navigation_preserves_candidates_without_counting_a_view(self):
         self.select("game_1")
@@ -199,7 +201,7 @@ class NewsSlotTests(unittest.TestCase):
             with self.subTest(game_id=game_id):
                 self.component.return_value = None
                 self.assertEqual(
-                    self.select(game_id, immersive_reader=True),
+                    self.select(game_id),
                     (None, None, None),
                 )
                 args = self.component.call_args.kwargs

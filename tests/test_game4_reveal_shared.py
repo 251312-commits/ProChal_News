@@ -47,7 +47,7 @@ class GameFourSharedAndRevealTests(unittest.TestCase):
         self.news.get_game_news_selection.return_value = (None, None, None)
         self.show_game_4()
         self.news.get_game_news_selection.assert_called_once_with(
-            "game_4", win_multiplier=3.0, immersive_reader=True
+            "game_4", win_multiplier=3.0
         )
         self.tx.settle_game_round.assert_not_called()
 

@@ -123,6 +123,15 @@ def _calculate_score(article: dict) -> float:
     return analysis["actual_score"]
 
 
+def _score_article_once(article: dict) -> float:
+    """Reuse each candidate's stored result throughout a Game 5 round."""
+    if article.get("score") is not None and article.get("text"):
+        return float(article["score"])
+    if not article.get("text"):
+        _load_article(article)
+    return _calculate_score(article)
+
+
 def _replace_candidate(candidates: list[dict], index: int) -> None:
     excluded_urls = {candidate["url"] for candidate in candidates}
     replacements = _load_candidates(excluded_urls, limit=1)
@@ -318,11 +327,8 @@ def show_game_5():
                 try:
                     round_candidates = _load_candidates(failed_urls)
                     answer_index = random.randrange(len(round_candidates))
-                    _load_article(round_candidates[answer_index])
-                    round_candidates[answer_index]["score"] = _calculate_score(
-                        round_candidates[answer_index]
-                    )
-                    target_range = _build_target_range(round_candidates[answer_index]["score"])
+                    answer_score = _score_article_once(round_candidates[answer_index])
+                    target_range = _build_target_range(answer_score)
                     break
                 except (RuntimeError, ValueError, TypeError) as exc:
                     if not round_candidates:
@@ -494,8 +500,7 @@ def show_game_5():
         if "score" not in selected_article or not selected_article.get("text"):
             with similarity_analysis_loading():
                 try:
-                    _load_article(selected_article)
-                    selected_article["score"] = _calculate_score(selected_article)
+                    _score_article_once(selected_article)
                 except (RuntimeError, ValueError, TypeError) as exc:
                     try:
                         _replace_candidate(candidates, selected_index)

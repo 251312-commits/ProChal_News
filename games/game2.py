@@ -213,7 +213,7 @@ def show_game_2():
 
     # [2단계] Reuse the roulette -> article reader flow, without a second slot.
     title, article_text, url = get_game_news_selection(
-        "game_2", win_multiplier=GAME_2_WIN_MULTIPLIER, immersive_reader=True
+        "game_2", win_multiplier=GAME_2_WIN_MULTIPLIER
     )
     if not title:
         return
