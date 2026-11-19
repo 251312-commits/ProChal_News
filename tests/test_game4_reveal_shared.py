@@ -6,9 +6,15 @@ from runpy import run_module
 from unittest.mock import MagicMock, patch
 
 
+class Session(dict):
+    __getattr__ = dict.__getitem__
+    __setattr__ = dict.__setitem__
+
+
 class GameFourSharedAndRevealTests(unittest.TestCase):
     def setUp(self):
         self.st = MagicMock()
+        self.st.session_state = Session()
         self.st.columns.side_effect = lambda sizes, **_kwargs: [
             MagicMock() for _ in range(sizes if isinstance(sizes, int) else len(sizes))
         ]
