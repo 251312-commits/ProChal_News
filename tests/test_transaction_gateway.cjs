@@ -1030,6 +1030,65 @@ test('badge_sync retroactively awards proven historical friend referrals only', 
 });
 
 
+
+function badgeProgressRound(e, n, game, isWin, evidence = {}) {
+  const id = n.toString(16).padStart(32, '0');
+  e.call({kind:'bet', transaction_id:'bet:' + id, round_id:id, game, bet:1000});
+  return e.call({kind:'settle', transaction_id:'settle:' + id,
+    round_id:id, game, bet:1000, is_win:isWin, badge_evidence:evidence});
+}
+
+test('badge_sync exposes the historical best streak, even after a loss', () => {
+  const e = environment([['11011','Alice',100000,0,'','pw',0]]);
+  for (let i = 1; i <= 3; i++) badgeProgressRound(e, i, 'game_3', true, {choice:'홀'});
+  badgeProgressRound(e, 4, 'game_3', false, {choice:'짝'});
+  const request = {kind:'badge_sync', transaction_id:'badge_sync:' + hex('a')};
+  const sync = e.call(request);
+  assert.equal(sync.badges.progress.g3_five_streak[0].current, 3);
+  assert.equal(sync.badges.progress.g3_five_streak[0].target, 5);
+  assert.equal(sync.badges.progress.streak_three[0].current, 3);
+  assert.equal(sync.badges.progress.g3_both_five[0].current, 3);
+  assert.equal(sync.badges.progress.g3_both_five[1].current, 0);
+  assert.equal(e.call(request).badges.progress.g3_five_streak[0].current, 3);
+  const settled = e.rows.ledger.find(row => row[3] === 'settle');
+  e.rows.ledger.push([...settled]); // duplicate round ID cannot inflate progress
+  const duplicateSync = e.call({kind:'badge_sync', transaction_id:'badge_sync:' + hex('b')});
+  assert.equal(duplicateSync.badges.progress.g3_both_five[0].current, 3);
+});
+
+test('mixed streak progress keeps distinct-game requirement separate from win count', () => {
+  const e = environment([['11011','Alice',100000,0,'','pw',0]]);
+  for (let i = 1; i <= 5; i++) badgeProgressRound(e, i, 'game_2', true, {choice:'HIGH'});
+  let sync = e.call({kind:'badge_sync',transaction_id:'badge_sync:' + hex('c')});
+  assert.equal(sync.badges.progress.streak_five_mixed[0].current, 5);
+  assert.equal(sync.badges.progress.streak_five_mixed[1].current, 1);
+  assert.equal(sync.badges.owned.includes('streak_five_mixed'), false);
+  badgeProgressRound(e, 6, 'game_3', true, {choice:'짝'});
+  sync = e.call({kind:'badge_sync',transaction_id:'badge_sync:' + hex('d')});
+  assert.equal(sync.badges.progress.streak_five_mixed[0].current, 5);
+  assert.equal(sync.badges.progress.streak_five_mixed[1].current, 2);
+  assert.equal(sync.badges.owned.includes('streak_five_mixed'), true);
+  assert.equal(sync.badges.progress.streak_eight_mixed[0].current, 6);
+  assert.equal(sync.badges.progress.streak_eight_mixed[1].current, 2);
+});
+
+test('multi-part accuracy and referral milestones use authenticated counts', () => {
+  const e = environment([['11011','Alice',100000,0,'','pw',0]]);
+  badgeProgressRound(e, 1, 'game_2', true, {choice:'HIGH'});
+  badgeProgressRound(e, 2, 'game_2', true, {choice:'LOW'});
+  badgeProgressRound(e, 3, 'game_2', true, {choice:'HIGH'});
+  badgeProgressRound(e, 4, 'game_5', true);
+  badgeProgressRound(e, 5, 'game_5', true);
+  const sync = e.call({kind:'badge_sync',transaction_id:'badge_sync:' + hex('e')});
+  assert.equal(sync.badges.progress.g2_both_fifteen[0].current, 2);
+  assert.equal(sync.badges.progress.g2_both_fifteen[1].current, 1);
+  assert.equal(sync.badges.progress.g5_three_wins[0].current, 2);
+  assert.equal(sync.badges.progress.g5_three_streak[0].current, 2);
+  assert.equal(sync.badges.progress.thirty_rounds[0].current, 5);
+  assert.equal(sync.badges.progress.all_games[0].current, 2);
+  assert.equal(sync.badges.progress.invite_three[0].current, 0);
+});
+
 test('article failure counter is global, replay-safe, and disables every matching row at 3', () => {
   const one = ['https://www.yna.co.kr/view/AKR1?utm_source=x', 0, '첫 기사', '', '', '', '', true, ''];
   const duplicate = ['https://www.yna.co.kr/view/AKR1', 0, '중복 기사', '', '', '', '', true, ''];
