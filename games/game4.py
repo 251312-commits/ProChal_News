@@ -296,6 +296,45 @@ def _show_game_4_result() -> None:
                     change_page("main")
 
 
+def show_game_4_tutorial() -> None:
+    """Game 1-style illustrated guide, shown before a new Game 4 wager."""
+    art_dir = Path(__file__).resolve().parents[1] / "assets" / "game4_guide"
+    steps = (
+        ("bet", "코인 베팅", "금액을 정하고 베팅한다.<br>최소 <b>1,000 C</b>"),
+        ("news", "기사 선택", "룰렛에서 기사 한 편을 선택하고<br><b>30초</b> 동안 읽는다."),
+        ("range", "구간 예측", "2%p 폭의 <b>세 구간</b> 중<br>일치율이 들어갈 곳을 고른다."),
+        ("result", "결과 확인", "정답이면 베팅액의 <b>3배 추가</b><br>오답이면 <b>베팅액 차감</b>"),
+    )
+    cards = "".join(
+        f'<li><h2><span>{number:02d}</span>{title}</h2>'
+        f'<img src="{load_local_image_url(str(art_dir / (name + ".svg")))}" '
+        f'alt="{title} 단계의 게임 화면을 표현한 그림">'
+        f'<p>{caption}</p></li>'
+        for number, (name, title, caption) in enumerate(steps, 1)
+    )
+    with st.container(key="game4-guide", gap=None):
+        st.html(Path(__file__).with_name("game4_tutorial.css"))
+        with st.container(key="game4-guide-nav", horizontal=True, gap=None):
+            if st.button("메인으로", key="game4-guide-back"):
+                change_page("main")
+            if st.button("건너뛰기", key="game4-guide-skip"):
+                change_page("game_4")
+        st.html(f"""
+            <section class="game4-guide-sheet" aria-labelledby="game4-guide-title" lang="ko">
+                <header class="game4-guide-heading">
+                    <span>GAME 04</span><h1 id="game4-guide-title">일치율 구간 맞히기</h1>
+                    <p>기사 제목과 AI 요약문은 얼마나 비슷할까?<br>
+                    예상 일치율 구간을 선택해 보자.</p>
+                </header>
+                <ol aria-label="게임 진행 순서" role="list">{cards}</ol>
+            </section>
+        """)
+        if st.button(
+            "베팅하러 가기", key="game4-guide-start", type="primary", width="stretch"
+        ):
+            change_page("game_4")
+
+
 def show_game_4():
     if "game_4_bet" not in st.session_state:
         if not check_user_coins_or_pop_bank(GAME_4_MIN_BET):

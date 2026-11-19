@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 300" width="560" height="300" role="img" aria-labelledby="title"><title id="title">첫째 단계: 코인 베팅</title><defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#291045"/><stop offset=".48" stop-color="#150b31"/><stop offset="1" stop-color="#110823"/></linearGradient>
+  <radialGradient id="halo"><stop stop-color="#a32fdf" stop-opacity=".51"/><stop offset="1" stop-color="#a32fdf" stop-opacity="0"/></radialGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff1a4"/><stop offset=".33" stop-color="#f9c75f"/><stop offset=".65" stop-color="#bd722b"/><stop offset="1" stop-color="#ffdd80"/></linearGradient>
+  <linearGradient id="purple" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#922cca"/><stop offset=".55" stop-color="#40105c"/><stop offset="1" stop-color="#271141"/></linearGradient>
+  <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fffaf4"/><stop offset="1" stop-color="#d9c2ec"/></linearGradient>
+  <filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="4"/></filter>
+  <filter id="shadow" x="-40%" y="-40%" width="200%" height="200%"><feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#0d031b" flood-opacity=".88"/></filter>
+</defs>
+<rect x="4" y="4" width="552" height="292" rx="34" fill="url(#bg)" stroke="#9860ba" stroke-width="3"/>
+<ellipse cx="280" cy="155" rx="265" ry="140" fill="url(#halo)"/>
+<path d="M38 265H520" stroke="#ad68d1" stroke-opacity=".3" stroke-width="2"/>
+<g fill="#ffd981" opacity=".82"><path d="M84 34l3 10 10 3-10 3-3 10-3-10-10-3 10-3z"/><path d="M460 27l2 8 8 2-8 2-2 8-2-8-8-2 8-2z"/><circle cx="437" cy="235" r="2.5"/><circle cx="128" cy="248" r="2"/><path d="M499 161l2 7 7 2-7 2-2 7-2-7-7-2 7-2z"/></g>
+  <g filter="url(#shadow)"><rect x="215" y="45" width="268" height="203" rx="25" fill="#200d3b" stroke="url(#gold)" stroke-width="6"/>
+  <rect x="230" y="61" width="238" height="169" rx="18" fill="url(#purple)" stroke="#b44bf1" stroke-width="2"/>
+  <text x="349" y="104" text-anchor="middle" font-size="23" fill="#f4d5ff" font-family="Arial, sans-serif" letter-spacing="5" font-weight="800">BET</text>
+  <rect x="253" y="123" width="192" height="62" rx="17" fill="#18092f" stroke="#c987ff" stroke-width="3"/>
+  <text x="349" y="164" text-anchor="middle" font-family="Arial, sans-serif" font-size="35" font-weight="900" fill="#ffe49c">1,000 C</text>
+  <rect x="270" y="198" width="159" height="20" rx="10" fill="#9b32d9"/><rect x="273" y="199" width="154" height="6" rx="4" fill="#f4b8ff" opacity=".5"/>
+  </g>
+  <g filter="url(#shadow)"><ellipse cx="151" cy="239" rx="120" ry="22" fill="#722a9f" opacity=".62"/>
+    <g transform="translate(0 -5)"><g transform="translate(120 197)"><circle r="63" fill="#fbbf46" opacity=".18" filter="url(#glow)"/><circle r="58" fill="url(#gold)" stroke="#fff0b0" stroke-width="3"/><circle r="44.08" fill="none" stroke="#ad672e" stroke-width="3.5"/><text x="0" y="15.66" fill="#7d3c18" font-family="Arial, sans-serif" font-size="51.04" text-anchor="middle" font-weight="900">C</text></g><g transform="translate(137 141)"><circle r="51" fill="#fbbf46" opacity=".18" filter="url(#glow)"/><circle r="46" fill="url(#gold)" stroke="#fff0b0" stroke-width="3"/><circle r="34.96" fill="none" stroke="#ad672e" stroke-width="3.5"/><text x="0" y="12.420000000000002" fill="#7d3c18" font-family="Arial, sans-serif" font-size="40.48" text-anchor="middle" font-weight="900">C</text></g><g transform="translate(77 164)"><circle r="44" fill="#fbbf46" opacity=".18" filter="url(#glow)"/><circle r="39" fill="url(#gold)" stroke="#fff0b0" stroke-width="3"/><circle r="29.64" fill="none" stroke="#ad672e" stroke-width="3.5"/><text x="0" y="10.530000000000001" fill="#7d3c18" font-family="Arial, sans-serif" font-size="34.32" text-anchor="middle" font-weight="900">C</text></g></g>
+  </g>
+  <path d="M201 168c23-23 26-25 43-29" fill="none" stroke="#ffe0a4" stroke-width="4" stroke-linecap="round" stroke-dasharray="6 9"/>
+  <path d="M234 129l13 8-15 8" fill="none" stroke="#ffe0a4" stroke-width="4" stroke-linecap="round"/>
+</svg>

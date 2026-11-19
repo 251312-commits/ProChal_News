@@ -108,7 +108,8 @@ def show_main_page():
         change_page('game_1' if 'game_1_bet' in st.session_state else 'game_1_tutorial')
     elif clicked_menu == 3: change_page('game_2')
     elif clicked_menu == 4: change_page('game_3')
-    elif clicked_menu == 5: change_page('game_4')
+    elif clicked_menu == 5:
+        change_page('game_4' if 'game_4_bet' in st.session_state else 'game_4_tutorial')
     elif clicked_menu == 6:
         change_page(
             "game_5"

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 300" width="560" height="300" role="img" aria-labelledby="title"><title id="title">둘째 단계: 뉴스 룰렛에서 기사 선택</title><defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#291045"/><stop offset=".48" stop-color="#150b31"/><stop offset="1" stop-color="#110823"/></linearGradient>
+  <radialGradient id="halo"><stop stop-color="#a32fdf" stop-opacity=".51"/><stop offset="1" stop-color="#a32fdf" stop-opacity="0"/></radialGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff1a4"/><stop offset=".33" stop-color="#f9c75f"/><stop offset=".65" stop-color="#bd722b"/><stop offset="1" stop-color="#ffdd80"/></linearGradient>
+  <linearGradient id="purple" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#922cca"/><stop offset=".55" stop-color="#40105c"/><stop offset="1" stop-color="#271141"/></linearGradient>
+  <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fffaf4"/><stop offset="1" stop-color="#d9c2ec"/></linearGradient>
+  <filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="4"/></filter>
+  <filter id="shadow" x="-40%" y="-40%" width="200%" height="200%"><feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#0d031b" flood-opacity=".88"/></filter>
+</defs>
+<rect x="4" y="4" width="552" height="292" rx="34" fill="url(#bg)" stroke="#9860ba" stroke-width="3"/>
+<ellipse cx="280" cy="155" rx="265" ry="140" fill="url(#halo)"/>
+<path d="M38 265H520" stroke="#ad68d1" stroke-opacity=".3" stroke-width="2"/>
+<g fill="#ffd981" opacity=".82"><path d="M84 34l3 10 10 3-10 3-3 10-3-10-10-3 10-3z"/><path d="M460 27l2 8 8 2-8 2-2 8-2-8-8-2 8-2z"/><circle cx="437" cy="235" r="2.5"/><circle cx="128" cy="248" r="2"/><path d="M499 161l2 7 7 2-7 2-2 7-2-7-7-2 7-2z"/></g>
+  <g filter="url(#shadow)"><rect x="112" y="39" width="319" height="214" rx="30" fill="#4f2466" stroke="url(#gold)" stroke-width="8"/>
+  <rect x="129" y="58" width="285" height="170" rx="18" fill="#160f2e" stroke="#b54ce6" stroke-width="3"/>
+  <rect x="165" y="78" width="213" height="39" rx="8" fill="url(#paper)"/>
+  <rect x="165" y="126" width="213" height="39" rx="8" fill="url(#paper)"/>
+  <rect x="165" y="174" width="213" height="39" rx="8" fill="url(#paper)" stroke="#fecc65" stroke-width="3"/>
+  <g fill="#76528e"><rect x="187" y="90" width="127" height="5" rx="3"/><rect x="187" y="101" width="95" height="5" rx="3"/>
+  <rect x="187" y="138" width="142" height="5" rx="3"/><rect x="187" y="149" width="102" height="5" rx="3"/>
+  <rect x="187" y="186" width="140" height="5" rx="3"/><rect x="187" y="197" width="94" height="5" rx="3"/></g>
+  <circle cx="354" cy="193" r="10" fill="#8d1dba" stroke="#f8d97b" stroke-width="3"/>
+  <rect x="227" y="42" width="85" height="19" rx="8" fill="#f7c85d"/><text x="269" y="56" fill="#3c1557" font-size="14" font-family="Arial,sans-serif" font-weight="900" text-anchor="middle">NEWS</text></g>
+  <path d="M434 100h35v76" stroke="#c48aff" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <circle cx="468" cy="104" r="24" fill="url(#purple)" stroke="url(#gold)" stroke-width="5" filter="url(#shadow)"/>
+  <path d="M460 85l14 38" stroke="#ffecb7" stroke-width="3" opacity=".7"/>
+  <path d="M78 121l-21 15 22 15" fill="none" stroke="#fbd882" stroke-width="5" stroke-linecap="round"/>
+  <path d="M471 217l-12 20-12-20" stroke="#fbd882" stroke-width="5" fill="none" stroke-linecap="round"/>
+</svg>
