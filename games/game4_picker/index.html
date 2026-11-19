@@ -242,6 +242,42 @@ img { display: block; object-fit: contain; user-select: none; pointer-events: no
 @media (prefers-reduced-motion: reduce) {
   *, *:before, *:after { animation: none !important; transition: none !important; }
 }
+
+/* In-place answer reveal: the original mystery card itself moves vertically. */
+.mystery { transition: transform 950ms cubic-bezier(.18,.85,.24,1), border-color 250ms ease, box-shadow 250ms ease; }
+.mystery.rolling strong { animation: g4-score-flip 750ms cubic-bezier(.2,.2,.22,1) both; }
+.mystery.score-visible strong {
+  font-size: clamp(24px, 6.6vw, 35px);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.06em;
+  animation: g4-score-pop 300ms ease-out both;
+}
+.mystery.moving {
+  transform: translate3d(0, var(--landing-offset, 0px), 0);
+  z-index: 4;
+}
+.mystery.landed {
+  border-color: #ffe18b;
+  box-shadow: 0 0 25px #ffcc658a, 0 0 18px #f055ff8a,
+    inset 0 0 0 3px #f7acff77;
+}
+.segment.correct {
+  border: 2px solid #ffefbd;
+  background: radial-gradient(ellipse at 50% 20%, #b52fe8, #6c2193 65%, #391055);
+  box-shadow: 0 0 19px 5px #ffc26699, inset 0 0 16px #ffccdc80;
+}
+.segment.correct .check { display: inline-block; background: #ffe5a2; }
+@keyframes g4-score-flip {
+  0% { transform: rotateX(0deg) scale(1); filter: blur(0); }
+  35% { transform: rotateX(180deg) scale(.88); filter: blur(2px); }
+  70% { transform: rotateX(540deg) scale(.94); filter: blur(3px); }
+  100% { transform: rotateX(720deg) scale(1); filter: blur(0); }
+}
+@keyframes g4-score-pop {
+  from { opacity: .35; transform: scale(.78); }
+  to { opacity: 1; transform: scale(1); }
+}
 </style>
 </head>
 <body>

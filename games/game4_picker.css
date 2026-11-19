@@ -563,3 +563,31 @@ body:has(.st-key-game4_picker_shell) .block-container {
   .g4-reel-value { opacity: 1 !important; animation: none !important; }
   .st-key-game4_result_details { opacity: 1 !important; visibility: visible !important; animation: none !important; }
 }
+
+
+/* The final page appears after the picker already unveiled the score. */
+.g4-final-value {
+  display: block;
+  color: #ffe9a7;
+  font-size: clamp(40px, 12vw, 66px);
+  line-height: 1.1;
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-shadow: 0 2px 4px #6c2694, 0 0 14px rgba(255, 197, 84, .52);
+}
+.st-key-game4_result_details {
+  opacity: 1 !important;
+  visibility: visible !important;
+  animation: none !important;
+}
+.st-key-game4_result_details .st-key-game4_result_evidence button {
+  width: 100%;
+  min-height: 46px;
+  color: #fff4fd;
+  background: linear-gradient(135deg,#5f1b87,#2b0c48);
+  border: 1.5px solid #b95cf3;
+  border-radius: 14px;
+  font-weight: 800;
+  box-shadow: 0 0 12px rgba(185,92,243,.25);
+}

@@ -44,6 +44,7 @@ class GameFourPickerTests(unittest.TestCase):
         self.assertEqual(kwargs["key"], "game4-picker-round-a")
         self.assertEqual(kwargs["coins"], 1250)
         self.assertEqual(kwargs["ranges"], self.ranges)
+        self.assertIsNone(kwargs["reveal"])
         self.assertEqual(set(kwargs["art"]), {
             "background", "logo", "laurel_left", "laurel_right"
         })
@@ -60,7 +61,7 @@ class GameFourPickerTests(unittest.TestCase):
                     "round_id": "round-a", "action": "choose", "index": index
                 }
                 self.assertEqual(self.picker(self.ranges, 1250), index)
-                self.assertNotIn("game4_picker_round", self.st.session_state)
+                self.assertEqual(self.st.session_state["game4_picker_round"], "round-a")
         self.st.session_state["game4_picker_round"] = "round-a"
         self.component.return_value = {
             "round_id": "stale", "action": "choose", "index": 2
@@ -74,6 +75,42 @@ class GameFourPickerTests(unittest.TestCase):
             "round_id": "round-a", "action": "choose", "index": 3
         }
         self.assertIsNone(self.picker(self.ranges, 1250))
+
+    def test_score_reveal_is_bound_to_the_same_round(self):
+        self.st.session_state["game4_picker_round"] = "round-a"
+        self.component.return_value = {
+            "round_id": "round-a", "action": "reveal_complete"
+        }
+        completed = self.picker(
+            self.ranges, 1550,
+            selected_index=0, actual_score=74.25, answer_index=2,
+        )
+        self.assertEqual(completed, "reveal_complete")
+        self.assertEqual(self.st.session_state["game4_picker_round"], "round-a")
+        self.assertEqual(self.component.call_args.kwargs["reveal"], {
+            "score": "74.25", "answer_index": 2, "selected_index": 0,
+        })
+        self.component.return_value = {
+            "round_id": "round-a", "action": "choose", "index": 0,
+        }
+        self.assertIsNone(self.picker(
+            self.ranges, 1550,
+            selected_index=0, actual_score=74.25, answer_index=2,
+        ))
+        self.component.return_value = {
+            "round_id": "old-round", "action": "reveal_complete"
+        }
+        self.assertIsNone(self.picker(
+            self.ranges, 1550,
+            selected_index=0, actual_score=74.25, answer_index=2,
+        ))
+
+    def test_reveal_completion_is_invalid_during_player_selection(self):
+        self.st.session_state["game4_picker_round"] = "round-a"
+        self.component.return_value = {
+            "round_id": "round-a", "action": "reveal_complete"
+        }
+        self.assertIsNone(self.picker(self.ranges, 1000))
 
     def test_back_and_bank_navigation(self):
         for action, destination in [("back", "main"), ("bank", "bank")]:
@@ -101,6 +138,13 @@ class GameFourPickerTests(unittest.TestCase):
         self.assertIn('aria-pressed="true"', html)
         js = (ROOT / "games/game4_picker/picker.js").read_text(encoding="utf-8")
         self.assertIn('if (action === "choose") value.index = selected', js)
+        self.assertIn('finish("reveal_complete")', js)
+        self.assertIn('payload.answer_index', js)
+        self.assertIn('target.top + target.height / 2 - source.top', js)
+        self.assertIn('args.reveal && !revealing', js)
+        self.assertIn('class="mystery"', html)
+        self.assertIn('var(--landing-offset, 0px)', html)
+        self.assertIn('.segment.correct', html)
         self.assertIn('event.origin === "null" ? "*" : event.origin', js)
         self.assertIn('<script defer src="./picker.js"></script>', html)
         self.assertNotIn("st.radio", html)
