@@ -189,23 +189,6 @@ class RoundSettlementRegressionTests(unittest.TestCase):
         self.assertEqual(ai.similarity_check.call_count, 2)
         self.assertEqual(st.session_state["game_4_score"], 74.25)
 
-    def test_game5_candidate_analysis_is_once_per_article(self):
-        st, ai, tx, deps = self._fakes()
-        with patch.dict(sys.modules, deps):
-            scorer = run_module("games.game5")["_score_article_once"]
-        load = Mock(side_effect=lambda article: article.__setitem__("text", "본문"))
-        score = Mock(side_effect=lambda article: article.update(
-            score=64.3, summary="요약", score_details={"score": 64.3},
-        ) or 64.3)
-        scorer.__globals__["_load_article"] = load
-        scorer.__globals__["_calculate_score"] = score
-        candidate = {"title": "기사", "url": "https://example.com/x", "text": ""}
-        self.assertEqual(scorer(candidate), 64.3)
-        self.assertEqual(scorer(candidate), 64.3)
-        load.assert_called_once()
-        score.assert_called_once()
-
-
 class ObsoleteCodeContracts(unittest.TestCase):
     def test_shared_news_reader_has_no_legacy_streamlit_layout(self):
         root = Path(__file__).resolve().parents[1]

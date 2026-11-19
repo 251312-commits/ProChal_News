@@ -76,17 +76,10 @@ def _extract_article(url: str) -> tuple[str, str]:
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
-def _summarize_article_cached(article_text: str) -> str:
+def _analyze_article_cached(article_text: str, title: str) -> dict:
     summary_text = asyncio.run(summary(article_text))
     if not summary_text:
         raise ValueError("뉴스 본문 요약 결과가 비어 있습니다.")
-    return summary_text
-
-
-@st.cache_data(ttl=3600, show_spinner=False)
-def _analyze_article_cached(article_text: str, title: str) -> dict:
-    # If inference fails, an already successful Gemini summary stays cached.
-    summary_text = _summarize_article_cached(article_text)
     score_details = similarity_check(summary_text, title)
     score = score_details.get("score")
     if (
@@ -128,15 +121,6 @@ def _calculate_score(article: dict) -> float:
     article["score_details"] = analysis["score_details"]
     article["score"] = analysis["actual_score"]
     return analysis["actual_score"]
-
-
-def _score_article_once(article: dict) -> float:
-    """Reuse each candidate's stored result throughout a Game 5 round."""
-    if article.get("score") is not None and article.get("text"):
-        return float(article["score"])
-    if not article.get("text"):
-        _load_article(article)
-    return _calculate_score(article)
 
 
 def _replace_candidate(candidates: list[dict], index: int) -> None:
@@ -334,8 +318,11 @@ def show_game_5():
                 try:
                     round_candidates = _load_candidates(failed_urls)
                     answer_index = random.randrange(len(round_candidates))
-                    answer_score = _score_article_once(round_candidates[answer_index])
-                    target_range = _build_target_range(answer_score)
+                    _load_article(round_candidates[answer_index])
+                    round_candidates[answer_index]["score"] = _calculate_score(
+                        round_candidates[answer_index]
+                    )
+                    target_range = _build_target_range(round_candidates[answer_index]["score"])
                     break
                 except (RuntimeError, ValueError, TypeError) as exc:
                     if not round_candidates:
@@ -507,7 +494,8 @@ def show_game_5():
         if "score" not in selected_article or not selected_article.get("text"):
             with similarity_analysis_loading():
                 try:
-                    _score_article_once(selected_article)
+                    _load_article(selected_article)
+                    selected_article["score"] = _calculate_score(selected_article)
                 except (RuntimeError, ValueError, TypeError) as exc:
                     try:
                         _replace_candidate(candidates, selected_index)
