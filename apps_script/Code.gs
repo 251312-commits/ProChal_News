@@ -16,15 +16,17 @@ const HEADERS = [
   'bet', 'coin_delta', 'is_win', 'coins_before', 'coins_after',
   'streak_before', 'streak_after', 'loan_before', 'loan_after', 'detail'
 ];
-const RULES = {game_1: 100, game_2: 1, game_3: 1, game_4: 3, game_5: 5};
+const RULES = {game_1: 100, game_2: 2, game_3: 2, game_4: 3, game_5: 5};
 
-// Historical game_4 wins were settled at +2x. Keep the original receipts
-// replayable after upgrading the payout to +3x; never award a second delta.
+// Past wins were settled with the old +1x / +2x rules. A retry of the
+// *same* round must return its original receipt, never issue a new payout.
+const LEGACY_WIN_RULES = {game_2: 1, game_3: 1, game_4: 2};
 function settlementDeltaMatches_(game, bet, isWin, storedDelta) {
   const expected = isWin ? bet * RULES[game] :
     -(game === 'game_3' ? Math.floor(bet / 2) : bet);
   return storedDelta === expected ||
-    (game === 'game_4' && isWin && storedDelta === bet * 2);
+    (isWin && Object.prototype.hasOwnProperty.call(LEGACY_WIN_RULES, game) &&
+      storedDelta === bet * LEGACY_WIN_RULES[game]);
 }
 const MAX_PRINCIPAL = 10000; // The limit is on unpaid borrowed principal, not interest.
 const GATEWAY_VERSION = 3; // v3 also installs/awards user badges from settled rounds.
