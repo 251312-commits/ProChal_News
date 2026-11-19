@@ -1092,3 +1092,44 @@ test('article failures require a valid request and never modify wallet balances'
   assert.equal(e.rows.users[1][2], 5000);
   assert.equal(e.rows.ledger.length, 1);
 });
+
+
+test('game 4 fresh wins earn +3x net coins and duplicate settlement never re-pays', () => {
+  const e = environment(), id = hex('b');
+  e.call({kind: 'bet', transaction_id: 'bet:' + id, round_id: id,
+    game: 'game_4', bet: 1000});
+  const request = {kind: 'settle', transaction_id: 'settle:' + id,
+    round_id: id, game: 'game_4', bet: 1000, is_win: true};
+  const first = e.call(request);
+  assert.equal(first.settlement.delta, 3000);
+  assert.equal(first.balances.coins, 8000); // 5,000C wallet; bet is not deducted.
+  const replay = e.call(request);
+  assert.equal(replay.replayed, true);
+  assert.equal(replay.settlement.delta, 3000);
+  assert.equal(e.rows.ledger.filter(row => row[3] === 'settle').length, 1);
+  assert.equal(e.rows.users[1][2], 8000);
+});
+
+test('game 4 historical +2x settled receipt replays without changing the wallet', () => {
+  const e = environment(), id = hex('c');
+  e.call({kind: 'bet', transaction_id: 'bet:' + id, round_id: id,
+    game: 'game_4', bet: 1000});
+  // A prior gateway already credited this win at the old +2x rule.
+  e.rows.ledger.push([
+    'settle:' + id, '2026-11-01T00:00:00Z', '11011', 'settle',
+    'game_4', id, 1000, 2000, true, 5000, 7000, 1, 2, 0, 0, '',
+  ]);
+  e.rows.users[1][2] = 7000;
+  e.rows.users[1][3] = 2;
+  const request = {kind: 'settle', transaction_id: 'settle:' + id,
+    round_id: id, game: 'game_4', bet: 1000, is_win: true};
+  const batchesBefore = e.state.batches;
+  const replay = e.call(request);
+  assert.equal(replay.replayed, true);
+  assert.equal(replay.settlement.delta, 2000);
+  assert.equal(replay.balances.coins, 7000);
+  assert.equal(e.state.batches, batchesBefore);
+  assert.equal(e.rows.users[1][2], 7000);
+  assert.equal(e.rows.ledger.filter(row => row[3] === 'settle').length, 1);
+  assert.throws(() => e.call({...request, is_win: false}), /different arguments/);
+});
