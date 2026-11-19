@@ -335,6 +335,7 @@ function render(args) {
   });
   select(selected);
   scene.hidden = false;
+  send("streamlit:setFrameHeight", {height: window.innerHeight || 620});
 }
 buttons.forEach(button => button.addEventListener("click", () => select(Number(button.dataset.index))));
 confirmButton.addEventListener("click", () => finish("choose"));
@@ -342,7 +343,7 @@ document.querySelector(".back").addEventListener("click", () => finish("back"));
 document.querySelector(".bank").addEventListener("click", () => finish("bank"));
 window.addEventListener("message", event => {
   if (event.source !== window.parent || event.data?.type !== "streamlit:render") return;
-  hostOrigin = event.origin || "*";
+  hostOrigin = event.origin === "null" ? "*" : event.origin;
   render(event.data.args);
 });
 send("streamlit:componentReady", {apiVersion: 1});
