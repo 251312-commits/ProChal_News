@@ -117,7 +117,7 @@ test("BGM pauses while clips play in sequence and resumes only on unmount", asyn
   assert.equal(h.videos[0].playCalls,2);
   assert.equal(h.videos[0].src,h.clips[2].src);
   assert.equal(h.videos[0].classList.contains("is-active"),true);
-  assert.equal(h.host.__newsSimilarityPlayer.sync instanceof Function,true);
+  assert.equal(typeof h.host.__newsSimilarityPlayer.sync,"function");
   h.unmount();
   assert.deepEqual(h.releases,["similarity-interstitial"]);
   assert.ok(h.videos.every(video=>video.paused));
