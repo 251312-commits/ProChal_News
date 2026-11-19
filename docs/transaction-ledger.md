@@ -30,6 +30,22 @@ Keep the existing gcp_service_account for read-only account views and News sheet
 - C/D/G/H and a ledger row are submitted in one Sheets spreadsheets.batchUpdate request. Google Sheets applies all requests in a batch atomically. Registration and referral credits are also bundled in a single batch.
 - On timeout the transaction might have committed. The client retains its transaction ID for a safe retry.
 
+## Final per-game payout schedule (November 2026)
+
+Winning payouts are **net increases to wallet coins**, not gross returns including the stake. Confirming a bet does not deduct the stake. For a 1,000C winning bet, the expected coin increases are:
+
+| Game | Net-win multiplier | Wallet increase | Loss |
+|---|---:|---:|---:|
+| 1 | +100× | +100,000C | -1,000C |
+| 2 | +2× | +2,000C | -1,000C |
+| 3 | +2× | +2,000C | -500C |
+| 4 | +3× | +3,000C | -1,000C |
+| 5 | +5× | +5,000C | -1,000C |
+
+The `games/game2.py` and `games/game3.py` previews, reader rewards and backend rules were previously +1×. Both clients and `apps_script/Code.gs` must be updated together. The server returns its actual committed `settlement.delta`; clients display that authoritative receipt rather than a locally estimated win.
+
+**Deploy the new Apps Script web app version after the PR is merged.** GitHub updates do not update the deployed `/exec` endpoint. Use **Deploy → Manage deployments → Edit → New version → Deploy**, then verify a new Game 2 win and Game 3 win. Existing Game 2/3 +1× and Game 4 +2× receipts are replayable using their old deltas to preserve idempotency; historic balances are not modified or retrospectively compensated.
+
 ## Game 4 payout correction (+2× → +3×)
 
 The Streamlit Game 4 betting preview and reader use a +3× **net coin gain** on a win, but the historical gateway rule was +2×. Update `apps_script/Code.gs` to the new `game_4: 3` rule **and publish a new Apps Script web app version**. Changing Python or merging GitHub code alone does not update the running /exec endpoint.
