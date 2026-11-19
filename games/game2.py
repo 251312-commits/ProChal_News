@@ -14,6 +14,9 @@ from games.shared.betting import render_betting_ui
 from games.shared.betting import check_user_coins_or_pop_bank
 from views.ranking import fetch_ranking_data
 
+GAME_2_WIN_MULTIPLIER = 2.0
+
+
 def show_game_2():
     # [0단계] 튜토리얼 화면 (최초 1회 노출)
     if "game_2_tutorial_done" not in st.session_state:
@@ -154,7 +157,7 @@ def show_game_2():
                     <div class="step-num">04</div>
                     <div class="step-title">결과 확인</div>
                     <div class="step-icon">🏅</div>
-                    <div class="step-desc">적중 <b>+베팅액의 2배수 (실익 1배)</b><br>실패 <b>-베팅액</b></div>
+                    <div class="step-desc">적중 <b>+베팅액의 2배</b><br>실패 <b>-베팅액</b></div>
                 </div>
             </div>
             """,
@@ -169,7 +172,7 @@ def show_game_2():
 
     st.title("🎮 게임 2: 뉴스 유사도 HIGH / LOW 게임")
     
-    # [1단계] Shared wager screen: game 2 awards +1x net gain.
+    # [1단계] Shared wager screen: game 2 awards +2x net gain.
     if "game_2_bet" not in st.session_state:
         if not check_user_coins_or_pop_bank():
             return
@@ -183,7 +186,7 @@ def show_game_2():
             users_data=users_data,
             current_sid=str(st.session_state.get("current_user", "")),
             current_nickname=str(user.get("아이디", "")),
-            payout_multiplier=1.0,
+            payout_multiplier=GAME_2_WIN_MULTIPLIER,
             title="게임 2: 뉴스 유사도 HIGH / LOW",
             state_key="game_2",
         )
@@ -210,7 +213,7 @@ def show_game_2():
 
     # [2단계] Reuse the roulette -> article reader flow, without a second slot.
     title, article_text, url = get_game_news_selection(
-        "game_2", win_multiplier=1.0, immersive_reader=True
+        "game_2", win_multiplier=GAME_2_WIN_MULTIPLIER, immersive_reader=True
     )
     if not title:
         return
@@ -275,7 +278,7 @@ def show_game_2():
                 is_win = (actual_score < target_num)
 
             if is_win:
-                reward = bet_coin
+                reward = int(bet_coin * GAME_2_WIN_MULTIPLIER)
                 result_msg = f"🎉 예측 성공! (실제 유사도: {actual_score:.2f}점)"
             else:
                 reward = -bet_coin
