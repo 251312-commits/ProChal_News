@@ -168,6 +168,32 @@ class NewsSlotTests(unittest.TestCase):
         self.sheet.get_all_records.assert_called_once()
         self.sheet.update_cell.assert_not_called()
 
+    def test_failed_article_is_excluded_and_slot_reopens_without_counting(self):
+        self.select("game_1")
+        first_round = self.component.call_args.kwargs["round_id"]
+        self.component.return_value = {"action": "choose", "round_id": first_round, "index": 0}
+        self.ai.bring_article.side_effect = ValueError("기사 본문 없음")
+
+        reporter = MagicMock(side_effect=lambda url, exc: self.st.session_state.setdefault(
+            "_unavailable_article_urls", set()).add(url))
+        with patch.dict(self.select.__globals__, {"report_article_failure": reporter}):
+            self.select("game_1")
+
+        reporter.assert_called_once()
+        self.assertEqual(reporter.call_args.args[0], "url-1")
+        self.assertNotIn("selected_news_game_1", self.st.session_state)
+        self.assertNotIn("candidates_game_1", self.st.session_state)
+        self.assertIn("selected_news_game_1_load_error", self.st.session_state)
+        self.sheet.update_cell.assert_not_called()
+        self.assertEqual(self.st.session_state["game_1_bet"], 1000)
+        self.st.rerun.assert_called_once()
+
+        # A fresh selection cannot offer the same article again this session.
+        self.component.return_value = None
+        self.select("game_1")
+        self.assertEqual(self.component.call_args.kwargs["titles"], ["둘째 기사"])
+        self.assertNotEqual(self.component.call_args.kwargs["round_id"], first_round)
+
     def test_game2_slot_still_returns_to_betting(self):
         render_slot = self.shared_slot_render
         self.st.session_state.game_2_bet = 500
