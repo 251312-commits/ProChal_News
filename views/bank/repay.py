@@ -10,25 +10,41 @@ from .scene import asset_uri
 
 REPAY_AMOUNT_KEY = "bank_repay_amount"
 REPAY_SUCCESS_KEY = "bank_repay_success"
-# Repayment has its own 1-coin step; new borrowing still uses 1,000 C.
-REPAY_UNIT = 1
+# Repayment amounts follow 1,000 C increments and the current debt remainder.
+REPAY_UNIT = 1_000
 
 
-def _repayment_limit(coins: int, loan: int) -> int:
-    """Allow repayment down to 1 C without exceeding wallet or total debt."""
-    return max(0, min(coins, loan))
+def _repayment_options(coins: int, loan: int) -> tuple[int, ...]:
+    """Return valid repayments affordable with the wallet's current coins.
+
+    For a 2,532 C loan the options are 1,000, 1,532, 2,000, 2,532.
+    The remainder alone (532 C) is not an option unless the entire loan
+    is below 1,000 C, in which case only full repayment is offered.
+    """
+    if coins <= 0 or loan <= 0:
+        return ()
+    if loan < REPAY_UNIT:
+        return (loan,) if coins >= loan else ()
+
+    limit = min(coins, loan)
+    remainder = loan % REPAY_UNIT
+    amounts = []
+    for base in range(REPAY_UNIT, limit + 1, REPAY_UNIT):
+        amounts.append(base)
+        if remainder and base + remainder <= limit:
+            amounts.append(base + remainder)
+    return tuple(sorted(amounts))
 
 
-def _selected_repayment(limit: int, selected: int | None) -> int:
-    """Clamp previous slider state when the wallet or loan balance changes."""
-    if limit < REPAY_UNIT:
+def _selected_repayment(options: tuple[int, ...], selected: int | None) -> int:
+    """Keep the chosen amount valid after wallet or loan changes."""
+    if not options:
         return 0
-    default = min(1_000, limit)
     try:
-        selected = int(selected) if selected is not None else default
+        chosen = int(selected) if selected is not None else options[0]
     except (TypeError, ValueError):
-        selected = default
-    return max(REPAY_UNIT, min(limit, selected))
+        chosen = options[0]
+    return max((amount for amount in options if amount <= chosen), default=options[0])
 
 
 def _image(name: str, css_class: str) -> str:
@@ -46,9 +62,9 @@ def pay_loan(coins: int, loan: int) -> None:
         '}</style>'
     )
 
-    limit = _repayment_limit(coins, loan)
-    amount = _selected_repayment(limit, st.session_state.get(REPAY_AMOUNT_KEY))
-    if limit:
+    options = _repayment_options(coins, loan)
+    amount = _selected_repayment(options, st.session_state.get(REPAY_AMOUNT_KEY))
+    if options:
         # Set this before rendering widgets, as required by Streamlit's state API.
         st.session_state[REPAY_AMOUNT_KEY] = amount
     else:
@@ -74,24 +90,25 @@ def pay_loan(coins: int, loan: int) -> None:
 
         with st.container(key="bank-repay-panel", gap=None):
             st.html('<h2 class="bank-repay-label">상환 금액</h2>')
-            if limit:
+            if options:
                 with st.container(key="bank-repay-slider-field", gap=None):
                     st.html(
                         f'<output class="bank-repay-amount" aria-live="polite">{amount:,} C</output>'
                     )
-                    if limit > REPAY_UNIT:
-                        amount = st.slider(
-                            "상환 금액", min_value=REPAY_UNIT, max_value=limit,
-                            step=REPAY_UNIT, key=REPAY_AMOUNT_KEY, format="%d C",
+                    if len(options) > 1:
+                        amount = st.select_slider(
+                            "상환 금액", options=options, key=REPAY_AMOUNT_KEY,
+                            format_func=lambda value: f"{value:,} C",
                             label_visibility="collapsed",
                         )
                         st.html(
                             '<div class="bank-repay-range" aria-hidden="true">'
-                            f'<span>{REPAY_UNIT:,} C</span><span>{limit:,} C</span></div>'
+                            f'<span>{options[0]:,} C</span><span>{options[-1]:,} C</span></div>'
                         )
             else:
+                minimum = loan if 0 < loan < REPAY_UNIT else REPAY_UNIT
                 reason = "상환할 대출금이 없습니다." if loan <= 0 else (
-                    f"상환하려면 보유 코인이 {REPAY_UNIT:,} C 이상 필요합니다."
+                    f"상환하려면 보유 코인이 {minimum:,} C 이상 필요합니다."
                 )
                 st.html(f'<p class="bank-repay-unavailable" role="status">{reason}</p>')
 
@@ -111,6 +128,10 @@ def pay_loan(coins: int, loan: int) -> None:
             label, key="bank-repay-submit", icon=":material/savings:",
             type="primary", width="stretch", disabled=amount == 0,
         ):
+            # Reject stale or manipulated selections before creating a transaction.
+            if amount not in options:
+                st.error("선택할 수 없는 상환 금액입니다. 금액을 다시 선택하세요.")
+                return
             # Only animate once the update to Google Sheets succeeds.
             _save_balances(
                 coins - amount, loan - amount, f"{amount:,} C를 상환했습니다.",
