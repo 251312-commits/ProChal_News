@@ -259,6 +259,40 @@ def render_betting_ui(
         .st-key-casino_betting_action [data-testid="stButton"] {
             width:min(150px,100%) !important;
         }
+        .st-key-casino_betting_identity {
+            display:flex !important;
+            align-items:center !important;
+            justify-content:flex-end !important;
+            gap:6px !important;
+            min-width:0 !important;
+        }
+        .st-key-casino_betting_identity [data-testid="stVerticalBlock"] {
+            display:flex !important;
+            flex-flow:row nowrap !important;
+            align-items:center !important;
+            justify-content:flex-end !important;
+            gap:6px !important;
+            min-width:0 !important;
+        }
+        .st-key-casino_betting_identity [data-testid="stButton"] button {
+            width:auto !important;
+            max-width:112px !important;
+            min-height:30px !important;
+            height:30px !important;
+            padding:3px 8px !important;
+            border:1px solid rgba(178,75,247,.52) !important;
+            border-radius:10px !important;
+            background:#17062b !important;
+            color:#fdf7ff !important;
+            font-size:clamp(.58rem,2.2vw,.68rem) !important;
+            line-height:1.05 !important;
+            white-space:nowrap !important;
+            overflow:hidden !important;
+            text-overflow:ellipsis !important;
+        }
+        .st-key-casino_betting_identity .cb-balance {
+            flex:none !important;
+        }
         .st-key-casino_betting_shell [data-testid="column"] {min-width:0 !important;padding:0 !important;}
         .st-key-casino_betting_shell button {font-family:inherit !important;}
         .st-key-bet_nav_back button,.st-key-bet_nav_bank button {
@@ -576,47 +610,35 @@ def render_betting_ui(
         with st.container(key="casino_betting_top"):
             left, middle, right = st.columns([44, 1, 44], gap="small")
             with left:
-                if st.button("❮", key="bet_nav_back", help="메인으로"):
-                    change_page("main")
-            with middle:
-                st.markdown(
-                    f'<div class="cb-balance"><span class="cb-coin-symbol">$</span>{current_coins:,}</div>',
-                    unsafe_allow_html=True,
+                st.button(
+                    "❮",
+                    key="bet_nav_back",
+                    help="메인으로",
+                    on_click=change_page,
+                    args=("main",),
                 )
+            with middle:
+                with st.container(key="casino_betting_identity"):
+                    st.markdown(
+                        f'<div class="cb-balance"><span class="cb-coin-symbol">$</span>{current_coins:,}</div>',
+                        unsafe_allow_html=True,
+                    )
+                    if top_action_label and top_action_key:
+                        if st.button(
+                            top_action_label,
+                            key=top_action_key,
+                            help=top_action_help,
+                        ):
+                            if top_action_callback:
+                                top_action_callback()
             with right:
-                if st.button("+", key="bet_nav_bank", help="은행으로"):
-                    change_page("bank")
-
-        if top_action_label and top_action_key:
-            st.markdown(
-                """
-                <style>
-                .st-key-casino_betting_action [data-testid="stButton"] button {
-                    width: 100% !important;
-                    max-width: 150px !important;
-                    min-height: 34px !important;
-                    border: 1px solid rgba(178,75,247,.52) !important;
-                    border-radius: 10px !important;
-                    background: #17062b !important;
-                    color: #fdf7ff !important;
-                    font-size: clamp(.66rem,2.5vw,.78rem) !important;
-                    font-weight: 800 !important;
-                }
-                </style>
-                """,
-                unsafe_allow_html=True,
-            )
-            _left, tutorial_right = st.columns([1, 1], gap="small")
-            with tutorial_right:
-                with st.container(key="casino_betting_action"):
-                    if st.button(
-                        top_action_label,
-                        key=top_action_key,
-                        help=top_action_help,
-                        use_container_width=True,
-                    ):
-                        if top_action_callback:
-                            top_action_callback()
+                st.button(
+                    "+",
+                    key="bet_nav_bank",
+                    help="은행으로",
+                    on_click=change_page,
+                    args=("bank",),
+                )
 
         st.markdown(
             f'''

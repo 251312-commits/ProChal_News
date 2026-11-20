@@ -178,13 +178,22 @@ def _confirm_article_selection(index: int) -> None:
             background: #1b0b2b;
             box-shadow: 0 18px 60px rgba(0,0,0,.55);
             padding: 18px;
+            text-align: center;
+        }
+        .st-key-game5-confirm-overlay h3,
+        .st-key-game5-confirm-overlay [data-testid="stCaptionContainer"] {
+            width: 100%;
+            text-align: center;
+        }
+        .st-key-game5-confirm-overlay [data-testid="stHorizontalBlock"] {
+            width: 100%;
         }
         </style>
         """,
         unsafe_allow_html=True,
     )
     with st.container(key="game5-confirm-overlay", border=True):
-        st.markdown(f"### 후보 {index + 1}을 정답으로 결정할까요?")
+        st.markdown(f'<h3 style="text-align:center;">후보 {index + 1}을 정답으로 결정할까요?</h3>', unsafe_allow_html=True)
         st.caption(candidates[index]["title"])
         confirm_col, cancel_col = st.columns(2)
         with confirm_col:
@@ -387,7 +396,7 @@ def show_game_5():
             payout_multiplier=GAME_5_WIN_MULTIPLIER,
             title="게임 5: 일치율 구간 뉴스 맞히기",
             state_key="game_5",
-            top_action_label="📖 튜토리얼 다시 보기",
+            top_action_label="튜토리얼 다시 보기",
             top_action_key="game_5_show_tutorial",
             top_action_help="게임 진행 방법을 다시 확인합니다.",
             top_action_callback=lambda: change_page("game_5_tutorial"),
@@ -430,7 +439,6 @@ def show_game_5():
     pending_index = st.session_state.get("game_5_pending_selection")
     if isinstance(pending_index, int):
         _confirm_article_selection(pending_index)
-        return
 
     st.info("본문을 확인한 뒤, 이 구간에 해당하는 뉴스 하나를 선택하세요.")
     st.markdown(
