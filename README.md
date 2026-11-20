@@ -58,3 +58,10 @@ node --test tests/test_transaction_gateway.cjs tests/test_game1_result_parent_au
 GitHub의 `apps_script/Code.gs`, `apps_script/Badges.gs` 수정은 **배포된 Apps Script 웹 앱에 자동 반영되지 않는다**.
 서버 규칙 변경 시 Google Apps Script의 새 버전 배포가 필요하다.
 상세 절차는 [거래 원장 문서](docs/transaction-ledger.md)에 있다.
+
+## Streamlit Cloud 오류 복구
+
+메모리 부족·패키지 설치·Secrets 오류는 원인이 다르다.
+[Streamlit 오류 및 메모리 복구 가이드](docs/streamlit-resource-recovery.md)를 확인한다.
+현재 서버용 유사도 엔진은 ONNX INT8로 메모리를 절감한다. 모델 양자화에 따라
+기존 FP32 대비 점수가 소폭 달라질 수 있으며 실제 배포 환경의 로그 검증이 필요하다.

@@ -9,8 +9,6 @@ import threading
 import time
 
 import streamlit as st
-from google import genai
-from google.genai import types
 
 
 # Access secrets when the first summary is requested, not at import time.
@@ -25,6 +23,10 @@ RETRY_MAX_DELAY = float(os.getenv("GEMINI_RETRY_MAX_DELAY", "30"))
 
 
 def _new_client():
+    # The Google SDK is needed only for an actual summary request, not app boot.
+    from google import genai
+    from google.genai import types
+
     return genai.Client(
         api_key=st.secrets["GEMINI_API_KEY"],
         http_options=types.HttpOptions(timeout=int(REQUEST_TIMEOUT * 1000)),

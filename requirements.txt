@@ -1,11 +1,12 @@
---extra-index-url https://download.pytorch.org/whl/cpu
 streamlit==1.55.0
 streamlit-autorefresh
 newspaper3k
 lxml_html_clean
 beautifulsoup4
-transformers
-torch
+onnxruntime==1.31.1
+huggingface-hub>=0.36,<2
+tokenizers>=0.22,<1
+numpy>=1.26,<3
 gspread
 google-auth
 st-clickable-images
