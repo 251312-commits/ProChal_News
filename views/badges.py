@@ -87,7 +87,7 @@ def badge_gallery_dialog() -> None:
                     st.session_state["badge_gallery_synced"] = True
                     st.session_state["badge_gallery_sync_error"] = False
                     st.session_state["badge_gallery_sync_message"] = (
-                        "새 은행 업적은 Apps Script를 최신 버전으로 배포하면 동기화된다."
+                        "일부 은행 배지를 불러올 수 없습니다. 관리자에게 문의하세요."
                     )
                 except TransactionError as fallback_error:
                     st.session_state["badge_gallery_synced"] = False
@@ -118,7 +118,7 @@ def badge_gallery_dialog() -> None:
     st.html(
         '<div class="pc-badge-count">'
         f'획득 <b>{len(owned)} / {len(BADGES)}</b> '
-        '· 컬러 = 획득 · 어두운 회색 = 미획득'
+        ''
         '</div>',
     )
 
@@ -190,15 +190,13 @@ def badge_gallery_dialog() -> None:
         f'{progress_markup}</div></div>',
     )
 
-    if not unlocked:
-        st.caption("아직 얻지 못한 배지이다. 조건을 달성하면 컬러로 바뀐다.")
-    elif st.session_state.get("badge_gallery_sync_error"):
-        st.error("최신 보유 정보를 확인하지 못해 장착 기능을 사용할 수 없다.")
-    elif selected_id == equipped:
-        if st.button("장착 해제", key="badge_unequip", use_container_width=True):
-            _apply_equipped_badge("0")
-    else:
-        if st.button("이 배지 장착", key="badge_equip", use_container_width=True):
+    if unlocked:
+        if st.session_state.get("badge_gallery_sync_error"):
+            st.error("최신 보유 정보를 확인하지 못해 장착 기능을 사용할 수 없다.")
+        elif selected_id == equipped:
+            if st.button("장착 해제", key="badge_unequip", use_container_width=True):
+                _apply_equipped_badge("0")
+        elif st.button("이 배지 장착", key="badge_equip", use_container_width=True):
             _apply_equipped_badge(selected_id)
 
     if equipped != "0" and selected_id != equipped and not st.session_state.get("badge_gallery_sync_error"):

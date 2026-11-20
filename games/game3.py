@@ -150,7 +150,7 @@ def show_bet_screen():
         return
 
     st.success(f"내 선택: {st.session_state.game_3_choice}")
-    st.caption("정답 시 순이익 +베팅액의 2배, 오답 시 손실 −베팅액의 절반")
+    st.caption("정답 +베팅액의 2배 · 오답 −베팅액의 절반")
     round_number = st.session_state.get("game_3_round", 0)
     user = st.session_state.get("current_user_data") or {}
     confirmed_bet = render_betting_ui(
@@ -204,14 +204,13 @@ def analyze_game_3():
     url = article["url"]
     bet_coin = st.session_state.game_3_bet
 
-    st.markdown("### 🤖 STEP 4. AI 유사도 분석")
-    st.info("AI가 뉴스 본문을 요약하고 뉴스 제목과 요약문의 유사도를 분석합니다.")
+    st.markdown("### 🤖 AI 유사도 분석")
     st.markdown(f"**뉴스 제목: {title}**")
     with st.expander("뉴스 본문 확인하기"):
         st.write(article_text)
     st.markdown(f"[기사 원문 열기]({url})")
 
-    if st.button("🤖 뉴스 유사도 분석 및 결과 확인", use_container_width=True):
+    if st.button("🤖 유사도 분석", use_container_width=True):
         with similarity_analysis_loading():
             try:
                 summary_text, similarity_result = analyze_round_once(
@@ -269,16 +268,16 @@ def show_result_screen():
         title=res["title"], score=res["actual_score"],
         details=res.get("score_details"), score_precision=2,
     )
-    st.markdown("### 🏆 최종 게임 결과")
+    st.markdown("### 🏆 최종 결과")
 
     if res["is_win"]:
 
         st.balloons()
-        st.success("정답입니다! 베팅 성공!")
+        st.success("정답!")
 
     else:
 
-        st.error("아쉽습니다! 베팅 실패!")
+        st.error("오답!")
 
     col1, col2 = st.columns(2)
 
@@ -286,9 +285,9 @@ def show_result_screen():
         st.metric("내 선택", res["user_choice"])
 
     with col2:
-        st.metric("정수 부분의 홀짝", f"{res['integer_score']} · {res['ai_result']}")
+        st.metric("AI 점수의 홀짝", f"{res['integer_score']} · {res['ai_result']}")
 
-    with st.expander("분석한 뉴스 기사 정보"):
+    with st.expander("기사 정보"):
 
         st.write(res["title"])
         st.markdown(f"[기사 원문 열기]({res['url']})")

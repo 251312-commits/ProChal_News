@@ -105,7 +105,7 @@ function reset(id, options) {
   urlInput.value = "";
   setUrlMessage("");
   for (const button of scene.querySelectorAll("nav button")) button.disabled = false;
-  hint.textContent = titles.length ? "레버를 당겨 기사 후보를 확인하세요." : "선택할 뉴스가 없습니다.";
+  hint.textContent = titles.length ? "레버를 당겨보세요." : "선택할 뉴스가 없습니다.";
   reels.replaceChildren();
   for (let i = 0; i < 3; i++) {
     const button = document.createElement("button");
@@ -168,7 +168,7 @@ function revealRow(row, i) {
 function enableChoices(rows) {
   scene.dataset.phase = "ready";
   rows.forEach((row, i) => { row.disabled = i >= titles.length; });
-  hint.textContent = titles.length === 3 ? "이번 라운드에서 읽을 기사를 선택하세요." : "읽을 기사를 선택하세요.";
+  hint.textContent = "읽을 기사를 선택하세요.";
 }
 
 function spinContinuousReel(rows) {

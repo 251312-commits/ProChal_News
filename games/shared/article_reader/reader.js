@@ -75,8 +75,9 @@ function showArticle(args) {
   }
   setArticleImage(args.image_url);
   document.querySelector("#headline").textContent = args.title;
-  document.querySelector("#guidance").textContent =
-    args.guidance || "기사를 읽고 다음 단계로 진행하세요.";
+  const guidance = document.querySelector("#guidance");
+  guidance.textContent = args.guidance || "기사를 읽고 다음 단계로 진행하세요.";
+  guidance.hidden = args.hide_default_guidance === true && !args.guidance;
   document.querySelector("#return-label").textContent =
     args.return_label || "다음 단계로";
 

@@ -333,8 +333,8 @@ function publishOutcome() {
   const signedReward = (Number(args.reward) > 0 ? "+" : "") +
     Number(args.reward).toLocaleString("ko-KR") + " C";
   ui.reward.textContent = signedReward;
-  ui.status.textContent = win ? "두 자리 적중! 음악을 끝까지 즐겨보세요." :
-    "음악 중단 · 결과 공개";
+  ui.status.textContent = win ? "두 자리 적중!" :
+    "결과 공개 완료";
 }
 function failNow() {
   if (revealFinished) return;
@@ -379,7 +379,7 @@ function tick() {
   if (!firstRevealed && position >= spec.drop1) {
     firstRevealed = true;
     revealDigit(args.reveal_order[0]);
-    ui.status.textContent = "1차 드랍! 일치하는 숫자 공개";
+    ui.status.textContent = "첫 번째 숫자 공개";
   }
   if (matchCount === 1 && position >= spec.drop2 - 0.12) {
     failNow();
@@ -407,7 +407,7 @@ function onSongEnded() {
   ui.unlockAudio.hidden = true;
   publishOutcome();
   ui.skip.hidden = true;
-  if (Boolean(args.win)) ui.status.textContent = "피날레 완료 · 최종 점수 공개";
+  if (Boolean(args.win)) ui.status.textContent = "점수 공개 완료";
   scheduleBadgeAwards();
 }
 function skip() {
@@ -417,7 +417,7 @@ function skip() {
   publishOutcome();
   ui.skip.hidden = true;
   ui.unlockAudio.hidden = true;
-  ui.status.textContent = "연출 건너뛰기 · 최종 점수 공개";
+  ui.status.textContent = "점수 공개 완료";
   scheduleBadgeAwards();
 }
 function initializeTrack(data) {
@@ -442,7 +442,7 @@ function start() {
   pauseMainBgm();
   started = true;
   ui.skip.hidden = false;
-  ui.status.textContent = "빌드업 · AI 유사도를 계산했습니다";
+  ui.status.textContent = "결과 공개 준비 중…";
   // The parent window owns the persistent BGM media element. Borrow that
   // already gesture-activated element via postMessage (works across iframes).
   bridgePending = true;
@@ -451,7 +451,7 @@ function start() {
   fallbackAttempted = false;
   bridgePosition = 0;
   bridgePendingSince = performance.now();
-  ui.status.textContent = "배경음악 플레이어로 결과 음악 연결 중";
+  ui.status.textContent = "결과 공개 준비 중…";
   bridgeCommand("start", {track_url: args.track.url, fail_url: args.fail_url});
   animationFrame = requestAnimationFrame(tick);
 }
@@ -589,10 +589,10 @@ function setup(data) {
   ui.skip.hidden = true;
   ui.unlockAudio.hidden = true;
   ui.explain.hidden = true;
-  ui.explain.textContent = "판정 이유 · 그래프 보기";
+  ui.explain.textContent = "점수 분석 보기";
   ui.afterActions.hidden = true;
   ui.retryFail.hidden = true;
-  ui.status.textContent = "AI 분석 완료 · 결과를 자동 공개합니다";
+  ui.status.textContent = "결과 공개 준비 중…";
   screen.classList.remove("jackpot", "failed", "beat");
   modelDetails(data);
   for (const [name, target] of [

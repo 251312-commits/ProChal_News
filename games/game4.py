@@ -217,7 +217,7 @@ def _settle_game_4(
     }
 
 
-@st.dialog("AI 판정 근거 · 점수 시각화")
+@st.dialog("점수 분석")
 def _show_game_4_evidence() -> None:
     """Inspect the saved input and score, not a newly generated model result."""
     result = st.session_state.get("game_4_result") or {}
@@ -225,9 +225,9 @@ def _show_game_4_evidence() -> None:
     st.markdown("**기사 제목**")
     st.write(result.get("title") or "기사 제목 정보 없음")
     st.markdown("**AI 요약문**")
-    st.write(result.get("summary") or "저장된 AI 요약문이 없다.")
+    st.write(result.get("summary") or "요약문 없음")
     st.metric("최종 일치율", f"{result.get('actual_score', 0):.2f}%")
-    st.write(f"내가 선택한 구간: **{result.get('selected_range', '—')}**")
+    st.write(f"선택한 구간: **{result.get('selected_range', '—')}**")
     st.write(f"정답 구간: **{result.get('target_range', '—')}**")
     if all(key in details for key in ("model_name", "token_count", "logit", "normalized")):
         st.caption(
@@ -243,10 +243,9 @@ def _show_game_4_evidence() -> None:
         )
         st.html(_score_diagram(details, False))
     else:
-        st.caption("이 라운드의 AI 세부 계산값은 저장되어 있지 않다.")
+        st.caption("상세 분석 정보가 없습니다.")
     st.caption(
-        "이 자료는 입력 문장과 모델 점수의 산출 과정을 보여준다. "
-        "개별 표현이 판단에 미친 인과적 이유를 증명하지는 않는다."
+        "그래프는 점수 변환 과정을 보여주며, AI의 판단 이유를 설명하지 않는다."
     )
     if st.button("결과로 돌아가기", key="game4_evidence_close", use_container_width=True):
         st.rerun()
@@ -273,15 +272,15 @@ def _show_game_4_result() -> None:
         )
         with st.container(key="game4_result_details"):
             if result["is_win"]:
-                st.success(f"정답입니다! +{result['reward']:,} C")
+                st.success(f"정답 · +{result['reward']:,} C")
             else:
-                st.error(f"틀렸습니다! {result['reward']:,} C")
+                st.error(f"오답 · {result['reward']:,} C")
             st.write(f"선택한 구간: **{result['selected_range']}**")
             st.info(f"정답 구간: **{result['target_range']}**")
-            st.write(f"현재 보유 코인: **{result['new_coins']:,} C**")
-            st.write(f"현재 연승 기록: **{result['new_streak']} 연승**")
+            st.write(f"보유 코인: **{result['new_coins']:,} C**")
+            st.write(f"연승: **{result['new_streak']}**")
             if st.button(
-                "판정 근거 · 점수 그래프 보기",
+                "점수 그래프 보기",
                 key="game4_result_evidence",
                 use_container_width=True,
             ):
@@ -325,9 +324,7 @@ def show_game_4_tutorial() -> None:
             <section class="game4-guide-sheet" aria-labelledby="game4-guide-title" lang="ko">
                 <header class="game4-guide-heading">
                     <span>GAME 04</span><h1 id="game4-guide-title">일치율 구간 맞히기</h1>
-                    <p>기사 제목과 AI 요약문은 얼마나 비슷할까?<br>
-                    예상 일치율 구간을 선택해 보자.</p>
-                </header>
+                                    </header>
                 <ol aria-label="게임 진행 순서" role="list">{cards}</ol>
             </section>
         """)
@@ -350,7 +347,7 @@ def show_game_4():
             current_nickname=str(user_data.get("아이디", "")),
             min_bet=GAME_4_MIN_BET,
             payout_multiplier=GAME_4_WIN_MULTIPLIER,
-            title="게임 4: 일치율 구간 뉴스 맞히기",
+            title="게임 4 · 구간 맞히기",
             state_key="game_4",
         )
         if confirmed_bet is not None:

@@ -76,7 +76,7 @@ def pay_loan(coins: int, loan: int) -> None:
     with st.container(key="bank-repay-screen", gap=None):
         st.html(
             '<header class="bank-repay-header">'
-            '<h1>대출 상환</h1><p>갚을 금액을 선택하세요.</p>'
+            '<h1>대출 상환</h1>'
             '</header>'
         )
         st.html(

@@ -16,6 +16,9 @@ class SharedCopyTests(unittest.TestCase):
         betting = read("games/shared/betting.py")
         self.assertIn('<h2 class="cb-heading">베팅 금액 선택</h2>', betting)
         self.assertIn("금액을 정하고 다음 단계로 진행하세요", betting)
+        self.assertIn('show_explanatory_copy = state_key == "game_5"', betting)
+        self.assertIn("{description_html}", betting)
+        self.assertIn("if show_explanatory_copy:", betting)
         self.assertNotIn("베팅하면 뉴스가 공개됩니다", betting)
         # The small title still identifies the currently selected game.
         self.assertIn("{safe_title}", betting)
@@ -26,8 +29,8 @@ class SharedCopyTests(unittest.TestCase):
         html = read("games/shared/news_slot/index.html")
         js = read("games/shared/news_slot/slot.js")
         self.assertIn("<h1>기사 선택</h1>", html)
-        self.assertIn("레버를 당겨 기사 후보를 확인하세요.", js)
-        self.assertIn("이번 라운드에서 읽을 기사를 선택하세요.", js)
+        self.assertIn("레버를 당겨보세요.", js)
+        self.assertIn("읽을 기사를 선택하세요.", js)
 
     def test_reader_copy_does_not_assume_similarity_prediction(self):
         html = read("games/shared/article_reader/index.html")
@@ -36,6 +39,11 @@ class SharedCopyTests(unittest.TestCase):
         self.assertIn("기사를 읽고 다음 단계로 진행하세요.", html)
         self.assertIn('args.guidance || "기사를 읽고 다음 단계로 진행하세요."', js)
         self.assertIn('args.return_label || "다음 단계로"', js)
+        self.assertIn("guidance.hidden = args.hide_default_guidance === true", js)
+        reader = read("games/shared/article_reader.py")
+        self.assertIn("hide_default_guidance=False", reader)
+        flow = read("games/shared/news_flow.py")
+        self.assertIn("hide_default_guidance=True", flow)
         self.assertIn('label: action === "predict" ? "다음 단계 준비 중…"', js)
         self.assertNotIn("유사도 예측하러 가기", html + js)
         self.assertNotIn("예측 화면 자동 이동까지", html + js)

@@ -43,7 +43,7 @@ def draw_loan(coins: int, loan: int, principal: int) -> None:
     with st.container(key="bank-draw-screen", gap=None):
         st.html(
             '<header class="bank-draw-masthead"><h1>은행 대출</h1>'
-            '<p>지금 필요한 코인을 대출받으세요.</p></header>'
+            '</header>'
         )
         with st.container(key="bank-draw-parchment", gap=None):
             st.html(
