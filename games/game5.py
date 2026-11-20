@@ -387,10 +387,6 @@ def show_game_5():
             payout_multiplier=GAME_5_WIN_MULTIPLIER,
             title="게임 5: 일치율 구간 뉴스 맞히기",
             state_key="game_5",
-            top_action_label="📖 튜토리얼 다시 보기",
-            top_action_key="game_5_show_tutorial",
-            top_action_help="게임 진행 방법을 다시 확인합니다.",
-            top_action_callback=lambda: change_page("game_5_tutorial"),
         )
         if confirmed_bet is not None:
             st.session_state.game_5_bet = confirmed_bet
