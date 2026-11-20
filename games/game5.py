@@ -166,7 +166,7 @@ def _confirm_article_selection(index: int) -> None:
         if st.button("결정하기", key="game_5_confirm_selection", use_container_width=True):
             st.session_state.game_5_selected_index = index
             st.session_state.pop("game_5_pending_selection", None)
-            st.rerun(scope="app")
+            change_page("game_5_result")
     with cancel_col:
         if st.button("다시 보기", key="game_5_cancel_selection", use_container_width=True):
             st.session_state.pop("game_5_pending_selection", None)
@@ -218,7 +218,46 @@ def _show_result() -> None:
 
     result = st.session_state.get("game_5_result")
     if not result:
-        change_page("game_5")
+        candidates = st.session_state.get("game_5_candidates", [])
+        target_range = st.session_state.get("game_5_target_range")
+        selected_index = st.session_state.get("game_5_selected_index")
+        if not isinstance(selected_index, int) or not 0 <= selected_index < len(candidates):
+            change_page("game_5")
+            return
+        if not isinstance(target_range, (list, tuple)) or len(target_range) != 2:
+            change_page("game_5")
+            return
+
+        selected_article = candidates[selected_index]
+        with st.spinner("선택한 뉴스의 일치율을 분석하고 결과를 집계하는 중…"):
+            try:
+                if "score" not in selected_article or not selected_article.get("text"):
+                    _load_article(selected_article)
+                    selected_article["score"] = _calculate_score(selected_article)
+                actual_score = float(selected_article["score"])
+                is_win = target_range[0] <= actual_score <= target_range[1]
+                bet_coin = int(st.session_state.game_5_bet)
+                settled = settle_game_round("game_5", bet_coin, is_win)
+            except BalanceChanged as changed:
+                update_session_balances(changed.balances)
+                st.error(str(changed))
+                return
+            except (RuntimeError, ValueError, TypeError, TransactionError) as exc:
+                st.error(f"결과를 계산하지 못했습니다: {exc}")
+                return
+
+        st.session_state.game_5_result = {
+            "title": selected_article["title"],
+            "summary": selected_article.get("summary", ""),
+            "score_details": selected_article.get("score_details"),
+            "actual_score": actual_score,
+            "target_range": _format_score_range(target_range),
+            "reward": settled["reward"],
+            "is_win": is_win,
+            "new_coins": settled["new_coins"],
+            "new_streak": settled["new_streak"],
+        }
+        st.rerun()
         return
     if not apply_end_of_turn_interest("game_5"):
         return
@@ -270,26 +309,6 @@ def _show_result() -> None:
 
 def show_game_5():
     st.title("🎮 게임 5: 일치율 구간 뉴스 맞히기")
-    with st.container(key="game5-betting-top"):
-        st.html(
-            """
-            <style>
-            .st-key-game5-betting-top [data-testid="stButton"] button {
-                min-height: 44px; border: 1px solid #7a4b21 !important;
-                border-radius: 12px; background:#fff6df !important;
-                color:#24132f !important; font-weight:800;
-            }
-            </style>
-            """
-        )
-        if st.button(
-            "📖 게임 5 튜토리얼 다시 보기",
-            key="game_5_show_tutorial",
-            help="게임 진행 방법을 다시 확인합니다.",
-            use_container_width=True,
-        ):
-            change_page("game_5_tutorial")
-
     if "game_5_bet" not in st.session_state:
         if not check_user_coins_or_pop_bank(GAME_5_MIN_BET):
             return
@@ -304,6 +323,10 @@ def show_game_5():
             payout_multiplier=GAME_5_WIN_MULTIPLIER,
             title="게임 5: 일치율 구간 뉴스 맞히기",
             state_key="game_5",
+            top_action_label="📖 튜토리얼 다시 보기",
+            top_action_key="game_5_show_tutorial",
+            top_action_help="게임 진행 방법을 다시 확인합니다.",
+            top_action_callback=lambda: change_page("game_5_tutorial"),
         )
         if confirmed_bet is not None:
             st.session_state.game_5_bet = confirmed_bet
@@ -485,56 +508,6 @@ def show_game_5():
                                     st.session_state.game_5_pending_selection = index
                                     st.rerun()
 
-    if "game_5_selected_index" not in st.session_state:
-        return
-
-    if "game_5_result" not in st.session_state:
-        selected_index = st.session_state.game_5_selected_index
-        selected_article = candidates[selected_index]
-        if "score" not in selected_article or not selected_article.get("text"):
-            with similarity_analysis_loading():
-                try:
-                    _load_article(selected_article)
-                    selected_article["score"] = _calculate_score(selected_article)
-                except (RuntimeError, ValueError, TypeError) as exc:
-                    try:
-                        _replace_candidate(candidates, selected_index)
-                    except ValueError as replacement_exc:
-                        st.error(f"선택한 기사를 교체할 수 없습니다: {replacement_exc}")
-                        return
-                    st.session_state.pop("game_5_selected_index", None)
-                    st.warning(f"실패한 기사를 교체했습니다. 다시 선택해 주세요: {exc}")
-                    st.rerun()
-                    return
-        actual_score = selected_article["score"]
-
-        is_win = target_range[0] <= actual_score <= target_range[1]
-        bet_coin = int(st.session_state.game_5_bet)
-        try:
-            settled = settle_game_round("game_5", bet_coin, is_win)
-        except BalanceChanged as changed:
-            update_session_balances(changed.balances)
-            st.error(str(changed))
-            return
-        except TransactionError as exc:
-            st.error(str(exc))
-            return
-
-        reward = settled["reward"]
-        new_coins = settled["new_coins"]
-        new_streak = settled["new_streak"]
-        st.session_state.game_5_result = {
-            "title": selected_article["title"],
-            "summary": selected_article.get("summary", ""),
-            "score_details": selected_article.get("score_details"),
-            "actual_score": actual_score,
-            "target_range": _format_score_range(target_range),
-            "reward": reward,
-            "is_win": is_win,
-            "new_coins": new_coins,
-            "new_streak": new_streak,
-        }
-        change_page("game_5_result")
 
 
 # Game 5-only tutorial and entry navigation.

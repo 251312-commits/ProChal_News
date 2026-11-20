@@ -141,7 +141,23 @@ def _adjust_bet_amount(step, min_val, max_val, slider_key="bet_slider_val"):
     st.session_state[slider_key] = max(min_val, min(max_val, aligned + step))
 
 
-def render_betting_ui(current_coins, users_data=None, current_sid="", current_nickname="", min_bet=MIN_BET, bg_image_path=None, *, payout_multiplier, title="title", state_key="bet", round_key=None):
+def render_betting_ui(
+    current_coins,
+    users_data=None,
+    current_sid="",
+    current_nickname="",
+    min_bet=MIN_BET,
+    bg_image_path=None,
+    *,
+    payout_multiplier,
+    title="title",
+    state_key="bet",
+    round_key=None,
+    top_action_label=None,
+    top_action_key=None,
+    top_action_help=None,
+    top_action_callback=None,
+):
     """Responsive betting screen with configurable net-win multiplier and title.
 
     payout_multiplier is the factor *added* to the existing coin balance on a win.
@@ -544,6 +560,34 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
                 f'<div class="cb-balance"><span class="cb-coin-symbol">$</span>{current_coins:,}</div>',
                 unsafe_allow_html=True,
             )
+            if top_action_label and top_action_key:
+                st.markdown(
+                    """
+                    <style>
+                    .st-key-casino_betting_shell [data-testid="stButton"].st-key-game5-top-action button {
+                        width: 150px !important;
+                        max-width: 100% !important;
+                        min-height: 34px !important;
+                        margin: 6px 0 0 auto !important;
+                        border: 1px solid rgba(178,75,247,.52) !important;
+                        border-radius: 10px !important;
+                        background: #17062b !important;
+                        color: #fdf7ff !important;
+                        font-size: clamp(.66rem,2.5vw,.78rem) !important;
+                        font-weight: 800 !important;
+                    }
+                    </style>
+                    """,
+                    unsafe_allow_html=True,
+                )
+                if st.button(
+                    top_action_label,
+                    key=top_action_key,
+                    help=top_action_help,
+                    use_container_width=False,
+                ):
+                    if top_action_callback:
+                        top_action_callback()
         with right:
             if st.button("+", key="bet_nav_bank", help="은행으로"):
                 change_page("bank")
