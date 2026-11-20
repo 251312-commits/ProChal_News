@@ -11,7 +11,7 @@ from pathlib import Path
 from modules.badges import BADGES, BADGE_BY_ID, equipped_badge, parse_owned
 
 
-# Temporary monochrome Unicode symbols (not emoji) remain tintable by CSS.
+# Monochrome Unicode symbols can be tinted by CSS.
 BADGE_SYMBOLS = {
     "first_round": "✦",
     "all_games": "⌘",
@@ -71,7 +71,7 @@ RARITY_ACCENTS = {
 
 
 def badge_symbol(badge_id: str) -> str:
-    """Legacy fallback for clients that cannot render images."""
+    """Text fallback for clients that cannot render images."""
     return BADGE_SYMBOLS.get(badge_id, "✦")
 
 
@@ -349,7 +349,7 @@ def badge_gallery_css(owned: str, selected_id: str) -> str:
     width:100%!important; min-width:0!important; max-width:100%!important;
     gap:4px!important;
   }
-  /* Streamlit 1.55 uses stColumn, not the older 'column' test ID. */
+  /* Streamlit 1.55 column selector. */
   .st-key-badge_gallery [data-testid="stColumn"] {
     flex:1 1 0!important; width:0!important; max-width:none!important;
     min-width:0!important; padding:0!important;
@@ -412,6 +412,5 @@ def badge_gallery_css(owned: str, selected_id: str) -> str:
             f"{key} .stButton button::before "
             f"{{filter:{effect};opacity:{'1' if is_owned else '.72'};}}"
         )
-    # Keep every dynamic button rule INSIDE the single style tag. Appending
-    # selectors after </style> made raw CSS appear as broken HTML in the dialog.
+    # Dynamic CSS rules must remain inside the style tag.
     return "".join(rules) + "\n</style>"

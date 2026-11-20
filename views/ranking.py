@@ -261,7 +261,6 @@ def show_ranking():
     st.caption("순위는 보유 코인에서 미상환 대출금을 뺀 금액으로 정합니다.")
     st_autorefresh(interval=10000, limit=None, key="ranking_autorefresh")
 
-    # 2. ws.get_all_records() 대신 미리 정의된 fetch_ranking_data() 호출로 수정
     users_data = fetch_ranking_data()
     if not users_data:
         st.warning("등록된 유저 데이터가 없습니다.")

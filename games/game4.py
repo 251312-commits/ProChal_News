@@ -257,8 +257,7 @@ def _show_game_4_result() -> None:
     if not apply_end_of_turn_interest("game_4"):
         return
 
-    # The animation already happened in the original three-range picker.
-    # This is an immediate, non-animated outcome screen.
+    # 선택 화면에서 점수 공개가 완료된 뒤 결과만 표시한다.
     st.html(_GAME4_UI_DIR / "result.css")
     score_text = f"{result['actual_score']:.2f}%"
     with st.container(key="game4_result_shell"):
@@ -299,7 +298,7 @@ def _show_game_4_result() -> None:
 
 
 def show_game_4_tutorial() -> None:
-    """Game 1-style illustrated guide, shown before a new Game 4 wager."""
+    """게임 4의 베팅 전 안내 화면."""
     art_dir = Path(__file__).resolve().parents[1] / "assets" / "game4_guide"
     steps = (
         ("bet", "코인 베팅", "금액을 정하고 베팅한다.<br>최소 <b>1,000 C</b>"),
@@ -415,7 +414,7 @@ def show_game_4():
         st.session_state.game_4_result = result
 
     # Reveal only after the wallet was settled and end-of-turn interest applied.
-    # The animation runs in the *same* picker used for the player's choice.
+    # 선택 화면에서 점수를 공개한다.
     if not st.session_state.get("game4_reveal_done", False):
         if not apply_end_of_turn_interest("game_4"):
             return

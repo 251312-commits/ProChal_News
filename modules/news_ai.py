@@ -11,9 +11,7 @@ from modules.news_preprocessing import (
 from modules.news_summarizer import summarize_news
 from modules.score_math import score_hundredths
 
-# ==========================================
-# 1. 효율성 극대화: AI 모델 캐싱 (최초 1회만 로드)
-# ==========================================
+# 유사도 모델 캐싱
 RERANKER_NAME = "BAAI/bge-reranker-v2-m3"
 
 
@@ -28,9 +26,7 @@ def load_ai_model():
     return tokenizer, model
 
 
-# ==========================================
-# 2. 제공해주신 기사 전처리 함수들
-# ==========================================
+# 기사 제목 및 이미지 추출
 def get_clean_title(article_obj, domain: str) -> str:
     title = article_obj.title.strip()
     if 'kbs.co.kr' in domain or title in ['KBS', 'KBS 뉴스', 'KBS뉴스', 'KBS 기사', '']:
@@ -118,9 +114,7 @@ def similarity_check(summary_text, title):
         "normalized": normalized,
     }
 
-# ==========================================
-# 선택 횟수 기반 최저 뉴스 3개 무작위 추출 알고리즘
-# ==========================================
+# 선택 횟수가 적은 기사부터 후보 구성
 def pick_lowest_count_news(news_list, limit=3):
     if limit < 1:
         return []

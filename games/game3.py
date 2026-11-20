@@ -136,7 +136,7 @@ def show_choice_screen():
 # ==========================================
 
 def show_bet_screen():
-    """Use the shared wager UI; Game 3 retains its half-stake loss rule."""
+    """게임 3 베팅 화면."""
     ws = init_gspread()
     current_sid = str(st.session_state.current_user).strip().replace(".0", "")
     users_data = ws.get_all_records()
@@ -179,7 +179,6 @@ def show_bet_screen():
 # ==========================================
 
 def show_news_screen():
-    # The shared reader has already saved the chosen article.
     title, article_text, url = get_game_news_selection(
         "game_3", win_multiplier=GAME_3_WIN_MULTIPLIER
     )

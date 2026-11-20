@@ -123,8 +123,7 @@ def update_session_balances(balances: dict) -> dict:
         "연승": account_amount(balances["streak"], strict=True),
         "대출금": account_amount(balances["loan"], strict=True),
     }
-    # Legacy transactions may lack principal; new bank transactions reject
-    # those responses, whereas existing game client tests still use old mocks.
+    # Historical receipts may omit principal; bank writes require this field.
     if "principal" in balances:
         normalized["대출원금"] = account_amount(balances["principal"], strict=True)
     user = st.session_state.get("current_user_data")
@@ -135,11 +134,10 @@ def update_session_balances(balances: dict) -> dict:
 
 def refresh_account_from_gateway(*, require_badge_equip: bool = False,
                                  require_badge_sync: bool = False) -> dict:
-    """Check deployed gateway capabilities and refresh authoritative C/D/G/H.
+    """Check gateway compatibility and refresh authoritative C/D/G/H.
 
-    A new client must never send a mutating request to an older gateway:
-    the older code can commit a loan but omit the new principal field,
-    making a successful transaction incorrectly appear to have failed.
+    Mutations must not target gateways that omit the principal field;
+    otherwise a committed loan may be incorrectly treated as a failure.
     """
     try:
         result = _request({
@@ -230,9 +228,7 @@ def sync_badges_from_gateway() -> tuple[str, ...]:
     players who are already bankrupt can still collect their Mythic badge.
     A stale gateway is detected before attempting any server mutation.
     """
-    # Server validates the authenticated account under ScriptLock and returns
-    # fresh wallet + badge data. A separate read-only status request here was
-    # redundant and doubled the latency of opening the collection.
+    # Badge sync returns the live wallet and badge profile under ScriptLock.
     try:
         result = _request({
             "transaction_id": transaction_id("badge_sync"),
@@ -268,8 +264,7 @@ def equip_badge(badge_id: str, *, request_id: str | None = None) -> dict:
 
     if badge_id != "0" and badge_id not in BADGE_BY_ID:
         raise ValueError("Unknown badge identifier")
-    # The equip handler itself checks Users!K ownership under ScriptLock and
-    # returns the latest profile. It needs no separate status probe.
+    # The gateway verifies badge ownership under ScriptLock.
     try:
         result = _request({
             "transaction_id": request_id or transaction_id("equip"),

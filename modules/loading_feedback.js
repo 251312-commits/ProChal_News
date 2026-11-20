@@ -15,8 +15,7 @@
   const KEY = "__pcOperationLoadingV1";
   if (host[KEY]) {
     if (host[KEY].version !== 2) {
-      // Legacy listener was installed without a removable handler.
-      // Reset the page once rather than keeping the immediate-click overlay.
+      // An older controller has a non-removable click listener; reload to reset it.
       host[KEY].clear();
       host.location.reload();
       return;
@@ -178,8 +177,7 @@
 
   function isSimilarityTrigger(button) {
     const label = (button.innerText || button.textContent || "").trim();
-    // These actions enter the existing similarity-analysis loader. Do not
-    // obscure it with the generic processing overlay.
+    // The similarity-analysis loader handles these actions.
     return /유사도\s*(분석|판정|계산)/.test(label) ||
       /\b(?:HIGH|LOW)\s*\((?:이상|미만)/.test(label);
   }
@@ -219,8 +217,7 @@
     }
   });
 
-  // Existing similarity screen wins even when Streamlit inserts its markup
-  // after a generic click has already scheduled a loader.
+  // Prefer the similarity loader to a pending generic overlay.
   const similarityObserver = new host.MutationObserver(() => {
     if (active && hasSimilarityLoader()) clear();
   });

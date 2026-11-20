@@ -18,7 +18,6 @@ from modules.transactions import BalanceChanged, TransactionError, settle_game_r
 # 순이익(잔액 증가액) 배율. UI 예상 코인과 실제 승리 정산에 공통 적용.
 GAME_1_WIN_MULTIPLIER = 100.0
 
-# 정의된 함수: show_game_1
 
 def show_game_1():
     if "game_1_bet" not in st.session_state:
@@ -30,14 +29,12 @@ def show_game_1():
         current_coins = int(user_data.get('코인', 0))
         current_sid = str(st.session_state.get('current_user', ''))
         current_nickname = str(user_data.get('아이디', ''))
-        # 랭킹 화면과 같은, 최대 10초 캐시된 사용자 코인 목록을 이용한다.
-        # 이전에는 캐시가 없는 경우 빈 목록으로 처리돼 1위로 잘못 표시됐다.
+        # 베팅 예상 순위는 랭킹 화면과 같은 캐시를 사용한다.
         try:
             users_data = fetch_ranking_data()
         except Exception:
             users_data = None
 
-        # Use the checked-in betting background from the assets directory.
         confirmed_bet = render_betting_ui(
             current_coins=current_coins,
             users_data=users_data,
@@ -153,7 +150,7 @@ _ART = {
 
 
 def _artwork() -> dict[str, str]:
-    """Use the same cached local asset loader as the news selection screen."""
+    """Resolve image URLs for the prediction screen."""
     return {
         key: load_local_image_url(str(_ASSETS / filename))
         for key, filename in _ART.items()
@@ -189,7 +186,6 @@ def render_game1_prediction_picker(article_title: str) -> None:
     round_id = state.game1_pred_round_id
     user = state.get("current_user_data") or {}
 
-    # Same full-viewport iframe shell already used in games/news_roulette.py.
     with st.container(key="game1-prediction-screen", gap=None):
         st.html("""
         <style>

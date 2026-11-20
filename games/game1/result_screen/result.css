@@ -401,7 +401,7 @@ html, body { overflow:hidden; overscroll-behavior:none; }
 }
 
 
-/* New-award overlay appears only after the music-synchronised result resolves. */
+/* Badge overlay appears after the music-synchronised result. */
 .badge-awards {
   position:fixed;inset:0;z-index:70;display:grid;place-items:center;
   padding:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right))

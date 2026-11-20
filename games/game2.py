@@ -1,4 +1,4 @@
-# 업다운 (하) ½
+"""뉴스 유사도 HIGH/LOW 예측 게임."""
 
 import random
 import streamlit as st
@@ -172,7 +172,7 @@ def show_game_2():
 
     st.title("🎮 게임 2: 뉴스 유사도 HIGH / LOW 게임")
     
-    # [1단계] Shared wager screen: game 2 awards +2x net gain.
+    # [1단계] 베팅
     if "game_2_bet" not in st.session_state:
         if not check_user_coins_or_pop_bank():
             return
@@ -195,7 +195,6 @@ def show_game_2():
             st.rerun()
         return
 
-    # Game 2's target-number card is intentionally game-specific.
     st.markdown("""
         <style>
         .target-num-card {
@@ -211,7 +210,7 @@ def show_game_2():
         </style>
     """, unsafe_allow_html=True)
 
-    # [2단계] Reuse the roulette -> article reader flow, without a second slot.
+    # [2단계] 기사 선택 및 읽기
     title, article_text, url = get_game_news_selection(
         "game_2", win_multiplier=GAME_2_WIN_MULTIPLIER
     )

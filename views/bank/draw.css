@@ -272,10 +272,7 @@
   .st-key-bank-draw-screen .st-key-bank-borrow-submit::after { width: 46px; height: 46px; right: -17px; }
 }
 
-/* Borrow approval: animate the SAME stamp already next to the bottom button.
-   An invisible state class on the document title enables the bottom effect,
-   but no stamp is drawn near the title. Keep the original decorative stamp
-   in .st-key-bank-borrow-submit::after visible before and after the press. */
+/* Animate the submit-button stamp after approval. */
 .st-key-bank-draw-screen:has(.bank-borrow-approved) .st-key-bank-borrow-submit::after {
   z-index: 5;
   transform-origin: 52% 70%;

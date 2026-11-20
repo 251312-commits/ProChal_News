@@ -21,7 +21,7 @@ from games.game5 import show_game_5, _show_article_detail, _show_result
 from games.game5 import show_game_5_tutorial
 
 # ==========================================
-# 4. Streamlit 앱 라우팅 및 상태 관리
+# Streamlit 상태 및 라우팅
 # ==========================================
 if 'page' not in st.session_state:
     st.session_state.page = 'login'

@@ -33,8 +33,6 @@ def draw_loan(coins: int, loan: int, principal: int) -> None:
     rate = int(INTEREST_RATE * 100)
     # The confirmation animation runs only on the rerun after Sheets saves.
     approved = bool(st.session_state.pop(BORROW_SUCCESS_KEY, False))
-    # Use the real stamp already beside the submit button; no second stamp
-    # is rendered at the top of the application.
     title_class = (
         "bank-draw-document-title bank-borrow-approved"
         if approved else "bank-draw-document-title"

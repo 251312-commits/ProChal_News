@@ -1,4 +1,4 @@
-/* Final Game 4 result view only. The interactive picker owns its CSS in picker/index.html. */
+/* Final Game 4 result view. */
 .stApp:has(.st-key-game4_result_shell) header[data-testid="stHeader"] {
   height: 0 !important;
   min-height: 0 !important;
@@ -37,7 +37,7 @@
 }
 .g4-reel-caption { color: #d7b0ed; font-size: 13px; margin: 0; }
 
-/* The final page appears after the picker already unveiled the score. */
+/* Display the score without replaying the picker animation. */
 .g4-final-value {
   display: block;
   color: #ffe9a7;

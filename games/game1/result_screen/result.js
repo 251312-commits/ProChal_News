@@ -455,7 +455,7 @@ function start() {
   bridgeCommand("start", {track_url: args.track.url, fail_url: args.fail_url});
   animationFrame = requestAnimationFrame(tick);
 }
-// Reconstruct the earlier sigmoid visualization from the *stored* model output.
+// Plot the sigmoid using stored model output.
 // The graph explains the score transformation, not the model's causal reasoning.
 function sigmoid(x) {
   return x >= 0 ? 1 / (1 + Math.exp(-x)) :

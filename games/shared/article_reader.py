@@ -95,5 +95,5 @@ def render_article_reader(
 
 
 def render_game1_article(chosen, *, reward):
-    """Legacy entrypoint retained for imports of games.game1_article_ui."""
+    """게임 1의 기사 읽기 화면을 호출한다."""
     return render_article_reader(chosen, game_id="game_1", reward=reward)

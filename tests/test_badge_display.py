@@ -126,8 +126,7 @@ class BadgeGalleryTests(unittest.TestCase):
         self.assertEqual(badge_accent("streak_five_mixed"), badge_accent("g1_exact_one"))
 
     def test_gallery_css_is_one_complete_style_element(self):
-        # Regression: appending per-card selectors AFTER </style> rendered raw
-        # CSS text in the popup instead of styling the badge buttons.
+        # Dynamic selectors must stay inside the style element.
         css = badge_gallery_css("first_round g1_hit", "g1_hit")
         self.assertEqual(css.count("<style>"), 1)
         self.assertEqual(css.count("</style>"), 1)

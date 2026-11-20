@@ -57,8 +57,7 @@ def show_bank() -> None:
     coins = account_amount(user.get("코인"))
     loan = account_amount(user.get("대출금"))
     if page in ("draw_loan", "pay_loan") and user.get("대출원금") in (None, ""):
-        # Refresh sessions created before the H-column migration. A server with
-        # initialized H can now heal the session without forcing a new login.
+        # 대출원금(H열)이 없는 세션은 서버에서 잔액을 다시 읽는다.
         try:
             refresh_account_from_gateway()
         except TransactionError as exc:

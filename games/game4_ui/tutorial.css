@@ -162,7 +162,7 @@
     .game4-guide-sheet li p { grid-area: 2 / 2; font-size: 12px; }
 }
 
-/* New vector art follows Game 4's purple/gold selection-screen palette. */
+/* Tutorial illustrations use the purple/gold palette. */
 .game4-guide-heading h1 { color: #fff0ff !important; }
 .game4-guide-sheet li img {
     width: min(95%, 250px); height: clamp(59px, 13svh, 130px);

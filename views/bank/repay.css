@@ -1,4 +1,4 @@
-/* A single illustrated scene, following the approved 9:16 bank loan layout. */
+/* Repayment scene uses the bank's 9:16 artwork layout. */
 .st-key-bank-page:has(.st-key-bank-repay-screen) {
   --bank-repay-safe-width: calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right));
   --bank-repay-safe-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
@@ -383,11 +383,7 @@
 }
 
 
-/*
- * User-provided replacement artwork has a larger transparent canvas than the
- * earlier tight-cropped PNGs. Restore the visible bounding boxes without
- * altering the repayment controls, viewport tracks, or coin-drop keyframes.
- */
+/* Align transparent artwork bounds with the repayment scene. */
 .bank-repay-vault-scene .bank-repay-podium {
   width: 105.1%;
   left: -2.55%;

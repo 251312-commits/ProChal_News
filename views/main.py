@@ -11,7 +11,6 @@ from views.badges import open_badge_gallery
 
 ws = deferred_user_sheet()
 
-# 정의된 함수: show_main_page
     
 def show_main_page():
     st_autorefresh(interval=600000, limit=None, key="auto_refresh")
@@ -33,7 +32,6 @@ def show_main_page():
     if st.session_state.get("badge_flash_message"):
         st.toast(st.session_state.pop("badge_flash_message"))
 
-    # The icon gallery lives above the existing casino promo banner.
     owned_count = len(parse_owned(user.get("보유배지", "")))
     with st.container(key="badge_header_controls"):
         if st.button(
@@ -41,8 +39,7 @@ def show_main_page():
             key="open_badge_gallery",
             use_container_width=True,
         ):
-            # Static SVG image backgrounds belong to the parent page.
-            # Dialog-only reruns then transmit just lightweight state CSS.
+            # SVG 배경은 부모 화면에 두어 다이얼로그 재실행 시 재전송하지 않는다.
             st.html(badge_gallery_art_css())
             # The gallery is itself a dialog; never open an award modal alongside it.
             st.session_state["_badge_gallery_opened_this_run"] = True
