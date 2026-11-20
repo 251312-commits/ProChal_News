@@ -158,7 +158,7 @@ class BadgeGalleryTests(unittest.TestCase):
         list_start = source.index('with st.container(height=320, border=True, key="badge_gallery")')
         list_end = source.index('    # Generate the selected-card border', list_start)
         detail = source.index('    chosen = BADGE_BY_ID[selected_id]', list_end)
-        equip = source.index('        if st.button("이 배지 장착"', detail)
+        equip = source.index('        elif st.button("이 배지 장착"', detail)
         self.assertLess(list_start, list_end)
         self.assertLess(list_end, detail)
         self.assertLess(detail, equip)
