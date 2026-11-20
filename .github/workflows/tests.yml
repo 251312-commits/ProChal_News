@@ -7,6 +7,47 @@ on:
       - main
 
 jobs:
+  cloud-dependency-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Streamlit Cloud Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.10.0"
+      - name: Resolve the CPU torch and PyPI dependencies
+        run: |
+          uv pip compile requirements.txt --python-version 3.14 --output-file /tmp/cloud-resolved.txt
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          resolved = Path("/tmp/cloud-resolved.txt").read_text()
+          assert re.search(r"(?m)^requests==2\.(?:3[1-9]|[4-9][0-9])", resolved), "requests>=2.31 should come from PyPI"
+          assert re.search(r"(?m)^torch==[^\n]*\+cpu(?:\s|$)", resolved), "CPU PyTorch must be selected"
+          assert re.search(r"(?m)^pyarrow==24\.", resolved), "pyarrow must stay below 25"
+          print("Py3.14 uv resolver: PyPI requests, CPU torch, and stable pyarrow OK")
+          PY
+      - name: Install production requirements and check login startup
+        run: |
+          uv pip install --python "$(which python)" -r requirements.txt
+          python - <<'PY'
+          import torch
+          assert "+cpu" in torch.__version__, torch.__version__
+          import streamlit
+          import newspaper
+          import transformers
+          from streamlit.testing.v1 import AppTest
+          app = AppTest.from_file("news.py", default_timeout=45).run()
+          assert not app.exception, [str(error) for error in app.exception]
+          print(f"Startup ready on Python 3.14, torch {torch.__version__}")
+          PY
+
   python-unittest:
     runs-on: ubuntu-latest
     steps:

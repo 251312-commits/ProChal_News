@@ -58,3 +58,10 @@ node --test tests/test_transaction_gateway.cjs tests/test_game1_result_parent_au
 GitHub의 `apps_script/Code.gs`, `apps_script/Badges.gs` 수정은 **배포된 Apps Script 웹 앱에 자동 반영되지 않는다**.
 서버 규칙 변경 시 Google Apps Script의 새 버전 배포가 필요하다.
 상세 절차는 [거래 원장 문서](docs/transaction-ledger.md)에 있다.
+
+## Cloud 의존성 복구
+
+Streamlit Cloud에서 로그인 이전 `Error running app`이 표시되면
+[배포 설치 오류 복구 안내](docs/streamlit-dependency-recovery.md)를 참고한다.
+PyTorch CPU 인덱스는 `uv.toml`로 **torch에만** 적용하고,
+다른 라이브러리는 PyPI에서 받도록 구성했다. 원본 BGE 모델은 유지한다.
