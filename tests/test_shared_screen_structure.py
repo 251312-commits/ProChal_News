@@ -54,7 +54,11 @@ class SharedScreenStructureTests(unittest.TestCase):
             with self.subTest(game=game):
                 self.assertIn("render_betting_ui", source)
         source = (GAMES / "game2.py").read_text(encoding="utf-8")
-        self.assertIn("immersive_reader=True", source)
+        self.assertIn('get_game_news_selection(', source)
+        news_flow = (SHARED / "news_flow.py").read_text(encoding="utf-8")
+        self.assertNotIn("immersive_reader", news_flow)
+        self.assertNotIn("components.html(", news_flow)
+        self.assertNotIn("pixel-window-header", news_flow)
         self.assertNotIn("from games.news_roulette2", source)
         roulette = (SHARED / "roulette.py").read_text(encoding="utf-8")
         self.assertIn("round_id", roulette)

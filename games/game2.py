@@ -1,6 +1,5 @@
 # 업다운 (하) ½
 
-import asyncio
 import random
 import streamlit as st
 from modules.news_ai import summary, similarity_check
@@ -8,6 +7,7 @@ from modules.ui_components import change_page
 from games.shared.result import show_summary_before_score
 from games.shared.news_flow import get_game_news_selection
 from games.shared.loading import similarity_analysis_loading
+from games.shared.round_analysis import analyze_round_once
 from games.shared.interest import apply_end_of_turn_interest
 from modules.transactions import BalanceChanged, TransactionError, settle_game_round, update_session_balances
 from games.shared.betting import render_betting_ui
@@ -213,7 +213,7 @@ def show_game_2():
 
     # [2단계] Reuse the roulette -> article reader flow, without a second slot.
     title, article_text, url = get_game_news_selection(
-        "game_2", win_multiplier=GAME_2_WIN_MULTIPLIER, immersive_reader=True
+        "game_2", win_multiplier=GAME_2_WIN_MULTIPLIER
     )
     if not title:
         return
@@ -264,12 +264,15 @@ def show_game_2():
     if "game_2_result" not in st.session_state:
         with similarity_analysis_loading():
             text_for_summary = article_text if (article_text and article_text.strip()) else title
-            summary_text = asyncio.run(summary(text_for_summary))
-            
-            if not summary_text:
-                summary_text = title
-
-            score_details = similarity_check(summary_text, title)
+            try:
+                summary_text, score_details = analyze_round_once(
+                    st.session_state, "game_2", title=title, article_text=text_for_summary,
+                    summarize=summary, similarity=similarity_check,
+                    fallback_to_title=True,
+                )
+            except (RuntimeError, ValueError, TypeError, KeyError) as exc:
+                st.error(f"뉴스 유사도를 계산하지 못했습니다: {exc}")
+                return
             actual_score = score_details["score"]
 
             if user_choice == "HIGH":
@@ -351,7 +354,7 @@ def show_game_2():
         keys_to_clear = [
             "game_2_bet", "selected_news_game_2", "candidates_game_2", 
             "game_2_target_num", "game_2_user_choice", "game_2_result", "game_2_round_id",
-            "game_2_summary_revealed", "game_2_slot_round",
+            "game_2_summary_revealed", "game_2_analysis_checkpoint", "game_2_slot_round",
             "read_done_game_2", "game_2_reader_round", "game_2_direct_url_error"
         ]
         for k in keys_to_clear:

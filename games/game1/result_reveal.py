@@ -32,7 +32,7 @@ _ROUND_KEYS = (
     "read_done_game_1", "game_1_round_id", "game_1_predicted_digits",
     "game_1_predicted_score", "game_1_result", "tens_val", "ones_val",
     "game1_pred_tens", "game1_pred_ones", "game1_pred_round_id",
-    "game_1_summary_revealed", "game1_result_reveal_id",
+    "game_1_summary_revealed", "game_1_analysis_checkpoint", "game1_result_reveal_id",
     "game1_result_track_index",
 )
 

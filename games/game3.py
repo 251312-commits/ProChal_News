@@ -2,14 +2,13 @@
 import streamlit as st
 import time
 import math
-import asyncio
-from collections.abc import Mapping
 
-from modules.news_ai import summary, similarity_check, bring_article
+from modules.news_ai import summary, similarity_check
 from modules.db_handler import init_gspread
 from modules.ui_components import change_page
 from games.shared.news_flow import get_game_news_selection
 from games.shared.loading import similarity_analysis_loading
+from games.shared.round_analysis import analyze_round_once
 from games.shared.betting import render_betting_ui
 from games.shared.result import show_summary_before_score
 from games.shared.interest import apply_end_of_turn_interest
@@ -22,58 +21,6 @@ from modules.transactions import BalanceChanged, TransactionError, settle_game_r
 
 MIN_BET = 1000
 GAME_3_WIN_MULTIPLIER = 2.0
-
-
-# ==========================================
-# 유사도 점수 추출
-# ==========================================
-
-def extract_similarity_score(result):
-    """Extract a 0~100 percentage from current or legacy AI responses."""
-    if isinstance(result, bool):
-        raise ValueError(f"유사도 결과가 숫자가 아닙니다: {result}")
-
-    if isinstance(result, (int, float, str)):
-        try:
-            value = float(result)
-        except (ValueError, TypeError) as exc:
-            raise ValueError(f"유사도 결과가 숫자가 아닙니다: {result}") from exc
-        return value * 100 if 0 <= value <= 1 else value
-
-    if not isinstance(result, Mapping):
-        raise ValueError(f"지원하지 않는 유사도 반환 형식입니다: {type(result)}")
-
-    if "score_hundredths" in result:
-        hundredths = result["score_hundredths"]
-        if isinstance(hundredths, Mapping):
-            return extract_similarity_score(hundredths)
-        return float(hundredths) / 100
-
-    for key in (
-        "score",
-        "similarity",
-        "similarity_score",
-        "similarity_percentage",
-        "percentage",
-        "percent",
-        "유사도",
-        "유사도 점수",
-        "점수",
-    ):
-        if key in result:
-            return extract_similarity_score(result[key])
-
-    numeric_values = [
-        value for value in result.values()
-        if isinstance(value, (int, float)) and not isinstance(value, bool)
-    ]
-    if len(numeric_values) == 1:
-        return extract_similarity_score(numeric_values[0])
-
-    raise ValueError(
-        "유사도 딕셔너리에서 점수를 찾지 못했습니다. "
-        f"실제 반환값: {result}"
-    )
 
 
 # ==========================================
@@ -92,11 +39,11 @@ def reset_game_3_state():
         "game_3_round_id",
         "game_3_result",
         "game_3_summary_revealed",
+        "game_3_analysis_checkpoint",
         "game_3_screen",
         "selected_news_game_3",
         "candidates_game_3",
         "read_done_game_3",
-        "game_3_article_data",
         "game_3_slot_round",
         "game_3_reader_round",
         "game_3_direct_url_error",
@@ -108,81 +55,6 @@ def reset_game_3_state():
 
     st.session_state.game_3_round = old_round + 1
     st.session_state.game_3_screen = "choice"
-
-
-# ==========================================
-# 기사 가져오기
-# ==========================================
-
-def load_game_3_article():
-
-    saved_article = st.session_state.get(
-        "game_3_article_data"
-    )
-
-    if saved_article:
-
-        return (
-            saved_article.get("title"),
-            saved_article.get("article_text"),
-            saved_article.get("url")
-        )
-
-    try:
-
-        selection = get_game_news_selection("game_3", win_multiplier=GAME_3_WIN_MULTIPLIER, immersive_reader=True)
-
-        if selection is None:
-            return None, None, None
-
-        if not isinstance(selection, (tuple, list)):
-            st.error("뉴스 선택 함수의 반환 형식이 올바르지 않습니다.")
-            return None, None, None
-
-        if len(selection) != 3:
-            st.error("뉴스 선택 함수에서 반환된 데이터가 올바르지 않습니다.")
-            return None, None, None
-
-        title, article_text, url = selection
-
-        if not title or not url:
-            return None, None, None
-
-        url = str(url).strip()
-
-        if not url.startswith(("http://", "https://")):
-            st.error("올바른 기사 URL이 아닙니다.")
-            return None, None, None
-
-        if not article_text or not str(article_text).strip():
-
-            with st.spinner("기사 본문을 가져오는 중입니다..."):
-
-                extracted_title, extracted_text = bring_article(url)
-
-                if extracted_title:
-                    title = extracted_title
-
-                article_text = extracted_text
-
-        if not article_text or not str(article_text).strip():
-            st.error("기사 본문을 가져오지 못했습니다.")
-            return None, None, None
-
-        st.session_state.game_3_article_data = {
-            "title": title,
-            "article_text": article_text,
-            "url": url
-        }
-
-        return title, article_text, url
-
-    except Exception as e:
-
-        st.error("뉴스 기사 처리 중 오류가 발생했습니다.")
-        st.exception(e)
-
-        return None, None, None
 
 
 # ==========================================
@@ -263,8 +135,9 @@ def show_choice_screen():
 # STEP 2. 베팅 화면
 # ==========================================
 
-def show_bet_screen(ws):
+def show_bet_screen():
     """Use the shared wager UI; Game 3 retains its half-stake loss rule."""
+    ws = init_gspread()
     current_sid = str(st.session_state.current_user).strip().replace(".0", "")
     users_data = ws.get_all_records()
     user_info = next(
@@ -306,11 +179,12 @@ def show_bet_screen(ws):
 # ==========================================
 
 def show_news_screen():
-    # The shared news slot and timed reader own the entire news stage.
-    title, article_text, url = load_game_3_article()
+    # The shared reader has already saved the chosen article.
+    title, article_text, url = get_game_news_selection(
+        "game_3", win_multiplier=GAME_3_WIN_MULTIPLIER
+    )
     if not title or not article_text or not url:
         return
-
     st.session_state.game_3_screen = "analysis"
     st.rerun()
 
@@ -319,133 +193,65 @@ def show_news_screen():
 # STEP 4. AI 분석 및 코인 정산
 # ==========================================
 
-def analyze_game_3(ws):
-
-    article = st.session_state.get("game_3_article_data")
-
-    if not article:
-
+def analyze_game_3():
+    article = st.session_state.get("selected_news_game_3") or {}
+    if not article or not st.session_state.get("read_done_game_3"):
         st.error("분석할 뉴스 기사가 없습니다.")
         return
 
     title = article["title"]
-    article_text = article["article_text"]
+    article_text = article["text"]
     url = article["url"]
-
     bet_coin = st.session_state.game_3_bet
 
-    current_sid = str(
-        st.session_state.current_user
-    ).strip().replace(".0", "")
-
     st.markdown("### 🤖 STEP 4. AI 유사도 분석")
-
-    st.info(
-        "AI가 뉴스 본문을 요약하고 "
-        "뉴스 제목과 요약문의 유사도를 분석합니다."
-    )
-
+    st.info("AI가 뉴스 본문을 요약하고 뉴스 제목과 요약문의 유사도를 분석합니다.")
     st.markdown(f"**뉴스 제목: {title}**")
-
     with st.expander("뉴스 본문 확인하기"):
         st.write(article_text)
-
     st.markdown(f"[기사 원문 열기]({url})")
 
-    if st.button(
-        "🤖 뉴스 유사도 분석 및 결과 확인",
-        use_container_width=True
-    ):
-
+    if st.button("🤖 뉴스 유사도 분석 및 결과 확인", use_container_width=True):
         with similarity_analysis_loading():
-
             try:
-
-                # 뉴스 요약
-                summary_text = asyncio.run(summary(article_text))
-
-                if not summary_text:
-                    raise ValueError("뉴스 요약 결과가 비어 있습니다.")
-
-                # 유사도 계산
-                similarity_result = similarity_check(
-                    summary_text,
-                    title
+                summary_text, similarity_result = analyze_round_once(
+                    st.session_state, "game_3", title=title, article_text=article_text,
+                    summarize=summary, similarity=similarity_check,
                 )
-
-                # 딕셔너리 또는 숫자 반환값 처리
-                actual_score = extract_similarity_score(
-                    similarity_result
-                )
-
-                if (
-                    not math.isfinite(actual_score)
-                    or not 0 <= actual_score <= 100
-                ):
-
-                    raise ValueError(
-                        f"유사도 점수가 0~100 범위를 벗어났습니다: {actual_score}"
-                    )
-
+                actual_score = float(similarity_result["score"])
                 integer_score = int(actual_score)
-
-                ai_result = (
-                    "짝" if integer_score % 2 == 0 else "홀"
-                )
-
+                ai_result = "짝" if integer_score % 2 == 0 else "홀"
                 user_choice = st.session_state.game_3_choice
-
                 is_win = user_choice == ai_result
-
-                if is_win:
-                    reward = int(bet_coin * GAME_3_WIN_MULTIPLIER)
-                else:
-                    reward = -(bet_coin // 2)
 
                 settled = settle_game_round(
                     "game_3", int(bet_coin), is_win,
                     badge_evidence={"choice": user_choice},
                 )
-                reward = settled["reward"]
-                new_balance = settled["new_coins"]
-                new_streak = settled["new_streak"]
-
-                # 결과 저장
                 st.session_state.game_3_result = {
-
                     "actual_score": actual_score,
-                    "score_details": (
-                        similarity_result
-                        if isinstance(similarity_result, Mapping)
-                        and {"model_name", "logit", "normalized", "token_count"}.issubset(similarity_result)
-                        else None
-                    ),
+                    "score_details": similarity_result,
                     "integer_score": integer_score,
                     "ai_result": ai_result,
                     "user_choice": user_choice,
                     "bet": bet_coin,
-                    "reward": reward,
+                    "reward": settled["reward"],
                     "is_win": is_win,
-                    "new_coins": new_balance,
-                    "new_streak": new_streak,
+                    "new_coins": settled["new_coins"],
+                    "new_streak": settled["new_streak"],
                     "title": title,
                     "url": url,
-                    "summary": summary_text
-
+                    "summary": summary_text,
                 }
-
                 st.session_state.game_3_screen = "result"
-
                 st.rerun()
-
             except BalanceChanged as changed:
                 update_session_balances(changed.balances)
                 st.error(str(changed))
             except TransactionError as exc:
                 st.error(str(exc))
-            except Exception as e:
-
-                st.error(f"게임 진행 중 오류가 발생했습니다: {e}")
+            except Exception as exc:
+                st.error(f"게임 진행 중 오류가 발생했습니다: {exc}")
 
 
 # ==========================================
@@ -539,8 +345,6 @@ def show_game_3():
 
     st.title("🎰 뉴스 유사도 홀짝 게임")
 
-    ws = init_gspread()
-
     if "game_3_screen" not in st.session_state:
         st.session_state.game_3_screen = "choice"
 
@@ -570,7 +374,7 @@ def show_game_3():
 
     elif screen == "bet":
 
-        show_bet_screen(ws)
+        show_bet_screen()
         return
 
     elif screen == "news":
@@ -580,7 +384,7 @@ def show_game_3():
 
     elif screen == "analysis":
 
-        analyze_game_3(ws)
+        analyze_game_3()
         return
 
     elif screen == "result":

@@ -1,4 +1,3 @@
-import asyncio
 from pathlib import Path
 from uuid import uuid4
 
@@ -8,11 +7,11 @@ import streamlit as st
 from modules.news_ai import summary, similarity_check
 from modules.ui_components import change_page, load_local_image_url
 from views.ranking import fetch_ranking_data
-from games.shared.result import show_summary_before_score
 from games.shared.news_flow import get_game_news_selection
 from games.shared.betting import check_user_coins_or_pop_bank
 from games.shared.betting import render_betting_ui
 from games.shared.loading import similarity_analysis_loading
+from games.shared.round_analysis import analyze_round_once
 from games.shared.interest import apply_end_of_turn_interest
 from modules.transactions import BalanceChanged, TransactionError, settle_game_round, update_session_balances
 
@@ -75,11 +74,14 @@ def show_game_1():
     if "game_1_result" not in st.session_state:
         predicted_digits = st.session_state.game_1_predicted_digits
         with similarity_analysis_loading():
-            summary_text = asyncio.run(summary(article_text))
-            if not summary_text:
-                st.error("뉴스 본문 요약에 실패해 유사도 점수를 계산할 수 없습니다.")
+            try:
+                summary_text, score_details = analyze_round_once(
+                    st.session_state, "game_1", title=title, article_text=article_text,
+                    summarize=summary, similarity=similarity_check,
+                )
+            except (RuntimeError, ValueError, TypeError, KeyError) as exc:
+                st.error(f"뉴스 본문 분석에 실패해 유사도 점수를 계산할 수 없습니다: {exc}")
                 return
-            score_details = similarity_check(summary_text, title)
             actual_score = score_details["score"]
             answer_digits = score_details["score_hundredths"] % 100
 
@@ -124,69 +126,12 @@ def show_game_1():
                 "new_streak": new_streak
             }
 
-    # 이자가 확정된 뒤에만 결과를 공개한다. 재실행 시 같은 턴에는 재부과하지 않는다.
+    # Both settlement and interest finish before the cinematic reveal.
     res = st.session_state.game_1_result
     if not apply_end_of_turn_interest("game_1"):
         return
-    # All settlement/interest is committed before the music starts. The new
-    # full-screen result is presentation-only; legacy whole-score games keep
-    # their existing result screen.
-    if "predicted_digits" in res:
-        from games.game1.result_reveal import render_game1_result_reveal
-        render_game1_result_reveal(res)
-        return
-    show_summary_before_score(
-        res.get("summary", ""), "game_1_summary_revealed",
-        title=res.get("title", title), score=res["actual_score"],
-        details=res.get("score_details"),
-        prediction=res.get("predicted_digits"),
-    )
-    st.markdown("---")
-    st.markdown("### 🏆 6단계: 최종 결과")
-
-    if res["is_win"]:
-        st.balloons()
-        st.success(f"{res['msg']} | 획득 코인: +{res['reward']:,} C")
-    else:
-        st.error(f"{res['msg']} | 차감 코인: {res['reward']:,} C")
-
-    if "predicted_digits" not in res:
-        # An already settled round from the whole-score game keeps its original result.
-        col_r1, col_r2, col_r3 = st.columns(3)
-        with col_r1: st.metric("내 예측 점수", f"{st.session_state.game_1_predicted_score:02d}점")
-        with col_r2: st.metric("AI 측정 점수", f"{res['actual_score']:02d}점")
-        with col_r3: st.metric("점수 오차", f"{res['diff']}점")
-
-    st.markdown(
-        f"""
-        <div style="background:#110022; border:2px solid #8A2BE2; padding:15px; border-radius:10px; text-align:center; margin:15px 0;">
-            <p style="color:#ffffff; margin:0; font-weight:bold;">현재 보유 코인: <span style="color:#00ffcc;">{res['new_coins']:,} C</span></p>
-            <p style="color:#ffffff; margin:0; font-weight:bold;">현재 연승 기록: <span style="color:#ff00ff;">{res['new_streak']} 연승</span></p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    def reset_game_1_state():
-        keys_to_clear = [
-            "game_1_bet", "selected_news_game_1", "candidates_game_1", 
-            "read_done_game_1", "game_1_round_id", "game_1_predicted_digits", "game_1_predicted_score", "game_1_result",
-            "tens_val", "ones_val", "game1_pred_tens", "game1_pred_ones", "game1_pred_round_id", "game_1_summary_revealed"
-        ]
-        for k in keys_to_clear:
-            if k in st.session_state:
-                del st.session_state[k]
-
-    col_btn1, col_btn2 = st.columns(2)
-    with col_btn1:
-        if st.button("🔄 다시 도전하기", use_container_width=True):
-            reset_game_1_state()
-            st.rerun()
-
-    with col_btn2:
-        if st.button("⬅️ 메인으로 돌아가기", use_container_width=True):
-            reset_game_1_state()
-            change_page('main')
+    from games.game1.result_reveal import render_game1_result_reveal
+    render_game1_result_reveal(res)
 
 
 # ===== Game 1-only prediction screen =====
