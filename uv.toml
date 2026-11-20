@@ -1,0 +1,4 @@
+# uv pip installs PyTorch from the CPU index only. All other dependencies
+# resolve from the normal PyPI index, avoiding the outdated requests mirror.
+[pip]
+torch-backend = "cpu"
