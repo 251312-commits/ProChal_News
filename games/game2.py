@@ -123,7 +123,7 @@ def show_game_2():
             <div class="tutorial-title-section">
                 <div class="tutorial-game-badge">GAME 02</div>
                 <div class="tutorial-main-title">뉴스 유사도 HIGH / LOW</div>
-                <div class="tutorial-sub-title">기사 실제 유사도 점수는 기준 점수보다 높을까 낮을까?</div>
+                <div class="tutorial-sub-title">기준 점수보다 높을까, 낮을까?</div>
             </div>
             """,
             unsafe_allow_html=True
@@ -143,14 +143,14 @@ def show_game_2():
                     <div class="step-num">02</div>
                     <div class="step-title">기사 확인</div>
                     <div class="step-icon">🎰</div>
-                    <div class="step-desc">뉴스 슬롯 룰렛으로 기사를 뽑는다.</div>
+                    <div class="step-desc">기사 한 편을 골라 읽는다.</div>
                 </div>
                 <div class="arrow-down">↩</div>
                 <div class="tutorial-step-card">
                     <div class="step-num">03</div>
                     <div class="step-title">HIGH / LOW 선택</div>
                     <div class="step-icon">🎲</div>
-                    <div class="step-desc">랜덤 생성된 <b>기준 점수(0~100점)</b>보다<br>실제 점수가 높은지(HIGH) 낮은지(LOW) 선택</div>
+                    <div class="step-desc">기준 점수 이상은 <b>HIGH</b><br>미만은 <b>LOW</b></div>
                 </div>
                 <div class="arrow-down">⤵</div>
                 <div class="tutorial-step-card">
@@ -227,7 +227,7 @@ def show_game_2():
     if "game_2_user_choice" not in st.session_state:
         st.markdown("---")
         st.markdown("### 🎯 HIGH / LOW 예측 선택")
-        st.info(f"📌 선택된 기사 제목: **{title}**")
+        st.caption(f"선택한 기사 · {title}")
 
         with st.expander("📄 선택한 뉴스 본문 보기", expanded=False):
             st.write(article_text if article_text else title)
@@ -235,14 +235,13 @@ def show_game_2():
         st.markdown(
             f"""
             <div class="target-num-card">
-                <div style="color:#ffffff; font-weight:bold; font-size:1.1rem; margin-bottom:8px;">🎲 뽑힌 기준 점수</div>
+                <div style="color:#ffffff; font-weight:bold; font-size:1.1rem; margin-bottom:8px;">🎲 기준 점수</div>
                 <div class="target-digit">{target_num}점</div>
             </div>
             """,
             unsafe_allow_html=True
         )
 
-        st.write("소수 둘째 자리까지 표시한 유사도 점수가 기준 점수 이상일까요, 미만일까요?")
 
         col_high, col_low = st.columns(2)
         with col_high:
@@ -282,10 +281,10 @@ def show_game_2():
 
             if is_win:
                 reward = int(bet_coin * GAME_2_WIN_MULTIPLIER)
-                result_msg = f"🎉 예측 성공! (실제 유사도: {actual_score:.2f}점)"
+                result_msg = "예측 성공"
             else:
                 reward = -bet_coin
-                result_msg = f"💥 예측 실패! (실제 유사도: {actual_score:.2f}점)"
+                result_msg = "예측 실패"
 
             try:
                 settled = settle_game_round(
@@ -330,9 +329,9 @@ def show_game_2():
 
     if res["is_win"]:
         st.balloons()
-        st.success(f"{res['msg']} | 획득 코인: +{res['reward']:,} C")
+        st.success(f"{res['msg']} · +{res['reward']:,} C")
     else:
-        st.error(f"{res['msg']} | 차감 코인: -{abs(res['reward']):,} C")
+        st.error(f"{res['msg']} · −{abs(res['reward']):,} C")
 
     col_r1, col_r2, col_r3 = st.columns(3)
     with col_r1: st.metric("기준 점수", f"{res['target_num']}점")

@@ -95,7 +95,7 @@ def _open_direct_url(raw_url, game_id="game_1"):
         )
     except Exception:
         return _reject_direct_url(
-            "기사는 읽었지만 뉴스풀에 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.", game_id
+            "기사를 등록하지 못했습니다. 다시 시도하세요.", game_id
         )
 
     if isinstance(user, dict):

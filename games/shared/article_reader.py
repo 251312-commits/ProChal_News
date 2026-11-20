@@ -44,6 +44,7 @@ def render_article_reader(
     reward=None,
     guidance=None,
     return_label=None,
+    hide_default_guidance=False,
 ):
     """Render the current article and consume at most one navigation event."""
     state = st.session_state
@@ -79,6 +80,7 @@ def render_article_reader(
             coins=int(user.get("코인", 0) or 0),
             reward=reward,
             guidance=guidance or "",
+            hide_default_guidance=hide_default_guidance,
             return_label=return_label or "",
             # Game 4 calculates similarity as soon as reading finishes.
             next_is_similarity=game_id == "game_4",

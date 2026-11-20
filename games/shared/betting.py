@@ -190,6 +190,12 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
         current_loan=(st.session_state.get("current_user_data") or {}).get("대출금"),
     )
     safe_title = escape(str(title))
+    # Game 5 retains its current copy; games 1–4 use fewer labels.
+    show_explanatory_copy = state_key == "game_5"
+    description_html = (
+        '<p class="cb-description">금액을 정하고 다음 단계로 진행하세요</p>'
+        if show_explanatory_copy else ""
+    )
 
     # Scoped, asset-proportion-based layout: never position 2D art using fixed heights.
     st.markdown(
@@ -548,7 +554,7 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
               {logo_html}
               <p class="cb-game-title">{safe_title}</p>
               <h2 class="cb-heading">베팅 금액 선택</h2>
-              <p class="cb-description">금액을 정하고 다음 단계로 진행하세요</p>
+              {description_html}
               <div class="cb-scene">{news_html}{podium_html}</div>
             </section>
             ''', unsafe_allow_html=True,
@@ -620,6 +626,10 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
                 st.error(str(exc))
                 return None
             return bet_val
-        st.markdown('<p class="cb-footnote">베팅 금액에 따라 예상 수익과 순위가 달라집니다.</p>', unsafe_allow_html=True)
+        if show_explanatory_copy:
+            st.markdown(
+                '<p class="cb-footnote">베팅 금액에 따라 예상 수익과 순위가 달라집니다.</p>',
+                unsafe_allow_html=True,
+            )
 
     return None

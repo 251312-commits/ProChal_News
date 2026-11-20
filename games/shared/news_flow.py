@@ -107,7 +107,7 @@ def _open_chosen_article(item, news_key, candidates_key):
             report_article_failure(item["url"], exc)
             st.session_state.pop(candidates_key, None)
             st.session_state[f"{news_key}_load_error"] = (
-                "선택한 기사를 불러오지 못해 후보에서 제외했다. 다른 기사를 선택해 주세요."
+                "기사를 불러오지 못했습니다. 다른 기사를 선택하세요."
             )
             st.rerun()
             return
@@ -166,7 +166,9 @@ def get_game_news_selection(game_id: str, *, win_multiplier=None):
     reward = None
     if win_multiplier is not None:
         reward = calculate_expected_gain(st.session_state[f"{game_id}_bet"], win_multiplier)
-    action = render_article_reader(chosen, game_id=game_id, reward=reward)
+    action = render_article_reader(
+        chosen, game_id=game_id, reward=reward, hide_default_guidance=True,
+    )
     if action == "predict":
         st.session_state[read_done_key] = True
         st.rerun()

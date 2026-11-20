@@ -30,7 +30,7 @@ function resetAnimation() {
   scoreValue.textContent = "??";
   confirmButton.textContent = "✓ 선택하기";
   scoreUnit.hidden = false;
-  subtitle.textContent = "숨겨진 일치율이 어느 구간에 있을까?";
+  subtitle.textContent = "정답 구간을 선택하세요.";
   buttons.forEach(button => button.classList.remove("correct"));
 }
 function finish(action) {
@@ -65,8 +65,8 @@ function startReveal(payload) {
   revealing = true;
   sending = false; // The earlier "choose" was already accepted by Python.
   selected = ownChoice;
-  subtitle.textContent = "AI가 계산한 일치율을 공개합니다";
-  confirmButton.textContent = "정답 구간 확인 중…";
+  subtitle.textContent = "일치율 공개";
+  confirmButton.textContent = "결과 공개 중…";
   for (const button of scene.querySelectorAll("button")) button.disabled = true;
   buttons.forEach(button => {
     button.setAttribute("aria-pressed", "false");

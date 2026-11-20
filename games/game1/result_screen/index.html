@@ -54,7 +54,7 @@
     <footer class="actions">
       <button class="skip secondary" type="button" hidden>연출 건너뛰기</button>
       <button class="unblock-audio secondary" type="button" hidden>♫ 음악 켜기</button>
-      <button class="explain primary" type="button" aria-controls="analysis-dialog" aria-expanded="false" hidden>판정 이유 · 그래프 보기</button>
+      <button class="explain primary" type="button" aria-controls="analysis-dialog" aria-expanded="false" hidden>점수 분석 보기</button>
       <button class="retry-fail secondary" type="button" hidden>패배 효과음 다시 재생</button>
       <div class="after-actions" hidden>
         <button class="again secondary" type="button">다시 도전하기</button>
@@ -76,7 +76,7 @@
       <header class="analysis-header">
         <div>
           <span class="analysis-eyebrow">AI SCORE REPORT</span>
-          <h2 id="analysis-heading">판정 이유 · 점수 시각화</h2>
+          <h2 id="analysis-heading">점수 분석</h2>
         </div>
         <button class="analysis-close" type="button" aria-label="판정 설명 닫기">✕</button>
       </header>
@@ -130,7 +130,7 @@
           </div>
           <p class="analysis-verdict"></p>
         </div>
-        <p class="analysis-note">이 그래프는 AI의 관련성 원점수가 유사도 점수로 변환되는 과정을 보여준다. 개별 단어가 판단에 미친 인과적 이유를 설명하는 것은 아니다.</p>
+        <p class="analysis-note">그래프는 점수 변환을 보여주며, AI의 판단 이유를 설명하지 않는다.</p>
       </div>
     </div>
   </section>
