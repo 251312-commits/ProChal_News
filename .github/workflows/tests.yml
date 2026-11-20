@@ -9,7 +9,7 @@ on:
 jobs:
   production-import-smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 18
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -33,6 +33,26 @@ jobs:
           app = AppTest.from_file("news.py", default_timeout=35).run()
           assert not app.exception, [str(err) for err in app.exception]
           print("Full production imports and logged-out startup: OK")
+          PY
+      - name: Verify ONNX model download, one score and process peak memory
+        timeout-minutes: 12
+        run: |
+          python - <<'PY'
+          import resource
+          from modules.news_ai import similarity_check
+          result = similarity_check(
+              "한국의 뉴스 서비스가 새 기사를 공개했다.",
+              "뉴스 서비스에서 새 기사 공개",
+          )
+          assert 0 <= result["score"] <= 100, result
+          assert 0 <= result["score_hundredths"] <= 10000, result
+          assert result["token_count"] > 0, result
+          assert "ONNX INT8" in result["model_name"], result
+          # Linux reports ru_maxrss in KiB. Record peak; do not treat CI
+          # runner memory capacity as identical to Streamlit Cloud.
+          peak_mb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+          print(f"ONNX INT8 score: {result['score']:.2f}")
+          print(f"Peak resident memory: {peak_mb:.0f} MiB")
           PY
 
   python-unittest:
