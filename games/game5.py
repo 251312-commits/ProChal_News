@@ -152,27 +152,52 @@ def _format_score_range(score_range: tuple[float, float]) -> str:
     return f"{score_range[0]:.2f}~{score_range[1]:.2f}%"
 
 
-@st.dialog("기사 선택 확인")
 def _confirm_article_selection(index: int) -> None:
     candidates = st.session_state.get("game_5_candidates", [])
     if not 0 <= index < len(candidates):
         st.error("선택할 뉴스 정보를 찾을 수 없습니다.")
         return
 
-    st.write(f"**후보 {index + 1}**을 정답으로 결정할까요?")
-    st.caption(candidates[index]["title"])
-    confirm_col, cancel_col = st.columns(2)
-    with confirm_col:
-        if st.button("결정하기", key="game_5_confirm_selection", use_container_width=True):
-            st.session_state.game_5_selected_index = index
-            st.session_state.pop("game_5_pending_selection", None)
-            st.session_state.pop("game_5_result", None)
-            st.session_state.page = "game_5_result"
-            st.rerun(scope="app")
-    with cancel_col:
-        if st.button("다시 보기", key="game_5_cancel_selection", use_container_width=True):
-            st.session_state.pop("game_5_pending_selection", None)
-            st.rerun(scope="app")
+    st.markdown(
+        """
+        <style>
+        .st-key-game5-confirm-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 2147483000;
+            display: grid;
+            place-items: center;
+            padding: 16px;
+            background: rgba(8, 3, 20, .82);
+            backdrop-filter: blur(5px);
+        }
+        .st-key-game5-confirm-overlay [data-testid="stVerticalBlockBorderWrapper"] {
+            width: min(420px, calc(100vw - 32px));
+            border: 2px solid #a94ce0;
+            border-radius: 18px;
+            background: #1b0b2b;
+            box-shadow: 0 18px 60px rgba(0,0,0,.55);
+            padding: 18px;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    with st.container(key="game5-confirm-overlay", border=True):
+        st.markdown(f"### 후보 {index + 1}을 정답으로 결정할까요?")
+        st.caption(candidates[index]["title"])
+        confirm_col, cancel_col = st.columns(2)
+        with confirm_col:
+            if st.button("결정하기", key="game_5_confirm_selection", use_container_width=True):
+                st.session_state.game_5_selected_index = index
+                st.session_state.pop("game_5_pending_selection", None)
+                st.session_state.pop("game_5_result", None)
+                st.session_state.page = "game_5_result"
+                st.rerun(scope="app")
+        with cancel_col:
+            if st.button("다시 보기", key="game_5_cancel_selection", use_container_width=True):
+                st.session_state.pop("game_5_pending_selection", None)
+                st.rerun(scope="app")
 
 
 def _show_article_detail() -> None:
@@ -217,10 +242,24 @@ def _show_article_detail() -> None:
 
 def _show_result() -> None:
     from games.shared.result import show_summary_before_score
+    import streamlit.components.v1 as components
+
+    components.html(
+        "<script>try{window.parent.scrollTo({top:0,left:0,behavior:'instant'})}catch(e){}</script>",
+        height=0,
+        width=0,
+    )
 
     st.markdown(
         """
         <style>
+        .stApp:has(.st-key-game5-result-shell) {
+            overflow-x: hidden;
+        }
+        .block-container:has(.st-key-game5-result-shell) {
+            max-width: 690px !important;
+            margin-inline: auto !important;
+        }
         .st-key-game5-result-shell {
             width: 100%;
             min-height: 70vh;
@@ -246,7 +285,7 @@ def _show_result() -> None:
             return
 
         selected_article = candidates[selected_index]
-        with st.spinner("선택한 뉴스의 일치율을 분석하고 결과를 집계하는 중…"):
+        with similarity_analysis_loading():
             try:
                 if "score" not in selected_article or not selected_article.get("text"):
                     _load_article(selected_article)
@@ -326,17 +365,24 @@ def _show_result() -> None:
 
 
 def show_game_5():
-    st.title("🎮 게임 5: 일치율 구간 뉴스 맞히기")
     if "game_5_bet" not in st.session_state:
         if not check_user_coins_or_pop_bank(GAME_5_MIN_BET):
             return
 
-        user_data = st.session_state.get("current_user_data", {})
+        user_data = st.session_state.get('current_user_data', {})
+        current_coins = int(user_data.get('코인', 0))
+        current_sid = str(st.session_state.get('current_user', ''))
+        current_nickname = str(user_data.get('아이디', ''))
+        try:
+            users_data = fetch_ranking_data()
+        except Exception:
+            users_data = None
+        
         confirmed_bet = render_betting_ui(
-            current_coins=int(user_data.get("코인", 0)),
-            users_data=fetch_ranking_data(),
-            current_sid=str(st.session_state.get("current_user", "")),
-            current_nickname=str(user_data.get("아이디", "")),
+            current_coins=current_coins,
+            users_data=users_data,
+            current_sid=current_sid,
+            current_nickname=current_nickname,
             min_bet=GAME_5_MIN_BET,
             payout_multiplier=GAME_5_WIN_MULTIPLIER,
             title="게임 5: 일치율 구간 뉴스 맞히기",
@@ -381,6 +427,11 @@ def show_game_5():
 
     candidates = st.session_state.game_5_candidates
     target_range = st.session_state.game_5_target_range
+    pending_index = st.session_state.get("game_5_pending_selection")
+    if isinstance(pending_index, int):
+        _confirm_article_selection(pending_index)
+        return
+
     st.info("본문을 확인한 뒤, 이 구간에 해당하는 뉴스 하나를 선택하세요.")
     st.markdown(
         f"""
@@ -519,7 +570,7 @@ def show_game_5():
                                     use_container_width=True,
                                 ):
                                     st.session_state.game_5_pending_selection = index
-                                    _confirm_article_selection(index)
+                                    st.rerun(scope="app")
 
 
 
