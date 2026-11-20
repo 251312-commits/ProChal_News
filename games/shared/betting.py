@@ -560,11 +560,14 @@ def render_betting_ui(
                 f'<div class="cb-balance"><span class="cb-coin-symbol">$</span>{current_coins:,}</div>',
                 unsafe_allow_html=True,
             )
+        with right:
+            if st.button("+", key="bet_nav_bank", help="은행으로"):
+                change_page("bank")
             if top_action_label and top_action_key:
                 st.markdown(
                     """
                     <style>
-                    .st-key-casino_betting_shell [data-testid="stButton"].st-key-game5-top-action button {
+                    .st-key-casino_betting_shell [data-testid="stButton"].st-key-game_5_show_tutorial button {
                         width: 150px !important;
                         max-width: 100% !important;
                         min-height: 34px !important;
@@ -588,9 +591,6 @@ def render_betting_ui(
                 ):
                     if top_action_callback:
                         top_action_callback()
-        with right:
-            if st.button("+", key="bet_nav_bank", help="은행으로"):
-                change_page("bank")
 
         st.markdown(
             f'''

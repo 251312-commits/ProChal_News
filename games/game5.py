@@ -166,7 +166,9 @@ def _confirm_article_selection(index: int) -> None:
         if st.button("결정하기", key="game_5_confirm_selection", use_container_width=True):
             st.session_state.game_5_selected_index = index
             st.session_state.pop("game_5_pending_selection", None)
-            change_page("game_5_result")
+            st.session_state.pop("game_5_result", None)
+            st.session_state.page = "game_5_result"
+            st.rerun(scope="app")
     with cancel_col:
         if st.button("다시 보기", key="game_5_cancel_selection", use_container_width=True):
             st.session_state.pop("game_5_pending_selection", None)
@@ -216,6 +218,21 @@ def _show_article_detail() -> None:
 def _show_result() -> None:
     from games.shared.result import show_summary_before_score
 
+    st.markdown(
+        """
+        <style>
+        .st-key-game5-result-shell {
+            width: 100%;
+            min-height: 70vh;
+        }
+        .st-key-game5-result-shell [data-testid="stVerticalBlockBorderWrapper"] {
+            border: 0;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
     result = st.session_state.get("game_5_result")
     if not result:
         candidates = st.session_state.get("game_5_candidates", [])
@@ -262,49 +279,50 @@ def _show_result() -> None:
     if not apply_end_of_turn_interest("game_5"):
         return
 
-    show_summary_before_score(
-        result.get("summary", ""),
-        "game_5_summary_revealed",
-        title=result.get("title", ""),
-        score=result["actual_score"],
-        details=result.get("score_details"),
-        score_precision=2,
-    )
-    st.title("🏆 게임 5 최종 결과")
-    if result["is_win"]:
-        st.balloons()
-        st.success(f"🎉 정답입니다! +{result['reward']:,} C")
-    else:
-        st.error(f"❌ 틀렸습니다! {result['reward']:,} C")
-    metric_col, range_col = st.columns(2)
-    with metric_col:
-        st.metric("선택한 뉴스의 실제 일치율", f"{result['actual_score']:.2f}%")
-    with range_col:
-        st.metric("정답 구간", result["target_range"])
-    st.markdown(
-        f"""
-        <div style="background:#110022; border:2px solid #8A2BE2; padding:15px;
-                    border-radius:10px; text-align:center; margin:15px 0;">
-            <p style="color:#ffffff; margin:0; font-weight:bold;">
-                현재 보유 코인: <span style="color:#00ffcc;">{result['new_coins']:,} C</span>
-            </p>
-            <p style="color:#ffffff; margin:0; font-weight:bold;">
-                현재 연승 기록: <span style="color:#ff00ff;">{result['new_streak']} 연승</span>
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    with st.container(key="game5-result-shell"):
+        show_summary_before_score(
+            result.get("summary", ""),
+            "game_5_summary_revealed",
+            title=result.get("title", ""),
+            score=result["actual_score"],
+            details=result.get("score_details"),
+            score_precision=2,
+        )
+        st.title("🏆 게임 5 최종 결과")
+        if result["is_win"]:
+            st.balloons()
+            st.success(f"🎉 정답입니다! +{result['reward']:,} C")
+        else:
+            st.error(f"❌ 틀렸습니다! {result['reward']:,} C")
+        metric_col, range_col = st.columns(2)
+        with metric_col:
+            st.metric("선택한 뉴스의 실제 일치율", f"{result['actual_score']:.2f}%")
+        with range_col:
+            st.metric("정답 구간", result["target_range"])
+        st.markdown(
+            f"""
+            <div style="background:#110022; border:2px solid #8A2BE2; padding:15px;
+                        border-radius:10px; text-align:center; margin:15px 0;">
+                <p style="color:#ffffff; margin:0; font-weight:bold;">
+                    현재 보유 코인: <span style="color:#00ffcc;">{result['new_coins']:,} C</span>
+                </p>
+                <p style="color:#ffffff; margin:0; font-weight:bold;">
+                    현재 연승 기록: <span style="color:#ff00ff;">{result['new_streak']} 연승</span>
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-    col_retry, col_main = st.columns(2)
-    with col_retry:
-        if st.button("🔄 다시 도전하기", use_container_width=True):
-            _reset_game_5_state()
-            change_page("game_5")
-    with col_main:
-        if st.button("⬅️ 메인으로 돌아가기", use_container_width=True):
-            _reset_game_5_state()
-            change_page("main")
+        col_retry, col_main = st.columns(2)
+        with col_retry:
+            if st.button("🔄 다시 도전하기", use_container_width=True):
+                _reset_game_5_state()
+                change_page("game_5")
+        with col_main:
+            if st.button("⬅️ 메인으로 돌아가기", use_container_width=True):
+                _reset_game_5_state()
+                change_page("main")
 
 
 def show_game_5():
@@ -452,11 +470,6 @@ def show_game_5():
     )
 
     with st.container(key="game5-candidates"):
-        pending_index = st.session_state.get("game_5_pending_selection")
-        if isinstance(pending_index, int):
-            _confirm_article_selection(pending_index)
-            return
-
         rows = ((0, 1), (2, 3, 4))
         for row_index, row in enumerate(rows):
             with st.container(key=f"game5-candidate-row-{row_index}", border=False):
@@ -506,7 +519,7 @@ def show_game_5():
                                     use_container_width=True,
                                 ):
                                     st.session_state.game_5_pending_selection = index
-                                    st.rerun()
+                                    _confirm_article_selection(index)
 
 
 
