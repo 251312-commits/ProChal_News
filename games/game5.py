@@ -163,21 +163,46 @@ def _confirm_article_selection(index: int) -> None:
         <style>
         .st-key-game5-confirm-overlay {
             position: fixed;
-            inset: 0;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
             z-index: 2147483000;
-            display: grid;
-            place-items: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             padding: 16px;
+            margin: 0;
             background: rgba(8, 3, 20, .82);
             backdrop-filter: blur(5px);
         }
+        .st-key-game5-confirm-overlay > div {
+            width: auto;
+            maw-width: 100%;
+            display: flex;
+            justify-content: center;    
+        }
         .st-key-game5-confirm-overlay [data-testid="stVerticalBlockBorderWrapper"] {
             width: min(420px, calc(100vw - 32px));
+            max-width: 420px;
             border: 2px solid #a94ce0;
             border-radius: 18px;
             background: #1b0b2b;
             box-shadow: 0 18px 60px rgba(0,0,0,.55);
-            padding: 18px;
+            padding: 20px 18px;
+            margin: auto;
+        }
+        .st-key-game5-confirm-overlay [data-testid="stHorizontalBlock"] {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            gap: 10px;
+        }
+        .st-key-game5-confirm-overlay [data-testid="column"],
+        .st-key-game5-confirm-overlay [data-testid="stColumn"] {
+            flex: 1 1 50%;
+            width: 50%;
+            min-width: 0;
         }
         </style>
         """,
@@ -494,21 +519,44 @@ def show_game_5():
         }
         @media (max-width: 430px) {
             .st-key-game5-candidates [data-testid="stHorizontalBlock"] {
-                gap: 8px;
+                display: flex !important;
+                flex-wrap: wrap !important;
+                justify-content: center !important;
+                gap: 8px !important;
+            }
+            .st-key-game5-candidates [data-testid="column"],
+            .st-key-game5-candidates [data-testid="stColumn"] {
+                width: auto !important;
+                min-width: 0 !important;
+            }
+            .st-key-game5-candidates [data-testid="column"]:not(:has([data-testid="stVerticalBlockBorderWrapper"])),
+            .st-key-game5-candidates [data-testid="stColumn"]:not(:has([data-testid="stVerticalBlockBorderWrapper"])) {
+                display: none !important;
+            }
+            .st-key-game5-candidates [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"],
+            .st-key-game5-candidates [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="stColumn"] {
+                flex: 0 0 calc(50% - 8px) !important;
+                max-width: calc(50% - 8px) !important;
+            }
+            .st-key-game5-candidates [data-testid="stHorizontalBlock"]:nth-of-type(2) [data-testid="column"],
+            .st-key-game5-candidates [data-testid="stHorizontalBlock"]:nth-of-type(2) [data-testid="stColumn"] {
+                flex: 0 0 calc(33.33% - 8px) !important;
+                max-width: calc(33.33% - 8px) !important;
             }
             .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] {
-                min-height: 178px;
-                padding: 11px 9px 10px;
-                border-radius: 18px;
+                min-height: 165px !important;
+                padding: 10px 6px !important;
+                border-radius: 16px !important;
             }
             .st-key-game5-candidates .game5-card-title {
-                min-height: 76px;
-                font-size: 13px;
+                min-height: 68px !important;
+                font-size: 12px !important;
+                word-break: keep-all;
             }
             .st-key-game5-candidates [data-testid="stButton"] button {
-                min-height: 34px;
-                padding-inline: 2px;
-                font-size: 11px;
+                min-height: 32px !important;
+                padding-inline: 2px !important;
+                font-size: 11px !important;
             }
         }
         </style>
