@@ -178,7 +178,7 @@ def _confirm_article_selection(index: int) -> None:
         }
         .st-key-game5-confirm-overlay > div {
             width: auto;
-            maw-width: 100%;
+            max-width: 100%;
             display: flex;
             justify-content: center;    
         }
@@ -196,13 +196,28 @@ def _confirm_article_selection(index: int) -> None:
             display: flex;
             flex-direction: row;
             flex-wrap: nowrap;
-            gap: 10px;
+            gap: 16px;
         }
         .st-key-game5-confirm-overlay [data-testid="column"],
         .st-key-game5-confirm-overlay [data-testid="stColumn"] {
             flex: 1 1 50%;
             width: 50%;
             min-width: 0;
+        }
+        .st-key-game5-confirm-overlay [data-testid="stButton"] button {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: clip;
+            min-width: 0;
+        }
+        @media (max-width: 430px) {
+            .st-key-game5-confirm-overlay [data-testid="stHorizontalBlock"] {
+                gap: 12px;
+            }
+            .st-key-game5-confirm-overlay [data-testid="stVerticalBlockBorderWrapper"] {
+                width: min(420px, calc(100vw - 24px));
+                padding: 16px 12px;
+            }
         }
         </style>
         """,
@@ -520,28 +535,25 @@ def show_game_5():
         @media (max-width: 430px) {
             .st-key-game5-candidates [data-testid="stHorizontalBlock"] {
                 display: flex !important;
+                flex-direction: row !important;
                 flex-wrap: wrap !important;
                 justify-content: center !important;
                 gap: 8px !important;
+                width: 100% !important;
             }
-            .st-key-game5-candidates [data-testid="column"],
-            .st-key-game5-candidates [data-testid="stColumn"] {
-                width: auto !important;
+            .st-key-game5-candidate-row-0 [data-testid="stHorizontalBlock"] > [data-testid="column"],
+            .st-key-game5-candidate-row-0 [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+                flex: 0 0 calc(50% - 4px) !important;
+                width: calc(50% - 4px) !important;
+                max-width: calc(50% - 4px) !important;
                 min-width: 0 !important;
             }
-            .st-key-game5-candidates [data-testid="column"]:not(:has([data-testid="stVerticalBlockBorderWrapper"])),
-            .st-key-game5-candidates [data-testid="stColumn"]:not(:has([data-testid="stVerticalBlockBorderWrapper"])) {
-                display: none !important;
-            }
-            .st-key-game5-candidates [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="column"],
-            .st-key-game5-candidates [data-testid="stHorizontalBlock"]:nth-of-type(1) [data-testid="stColumn"] {
-                flex: 0 0 calc(50% - 8px) !important;
-                max-width: calc(50% - 8px) !important;
-            }
-            .st-key-game5-candidates [data-testid="stHorizontalBlock"]:nth-of-type(2) [data-testid="column"],
-            .st-key-game5-candidates [data-testid="stHorizontalBlock"]:nth-of-type(2) [data-testid="stColumn"] {
-                flex: 0 0 calc(33.33% - 8px) !important;
-                max-width: calc(33.33% - 8px) !important;
+            .st-key-game5-candidate-row-1 [data-testid="stHorizontalBlock"] > [data-testid="column"],
+            .st-key-game5-candidate-row-1 [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+                flex: 0 0 calc(33.333% - 6px) !important;
+                width: calc(33.333% - 6px) !important;
+                max-width: calc(33.333% - 6px) !important;
+                min-width: 0 !important;
             }
             .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] {
                 min-height: 165px !important;
