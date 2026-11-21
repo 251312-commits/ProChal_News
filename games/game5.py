@@ -541,6 +541,26 @@ def show_game_5():
                 gap: 8px !important;
                 width: 100% !important;
             }
+            .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stHorizontalBlock"] {
+                display: flex !important;
+                flex-wrap: nowrap !important;
+                gap: 4px !important;
+            }
+            .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stHorizontalBlock"] [data-testid="column"],
+            .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stHorizontalBlock"] [data-testid="stColumn"] {
+                flex: 1 1 50% !important;
+                width: 50% !important;
+                min-width: 0 !important;
+            }
+            .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"] button {
+                min-height: 30px !important;
+                padding: 2px 1px !important;
+                font-size: 9px !important;
+                line-height: 1.12 !important;
+                white-space: normal !important;
+                overflow-wrap: normal !important;
+                word-break: keep-all !important;
+            }
             .st-key-game5-candidate-row-0 [data-testid="stHorizontalBlock"] > [data-testid="column"],
             .st-key-game5-candidate-row-0 [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
                 flex: 0 0 calc(50% - 4px) !important;

@@ -399,6 +399,33 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
             .st-key-casino_betting_shell [data-testid="stHorizontalBlock"] {
                 flex-flow:row nowrap !important;min-width:0 !important;
             }
+            .st-key-bet_nav_row [data-testid="stHorizontalBlock"] {
+                display:grid !important;
+                grid-template-columns:44px minmax(0,1fr) 44px !important;
+                width:100% !important;
+                gap:6px !important;
+            }
+            .st-key-bet_nav_row [data-testid="stHorizontalBlock"] > [data-testid="column"],
+            .st-key-bet_nav_row [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
+                width:100% !important;
+                min-width:0 !important;
+                flex:initial !important;
+            }
+            .st-key-casino_betting_shell .cb-balance {
+                display:flex !important;
+                width:100% !important;
+                min-width:0 !important;
+                justify-content:center !important;
+                gap:4px !important;
+                font-size:clamp(.78rem,3.7vw,1rem) !important;
+                white-space:nowrap !important;
+                overflow:visible !important;
+            }
+            .st-key-casino_betting_shell .cb-coin-symbol {
+                width:28px !important;
+                height:28px !important;
+                font-size:.9rem !important;
+            }
             .st-key-casino_betting_shell .cb-logo {
                 display:block;width:auto !important;height:clamp(39px,8dvh,67px) !important;
                 max-width:min(82%,245px) !important;object-fit:contain;
@@ -535,18 +562,19 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
                  if coin_img else '<span aria-hidden="true">🪙</span>')
 
     with st.container(key="casino_betting_shell"):
-        left, middle, right = st.columns([0.8, 3.2, 0.8], gap="small")
-        with left:
-            if st.button("❮", key="bet_nav_back", help="메인으로"):
-                change_page("main")
-        with middle:
-            st.markdown(
-                f'<div class="cb-balance"><span class="cb-coin-symbol">$</span>{current_coins:,}</div>',
-                unsafe_allow_html=True,
-            )
-        with right:
-            if st.button("+", key="bet_nav_bank", help="은행으로"):
-                change_page("bank")
+        with st.container(key="bet_nav_row"):
+            left, middle, right = st.columns([0.8, 3.2, 0.8], gap="small")
+            with left:
+                if st.button("❮", key="bet_nav_back", help="메인으로"):
+                    change_page("main")
+            with middle:
+                st.markdown(
+                    f'<div class="cb-balance"><span class="cb-coin-symbol">$</span>{current_coins:,}</div>',
+                    unsafe_allow_html=True,
+                )
+            with right:
+                if st.button("+", key="bet_nav_bank", help="은행으로"):
+                    change_page("bank")
 
         st.markdown(
             f'''
