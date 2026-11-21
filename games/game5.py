@@ -509,6 +509,7 @@ def show_game_5():
         }
         .st-key-game5-candidates .game5-card-title {
             min-height: 70px;
+            margin-bottom: 14px;
             color: #fff3ff;
             font-size: clamp(14px, 3.8vw, 18px);
             font-weight: 800;
@@ -553,14 +554,19 @@ def show_game_5():
                 min-width: 0 !important;
             }
             .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"] button {
-                min-height: 30px !important;
-                padding: 2px 1px !important;
-                font-size: 9px !important;
-                line-height: 1.12 !important;
-                white-space: normal !important;
-                overflow-wrap: normal !important;
-                word-break: keep-all !important;
+                min-height: 32px !important;
+                height: auto !important;
+                padding: 4px 2px !important;
             }
+            .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"] button p {
+                font-size: 9.5px !important;
+                line-height: 1.15 !important;
+                margin: 0 !important;
+                white-space: normal !important;
+                word-break: keep-all !important;
+                overflow-wrap: normal !important;
+            }
+
             .st-key-game5-candidate-row-0 [data-testid="stHorizontalBlock"] > [data-testid="column"],
             .st-key-game5-candidate-row-0 [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
                 flex: 0 0 calc(50% - 4px) !important;
@@ -584,11 +590,6 @@ def show_game_5():
                 min-height: 68px !important;
                 font-size: 12px !important;
                 word-break: keep-all;
-            }
-            .st-key-game5-candidates [data-testid="stButton"] button {
-                min-height: 32px !important;
-                padding-inline: 2px !important;
-                font-size: 11px !important;
             }
         }
         </style>
