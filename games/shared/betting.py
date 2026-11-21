@@ -415,7 +415,7 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
                 display:flex !important;
                 width:100% !important;
                 min-width:0 !important;
-                justify-content:center !important;
+                justify-content:flex-end !important;
                 gap:4px !important;
                 font-size:clamp(.78rem,3.7vw,1rem) !important;
                 white-space:nowrap !important;

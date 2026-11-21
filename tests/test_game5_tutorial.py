@@ -15,8 +15,12 @@ class GameFiveTutorialTests(unittest.TestCase):
         self.assertIn(".st-key-game5-candidate-row-1", source)
         self.assertIn("calc(50% - 4px)", source)
         self.assertIn("calc(33.333% - 6px)", source)
-        self.assertIn("font-size: 9px !important;", source)
+        self.assertIn("font-size: 8px !important;", source)
         self.assertIn("word-break: keep-all !important;", source)
+        self.assertIn('"본문\\n읽기" if index >= 2 else "본문 읽기"', source)
+        self.assertIn('"정답\\n결정" if index >= 2 else "정답 결정"', source)
+        self.assertIn(".st-key-game5-candidate-row-1 [data-testid=\"stVerticalBlockBorderWrapper\"]", source)
+        self.assertIn("white-space: pre-line !important;", source)
         self.assertNotIn(":has([data-testid=\"stVerticalBlockBorderWrapper\"])", source)
 
     def test_game5_closes_turn_with_interest_like_game1(self):
@@ -32,7 +36,7 @@ class GameFiveTutorialTests(unittest.TestCase):
 
         self.assertIn("grid-template-columns:44px minmax(0,1fr) 44px !important;", source)
         self.assertIn(".st-key-casino_betting_shell .cb-balance", source)
-        self.assertIn("justify-content:center !important;", source)
+        self.assertIn("justify-content:flex-end !important;", source)
         self.assertIn('st.container(key="bet_nav_row")', source)
 
     def test_tutorial_starts_game_and_marks_it_as_seen(self):

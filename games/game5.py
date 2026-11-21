@@ -581,6 +581,20 @@ def show_game_5():
                 max-width: calc(33.333% - 6px) !important;
                 min-width: 0 !important;
             }
+            .st-key-game5-candidate-row-1 [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"] button {
+                min-height: 38px !important;
+                height: 38px !important;
+                padding: 2px 1px !important;
+                white-space: pre-line !important;
+            }
+            .st-key-game5-candidate-row-1 [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"] button p {
+                font-size: 8px !important;
+                line-height: 1.05 !important;
+                margin: 0 !important;
+                white-space: pre-line !important;
+                word-break: keep-all !important;
+                overflow-wrap: normal !important;
+            }
             .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] {
                 min-height: 165px !important;
                 padding: 10px 6px !important;
@@ -618,7 +632,7 @@ def show_game_5():
                             read_col, select_col = st.columns(2)
                             with read_col:
                                 if st.button(
-                                    "본문 읽기",
+                                    "본문\n읽기" if index >= 2 else "본문 읽기",
                                     key=f"game_5_article_{index}",
                                     use_container_width=True,
                                 ):
@@ -642,7 +656,7 @@ def show_game_5():
                                     change_page("game_5_article")
                             with select_col:
                                 if st.button(
-                                    "정답 결정",
+                                    "정답\n결정" if index >= 2 else "정답 결정",
                                     key=f"game_5_select_{index}",
                                     use_container_width=True,
                                 ):
