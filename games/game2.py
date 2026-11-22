@@ -23,85 +23,126 @@ def show_game_2():
         st.markdown(
             """
             <style>
-            .tutorial-header {
+            /* Game 2 tutorial: 참고 이미지처럼 검은 배경 + 노란색 포인트 */
+            .g2-tutorial-wrap {
+                max-width: 620px;
+                margin: 0 auto;
+                color: #f5f3eb;
+                padding: 2px 4px 10px 4px;
+            }
+            .g2-tutorial-nav {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                padding: 10px 5px 20px 5px;
+                border-bottom: 1px solid rgba(255,255,255,.18);
+                padding: 2px 0 14px 0;
+                margin-bottom: 18px;
+                color: #bdbdb8;
+                font-size: .92rem;
             }
-            .tutorial-nav-btn {
-                color: #aaaaaa;
-                font-size: 0.9rem;
-                cursor: pointer;
-                text-decoration: none;
-            }
-            .tutorial-title-section {
-                text-align: center;
-                margin-bottom: 25px;
-            }
-            .tutorial-game-badge {
-                font-family: 'Press Start 2P', monospace;
-                font-size: 0.85rem;
-                color: #00e5ff;
-                letter-spacing: 1px;
-            }
-            .tutorial-main-title {
-                font-size: 1.8rem;
+            .g2-tutorial-heading { margin: 0 0 24px 0; }
+            .g2-game-label {
+                color: #ffda35;
+                font-family: monospace;
+                font-size: .82rem;
                 font-weight: 900;
-                color: #ffffff;
-                margin-top: 4px;
+                letter-spacing: 1.5px;
+                margin-bottom: 5px;
             }
-            .tutorial-sub-title {
-                font-size: 0.95rem;
-                color: #a0a0a0;
-                margin-top: 2px;
+            .g2-game-title {
+                color: #f7f5ed;
+                font-size: clamp(1.45rem, 4vw, 1.85rem);
+                line-height: 1.25;
+                font-weight: 900;
+                letter-spacing: -.7px;
             }
-            
-            .tutorial-grid {
+            .g2-game-subtitle {
+                color: #aaa9a3;
+                font-size: .93rem;
+                margin-top: 5px;
+            }
+            .g2-flow {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: auto auto auto auto;
+                column-gap: 24px;
+                row-gap: 8px;
+                align-items: center;
+                max-width: 560px;
+                margin: 0 auto 28px auto;
+            }
+            .g2-step {
+                min-width: 0;
+                text-align: center;
+                padding: 4px 2px;
+            }
+            .g2-step-1 { grid-column: 1; grid-row: 1; }
+            .g2-step-2 { grid-column: 2; grid-row: 2; }
+            .g2-step-3 { grid-column: 1; grid-row: 3; }
+            .g2-step-4 { grid-column: 2; grid-row: 4; }
+            .g2-step-heading {
                 display: flex;
-                flex-direction: column;
-                gap: 20px;
-                max-width: 500px;
-                margin: 0 auto 30px auto;
-                position: relative;
+                justify-content: center;
+                align-items: baseline;
+                gap: 8px;
+                margin-bottom: 7px;
+                white-space: nowrap;
             }
-            .tutorial-step-card {
-                background: rgba(15, 23, 42, 0.75);
-                border: 1px solid rgba(0, 229, 255, 0.3);
-                border-radius: 16px;
-                padding: 18px;
-                text-align: center;
-                position: relative;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-            }
-            .step-num {
-                font-family: 'Press Start 2P', monospace;
-                font-size: 0.9rem;
-                color: #00e5ff;
+            .g2-step-num {
+                color: #ffda35;
+                font-family: Georgia, serif;
+                font-size: 1.15rem;
+                font-weight: 900;
                 font-style: italic;
-                margin-bottom: 4px;
             }
-            .step-title {
-                font-size: 1.25rem;
-                font-weight: 800;
-                color: #ffffff;
-                margin-bottom: 8px;
+            .g2-step-title {
+                color: #f5f3eb;
+                font-size: 1.22rem;
+                font-weight: 850;
             }
-            .step-icon {
-                font-size: 2.8rem;
-                margin: 8px 0;
+            .g2-step-icon {
+                font-size: 3.7rem;
+                line-height: 1.25;
+                margin: 3px 0 7px 0;
+                filter: saturate(1.08);
             }
-            .step-desc {
-                font-size: 0.88rem;
-                color: #cccccc;
-                line-height: 1.4;
+            .g2-step-desc {
+                color: #c3c1ba;
+                font-size: .88rem;
+                line-height: 1.55;
+                word-break: keep-all;
             }
-            .arrow-down {
+            .g2-step-desc strong { color: #ffda35; font-weight: 850; }
+            .g2-arrow {
+                color: #d9d9d1;
+                font-size: 3rem;
+                line-height: 1;
                 text-align: center;
-                font-size: 1.5rem;
-                color: #00e5ff;
-                margin: -10px 0;
-                text-shadow: 0 0 8px #00e5ff;
+                opacity: .95;
+                align-self: center;
+            }
+            .g2-arrow-12 { grid-column: 2; grid-row: 1; transform: rotate(18deg); }
+            .g2-arrow-23 { grid-column: 1; grid-row: 2; transform: rotate(155deg); }
+            .g2-arrow-34 { grid-column: 2; grid-row: 3; transform: rotate(18deg); }
+            @media (max-width: 520px) {
+                .g2-flow {
+                    grid-template-columns: 1fr;
+                    grid-template-rows: auto;
+                    row-gap: 4px;
+                    max-width: 340px;
+                }
+                .g2-step-1, .g2-step-2, .g2-step-3, .g2-step-4 {
+                    grid-column: 1;
+                    grid-row: auto;
+                }
+                .g2-arrow-12, .g2-arrow-23, .g2-arrow-34 {
+                    grid-column: 1;
+                    grid-row: auto;
+                    transform: rotate(90deg);
+                    font-size: 2rem;
+                    margin: -2px 0;
+                }
+                .g2-step-icon { font-size: 3.2rem; }
             }
             </style>
             """,
@@ -110,61 +151,53 @@ def show_game_2():
 
         col_nav1, col_nav2 = st.columns([1, 1])
         with col_nav1:
-            if st.button("⬅️ 메인으로", key="tut_nav_main"):
+            if st.button("메인으로", key="tut_nav_main"):
                 change_page('main')
                 return
         with col_nav2:
-            if st.button("건너뛰기 ➔", key="tut_nav_skip"):
+            if st.button("건너뛰기 ❯", key="tut_nav_skip"):
                 st.session_state.game_2_tutorial_done = True
                 st.rerun()
 
         st.markdown(
             """
-            <div class="tutorial-title-section">
-                <div class="tutorial-game-badge">GAME 02</div>
-                <div class="tutorial-main-title">뉴스 유사도 HIGH / LOW</div>
-                <div class="tutorial-sub-title">기준 점수보다 높을까, 낮을까?</div>
+            <div class="g2-tutorial-wrap">
+              <div class="g2-tutorial-heading">
+                <div class="g2-game-label">GAME 02</div>
+                <div class="g2-game-title">뉴스 유사도 HIGH / LOW</div>
+                <div class="g2-game-subtitle">AI가 분석한 뉴스 유사도, 기준 점수보다 높을까 낮을까?</div>
+              </div>
+              <div class="g2-flow">
+                <div class="g2-step g2-step-1">
+                  <div class="g2-step-heading"><span class="g2-step-num">01</span><span class="g2-step-title">코인 베팅</span></div>
+                  <div class="g2-step-icon">🪙</div>
+                  <div class="g2-step-desc">플레이할 코인 금액을 정한다.<br>최소 <strong>1,000 C</strong></div>
+                </div>
+                <div class="g2-arrow g2-arrow-12">⤵</div>
+                <div class="g2-step g2-step-2">
+                  <div class="g2-step-heading"><span class="g2-step-num">02</span><span class="g2-step-title">기사 선택</span></div>
+                  <div class="g2-step-icon">📰</div>
+                  <div class="g2-step-desc">룰렛을 돌려 기사를 선택하고<br>뉴스 내용을 읽는다.</div>
+                </div>
+                <div class="g2-arrow g2-arrow-23">⤵</div>
+                <div class="g2-step g2-step-3">
+                  <div class="g2-step-heading"><span class="g2-step-num">03</span><span class="g2-step-title">HIGH / LOW 예측</span></div>
+                  <div class="g2-step-icon">🎯</div>
+                  <div class="g2-step-desc">랜덤으로 정해진 기준 점수를 확인하고<br><strong>HIGH</strong> (기준 이상) 또는 <strong>LOW</strong> (기준 미만)를 선택한다.</div>
+                </div>
+                <div class="g2-arrow g2-arrow-34">⤵</div>
+                <div class="g2-step g2-step-4">
+                  <div class="g2-step-heading"><span class="g2-step-num">04</span><span class="g2-step-title">결과 확인</span></div>
+                  <div class="g2-step-icon">🏆</div>
+                  <div class="g2-step-desc">AI가 계산한 실제 유사도와 비교한다.<br>적중 <strong>+베팅액의 2배</strong><br>실패 <strong>−베팅액</strong></div>
+                </div>
+              </div>
             </div>
             """,
             unsafe_allow_html=True
         )
 
-        st.markdown(
-            """
-            <div class="tutorial-grid">
-                <div class="tutorial-step-card">
-                    <div class="step-num">01</div>
-                    <div class="step-title">코인 베팅</div>
-                    <div class="step-icon">🪙</div>
-                    <div class="step-desc">금액을 정해 베팅한다.<br><b>최소 1,000 C</b></div>
-                </div>
-                <div class="arrow-down">⤵</div>
-                <div class="tutorial-step-card">
-                    <div class="step-num">02</div>
-                    <div class="step-title">기사 확인</div>
-                    <div class="step-icon">🎰</div>
-                    <div class="step-desc">기사 한 편을 골라 읽는다.</div>
-                </div>
-                <div class="arrow-down">↩</div>
-                <div class="tutorial-step-card">
-                    <div class="step-num">03</div>
-                    <div class="step-title">HIGH / LOW 선택</div>
-                    <div class="step-icon">🎲</div>
-                    <div class="step-desc">기준 점수 이상은 <b>HIGH</b><br>미만은 <b>LOW</b></div>
-                </div>
-                <div class="arrow-down">⤵</div>
-                <div class="tutorial-step-card">
-                    <div class="step-num">04</div>
-                    <div class="step-title">결과 확인</div>
-                    <div class="step-icon">🏅</div>
-                    <div class="step-desc">적중 <b>+베팅액의 2배</b><br>실패 <b>-베팅액</b></div>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-        if st.button("베팅하러 가기", use_container_width=True, type="primary"):
+        if st.button("베팅하러 가기", use_container_width=True, type="primary", key="game_2_tutorial_start"):
             st.session_state.game_2_tutorial_done = True
             st.rerun()
 
