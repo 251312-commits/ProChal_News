@@ -123,6 +123,23 @@ def _render_game_2_tutorial():
             background:linear-gradient(145deg,#eac16d,#a97931) !important;
             color:#24132f !important;border-color:#f3d48e !important;
         }
+        .st-key-game2-tutorial-continue [data-testid="stButton"] {
+            display:flex;
+            justify-content:flex-end;
+            width:100%;
+        }
+        .st-key-game2-tutorial-continue [data-testid="stButton"] > button {
+            width:auto !important;
+            min-width:190px;
+            max-width:100%;
+            padding-left:28px !important;
+            padding-right:28px !important;
+        }
+        @media(max-width:600px) {
+            .st-key-game2-tutorial-continue [data-testid="stButton"] > button {
+                min-width:164px;
+            }
+        }
         @media(max-width:600px) {
             .st-key-game2-tutorial .g2-steps { gap:9px; }
             .st-key-game2-tutorial .g2-step { min-height:164px; padding:13px; }
@@ -144,10 +161,10 @@ def _render_game_2_tutorial():
         st.html("""
             <section aria-label="게임 진행 방법">
                 <div class="g2-tutorial-kicker">HOW TO PLAY</div>
-                <h1 class="g2-tutorial-title">소수점 승부</h1>
+                <h1 class="g2-tutorial-title">하이 앤 로우</h1>
                 <p class="g2-tutorial-sub">
-                    뉴스 한 편을 읽고, AI 유사도 점수의 <b>소수점 두 자리</b>가
-                    기준 숫자보다 높을지 낮을지 예측하세요.
+                    뉴스 한 편을 읽고 AI가 분석한 유사도 점수를 바탕으로
+                    <b>하이(High) 또는 로우(Low)</b>를 예측하는 게임입니다.
                 </p>
                 <div class="g2-steps">
                     <article class="g2-step">
@@ -177,14 +194,15 @@ def _render_game_2_tutorial():
                 </div>
             </section>
         """)
-        if st.button(
-            "베팅하러 가기",
-            key="game2_tutorial_start",
-            type="primary",
-            use_container_width=True,
-        ):
-            st.session_state.game_2_tutorial_done = True
-            st.rerun()
+        with st.container(key="game2-tutorial-continue"):
+            if st.button(
+                "계속하기  ›",
+                key="game2_tutorial_start",
+                type="primary",
+                use_container_width=False,
+            ):
+                st.session_state.game_2_tutorial_done = True
+                st.rerun()
 
 
 def _game_2_theme_css():
@@ -400,8 +418,8 @@ def show_game_2():
                 <div class="g2-brand-emblem" aria-hidden="true">♛</div>
                 <div>
                     <div class="g2-brand-kicker">NEWS ODDS · HIGH / LOW</div>
-                    <div class="g2-brand-title">소수점 승부</div>
-                    <div class="g2-brand-sub">AI 뉴스 유사도의 소수점 두 자리로 승부를 예측하세요.</div>
+                    <div class="g2-brand-title">하이 앤 로우</div>
+                    <div class="g2-brand-sub">뉴스를 읽고 AI 유사도 점수의 하이(High)와 로우(Low)를 예측하세요.</div>
                 </div>
             </header>
         """)
@@ -433,7 +451,7 @@ def show_game_2():
                 current_nickname=str(user.get("아이디", "")),
                 min_bet=1_000,
                 payout_multiplier=GAME_2_WIN_MULTIPLIER,
-                title="소수점 승부",
+                title="하이 앤 로우",
                 state_key="game_2",
             )
             if confirmed_bet is not None:
