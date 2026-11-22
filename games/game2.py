@@ -20,186 +20,249 @@ GAME_2_WIN_MULTIPLIER = 2.0
 def show_game_2():
     # [0단계] 튜토리얼 화면 (최초 1회 노출)
     if "game_2_tutorial_done" not in st.session_state:
+        # Game 1 튜토리얼 CSS의 레이아웃/반응형 규칙을 Game 2 전용 키로 적용
         st.markdown(
             """
             <style>
-            /* Game 2 tutorial: 참고 이미지처럼 검은 배경 + 노란색 포인트 */
-            .g2-tutorial-wrap {
-                max-width: 620px;
-                margin: 0 auto;
-                color: #f5f3eb;
-                padding: 2px 4px 10px 4px;
+.stApp:has(.st-key-game2-guide) {
+    background: #090a09 !important;
+}
+.stApp:has(.st-key-game2-guide) [data-testid="stHeader"] { display: none; }
+.stApp:has(.st-key-game2-guide) .block-container {
+    display: grid;
+    align-content: center;
+    min-height: 100svh;
+    padding: max(6px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right))
+             max(8px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)) !important;
+}
+.stApp:has(.st-key-game2-guide) .block-container > [data-testid="stVerticalBlock"] { gap: 0; }
+.st-key-game2-guide {
+    --chalk: #f3f2e9;
+    --sun: #ffda39;
+    width: min(100%, 480px);
+    margin-inline: auto;
+    color: var(--chalk);
+    font-family: system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+.st-key-game2-guide-nav {
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    border-bottom: 1px solid #ffffff29;
+}
+.st-key-game2-guide button {
+    min-height: 44px;
+    font-family: inherit;
+    box-shadow: none !important;
+}
+.st-key-game2-guide-nav button {
+    padding: 0 5px;
+    border: 0 !important;
+    background: transparent !important;
+    color: #bcbdb6 !important;
+}
+.st-key-game2-guide-skip button { color: var(--chalk) !important; }
+.st-key-game2-guide-skip button::after {
+    content: '';
+    width: 6px; height: 6px;
+    border: solid var(--sun);
+    border-width: 2px 2px 0 0;
+    transform: rotate(45deg);
+}
+.st-key-game2-guide-start button {
+    background: var(--sun) !important;
+    border: 1px solid var(--sun) !important;
+    border-radius: 12px;
+    color: #19180f !important;
+}
+.st-key-game2-guide-start button:hover { background: #ffe674 !important; }
+.st-key-game2-guide button:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; }
+.game2-guide-sheet { color: var(--chalk); }
+.game2-guide-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 10px;
+    padding: 12px 0 0;
+}
+.game2-guide-heading > span {
+    color: var(--sun);
+    font: 700 .68rem/1.35 ui-monospace, monospace;
+    letter-spacing: .1em;
+}
+.game2-guide-heading h1, .game2-guide-sheet li h2 {
+    margin: 0; padding: 0;
+    text-align: left;
+    color: var(--chalk) !important;
+    text-shadow: none !important;
+}
+.game2-guide-heading h1 { font-size: clamp(20px, 5vw, 26px); line-height: 1.25; }
+.game2-guide-heading p {
+    flex-basis: 100%;
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: #c9cac3;
+}
+.game2-guide-sheet ol {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(5, minmax(0, 1fr));
+    height: clamp(346px, calc(100svh - 166px - env(safe-area-inset-top) - env(safe-area-inset-bottom)), 610px);
+    padding: 0;
+    margin: 0 0 6px;
+    list-style: none;
+}
+.game2-guide-sheet ol::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: center / 100% 100% no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 500' preserveAspectRatio='none' fill='none' stroke='%23dbddd1' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M160 54 Q238 46 266 102 M252 97 L267 104 Q271 94 274 87 M245 228 Q205 223 158 264 M159 247 L155 267 L174 264 M186 354 Q211 385 253 377 M240 366 L257 376 L246 390'/%3E%3C/svg%3E");
+}
+.game2-guide-sheet li {
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    margin: 0; padding: 0;
+    text-align: center;
+}
+.game2-guide-sheet li:nth-child(1) { grid-area: 1 / 1 / 3 / 2; }
+.game2-guide-sheet li:nth-child(2) { grid-area: 2 / 2 / 4 / 3; }
+.game2-guide-sheet li:nth-child(3) { grid-area: 3 / 1 / 5 / 2; }
+.game2-guide-sheet li:nth-child(4) { grid-area: 4 / 2 / 6 / 3; }
+.game2-guide-sheet li h2 {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: clamp(15px, 4.4vw, 21px);
+    font-weight: 750;
+    line-height: 1.2;
+}
+.game2-guide-sheet li h2 span {
+    color: var(--sun);
+    font: italic 700 .8em/1 Georgia, serif;
+}
+.game2-guide-sheet li img {
+    display: block;
+    width: 78%;
+    height: clamp(47px, 12svh, 112px);
+    object-fit: contain;
+}
+.game2-guide-sheet li p {
+    margin: 0;
+    color: #d9d9d1;
+    font-size: clamp(12px, 3.25vw, 15px);
+    line-height: 1.35;
+    word-break: keep-all;
+}
+.game2-guide-sheet b { color: var(--sun); }
+
+@media (orientation: landscape) and (max-height: 540px) {
+    .st-key-game2-guide { width: min(100%, 760px); }
+    .game2-guide-heading { gap: 6px 9px; padding-top: 5px; }
+    .game2-guide-heading h1 { font-size: 19px; }
+    .game2-guide-heading p { flex-basis: auto; font-size: 12px; }
+    .game2-guide-sheet ol {
+        height: clamp(156px, calc(100svh - 152px - env(safe-area-inset-top) - env(safe-area-inset-bottom)), 325px);
+        margin-bottom: 4px;
+    }
+    .game2-guide-sheet li {
+        display: grid;
+        grid-template-columns: minmax(0, 28%) auto;
+        grid-template-rows: auto auto;
+        align-content: center;
+        justify-content: center;
+        gap: 1px 7px;
+        text-align: left;
+    }
+    .game2-guide-sheet li img {
+        grid-area: 1 / 1 / 3 / 2;
+        width: 100%; height: clamp(42px, 15svh, 72px);
+    }
+    .game2-guide-sheet li h2 { grid-area: 1 / 2; font-size: 15px; }
+    .game2-guide-sheet li p { grid-area: 2 / 2; font-size: 12px; }
+}
+
+            .game2-guide-sheet .game2-guide-icon {
+                font-size: clamp(42px, 10svh, 76px);
+                line-height: 1.1;
+                margin: 3px 0 7px;
             }
-            .g2-tutorial-nav {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                border-bottom: 1px solid rgba(255,255,255,.18);
-                padding: 2px 0 14px 0;
-                margin-bottom: 18px;
-                color: #bdbdb8;
-                font-size: .92rem;
-            }
-            .g2-tutorial-heading { margin: 0 0 24px 0; }
-            .g2-game-label {
-                color: #ffda35;
-                font-family: monospace;
-                font-size: .82rem;
-                font-weight: 900;
-                letter-spacing: 1.5px;
-                margin-bottom: 5px;
-            }
-            .g2-game-title {
-                color: #f7f5ed;
-                font-size: clamp(1.45rem, 4vw, 1.85rem);
-                line-height: 1.25;
-                font-weight: 900;
-                letter-spacing: -.7px;
-            }
-            .g2-game-subtitle {
-                color: #aaa9a3;
-                font-size: .93rem;
-                margin-top: 5px;
-            }
-            .g2-flow {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                grid-template-rows: auto auto auto auto;
-                column-gap: 24px;
-                row-gap: 8px;
-                align-items: center;
-                max-width: 560px;
-                margin: 0 auto 28px auto;
-            }
-            .g2-step {
-                min-width: 0;
-                text-align: center;
-                padding: 4px 2px;
-            }
-            .g2-step-1 { grid-column: 1; grid-row: 1; }
-            .g2-step-2 { grid-column: 2; grid-row: 2; }
-            .g2-step-3 { grid-column: 1; grid-row: 3; }
-            .g2-step-4 { grid-column: 2; grid-row: 4; }
-            .g2-step-heading {
-                display: flex;
-                justify-content: center;
-                align-items: baseline;
-                gap: 8px;
-                margin-bottom: 7px;
-                white-space: nowrap;
-            }
-            .g2-step-num {
-                color: #ffda35;
-                font-family: Georgia, serif;
-                font-size: 1.15rem;
-                font-weight: 900;
-                font-style: italic;
-            }
-            .g2-step-title {
-                color: #f5f3eb;
-                font-size: 1.22rem;
-                font-weight: 850;
-            }
-            .g2-step-icon {
-                font-size: 3.7rem;
-                line-height: 1.25;
-                margin: 3px 0 7px 0;
-                filter: saturate(1.08);
-            }
-            .g2-step-desc {
-                color: #c3c1ba;
-                font-size: .88rem;
-                line-height: 1.55;
-                word-break: keep-all;
-            }
-            .g2-step-desc strong { color: #ffda35; font-weight: 850; }
-            .g2-arrow {
-                color: #d9d9d1;
-                font-size: 3rem;
-                line-height: 1;
-                text-align: center;
-                opacity: .95;
-                align-self: center;
-            }
-            .g2-arrow-12 { grid-column: 2; grid-row: 1; transform: rotate(18deg); }
-            .g2-arrow-23 { grid-column: 1; grid-row: 2; transform: rotate(155deg); }
-            .g2-arrow-34 { grid-column: 2; grid-row: 3; transform: rotate(18deg); }
-            @media (max-width: 520px) {
-                .g2-flow {
-                    grid-template-columns: 1fr;
-                    grid-template-rows: auto;
-                    row-gap: 4px;
-                    max-width: 340px;
+            .game2-guide-sheet li p { max-width: 190px; }
+            @media (orientation: landscape) and (max-height: 540px) {
+                .game2-guide-sheet .game2-guide-icon {
+                    font-size: clamp(34px, 11svh, 58px);
+                    margin: 0;
                 }
-                .g2-step-1, .g2-step-2, .g2-step-3, .g2-step-4 {
-                    grid-column: 1;
-                    grid-row: auto;
-                }
-                .g2-arrow-12, .g2-arrow-23, .g2-arrow-34 {
-                    grid-column: 1;
-                    grid-row: auto;
-                    transform: rotate(90deg);
-                    font-size: 2rem;
-                    margin: -2px 0;
-                }
-                .g2-step-icon { font-size: 3.2rem; }
+                .game2-guide-sheet li p { max-width: none; }
             }
             </style>
             """,
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
 
-        col_nav1, col_nav2 = st.columns([1, 1])
-        with col_nav1:
-            if st.button("메인으로", key="tut_nav_main"):
-                change_page('main')
-                return
-        with col_nav2:
-            if st.button("건너뛰기 ❯", key="tut_nav_skip"):
-                st.session_state.game_2_tutorial_done = True
-                st.rerun()
+        with st.container(key="game2-guide"):
+            with st.container(key="game2-guide-nav"):
+                nav_left, nav_right = st.columns([1, 1])
+                with nav_left:
+                    if st.button("메인으로", key="game2_tutorial_main"):
+                        change_page("main")
+                        return
+                with nav_right:
+                    with st.container(key="game2-guide-skip"):
+                        if st.button("건너뛰기", key="game2_tutorial_skip"):
+                            st.session_state.game_2_tutorial_done = True
+                            st.rerun()
 
-        st.markdown(
-            """
-            <div class="g2-tutorial-wrap">
-              <div class="g2-tutorial-heading">
-                <div class="g2-game-label">GAME 02</div>
-                <div class="g2-game-title">뉴스 유사도 HIGH / LOW</div>
-                <div class="g2-game-subtitle">AI가 분석한 뉴스 유사도, 기준 점수보다 높을까 낮을까?</div>
-              </div>
-              <div class="g2-flow">
-                <div class="g2-step g2-step-1">
-                  <div class="g2-step-heading"><span class="g2-step-num">01</span><span class="g2-step-title">코인 베팅</span></div>
-                  <div class="g2-step-icon">🪙</div>
-                  <div class="g2-step-desc">플레이할 코인 금액을 정한다.<br>최소 <strong>1,000 C</strong></div>
-                </div>
-                <div class="g2-arrow g2-arrow-12">⤵</div>
-                <div class="g2-step g2-step-2">
-                  <div class="g2-step-heading"><span class="g2-step-num">02</span><span class="g2-step-title">기사 선택</span></div>
-                  <div class="g2-step-icon">📰</div>
-                  <div class="g2-step-desc">룰렛을 돌려 기사를 선택하고<br>뉴스 내용을 읽는다.</div>
-                </div>
-                <div class="g2-arrow g2-arrow-23">⤵</div>
-                <div class="g2-step g2-step-3">
-                  <div class="g2-step-heading"><span class="g2-step-num">03</span><span class="g2-step-title">HIGH / LOW 예측</span></div>
-                  <div class="g2-step-icon">🎯</div>
-                  <div class="g2-step-desc">랜덤으로 정해진 기준 점수를 확인하고<br><strong>HIGH</strong> (기준 이상) 또는 <strong>LOW</strong> (기준 미만)를 선택한다.</div>
-                </div>
-                <div class="g2-arrow g2-arrow-34">⤵</div>
-                <div class="g2-step g2-step-4">
-                  <div class="g2-step-heading"><span class="g2-step-num">04</span><span class="g2-step-title">결과 확인</span></div>
-                  <div class="g2-step-icon">🏆</div>
-                  <div class="g2-step-desc">AI가 계산한 실제 유사도와 비교한다.<br>적중 <strong>+베팅액의 2배</strong><br>실패 <strong>−베팅액</strong></div>
-                </div>
-              </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+            st.markdown(
+                """
+                <section class="game2-guide-sheet">
+                  <header class="game2-guide-heading">
+                    <span>GAME 02</span>
+                    <h1>뉴스 유사도 HIGH / LOW</h1>
+                    <p>AI가 분석한 뉴스 유사도, 기준 점수보다 높을까 낮을까?</p>
+                  </header>
+                  <ol>
+                    <li>
+                      <h2><span>01</span> 코인 베팅</h2>
+                      <div class="game2-guide-icon">🪙</div>
+                      <p>플레이할 코인 금액을 정해 베팅한다.<br>최소 <b>1,000 C</b></p>
+                    </li>
+                    <li>
+                      <h2><span>02</span> 기사 선택</h2>
+                      <div class="game2-guide-icon">📰</div>
+                      <p>룰렛을 돌려 기사를 선택한 뒤<br>뉴스 내용을 읽는다.</p>
+                    </li>
+                    <li>
+                      <h2><span>03</span> HIGH / LOW 예측</h2>
+                      <div class="game2-guide-icon">🎯</div>
+                      <p>랜덤 기준 점수를 확인하고<br><b>HIGH</b>(기준 이상 ≥) 또는<br><b>LOW</b>(기준 미만 &lt;)를 선택한다.</p>
+                    </li>
+                    <li>
+                      <h2><span>04</span> 결과 확인</h2>
+                      <div class="game2-guide-icon">🏆</div>
+                      <p>AI가 계산한 실제 유사도와 비교한다.<br>적중 <b>+베팅액의 2배</b><br>실패 <b>−베팅액</b></p>
+                    </li>
+                  </ol>
+                </section>
+                """,
+                unsafe_allow_html=True,
+            )
 
-        if st.button("베팅하러 가기", use_container_width=True, type="primary", key="game_2_tutorial_start"):
-            st.session_state.game_2_tutorial_done = True
-            st.rerun()
+            with st.container(key="game2-guide-start"):
+                if st.button(
+                    "베팅하러 가기",
+                    use_container_width=True,
+                    type="primary",
+                    key="game_2_tutorial_start",
+                ):
+                    st.session_state.game_2_tutorial_done = True
+                    st.rerun()
 
         return
 
