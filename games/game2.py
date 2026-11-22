@@ -153,11 +153,6 @@ def _render_game_2_tutorial():
             if st.button("‹ 메인으로", key="game2_tutorial_back"):
                 change_page("main")
                 return
-        with right:
-            if st.button("건너뛰기 ›", key="game2_tutorial_skip"):
-                st.session_state.game_2_tutorial_done = True
-                st.rerun()
-
         st.html("""
             <section aria-label="게임 진행 방법">
                 <div class="g2-tutorial-kicker">HOW TO PLAY</div>
