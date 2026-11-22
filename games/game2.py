@@ -233,8 +233,8 @@ def show_game_2():
                 """
                 <section class="game2-guide-sheet">
                   <header class="game2-guide-heading">
-                    <span>GAME 02</span>
-                    <h1>소수점 HIGH / LOW</h1>
+                    <span>HOW TO PLAY</span>
+                    <h1>소수점 승부</h1>
                     <p>AI 유사도의 정수 부분은 제외! 소수점 두 자리 숫자만 비교한다.</p>
                   </header>
                   <ol>
@@ -276,216 +276,396 @@ def show_game_2():
 
         return
 
-    st.title("🎮 게임 2: 소수점 HIGH / LOW 게임")
-    
-    # [1단계] Shared wager screen: game 2 awards +2x net gain.
-    if "game_2_bet" not in st.session_state:
-        if not check_user_coins_or_pop_bank():
-            return
-        user = st.session_state.get("current_user_data") or {}
-        try:
-            users_data = fetch_ranking_data()
-        except Exception:
-            users_data = None
-        confirmed_bet = render_betting_ui(
-            current_coins=int(user.get("코인", 0)),
-            users_data=users_data,
-            current_sid=str(st.session_state.get("current_user", "")),
-            current_nickname=str(user.get("아이디", "")),
-            payout_multiplier=GAME_2_WIN_MULTIPLIER,
-            title="게임 2: 소수점 HIGH / LOW",
-            state_key="game_2",
+    with st.container(key="game2-ui"):
+        st.markdown(
+            """
+            <style>
+            .stApp:has(.st-key-game2-ui) {
+                background: #100e0a !important;
+                color: #f4ead7;
+            }
+            .stApp:has(.st-key-game2-ui) .block-container {
+                max-width: 980px;
+                padding-top: 2rem;
+                padding-bottom: 3rem;
+            }
+            .stApp:has(.st-key-game2-ui) [data-testid="stHeader"] {
+                background: rgba(16,14,10,.92);
+            }
+            .st-key-game2-ui {
+                --g2-gold: #d6ad61;
+                --g2-gold-light: #f1d99e;
+                --g2-cream: #f4ead7;
+                --g2-muted: #cbbd9f;
+            }
+            .st-key-game2-ui h1, .st-key-game2-ui h2, .st-key-game2-ui h3 {
+                color: var(--g2-cream) !important;
+                text-shadow: none !important;
+                letter-spacing: -.025em;
+            }
+            .st-key-game2-ui [data-testid="stMarkdownContainer"] p {
+                color: #e2d5bd !important;
+                font-size: 1rem;
+                line-height: 1.65;
+            }
+            .st-key-game2-ui [data-testid="stMarkdownContainer"] strong {
+                color: #f1d18a !important;
+                font-weight: 800;
+            }
+            .st-key-game2-ui [data-testid="stCaptionContainer"] {
+                color: #d7c6a5 !important;
+                font-size: .94rem;
+            }
+            .st-key-game2-ui .game2-brand {
+                display: flex;
+                align-items: center;
+                gap: 20px;
+                padding: 10px 0 18px;
+                margin-bottom: 18px;
+                border-bottom: 1px solid rgba(214,173,97,.28);
+            }
+            .st-key-game2-ui .game2-brand img {
+                width: clamp(78px, 13vw, 132px);
+                height: auto;
+                object-fit: contain;
+                flex: 0 0 auto;
+            }
+            .st-key-game2-ui .game2-brand-title {
+                color: #f4ead7;
+                font-size: clamp(1.8rem, 5vw, 3.1rem);
+                font-weight: 800;
+                line-height: 1.12;
+                letter-spacing: -.04em;
+            }
+            .st-key-game2-ui .game2-brand-subtitle {
+                color: #d4c19b;
+                margin-top: 8px;
+                font-size: .98rem;
+                line-height: 1.5;
+            }
+            .st-key-game2-ui [data-testid="stAlert"] {
+                background: #211b10;
+                border: 1px solid rgba(214,173,97,.45);
+                color: #f4ead7;
+                border-radius: 12px;
+            }
+            .st-key-game2-ui [data-testid="stExpander"] {
+                border: 1px solid rgba(214,173,97,.35);
+                border-radius: 12px;
+                background: rgba(31,26,17,.72);
+            }
+            .st-key-game2-ui [data-testid="stExpander"] summary {
+                color: #ead8b5;
+            }
+            .st-key-game2-ui .stButton > button {
+                min-height: 48px;
+                border: 1px solid #b68b3c !important;
+                border-radius: 12px !important;
+                background: linear-gradient(180deg, #e0bd75, #bd9145) !important;
+                color: #21190d !important;
+                font-weight: 750 !important;
+                box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 5px 14px rgba(0,0,0,.22) !important;
+            }
+            .st-key-game2-ui .stButton > button:hover {
+                border-color: #f1d99e !important;
+                background: linear-gradient(180deg, #f0d18e, #cca052) !important;
+                color: #171108 !important;
+            }
+            .st-key-game2-ui [data-testid="stMetric"] {
+                background: #211b10;
+                border: 1px solid rgba(214,173,97,.35);
+                border-radius: 12px;
+                padding: 12px;
+            }
+            .st-key-game2-ui [data-testid="stMetricLabel"] {
+                color: #d8c8aa !important;
+            }
+            .st-key-game2-ui [data-testid="stMetricValue"] {
+                color: #f1d99e !important;
+            }
+            .st-key-game2-ui .game2-result-wallet {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 14px 36px;
+                margin: 18px 0;
+                padding: 17px;
+                border: 1px solid rgba(214,173,97,.45);
+                border-radius: 14px;
+                background: linear-gradient(135deg, #211b10, #17140e);
+                color: #f4ead7;
+                text-align: center;
+            }
+            .st-key-game2-ui .game2-result-wallet p {
+                margin: 0;
+                color: #e4d5b8 !important;
+                font-weight: 650;
+            }
+            .st-key-game2-ui .game2-result-wallet strong {
+                color: #f1d18a;
+                margin-left: 6px;
+            }
+            @media (max-width: 600px) {
+                .st-key-game2-ui .game2-brand { gap: 12px; }
+                .st-key-game2-ui .game2-brand img { width: 76px; }
+                .st-key-game2-ui .game2-brand-subtitle { font-size: .86rem; }
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
         )
-        if confirmed_bet is not None:
-            st.session_state.game_2_bet = confirmed_bet
-            st.rerun()
-        return
+        st.markdown(
+            """
+            <div class="game2-brand">
+                <div class="game2-brand-mark" aria-hidden="true">₵</div>
+                <div>
+                    <div class="game2-brand-title">소수점 승부</div>
+                    <div class="game2-brand-subtitle">AI 뉴스 유사도에서 소수점 두 자리의 높고 낮음을 맞혀보세요</div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    
+        # [1단계] Shared wager screen: game 2 awards +2x net gain.
+        if "game_2_bet" not in st.session_state:
+            if not check_user_coins_or_pop_bank():
+                return
+            user = st.session_state.get("current_user_data") or {}
+            try:
+                users_data = fetch_ranking_data()
+            except Exception:
+                users_data = None
+            confirmed_bet = render_betting_ui(
+                current_coins=int(user.get("코인", 0)),
+                users_data=users_data,
+                current_sid=str(st.session_state.get("current_user", "")),
+                current_nickname=str(user.get("아이디", "")),
+                payout_multiplier=GAME_2_WIN_MULTIPLIER,
+                title="소수점 승부",
+                state_key="game_2",
+            )
+            if confirmed_bet is not None:
+                st.session_state.game_2_bet = confirmed_bet
+                st.rerun()
+            return
 
-    # Game 2's target-number card is intentionally game-specific.
-    st.markdown("""
-        <style>
-        .target-num-card {
-            background:linear-gradient(135deg,#0d1b2a,#1b263b);
-            border:3px solid #ffda39;border-radius:16px;padding:20px;
-            text-align:center;box-shadow:0 0 20px rgba(255,218,57,.22);margin:20px 0;
-        }
-        .target-digit {
-            font-family:ui-monospace,monospace;
-            font-size:clamp(2.8rem,12vw,4rem);font-weight:900;color:#ffda39;
-            letter-spacing:.08em;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+        # Game 2's target-number card is intentionally game-specific.
+        st.markdown("""
+            <style>
+            .target-num-card {
+                position: relative;
+                overflow: hidden;
+                background: linear-gradient(145deg, #201a10 0%, #17140e 58%, #282012 100%);
+                border: 1px solid #b68b3c;
+                border-radius: 18px;
+                padding: 24px 18px 20px;
+                text-align: center;
+                box-shadow: inset 0 1px 0 rgba(255,235,190,.10), 0 10px 28px rgba(0,0,0,.24);
+                margin: 20px 0;
+            }
+            .target-num-card::before {
+                content: "";
+                position: absolute;
+                inset: 7px;
+                border: 1px solid rgba(218,180,105,.22);
+                border-radius: 12px;
+                pointer-events: none;
+            }
+            .target-card-label {
+                color: #e9d8b6;
+                font-size: 1rem;
+                font-weight: 700;
+                letter-spacing: .04em;
+            }
+            .target-digit {
+                display: inline-block;
+                margin: 7px 0 3px;
+                color: #f2c96d;
+                font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+                font-size: clamp(3.5rem, 15vw, 5.2rem);
+                line-height: 1.05;
+                font-weight: 900;
+                letter-spacing: .12em;
+                text-shadow: 0 2px 0 #68491c;
+            }
+            .target-card-caption {
+                color: #d8c8aa;
+                font-size: .92rem;
+                line-height: 1.5;
+            }
+            </style>
+        """, unsafe_allow_html=True)
 
-    # [2단계] Reuse the roulette -> article reader flow, without a second slot.
-    title, article_text, url = get_game_news_selection(
-        "game_2", win_multiplier=GAME_2_WIN_MULTIPLIER
-    )
-    if not title:
-        return
+        # [2단계] Reuse the roulette -> article reader flow, without a second slot.
+        title, article_text, url = get_game_news_selection(
+            "game_2", win_multiplier=GAME_2_WIN_MULTIPLIER
+        )
+        if not title:
+            return
 
-    # [3단계] HIGH / LOW 예측 선택
-    if (
-        "game_2_target_num" not in st.session_state
-        or not isinstance(st.session_state.game_2_target_num, int)
-        or not 0 <= st.session_state.game_2_target_num <= 99
-    ):
-        st.session_state.game_2_target_num = random.randint(0, 99)
+        # [3단계] HIGH / LOW 예측 선택
+        if (
+            "game_2_target_num" not in st.session_state
+            or not isinstance(st.session_state.game_2_target_num, int)
+            or not 0 <= st.session_state.game_2_target_num <= 99
+        ):
+            st.session_state.game_2_target_num = random.randint(0, 99)
 
-    target_num = st.session_state.game_2_target_num
+        target_num = st.session_state.game_2_target_num
 
-    if "game_2_user_choice" not in st.session_state:
+        if "game_2_user_choice" not in st.session_state:
+            st.markdown("---")
+            st.markdown("### 오늘의 승부")
+            st.caption(f"선택한 기사 · {title}")
+            st.caption("AI가 계산한 유사도에서 정수 부분은 제외하고, 소수점 아래 두 자리만 비교합니다. 기준 숫자와 같으면 HIGH입니다.")
+
+            with st.expander("📄 선택한 뉴스 본문 보기", expanded=False):
+                st.write(article_text if article_text else title)
+
+            st.markdown(
+                f"""
+                <div class="target-num-card">
+                    <div class="target-card-label">비교할 숫자</div>
+                    <div class="target-digit">{target_num:02d}</div>
+                    <div class="target-card-caption">AI 유사도 <b>XX.YY</b> 중 <b>YY</b>만 비교합니다<br>예: 87.04점이라면 <b>04</b>가 비교 대상</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+
+            col_high, col_low = st.columns(2)
+            with col_high:
+                if st.button(f"HIGH  ·  {target_num:02d} 이상", use_container_width=True):
+                    st.session_state.game_2_user_choice = "HIGH"
+                    st.rerun()
+
+            with col_low:
+                if st.button(f"LOW  ·  {target_num:02d} 미만", use_container_width=True):
+                    st.session_state.game_2_user_choice = "LOW"
+                    st.rerun()
+
+            return
+
+        # [4단계] AI 판단 및 결과 계산
+        bet_coin = st.session_state.game_2_bet
+        user_choice = st.session_state.game_2_user_choice
+
+        if "game_2_result" not in st.session_state:
+            with similarity_analysis_loading():
+                text_for_summary = article_text if (article_text and article_text.strip()) else title
+                try:
+                    summary_text, score_details = analyze_round_once(
+                        st.session_state, "game_2", title=title, article_text=text_for_summary,
+                        summarize=summary, similarity=similarity_check,
+                        fallback_to_title=True,
+                    )
+                except (RuntimeError, ValueError, TypeError, KeyError) as exc:
+                    st.error(f"뉴스 유사도를 계산하지 못했습니다: {exc}")
+                    return
+                actual_score = score_details["score"]
+                actual_decimal_digits = get_decimal_digits(actual_score)
+
+                # 정수 부분은 비교에서 제외한다. 동점은 기존 규칙대로 HIGH에 포함한다.
+                if user_choice == "HIGH":
+                    is_win = (actual_decimal_digits >= target_num)
+                else:
+                    is_win = (actual_decimal_digits < target_num)
+
+                if is_win:
+                    reward = int(bet_coin * GAME_2_WIN_MULTIPLIER)
+                    result_msg = "예측 성공"
+                else:
+                    reward = -bet_coin
+                    result_msg = "예측 실패"
+
+                try:
+                    settled = settle_game_round(
+                        "game_2", int(bet_coin), is_win,
+                        badge_evidence={"choice": user_choice},
+                    )
+                except BalanceChanged as changed:
+                    update_session_balances(changed.balances)
+                    st.error(str(changed))
+                    return
+                except TransactionError as exc:
+                    st.error(str(exc))
+                    return
+                reward = settled["reward"]
+                new_coins = settled["new_coins"]
+                new_streak = settled["new_streak"]
+
+                st.session_state.game_2_result = {
+                    "title": title,
+                    "summary": summary_text,
+                    "actual_score": actual_score,
+                    "actual_decimal_digits": actual_decimal_digits,
+                    "score_details": score_details,
+                    "target_num": target_num,
+                    "reward": reward,
+                    "is_win": is_win,
+                    "msg": result_msg,
+                    "new_coins": new_coins,
+                    "new_streak": new_streak
+                }
+
+        # [5단계] 결과 공개 직전 턴 종료 이자 부과
+        res = st.session_state.game_2_result
+        if not apply_end_of_turn_interest("game_2"):
+            return
+        show_summary_before_score(
+            res.get("summary", ""), "game_2_summary_revealed",
+            title=res.get("title", title), score=res["actual_score"],
+            details=res.get("score_details"),
+        )
         st.markdown("---")
-        st.markdown("### 🎯 소수점 두 자리 HIGH / LOW 예측")
-        st.caption(f"선택한 기사 · {title}")
-        st.info("AI 유사도 점수의 정수 부분은 무시하고, 소수점 이하 두 자리(YY)만 비교해! 기준 숫자와 같으면 HIGH로 판정해.")
+        st.markdown("### 🏆 최종 결과")
 
-        with st.expander("📄 선택한 뉴스 본문 보기", expanded=False):
-            st.write(article_text if article_text else title)
+        if res["is_win"]:
+            st.balloons()
+            st.success(f"{res['msg']} · +{res['reward']:,} C")
+        else:
+            st.error(f"{res['msg']} · −{abs(res['reward']):,} C")
+
+        col_r1, col_r2, col_r3 = st.columns(3)
+        with col_r1: st.metric("소수점 기준 숫자", f"{res['target_num']:02d}")
+        with col_r2: st.metric("내 선택", "소수점 ≥ 기준" if user_choice == "HIGH" else "소수점 < 기준")
+        with col_r3: st.metric("AI 소수점 결과", f"{res['actual_decimal_digits']:02d}")
+        st.caption(
+            f"AI 전체 유사도 {res['actual_score']:.2f}점 → "
+            f"소수점 두 자리 {res['actual_decimal_digits']:02d}만 비교 "
+            f"(기준 {res['target_num']:02d})"
+        )
 
         st.markdown(
             f"""
-            <div class="target-num-card">
-                <div style="color:#ffffff; font-weight:bold; font-size:1.1rem; margin-bottom:8px;">🎲 소수점 비교 기준 숫자</div>
-                <div class="target-digit">{target_num:02d}</div>
-                <div style="color:#d9d9d1; font-size:.95rem; margin-top:8px;">예: 87.04점 → 04만 비교</div>
+            <div class="game2-result-wallet">
+                <p>보유 코인 <strong>{res['new_coins']:,} C</strong></p>
+                <p>현재 연승 <strong>{res['new_streak']}연승</strong></p>
             </div>
             """,
             unsafe_allow_html=True
         )
 
+        def reset_game_2_state():
+            keys_to_clear = [
+                "game_2_bet", "selected_news_game_2", "candidates_game_2", 
+                "game_2_target_num", "game_2_user_choice", "game_2_result", "game_2_round_id",
+                "game_2_summary_revealed", "game_2_analysis_checkpoint", "game_2_slot_round",
+                "read_done_game_2", "game_2_reader_round", "game_2_direct_url_error"
+            ]
+            for k in keys_to_clear:
+                if k in st.session_state:
+                    del st.session_state[k]
 
-        col_high, col_low = st.columns(2)
-        with col_high:
-            if st.button(f"⬆️ HIGH (소수점 두 자리 ≥ {target_num:02d})", use_container_width=True):
-                st.session_state.game_2_user_choice = "HIGH"
+        col_btn1, col_btn2 = st.columns(2)
+        with col_btn1:
+            if st.button("🔄 다시 도전하기", use_container_width=True):
+                reset_game_2_state()
                 st.rerun()
 
-        with col_low:
-            if st.button(f"⬇️ LOW (소수점 두 자리 < {target_num:02d})", use_container_width=True):
-                st.session_state.game_2_user_choice = "LOW"
-                st.rerun()
-
-        return
-
-    # [4단계] AI 판단 및 결과 계산
-    bet_coin = st.session_state.game_2_bet
-    user_choice = st.session_state.game_2_user_choice
-
-    if "game_2_result" not in st.session_state:
-        with similarity_analysis_loading():
-            text_for_summary = article_text if (article_text and article_text.strip()) else title
-            try:
-                summary_text, score_details = analyze_round_once(
-                    st.session_state, "game_2", title=title, article_text=text_for_summary,
-                    summarize=summary, similarity=similarity_check,
-                    fallback_to_title=True,
-                )
-            except (RuntimeError, ValueError, TypeError, KeyError) as exc:
-                st.error(f"뉴스 유사도를 계산하지 못했습니다: {exc}")
-                return
-            actual_score = score_details["score"]
-            actual_decimal_digits = get_decimal_digits(actual_score)
-
-            # 정수 부분은 비교에서 제외한다. 동점은 기존 규칙대로 HIGH에 포함한다.
-            if user_choice == "HIGH":
-                is_win = (actual_decimal_digits >= target_num)
-            else:
-                is_win = (actual_decimal_digits < target_num)
-
-            if is_win:
-                reward = int(bet_coin * GAME_2_WIN_MULTIPLIER)
-                result_msg = "예측 성공"
-            else:
-                reward = -bet_coin
-                result_msg = "예측 실패"
-
-            try:
-                settled = settle_game_round(
-                    "game_2", int(bet_coin), is_win,
-                    badge_evidence={"choice": user_choice},
-                )
-            except BalanceChanged as changed:
-                update_session_balances(changed.balances)
-                st.error(str(changed))
-                return
-            except TransactionError as exc:
-                st.error(str(exc))
-                return
-            reward = settled["reward"]
-            new_coins = settled["new_coins"]
-            new_streak = settled["new_streak"]
-
-            st.session_state.game_2_result = {
-                "title": title,
-                "summary": summary_text,
-                "actual_score": actual_score,
-                "actual_decimal_digits": actual_decimal_digits,
-                "score_details": score_details,
-                "target_num": target_num,
-                "reward": reward,
-                "is_win": is_win,
-                "msg": result_msg,
-                "new_coins": new_coins,
-                "new_streak": new_streak
-            }
-
-    # [5단계] 결과 공개 직전 턴 종료 이자 부과
-    res = st.session_state.game_2_result
-    if not apply_end_of_turn_interest("game_2"):
-        return
-    show_summary_before_score(
-        res.get("summary", ""), "game_2_summary_revealed",
-        title=res.get("title", title), score=res["actual_score"],
-        details=res.get("score_details"),
-    )
-    st.markdown("---")
-    st.markdown("### 🏆 최종 결과")
-
-    if res["is_win"]:
-        st.balloons()
-        st.success(f"{res['msg']} · +{res['reward']:,} C")
-    else:
-        st.error(f"{res['msg']} · −{abs(res['reward']):,} C")
-
-    col_r1, col_r2, col_r3 = st.columns(3)
-    with col_r1: st.metric("소수점 기준 숫자", f"{res['target_num']:02d}")
-    with col_r2: st.metric("내 선택", "소수점 ≥ 기준" if user_choice == "HIGH" else "소수점 < 기준")
-    with col_r3: st.metric("AI 소수점 결과", f"{res['actual_decimal_digits']:02d}")
-    st.caption(
-        f"AI 전체 유사도 {res['actual_score']:.2f}점 → "
-        f"소수점 두 자리 {res['actual_decimal_digits']:02d}만 비교 "
-        f"(기준 {res['target_num']:02d})"
-    )
-
-    st.markdown(
-        f"""
-        <div style="background:#001122; border:2px solid #00e5ff; padding:15px; border-radius:10px; text-align:center; margin:15px 0;">
-            <p style="color:#ffffff; margin:0; font-weight:bold;">현재 보유 코인: <span style="color:#00ff88;">{res['new_coins']:,} C</span></p>
-            <p style="color:#ffffff; margin:0; font-weight:bold;">현재 연승 기록: <span style="color:#00e5ff;">{res['new_streak']} 연승</span></p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    def reset_game_2_state():
-        keys_to_clear = [
-            "game_2_bet", "selected_news_game_2", "candidates_game_2", 
-            "game_2_target_num", "game_2_user_choice", "game_2_result", "game_2_round_id",
-            "game_2_summary_revealed", "game_2_analysis_checkpoint", "game_2_slot_round",
-            "read_done_game_2", "game_2_reader_round", "game_2_direct_url_error"
-        ]
-        for k in keys_to_clear:
-            if k in st.session_state:
-                del st.session_state[k]
-
-    col_btn1, col_btn2 = st.columns(2)
-    with col_btn1:
-        if st.button("🔄 다시 도전하기", use_container_width=True):
-            reset_game_2_state()
-            st.rerun()
-
-    with col_btn2:
-        if st.button("⬅️ 메인으로 돌아가기", use_container_width=True):
-            reset_game_2_state()
-            change_page('main')
+        with col_btn2:
+            if st.button("⬅️ 메인으로 돌아가기", use_container_width=True):
+                reset_game_2_state()
+                change_page('main')
