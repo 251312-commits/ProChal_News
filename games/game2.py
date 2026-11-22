@@ -1,6 +1,7 @@
 # 업다운 (하) ½
 
 import random
+from decimal import Decimal, ROUND_HALF_UP
 import streamlit as st
 from modules.news_ai import summary, similarity_check
 from modules.ui_components import change_page
@@ -15,6 +16,15 @@ from games.shared.betting import check_user_coins_or_pop_bank
 from views.ranking import fetch_ranking_data
 
 GAME_2_WIN_MULTIPLIER = 2.0
+
+
+def get_decimal_digits(score):
+    """유사도 점수의 정수 부분은 버리고, 소수점 이하 두 자리를 0~99 정수로 반환한다."""
+    rounded_score = Decimal(str(score)).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
+    fractional_part = rounded_score - int(rounded_score)
+    return int(fractional_part * 100)
 
 
 def show_game_2():
@@ -224,8 +234,8 @@ def show_game_2():
                 <section class="game2-guide-sheet">
                   <header class="game2-guide-heading">
                     <span>GAME 02</span>
-                    <h1>뉴스 유사도 HIGH / LOW</h1>
-                    <p>AI가 분석한 뉴스 유사도, 기준 점수보다 높을까 낮을까?</p>
+                    <h1>소수점 HIGH / LOW</h1>
+                    <p>AI 유사도의 정수 부분은 제외! 소수점 두 자리 숫자만 비교한다.</p>
                   </header>
                   <ol>
                     <li>
@@ -239,14 +249,14 @@ def show_game_2():
                       <p>룰렛을 돌려 기사를 선택한 뒤<br>뉴스 내용을 읽는다.</p>
                     </li>
                     <li>
-                      <h2><span>03</span> HIGH / LOW 예측</h2>
+                      <h2><span>03</span> 소수점 예측</h2>
                       <div class="game2-guide-icon">🎯</div>
-                      <p>랜덤 기준 점수를 확인하고<br><b>HIGH</b>(기준 이상 ≥) 또는<br><b>LOW</b>(기준 미만 &lt;)를 선택한다.</p>
+                      <p>제시된 <b>0~99</b> 기준 숫자와<br>기사 유사도의 소수점 두 자리를 비교!<br><b>HIGH</b>(이상 ≥, 동점 포함) 또는 <b>LOW</b>(미만 &lt;)</p>
                     </li>
                     <li>
                       <h2><span>04</span> 결과 확인</h2>
                       <div class="game2-guide-icon">🏆</div>
-                      <p>AI가 계산한 실제 유사도와 비교한다.<br>적중 <b>+베팅액의 2배</b><br>실패 <b>−베팅액</b></p>
+                      <p>예: 87.04점이면 <b>04</b>만 비교한다.<br>적중 <b>+베팅액의 2배</b><br>실패 <b>−베팅액</b></p>
                     </li>
                   </ol>
                 </section>
@@ -266,7 +276,7 @@ def show_game_2():
 
         return
 
-    st.title("🎮 게임 2: 뉴스 유사도 HIGH / LOW 게임")
+    st.title("🎮 게임 2: 소수점 HIGH / LOW 게임")
     
     # [1단계] Shared wager screen: game 2 awards +2x net gain.
     if "game_2_bet" not in st.session_state:
@@ -283,7 +293,7 @@ def show_game_2():
             current_sid=str(st.session_state.get("current_user", "")),
             current_nickname=str(user.get("아이디", "")),
             payout_multiplier=GAME_2_WIN_MULTIPLIER,
-            title="게임 2: 뉴스 유사도 HIGH / LOW",
+            title="게임 2: 소수점 HIGH / LOW",
             state_key="game_2",
         )
         if confirmed_bet is not None:
@@ -296,13 +306,13 @@ def show_game_2():
         <style>
         .target-num-card {
             background:linear-gradient(135deg,#0d1b2a,#1b263b);
-            border:3px solid #00e5ff;border-radius:16px;padding:20px;
-            text-align:center;box-shadow:0 0 20px rgba(0,229,255,.5);margin:20px 0;
+            border:3px solid #ffda39;border-radius:16px;padding:20px;
+            text-align:center;box-shadow:0 0 20px rgba(255,218,57,.22);margin:20px 0;
         }
         .target-digit {
-            font-family:'Press Start 2P',monospace,sans-serif;
-            font-size:4rem;font-weight:900;color:#00ff88;
-            text-shadow:0 0 15px #00ff88,0 0 25px #00e5ff;
+            font-family:ui-monospace,monospace;
+            font-size:clamp(2.8rem,12vw,4rem);font-weight:900;color:#ffda39;
+            letter-spacing:.08em;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -315,15 +325,20 @@ def show_game_2():
         return
 
     # [3단계] HIGH / LOW 예측 선택
-    if "game_2_target_num" not in st.session_state:
-        st.session_state.game_2_target_num = random.randint(0, 100)
+    if (
+        "game_2_target_num" not in st.session_state
+        or not isinstance(st.session_state.game_2_target_num, int)
+        or not 0 <= st.session_state.game_2_target_num <= 99
+    ):
+        st.session_state.game_2_target_num = random.randint(0, 99)
 
     target_num = st.session_state.game_2_target_num
 
     if "game_2_user_choice" not in st.session_state:
         st.markdown("---")
-        st.markdown("### 🎯 HIGH / LOW 예측 선택")
+        st.markdown("### 🎯 소수점 두 자리 HIGH / LOW 예측")
         st.caption(f"선택한 기사 · {title}")
+        st.info("AI 유사도 점수의 정수 부분은 무시하고, 소수점 이하 두 자리(YY)만 비교해! 기준 숫자와 같으면 HIGH로 판정해.")
 
         with st.expander("📄 선택한 뉴스 본문 보기", expanded=False):
             st.write(article_text if article_text else title)
@@ -331,8 +346,9 @@ def show_game_2():
         st.markdown(
             f"""
             <div class="target-num-card">
-                <div style="color:#ffffff; font-weight:bold; font-size:1.1rem; margin-bottom:8px;">🎲 기준 점수</div>
-                <div class="target-digit">{target_num}점</div>
+                <div style="color:#ffffff; font-weight:bold; font-size:1.1rem; margin-bottom:8px;">🎲 소수점 비교 기준 숫자</div>
+                <div class="target-digit">{target_num:02d}</div>
+                <div style="color:#d9d9d1; font-size:.95rem; margin-top:8px;">예: 87.04점 → 04만 비교</div>
             </div>
             """,
             unsafe_allow_html=True
@@ -341,12 +357,12 @@ def show_game_2():
 
         col_high, col_low = st.columns(2)
         with col_high:
-            if st.button(f"⬆️ HIGH (이상: ≥ {target_num}점)", use_container_width=True):
+            if st.button(f"⬆️ HIGH (소수점 두 자리 ≥ {target_num:02d})", use_container_width=True):
                 st.session_state.game_2_user_choice = "HIGH"
                 st.rerun()
 
         with col_low:
-            if st.button(f"⬇️ LOW (미만: < {target_num}점)", use_container_width=True):
+            if st.button(f"⬇️ LOW (소수점 두 자리 < {target_num:02d})", use_container_width=True):
                 st.session_state.game_2_user_choice = "LOW"
                 st.rerun()
 
@@ -369,11 +385,13 @@ def show_game_2():
                 st.error(f"뉴스 유사도를 계산하지 못했습니다: {exc}")
                 return
             actual_score = score_details["score"]
+            actual_decimal_digits = get_decimal_digits(actual_score)
 
+            # 정수 부분은 비교에서 제외한다. 동점은 기존 규칙대로 HIGH에 포함한다.
             if user_choice == "HIGH":
-                is_win = (actual_score >= target_num)
+                is_win = (actual_decimal_digits >= target_num)
             else:
-                is_win = (actual_score < target_num)
+                is_win = (actual_decimal_digits < target_num)
 
             if is_win:
                 reward = int(bet_coin * GAME_2_WIN_MULTIPLIER)
@@ -402,6 +420,7 @@ def show_game_2():
                 "title": title,
                 "summary": summary_text,
                 "actual_score": actual_score,
+                "actual_decimal_digits": actual_decimal_digits,
                 "score_details": score_details,
                 "target_num": target_num,
                 "reward": reward,
@@ -430,10 +449,14 @@ def show_game_2():
         st.error(f"{res['msg']} · −{abs(res['reward']):,} C")
 
     col_r1, col_r2, col_r3 = st.columns(3)
-    with col_r1: st.metric("기준 점수", f"{res['target_num']}점")
-    with col_r2: st.metric("내 선택", "이상 (≥)" if user_choice == "HIGH" else "미만 (<)")
-    score_format = ".2f" if "score_hundredths" in (res.get("score_details") or {}) else ".0f"
-    with col_r3: st.metric("AI 실제 유사도", f"{res['actual_score']:{score_format}}점")
+    with col_r1: st.metric("소수점 기준 숫자", f"{res['target_num']:02d}")
+    with col_r2: st.metric("내 선택", "소수점 ≥ 기준" if user_choice == "HIGH" else "소수점 < 기준")
+    with col_r3: st.metric("AI 소수점 결과", f"{res['actual_decimal_digits']:02d}")
+    st.caption(
+        f"AI 전체 유사도 {res['actual_score']:.2f}점 → "
+        f"소수점 두 자리 {res['actual_decimal_digits']:02d}만 비교 "
+        f"(기준 {res['target_num']:02d})"
+    )
 
     st.markdown(
         f"""
