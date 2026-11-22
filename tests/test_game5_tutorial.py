@@ -9,19 +9,17 @@ class GameFiveTutorialTests(unittest.TestCase):
     def test_mobile_candidate_layout_and_confirmation_buttons_are_preserved(self):
         source = (Path(__file__).resolve().parents[1] / "games/game5.py").read_text(encoding="utf-8")
 
-        self.assertIn("white-space: nowrap;", source)
-        self.assertIn("gap: 16px;", source)
-        self.assertIn(".st-key-game5-candidate-row-0", source)
-        self.assertIn(".st-key-game5-candidate-row-1", source)
-        self.assertIn("calc(50% - 4px)", source)
-        self.assertIn("calc(33.333% - 6px)", source)
-        self.assertIn("font-size: 9px !important;", source)
-        self.assertIn("word-break: keep-all !important;", source)
-        self.assertIn('"본문 읽기"', source)
-        self.assertIn('"정답 결정"', source)
-        self.assertIn(".st-key-game5-candidate-row-1 [data-testid=\"stVerticalBlockBorderWrapper\"]", source)
-        self.assertIn("white-space: nowrap !important;", source)
-        self.assertIn("@media (max-width: 480px)", source)
+        self.assertIn("_game5_candidate_component", source)
+        self.assertIn("game5-candidate-picker-stage", source)
+        css = (Path(__file__).resolve().parents[1] / "games/game5_ui/candidates/candidate.css").read_text(encoding="utf-8")
+        js = (Path(__file__).resolve().parents[1] / "games/game5_ui/candidates/candidate.js").read_text(encoding="utf-8")
+        html = (Path(__file__).resolve().parents[1] / "games/game5_ui/candidates/index.html").read_text(encoding="utf-8")
+        self.assertIn("font-size:5px", css)
+        self.assertIn("grid-template-columns: repeat(2,minmax(0,1fr));", css)
+        self.assertIn("grid-template-columns: repeat(3,minmax(0,1fr));", css)
+        self.assertIn("streamlit:setComponentValue", js)
+        self.assertIn("본문 읽기", html)
+        self.assertIn("정답 결정", html)
         self.assertNotIn(":has([data-testid=\"stVerticalBlockBorderWrapper\"])", source)
 
     def test_game5_closes_turn_with_interest_like_game1(self):
@@ -48,6 +46,8 @@ class GameFiveTutorialTests(unittest.TestCase):
 
         with patch.dict(sys.modules, {
             "streamlit": st, "modules.ui_components": ui,
+            "streamlit.components": MagicMock(),
+            "streamlit.components.v1": MagicMock(),
             "modules.news_ai": MagicMock(), "modules.db_handler": MagicMock(),
             "views.ranking": MagicMock(),
             "games.shared.betting": MagicMock(),
@@ -67,6 +67,8 @@ class GameFiveTutorialTests(unittest.TestCase):
 
         with patch.dict(sys.modules, {
             "streamlit": st, "modules.ui_components": ui,
+            "streamlit.components": MagicMock(),
+            "streamlit.components.v1": MagicMock(),
             "modules.news_ai": MagicMock(), "modules.db_handler": MagicMock(),
             "views.ranking": MagicMock(),
             "games.shared.betting": MagicMock(),

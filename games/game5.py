@@ -2,12 +2,13 @@
 
 import asyncio
 from decimal import Decimal, ROUND_HALF_UP
-import html
 import math
 import random
 from pathlib import Path
+from uuid import uuid4
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 from games.shared.betting import check_user_coins_or_pop_bank
 from games.shared.betting import render_betting_ui
@@ -25,6 +26,10 @@ GAME_5_WIN_MULTIPLIER = 5.0
 GAME_5_MIN_BET = 1000
 GAME_5_SCORE_MAX = 99.99
 GAME_5_TARGET_RANGE_WIDTH = 2.0
+_GAME5_CANDIDATE_DIR = Path(__file__).with_name("game5_ui") / "candidates"
+_game5_candidate_component = components.declare_component(
+    "game5_candidate_picker", path=str(_GAME5_CANDIDATE_DIR)
+)
 
 ws_news = deferred_news_sheet()
 
@@ -43,6 +48,7 @@ def _reset_game_5_state() -> None:
         "game_5_summary_revealed",
         "game_5_reader_round",
         "bet_slider_val",
+        "game5_candidate_round",
     ):
         st.session_state.pop(key, None)
 
@@ -404,6 +410,59 @@ def _show_result() -> None:
                 change_page("main")
 
 
+def _render_game5_candidate_picker(candidates: list[dict], target_range: tuple[float, float]) -> None:
+    round_id = st.session_state.get("game5_candidate_round")
+    if not isinstance(round_id, str):
+        round_id = uuid4().hex
+        st.session_state.game5_candidate_round = round_id
+
+    user_data = st.session_state.get("current_user_data") or {}
+    balance = int(user_data.get("코인", 0))
+    event = _game5_candidate_component(
+        key=f"game5-candidates-{round_id}",
+        round_id=round_id,
+        range_text=_format_score_range(target_range),
+        coins=balance,
+        titles=[str(article.get("title", "")) for article in candidates],
+        default=None,
+    )
+
+    if not isinstance(event, dict) or event.get("round_id") != round_id:
+        return
+
+    action = event.get("action")
+    if action in ("back", "bank"):
+        change_page("main" if action == "back" else "bank")
+        return
+    index = event.get("index")
+    if type(index) is not int or not 0 <= index < len(candidates):
+        return
+
+    if action == "read":
+        article = candidates[index]
+        if not article.get("text"):
+            with st.spinner("뉴스 본문을 불러오는 중..."):
+                try:
+                    _load_article(article)
+                except (RuntimeError, ValueError) as exc:
+                    try:
+                        _replace_candidate(candidates, index)
+                    except ValueError as replacement_exc:
+                        st.error(
+                            "뉴스 본문을 불러오지 못했고 "
+                            f"교체할 후보도 없습니다: {replacement_exc}"
+                        )
+                        return
+                    st.warning(f"실패한 기사를 교체했습니다: {exc}")
+                    st.rerun()
+                    return
+        st.session_state.game_5_article_index = index
+        change_page("game_5_article")
+    elif action == "select":
+        st.session_state.game_5_pending_selection = index
+        st.rerun(scope="app")
+
+
 def show_game_5():
     if "game_5_bet" not in st.session_state:
         if not check_user_coins_or_pop_bank(GAME_5_MIN_BET):
@@ -468,202 +527,27 @@ def show_game_5():
         _confirm_article_selection(pending_index)
         return
 
-    st.info("본문을 확인한 뒤, 이 구간에 해당하는 뉴스 하나를 선택하세요.")
-    st.markdown(
-        f"""
-        <div style="background:linear-gradient(135deg, #260044, #110022);
-                    border:3px solid #ff00ff; border-radius:14px;
-                    box-shadow:0 0 18px rgba(255,0,255,.65);
-                    padding:18px 16px; margin:12px 0 24px; text-align:center;">
-            <div style="color:#ffd700; font-size:1.15rem; font-weight:800;">
-                🎯 정답 일치율 구간
-            </div>
-            <div style="color:#ffffff; font-size:2.25rem; font-weight:900;
-                        letter-spacing:1px; margin-top:4px;">
-                {_format_score_range(target_range)}
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        """
+    with st.container(key="game5-candidate-picker-stage"):
+        st.html("""
         <style>
-        .st-key-game5-candidates [data-testid="stHorizontalBlock"] {
-            gap: 12px;
-            align-items: stretch;
+        .st-key-game5-candidate-picker-stage {
+            position: fixed; inset: 0; z-index: 1000;
+            width: 100%; height: 100vh; height: 100dvh;
+            overflow: hidden; background: #160622;
         }
-        .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] {
-            height: 100%;
-            min-height: 190px;
-            border: 3px solid #bf4ce3;
-            border-radius: 22px;
-            background: linear-gradient(160deg, #351346, #17091f);
-            box-shadow: 0 0 14px #bf4ce366, inset 0 0 18px #a13dcc35;
-            padding: 14px 12px 12px;
+        .st-key-game5-candidate-picker-stage iframe {
+            display: block; border: 0; width: 100%;
+            height: 100vh !important; height: 100dvh !important;
         }
-        .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"]:hover {
-            border-color: #e7a4ff;
-            box-shadow: 0 0 18px #d967f099, inset 0 0 18px #a13dcc45;
+        [data-testid="stApp"]:has(.st-key-game5-candidate-picker-stage) [data-testid="stHeader"] {
+            display: none;
         }
-        .st-key-game5-candidates .game5-card-title {
-            min-height: 70px;
-            margin-bottom: 14px;
-            color: #fff3ff;
-            font-size: clamp(14px, 3.8vw, 18px);
-            font-weight: 800;
-            line-height: 1.35;
-            overflow-wrap: anywhere;
-        }
-        .st-key-game5-candidates .game5-card-number {
-            display: grid;
-            place-items: center;
-            width: 34px;
-            height: 34px;
-            margin-bottom: 10px;
-            border-radius: 12px;
-            background: #ffda39;
-            color: #25132f;
-            font-weight: 900;
-        }
-        .st-key-game5-candidates [data-testid="stButton"] button {
-            min-height: 36px;
-            border-radius: 12px;
-            font-size: 12px;
-            padding: 4px 6px;
-        }
-        @media (max-width: 430px) {
-            .st-key-game5-candidates [data-testid="stHorizontalBlock"] {
-                display: flex !important;
-                flex-direction: row !important;
-                flex-wrap: wrap !important;
-                justify-content: center !important;
-                gap: 8px !important;
-                width: 100% !important;
-            }
-            .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stHorizontalBlock"] {
-                display: flex !important;
-                flex-wrap: nowrap !important;
-                gap: 4px !important;
-            }
-            .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stHorizontalBlock"] [data-testid="column"],
-            .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stHorizontalBlock"] [data-testid="stColumn"] {
-                flex: 1 1 50% !important;
-                width: 50% !important;
-                min-width: 0 !important;
-            }
-            .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"] button {
-                min-height: 32px !important;
-                height: 32px !important;
-                padding: 4px 2px !important;
-                font-size: 9px !important;
-                white-space: nowrap !important;
-            }
-            .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"] button p {
-                font-size: 9px !important;
-                line-height: 1 !important;
-                margin: 0 !important;
-                white-space: nowrap !important;
-                word-break: keep-all !important;
-                overflow-wrap: normal !important;
-            }
-
-            .st-key-game5-candidate-row-0 [data-testid="stHorizontalBlock"] > [data-testid="column"],
-            .st-key-game5-candidate-row-0 [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
-                flex: 0 0 calc(50% - 4px) !important;
-                width: calc(50% - 4px) !important;
-                max-width: calc(50% - 4px) !important;
-                min-width: 0 !important;
-            }
-            .st-key-game5-candidate-row-1 [data-testid="stHorizontalBlock"] > [data-testid="column"],
-            .st-key-game5-candidate-row-1 [data-testid="stHorizontalBlock"] > [data-testid="stColumn"] {
-                flex: 0 0 calc(33.333% - 6px) !important;
-                width: calc(33.333% - 6px) !important;
-                max-width: calc(33.333% - 6px) !important;
-                min-width: 0 !important;
-            }
-            .st-key-game5-candidate-row-1 [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"] button {
-                min-height: 32px !important;
-                height: 32px !important;
-                padding: 2px 1px !important;
-                white-space: nowrap !important;
-            }
-            .st-key-game5-candidate-row-1 [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"] button p {
-                font-size: 9px !important;
-                line-height: 1 !important;
-                margin: 0 !important;
-                white-space: nowrap !important;
-                word-break: keep-all !important;
-                overflow-wrap: normal !important;
-            }
-            .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] {
-                min-height: 165px !important;
-                padding: 10px 6px !important;
-                border-radius: 16px !important;
-            }
-            .st-key-game5-candidates .game5-card-title {
-                min-height: 68px !important;
-                font-size: 12px !important;
-                word-break: keep-all;
-            }
+        [data-testid="stMain"]:has(.st-key-game5-candidate-picker-stage) {
+            overflow: hidden;
         }
         </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    with st.container(key="game5-candidates"):
-        rows = ((0, 1), (2, 3, 4))
-        for row_index, row in enumerate(rows):
-            with st.container(key=f"game5-candidate-row-{row_index}", border=False):
-                columns = st.columns(len(row), gap="small")
-                for column, index in zip(columns, row):
-                    article = candidates[index]
-                    with column:
-                        with st.container(
-                            key=f"game5-card-{index}",
-                            border=True,
-                        ):
-                            st.markdown(
-                                f'<div class="game5-card-number">{index + 1}</div>'
-                                f'<div class="game5-card-title">'
-                                f'{html.escape(article["title"])}</div>',
-                                unsafe_allow_html=True,
-                            )
-                            read_col, select_col = st.columns(2)
-                            with read_col:
-                                if st.button(
-                                    "본문 읽기",
-                                    key=f"game_5_article_{index}",
-                                    use_container_width=True,
-                                ):
-                                    if not article.get("text"):
-                                        with st.spinner("뉴스 본문을 불러오는 중..."):
-                                            try:
-                                                _load_article(article)
-                                            except (RuntimeError, ValueError) as exc:
-                                                try:
-                                                    _replace_candidate(candidates, index)
-                                                except ValueError as replacement_exc:
-                                                    st.error(
-                                                        "뉴스 본문을 불러오지 못했고 "
-                                                        f"교체할 후보도 없습니다: {replacement_exc}"
-                                                    )
-                                                    continue
-                                                st.warning(f"실패한 기사를 교체했습니다: {exc}")
-                                                st.rerun()
-                                                continue
-                                    st.session_state.game_5_article_index = index
-                                    change_page("game_5_article")
-                            with select_col:
-                                if st.button(
-                                    "정답 결정",
-                                    key=f"game_5_select_{index}",
-                                    use_container_width=True,
-                                ):
-                                    st.session_state.game_5_pending_selection = index
-                                    st.rerun(scope="app")
+        """)
+        _render_game5_candidate_picker(candidates, target_range)
 
 
 
