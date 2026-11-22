@@ -210,7 +210,7 @@ def _confirm_article_selection(index: int) -> None:
             text-overflow: clip;
             min-width: 0;
         }
-        @media (max-width: 430px) {
+        @media (max-width: 480px) {
             .st-key-game5-confirm-overlay [data-testid="stHorizontalBlock"] {
                 gap: 12px;
             }
@@ -555,14 +555,16 @@ def show_game_5():
             }
             .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"] button {
                 min-height: 32px !important;
-                height: auto !important;
+                height: 32px !important;
                 padding: 4px 2px !important;
+                font-size: 9px !important;
+                white-space: nowrap !important;
             }
             .st-key-game5-candidates [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"] button p {
-                font-size: 9.5px !important;
-                line-height: 1.15 !important;
+                font-size: 9px !important;
+                line-height: 1 !important;
                 margin: 0 !important;
-                white-space: normal !important;
+                white-space: nowrap !important;
                 word-break: keep-all !important;
                 overflow-wrap: normal !important;
             }
@@ -582,16 +584,16 @@ def show_game_5():
                 min-width: 0 !important;
             }
             .st-key-game5-candidate-row-1 [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"] button {
-                min-height: 38px !important;
-                height: 38px !important;
+                min-height: 32px !important;
+                height: 32px !important;
                 padding: 2px 1px !important;
-                white-space: pre-line !important;
+                white-space: nowrap !important;
             }
             .st-key-game5-candidate-row-1 [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stButton"] button p {
-                font-size: 8px !important;
-                line-height: 1.05 !important;
+                font-size: 9px !important;
+                line-height: 1 !important;
                 margin: 0 !important;
-                white-space: pre-line !important;
+                white-space: nowrap !important;
                 word-break: keep-all !important;
                 overflow-wrap: normal !important;
             }
@@ -632,7 +634,7 @@ def show_game_5():
                             read_col, select_col = st.columns(2)
                             with read_col:
                                 if st.button(
-                                    "본문\n읽기" if index >= 2 else "본문 읽기",
+                                    "본문 읽기",
                                     key=f"game_5_article_{index}",
                                     use_container_width=True,
                                 ):
@@ -656,7 +658,7 @@ def show_game_5():
                                     change_page("game_5_article")
                             with select_col:
                                 if st.button(
-                                    "정답\n결정" if index >= 2 else "정답 결정",
+                                    "정답 결정",
                                     key=f"game_5_select_{index}",
                                     use_container_width=True,
                                 ):
