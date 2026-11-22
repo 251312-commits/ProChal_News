@@ -37,6 +37,8 @@ class GameFiveTutorialTests(unittest.TestCase):
         self.assertIn(".st-key-casino_betting_shell .cb-balance", source)
         self.assertIn("justify-content:flex-end !important;", source)
         self.assertIn('st.container(key="bet_nav_row")', source)
+        self.assertNotIn("cb-ends", source)
+        self.assertNotIn("<span>{min_bet:,}</span>", source)
 
     def test_tutorial_starts_game_and_marks_it_as_seen(self):
         st, ui = MagicMock(), MagicMock()

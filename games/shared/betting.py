@@ -328,8 +328,6 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
             box-shadow:0 0 9px 2px #c64aff !important;touch-action:pan-y;
         }
         .st-key-casino_bet_controls [data-testid="stTickBar"] {display:none !important;}
-        .cb-ends {display:flex;justify-content:space-between;
-            padding:0 clamp(39px,10vw,53px);font-size:.78rem;color:#ac9bbe;font-variant-numeric:tabular-nums;}
         .cb-fixed-track {position:relative;width:100%;height:7px;margin:14px 0;
             border-radius:8px;background:linear-gradient(90deg,#ad38f4,#7420a9);}
         .cb-fixed-track::after {content:'';position:absolute;top:50%;left:50%;
@@ -375,7 +373,6 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
             .cb-stat {padding:10px 8px;}
             .cb-stat-label {gap:3px;}
             .cb-rank {font-size:clamp(.83rem,3.8vw,1rem);}
-            .cb-ends {font-size:.69rem;}
         }
         /* Mobile-specific compact layout. Background remains visible; only
            the large decorative scene shrinks on short devices. */
@@ -483,10 +480,6 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
             }
             .st-key-casino_bet_controls [data-testid="stSlider"] {
                 padding:0 15px !important;
-            }
-            .st-key-casino_betting_shell .cb-ends {
-                padding:0 15px !important;font-size:.69rem !important;
-                line-height:1.1 !important;
             }
             .st-key-casino_betting_shell .cb-stats {
                 border-radius:15px !important;
@@ -611,10 +604,6 @@ def render_betting_ui(current_coins, users_data=None, current_sid="", current_ni
                           step=step, key=slider_key, label_visibility="collapsed")
             else:
                 st.markdown('<div class="cb-fixed-track"></div>', unsafe_allow_html=True)
-            st.markdown(
-                f'<div class="cb-ends"><span>{min_bet:,}</span><span>{max_bet:,}</span></div>',
-                unsafe_allow_html=True,
-            )
 
         if curr_rank is None:
             up_display = "조회 불가"

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Game 5 Candidates</title>
+  <link rel="stylesheet" href="./candidate.css">
+  <script src="./candidate.js" defer></script>
+</head>
+<body>
+  <main class="game-shell" hidden>
+    <nav class="nav" aria-label="게임 내비게이션">
+      <button class="nav-button" type="button" aria-label="메인으로 돌아가기">‹</button>
+      <div class="balance">
+        <span class="coin" aria-hidden="true">C</span>
+        <strong class="coins">0 C</strong>
+      </div>
+      <button class="nav-button bank" type="button" aria-label="은행으로 이동">₿</button>
+    </nav>
+
+    <header class="title">
+      <span>GAME 05</span>
+      <h1>일치율 구간 뉴스 맞히기</h1>
+    </header>
+
+    <section class="target" aria-label="정답 일치율 구간">
+      <p>정답 일치율 구간</p>
+      <strong></strong>
+    </section>
+
+    <section class="candidates" aria-label="뉴스 후보">
+      <div class="row row-top">
+        <article class="card" data-index="0">
+          <div class="number">1</div>
+          <h2 class="card-title"></h2>
+          <div class="actions">
+            <button class="read" type="button">본문 읽기</button>
+            <button class="select" type="button">정답 결정</button>
+          </div>
+        </article>
+        <article class="card" data-index="1">
+          <div class="number">2</div>
+          <h2 class="card-title"></h2>
+          <div class="actions">
+            <button class="read" type="button">본문 읽기</button>
+            <button class="select" type="button">정답 결정</button>
+          </div>
+        </article>
+      </div>
+
+      <div class="row row-bottom">
+        <article class="card" data-index="2">
+          <div class="number">3</div>
+          <h2 class="card-title"></h2>
+          <div class="actions">
+            <button class="read" type="button">본문 읽기</button>
+            <button class="select" type="button">정답 결정</button>
+          </div>
+        </article>
+        <article class="card" data-index="3">
+          <div class="number">4</div>
+          <h2 class="card-title"></h2>
+          <div class="actions">
+            <button class="read" type="button">본문 읽기</button>
+            <button class="select" type="button">정답 결정</button>
+          </div>
+        </article>
+        <article class="card" data-index="4">
+          <div class="number">5</div>
+          <h2 class="card-title"></h2>
+          <div class="actions">
+            <button class="read" type="button">본문 읽기</button>
+            <button class="select" type="button">정답 결정</button>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
