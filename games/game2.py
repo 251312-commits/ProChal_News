@@ -1,6 +1,7 @@
 # 업다운 (하) ½
 
 import random
+from html import escape
 from decimal import Decimal, ROUND_HALF_UP
 import streamlit as st
 from modules.news_ai import summary, similarity_check
@@ -27,420 +28,410 @@ def get_decimal_digits(score):
     return int(fractional_part * 100)
 
 
+
+def _reset_game_2_state():
+    """Clear only Game 2 round state; shared account and interest state stay intact."""
+    keys_to_clear = (
+        "game_2_bet",
+        "selected_news_game_2",
+        "candidates_game_2",
+        "game_2_target_num",
+        "game_2_user_choice",
+        "game_2_result",
+        "game_2_round_id",
+        "game_2_summary_revealed",
+        "game_2_analysis_checkpoint",
+        "game_2_slot_round",
+        "read_done_game_2",
+        "game_2_reader_round",
+        "game_2_direct_url_error",
+        "game_2_tutorial_done",
+    )
+    for key in keys_to_clear:
+        st.session_state.pop(key, None)
+
+
+def _render_game_2_tutorial():
+    """Compact tutorial styled to match the purple-and-gold casino UI."""
+    st.html("""
+        <style>
+        [data-testid="stApp"]:has(.st-key-game2-tutorial) {
+            background:
+                radial-gradient(ellipse at 50% 0%, rgba(119, 38, 173, .30), transparent 48%),
+                linear-gradient(160deg, #100719 0%, #1b0b2b 52%, #0c0713 100%) !important;
+        }
+        [data-testid="stApp"]:has(.st-key-game2-tutorial) [data-testid="stHeader"] {
+            background: transparent;
+        }
+        .st-key-game2-tutorial {
+            max-width: 820px;
+            margin: 0 auto;
+            color: #f7f0ff;
+        }
+        .st-key-game2-tutorial .g2-tutorial-nav {
+            display:flex; justify-content:space-between; align-items:center;
+            border-bottom:1px solid rgba(226,190,255,.18);
+            padding: 2px 0 12px; margin-bottom: 24px;
+            color:#d7c6e9; font-size:.9rem;
+        }
+        .st-key-game2-tutorial .g2-tutorial-kicker {
+            color:#e7bd69; font-size:.75rem; font-weight:800;
+            letter-spacing:.18em; text-transform:uppercase;
+        }
+        .st-key-game2-tutorial .g2-tutorial-title {
+            margin:7px 0 6px; color:#fff7e8; font-size:clamp(2rem,5vw,3.2rem);
+            font-weight:900; letter-spacing:-.045em; line-height:1.1;
+        }
+        .st-key-game2-tutorial .g2-tutorial-sub {
+            color:#d8c8e8; font-size:1rem; line-height:1.6;
+            margin:0 0 24px;
+        }
+        .st-key-game2-tutorial .g2-steps {
+            display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+            gap:14px; margin:0 0 22px;
+        }
+        .st-key-game2-tutorial .g2-step {
+            min-height:150px; padding:18px;
+            border:1px solid rgba(213,175,245,.22);
+            border-radius:18px;
+            background:linear-gradient(145deg,rgba(75,35,105,.50),rgba(26,14,39,.92));
+            box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 10px 28px rgba(0,0,0,.18);
+        }
+        .st-key-game2-tutorial .g2-step-num {
+            color:#e8bd69; font:800 .78rem/1 ui-monospace,monospace;
+            letter-spacing:.12em;
+        }
+        .st-key-game2-tutorial .g2-step-icon { font-size:1.8rem; margin:12px 0 6px; }
+        .st-key-game2-tutorial .g2-step-title {
+            color:#fff4df; font-size:1.05rem; font-weight:800; margin-bottom:5px;
+        }
+        .st-key-game2-tutorial .g2-step-copy {
+            color:#d9cde5; font-size:.9rem; line-height:1.55;
+        }
+        .st-key-game2-tutorial .g2-step-copy b { color:#f0c76e; }
+        .st-key-game2-tutorial .stButton > button {
+            min-height:44px;border-radius:12px !important;
+            border:1px solid rgba(233,189,101,.55) !important;
+            background:linear-gradient(145deg,#603583,#35184f) !important;
+            color:#fff4df !important;font-weight:800 !important;
+        }
+        .st-key-game2-tutorial .stButton > button:hover {
+            border-color:#f5d995 !important;
+            background:linear-gradient(145deg,#7848a0,#49245f) !important;
+        }
+        .st-key-game2-tutorial .stButton button[kind="primary"] {
+            background:linear-gradient(145deg,#eac16d,#a97931) !important;
+            color:#24132f !important;border-color:#f3d48e !important;
+        }
+        @media(max-width:600px) {
+            .st-key-game2-tutorial .g2-steps { gap:9px; }
+            .st-key-game2-tutorial .g2-step { min-height:164px; padding:13px; }
+            .st-key-game2-tutorial .g2-step-copy { font-size:.82rem; }
+        }
+        </style>
+    """)
+    with st.container(key="game2-tutorial"):
+        left, right = st.columns([1, 1])
+        with left:
+            if st.button("‹ 메인으로", key="game2_tutorial_back"):
+                change_page("main")
+                return
+        with right:
+            if st.button("건너뛰기 ›", key="game2_tutorial_skip"):
+                st.session_state.game_2_tutorial_done = True
+                st.rerun()
+
+        st.html("""
+            <section aria-label="게임 진행 방법">
+                <div class="g2-tutorial-kicker">HOW TO PLAY</div>
+                <h1 class="g2-tutorial-title">소수점 승부</h1>
+                <p class="g2-tutorial-sub">
+                    뉴스 한 편을 읽고, AI 유사도 점수의 <b>소수점 두 자리</b>가
+                    기준 숫자보다 높을지 낮을지 예측하세요.
+                </p>
+                <div class="g2-steps">
+                    <article class="g2-step">
+                        <div class="g2-step-num">01 / BET</div>
+                        <div class="g2-step-icon">🪙</div>
+                        <div class="g2-step-title">코인 베팅</div>
+                        <div class="g2-step-copy">원하는 금액을 정해 베팅합니다.<br>최소 <b>1,000 C</b></div>
+                    </article>
+                    <article class="g2-step">
+                        <div class="g2-step-num">02 / NEWS</div>
+                        <div class="g2-step-icon">🎰</div>
+                        <div class="g2-step-title">기사 선택</div>
+                        <div class="g2-step-copy">뉴스 룰렛에서 기사 한 편을 고르고 내용을 읽습니다.</div>
+                    </article>
+                    <article class="g2-step">
+                        <div class="g2-step-num">03 / PICK</div>
+                        <div class="g2-step-icon">🎯</div>
+                        <div class="g2-step-title">HIGH 또는 LOW</div>
+                        <div class="g2-step-copy">점수 <b>XX.YY</b>에서 정수 부분은 제외합니다. <b>YY</b>와 기준 숫자(00~99)를 비교합니다.</div>
+                    </article>
+                    <article class="g2-step">
+                        <div class="g2-step-num">04 / RESULT</div>
+                        <div class="g2-step-icon">🏆</div>
+                        <div class="g2-step-title">결과 확인</div>
+                        <div class="g2-step-copy">기준 이상이면 HIGH, 미만이면 LOW입니다. 적중 시 <b>베팅액의 2배</b>, 실패 시 베팅액이 차감됩니다.</div>
+                    </article>
+                </div>
+            </section>
+        """)
+        if st.button(
+            "베팅하러 가기",
+            key="game2_tutorial_start",
+            type="primary",
+            use_container_width=True,
+        ):
+            st.session_state.game_2_tutorial_done = True
+            st.rerun()
+
+
+def _game_2_theme_css():
+    """Purple casino theme shared by the wager, prediction and result stages."""
+    st.html("""
+        <style>
+        [data-testid="stApp"]:has(.st-key-game2-main) {
+            background:
+                radial-gradient(ellipse at 50% -12%, rgba(132,48,194,.34), transparent 48%),
+                radial-gradient(ellipse at 100% 45%, rgba(79,31,117,.18), transparent 38%),
+                linear-gradient(155deg,#100719 0%,#170a25 48%,#0c0713 100%) !important;
+            color:#f7f0ff;
+        }
+        [data-testid="stApp"]:has(.st-key-game2-main) [data-testid="stHeader"] {
+            background:rgba(16,7,25,.76);
+        }
+        [data-testid="stApp"]:has(.st-key-game2-main) .block-container {
+            max-width:920px; padding-top:1.4rem; padding-bottom:3rem;
+        }
+        .st-key-game2-main {
+            --g2-gold:#e9bd65;
+            --g2-gold-soft:#f5d995;
+            --g2-ink:#180d24;
+            --g2-panel:rgba(40,20,58,.82);
+            --g2-line:rgba(215,174,245,.22);
+            color:#f7f0ff;
+        }
+        .st-key-game2-main h1,.st-key-game2-main h2,.st-key-game2-main h3 {
+            color:#fff7e8 !important; text-shadow:none !important;
+            letter-spacing:-.035em;
+        }
+        .st-key-game2-main [data-testid="stMarkdownContainer"] p {
+            color:#e0d4eb; line-height:1.62;
+        }
+        .st-key-game2-main [data-testid="stCaptionContainer"] {
+            color:#c9b7dc; font-size:.88rem;
+        }
+        .st-key-game2-main [data-testid="stAlert"] {
+            border:1px solid rgba(233,189,101,.34);
+            border-radius:14px; background:rgba(57,35,67,.72);
+            color:#fff3d9;
+        }
+        .st-key-game2-main [data-testid="stExpander"] {
+            border:1px solid var(--g2-line); border-radius:14px;
+            background:rgba(28,14,42,.62);
+        }
+        .st-key-game2-main [data-testid="stExpander"] summary {
+            color:#f1e5ff;
+        }
+        .st-key-game2-main .g2-brand {
+            display:flex; align-items:center; gap:16px;
+            padding:8px 0 18px; margin-bottom:18px;
+            border-bottom:1px solid rgba(233,189,101,.28);
+        }
+        .st-key-game2-main .g2-brand-emblem {
+            width:66px;height:66px; flex:0 0 66px;
+            display:grid;place-items:center;border-radius:19px;
+            color:#f7d98e;font-size:2rem;
+            background:linear-gradient(145deg,#583078,#251034);
+            border:1px solid rgba(233,189,101,.66);
+            box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 8px 22px rgba(0,0,0,.25);
+        }
+        .st-key-game2-main .g2-brand-kicker {
+            color:#e9bd65;font-size:.72rem;font-weight:850;
+            letter-spacing:.18em;margin-bottom:4px;
+        }
+        .st-key-game2-main .g2-brand-title {
+            color:#fff7e8;font-size:clamp(1.8rem,5vw,2.7rem);
+            font-weight:900;line-height:1.1;letter-spacing:-.045em;
+        }
+        .st-key-game2-main .g2-brand-sub {
+            color:#d0bfdf;font-size:.91rem;margin-top:6px;
+        }
+        .st-key-game2-main .g2-section-label {
+            color:#e9bd65;font-size:.74rem;font-weight:850;
+            letter-spacing:.15em;text-transform:uppercase;margin:18px 0 7px;
+        }
+        .st-key-game2-main .g2-panel {
+            border:1px solid var(--g2-line);border-radius:18px;
+            padding:18px;background:linear-gradient(145deg,rgba(65,35,87,.72),rgba(25,12,38,.88));
+            box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 12px 30px rgba(0,0,0,.18);
+        }
+        .st-key-game2-main .g2-target {
+            position:relative;overflow:hidden;text-align:center;
+            border:1px solid rgba(233,189,101,.55);border-radius:22px;
+            padding:24px 16px 20px;margin:16px 0 18px;
+            background:
+                radial-gradient(ellipse at 50% 0%,rgba(133,71,169,.42),transparent 62%),
+                linear-gradient(145deg,#29143b,#170c25 78%);
+            box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 12px 30px rgba(0,0,0,.25);
+        }
+        .st-key-game2-main .g2-target-label {
+            color:#e4d5ef;font-size:.82rem;font-weight:750;
+            letter-spacing:.12em;text-transform:uppercase;
+        }
+        .st-key-game2-main .g2-target-number {
+            color:#f4d58c;font:900 clamp(3.7rem,15vw,5.5rem)/1.05 ui-monospace,monospace;
+            letter-spacing:.12em;margin:8px 0;
+            text-shadow:0 2px 16px rgba(233,189,101,.18);
+        }
+        .st-key-game2-main .g2-target-explain {
+            color:#d7c7e4;font-size:.9rem;line-height:1.5;
+        }
+        .st-key-game2-main .g2-number-demo {
+            display:flex;justify-content:center;align-items:center;gap:5px;
+            margin:16px auto 2px;
+        }
+        .st-key-game2-main .g2-number-demo span {
+            padding:8px 10px;border-radius:9px;
+            background:rgba(255,255,255,.06);color:#d6c8e2;
+            font:750 1.1rem ui-monospace,monospace;
+        }
+        .st-key-game2-main .g2-number-demo span:last-child {
+            color:#1d1029;background:linear-gradient(135deg,#f3d68e,#d8a94d);
+        }
+        .st-key-game2-main .g2-number-demo small {
+            color:#c5b1d8;font-size:.72rem;margin:0 5px;
+        }
+        .st-key-game2-main .g2-choice-note {
+            color:#cbb9dc;text-align:center;font-size:.86rem;margin:0 0 12px;
+        }
+        .st-key-game2-main .stButton > button {
+            min-height:50px;border-radius:13px !important;
+            border:1px solid rgba(233,189,101,.58) !important;
+            background:linear-gradient(145deg,#63358a,#3a1b55) !important;
+            color:#fff6e8 !important;font-weight:850 !important;
+            box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 7px 18px rgba(0,0,0,.2) !important;
+        }
+        .st-key-game2-main .stButton > button:hover {
+            border-color:#f5d995 !important;
+            background:linear-gradient(145deg,#7848a0,#4a2568) !important;
+        }
+        .st-key-game2-choice-low .stButton > button {
+            background:linear-gradient(145deg,#9a6a2d,#654018) !important;
+            border-color:rgba(245,217,149,.7) !important;color:#fff6e8 !important;
+        }
+        .st-key-game2-choice-low .stButton > button:hover {
+            background:linear-gradient(145deg,#b7833e,#795021) !important;
+        }
+        .st-key-game2-main [data-testid="stMetric"] {
+            background:rgba(39,20,56,.84);border:1px solid var(--g2-line);
+            border-radius:14px;padding:12px;
+        }
+        .st-key-game2-main [data-testid="stMetricLabel"] {color:#d2c0e1 !important;}
+        .st-key-game2-main [data-testid="stMetricValue"] {color:#f5d995 !important;}
+        .st-key-game2-main .g2-result-hero {
+            border:1px solid rgba(233,189,101,.55);border-radius:20px;
+            padding:22px 16px;text-align:center;margin:12px 0 18px;
+            background:radial-gradient(ellipse at 50% 0%,rgba(126,65,161,.4),transparent 65%),#1b0d29;
+        }
+        .st-key-game2-main .g2-result-status {
+            color:#e9bd65;font-size:.78rem;font-weight:850;letter-spacing:.16em;
+        }
+        .st-key-game2-main .g2-result-title {
+            color:#fff4df;font-size:clamp(1.7rem,5vw,2.4rem);
+            font-weight:900;margin:6px 0;
+        }
+        .st-key-game2-main .g2-result-score {
+            color:#f5d995;font:900 clamp(2.7rem,10vw,4.2rem)/1.1 ui-monospace,monospace;
+            letter-spacing:.06em;margin:10px 0 2px;
+        }
+        .st-key-game2-main .g2-result-caption {color:#d4c2e3;font-size:.9rem;}
+        .st-key-game2-main .g2-result-compare {
+            display:grid;grid-template-columns:1fr auto 1fr;gap:10px;
+            align-items:center;margin:15px 0;
+        }
+        .st-key-game2-main .g2-compare-box {
+            padding:13px 8px;border-radius:13px;
+            background:rgba(255,255,255,.055);border:1px solid var(--g2-line);
+        }
+        .st-key-game2-main .g2-compare-label {
+            color:#cbb9dc;font-size:.73rem;margin-bottom:5px;
+        }
+        .st-key-game2-main .g2-compare-value {
+            color:#f5d995;font:850 1.7rem ui-monospace,monospace;
+        }
+        .st-key-game2-main .g2-compare-vs {color:#bca7ce;font-size:.75rem;font-weight:800;}
+        .st-key-game2-main .g2-wallet {
+            display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0;
+        }
+        .st-key-game2-main .g2-wallet-item {
+            border:1px solid var(--g2-line);border-radius:13px;
+            padding:13px;background:rgba(37,18,54,.8);text-align:center;
+        }
+        .st-key-game2-main .g2-wallet-label {color:#cbb9dc;font-size:.78rem;}
+        .st-key-game2-main .g2-wallet-value {color:#f5d995;font-size:1.25rem;font-weight:900;margin-top:4px;}
+        @media(max-width:600px) {
+            [data-testid="stApp"]:has(.st-key-game2-main) .block-container {
+                padding-left:1rem;padding-right:1rem;
+            }
+            .st-key-game2-main .g2-brand {gap:12px;}
+            .st-key-game2-main .g2-brand-emblem {width:54px;height:54px;flex-basis:54px;border-radius:15px;font-size:1.65rem;}
+            .st-key-game2-main .g2-brand-sub {font-size:.8rem;}
+            .st-key-game2-main .g2-target {padding:20px 12px 17px;}
+            .st-key-game2-main .g2-wallet {gap:7px;}
+        }
+        </style>
+    """)
+
+
 def show_game_2():
-    # [0단계] 튜토리얼 화면 (최초 1회 노출)
-    if "game_2_tutorial_done" not in st.session_state:
-        # Game 1 튜토리얼 CSS의 레이아웃/반응형 규칙을 Game 2 전용 키로 적용
-        st.markdown(
-            """
-            <style>
-.stApp:has(.st-key-game2-guide) {
-    background: #090a09 !important;
-}
-.stApp:has(.st-key-game2-guide) [data-testid="stHeader"] { display: none; }
-.stApp:has(.st-key-game2-guide) .block-container {
-    display: grid;
-    align-content: center;
-    min-height: 100svh;
-    padding: max(6px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right))
-             max(8px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)) !important;
-}
-.stApp:has(.st-key-game2-guide) .block-container > [data-testid="stVerticalBlock"] { gap: 0; }
-.st-key-game2-guide {
-    --chalk: #f3f2e9;
-    --sun: #ffda39;
-    width: min(100%, 480px);
-    margin-inline: auto;
-    color: var(--chalk);
-    font-family: system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-}
-.st-key-game2-guide-nav {
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: nowrap;
-    border-bottom: 1px solid #ffffff29;
-}
-.st-key-game2-guide button {
-    min-height: 44px;
-    font-family: inherit;
-    box-shadow: none !important;
-}
-.st-key-game2-guide-nav button {
-    padding: 0 5px;
-    border: 0 !important;
-    background: transparent !important;
-    color: #bcbdb6 !important;
-}
-.st-key-game2-guide-skip button { color: var(--chalk) !important; }
-.st-key-game2-guide-skip button::after {
-    content: '';
-    width: 6px; height: 6px;
-    border: solid var(--sun);
-    border-width: 2px 2px 0 0;
-    transform: rotate(45deg);
-}
-.st-key-game2-guide-start button {
-    background: var(--sun) !important;
-    border: 1px solid var(--sun) !important;
-    border-radius: 12px;
-    color: #19180f !important;
-}
-.st-key-game2-guide-start button:hover { background: #ffe674 !important; }
-.st-key-game2-guide button:focus-visible { outline: 3px solid var(--chalk); outline-offset: 2px; }
-.game2-guide-sheet { color: var(--chalk); }
-.game2-guide-heading {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 2px 10px;
-    padding: 12px 0 0;
-}
-.game2-guide-heading > span {
-    color: var(--sun);
-    font: 700 .68rem/1.35 ui-monospace, monospace;
-    letter-spacing: .1em;
-}
-.game2-guide-heading h1, .game2-guide-sheet li h2 {
-    margin: 0; padding: 0;
-    text-align: left;
-    color: var(--chalk) !important;
-    text-shadow: none !important;
-}
-.game2-guide-heading h1 { font-size: clamp(20px, 5vw, 26px); line-height: 1.25; }
-.game2-guide-heading p {
-    flex-basis: 100%;
-    margin: 0;
-    font-size: 13px;
-    line-height: 1.45;
-    color: #c9cac3;
-}
-.game2-guide-sheet ol {
-    position: relative;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(5, minmax(0, 1fr));
-    height: clamp(346px, calc(100svh - 166px - env(safe-area-inset-top) - env(safe-area-inset-bottom)), 610px);
-    padding: 0;
-    margin: 0 0 6px;
-    list-style: none;
-}
-.game2-guide-sheet ol::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: center / 100% 100% no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 500' preserveAspectRatio='none' fill='none' stroke='%23dbddd1' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M160 54 Q238 46 266 102 M252 97 L267 104 Q271 94 274 87 M245 228 Q205 223 158 264 M159 247 L155 267 L174 264 M186 354 Q211 385 253 377 M240 366 L257 376 L246 390'/%3E%3C/svg%3E");
-}
-.game2-guide-sheet li {
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    margin: 0; padding: 0;
-    text-align: center;
-}
-.game2-guide-sheet li:nth-child(1) { grid-area: 1 / 1 / 3 / 2; }
-.game2-guide-sheet li:nth-child(2) { grid-area: 2 / 2 / 4 / 3; }
-.game2-guide-sheet li:nth-child(3) { grid-area: 3 / 1 / 5 / 2; }
-.game2-guide-sheet li:nth-child(4) { grid-area: 4 / 2 / 6 / 3; }
-.game2-guide-sheet li h2 {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-    font-size: clamp(15px, 4.4vw, 21px);
-    font-weight: 750;
-    line-height: 1.2;
-}
-.game2-guide-sheet li h2 span {
-    color: var(--sun);
-    font: italic 700 .8em/1 Georgia, serif;
-}
-.game2-guide-sheet li img {
-    display: block;
-    width: 78%;
-    height: clamp(47px, 12svh, 112px);
-    object-fit: contain;
-}
-.game2-guide-sheet li p {
-    margin: 0;
-    color: #d9d9d1;
-    font-size: clamp(12px, 3.25vw, 15px);
-    line-height: 1.35;
-    word-break: keep-all;
-}
-.game2-guide-sheet b { color: var(--sun); }
-
-@media (orientation: landscape) and (max-height: 540px) {
-    .st-key-game2-guide { width: min(100%, 760px); }
-    .game2-guide-heading { gap: 6px 9px; padding-top: 5px; }
-    .game2-guide-heading h1 { font-size: 19px; }
-    .game2-guide-heading p { flex-basis: auto; font-size: 12px; }
-    .game2-guide-sheet ol {
-        height: clamp(156px, calc(100svh - 152px - env(safe-area-inset-top) - env(safe-area-inset-bottom)), 325px);
-        margin-bottom: 4px;
-    }
-    .game2-guide-sheet li {
-        display: grid;
-        grid-template-columns: minmax(0, 28%) auto;
-        grid-template-rows: auto auto;
-        align-content: center;
-        justify-content: center;
-        gap: 1px 7px;
-        text-align: left;
-    }
-    .game2-guide-sheet li img {
-        grid-area: 1 / 1 / 3 / 2;
-        width: 100%; height: clamp(42px, 15svh, 72px);
-    }
-    .game2-guide-sheet li h2 { grid-area: 1 / 2; font-size: 15px; }
-    .game2-guide-sheet li p { grid-area: 2 / 2; font-size: 12px; }
-}
-
-            .game2-guide-sheet .game2-guide-icon {
-                font-size: clamp(42px, 10svh, 76px);
-                line-height: 1.1;
-                margin: 3px 0 7px;
-            }
-            .game2-guide-sheet li p { max-width: 190px; }
-            @media (orientation: landscape) and (max-height: 540px) {
-                .game2-guide-sheet .game2-guide-icon {
-                    font-size: clamp(34px, 11svh, 58px);
-                    margin: 0;
-                }
-                .game2-guide-sheet li p { max-width: none; }
-            }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        with st.container(key="game2-guide"):
-            with st.container(key="game2-guide-nav"):
-                nav_left, nav_right = st.columns([1, 1])
-                with nav_left:
-                    if st.button("메인으로", key="game2_tutorial_main"):
-                        change_page("main")
-                        return
-                with nav_right:
-                    with st.container(key="game2-guide-skip"):
-                        if st.button("건너뛰기", key="game2_tutorial_skip"):
-                            st.session_state.game_2_tutorial_done = True
-                            st.rerun()
-
-            st.markdown(
-                """
-                <section class="game2-guide-sheet">
-                  <header class="game2-guide-heading">
-                    <span>HOW TO PLAY</span>
-                    <h1>소수점 승부</h1>
-                    <p>AI 유사도의 정수 부분은 제외! 소수점 두 자리 숫자만 비교한다.</p>
-                  </header>
-                  <ol>
-                    <li>
-                      <h2><span>01</span> 코인 베팅</h2>
-                      <div class="game2-guide-icon">🪙</div>
-                      <p>플레이할 코인 금액을 정해 베팅한다.<br>최소 <b>1,000 C</b></p>
-                    </li>
-                    <li>
-                      <h2><span>02</span> 기사 선택</h2>
-                      <div class="game2-guide-icon">📰</div>
-                      <p>룰렛을 돌려 기사를 선택한 뒤<br>뉴스 내용을 읽는다.</p>
-                    </li>
-                    <li>
-                      <h2><span>03</span> 소수점 예측</h2>
-                      <div class="game2-guide-icon">🎯</div>
-                      <p>제시된 <b>0~99</b> 기준 숫자와<br>기사 유사도의 소수점 두 자리를 비교!<br><b>HIGH</b>(이상 ≥, 동점 포함) 또는 <b>LOW</b>(미만 &lt;)</p>
-                    </li>
-                    <li>
-                      <h2><span>04</span> 결과 확인</h2>
-                      <div class="game2-guide-icon">🏆</div>
-                      <p>예: 87.04점이면 <b>04</b>만 비교한다.<br>적중 <b>+베팅액의 2배</b><br>실패 <b>−베팅액</b></p>
-                    </li>
-                  </ol>
-                </section>
-                """,
-                unsafe_allow_html=True,
-            )
-
-            with st.container(key="game2-guide-start"):
-                if st.button(
-                    "베팅하러 가기",
-                    use_container_width=True,
-                    type="primary",
-                    key="game_2_tutorial_start",
-                ):
-                    st.session_state.game_2_tutorial_done = True
-                    st.rerun()
-
+    # Tutorial is shown once per round entry, before the wager screen.
+    if not st.session_state.get("game_2_tutorial_done", False):
+        _render_game_2_tutorial()
         return
 
-    with st.container(key="game2-ui"):
-        st.markdown(
-            """
-            <style>
-            .stApp:has(.st-key-game2-ui) {
-                background: #100e0a !important;
-                color: #f4ead7;
-            }
-            .stApp:has(.st-key-game2-ui) .block-container {
-                max-width: 980px;
-                padding-top: 2rem;
-                padding-bottom: 3rem;
-            }
-            .stApp:has(.st-key-game2-ui) [data-testid="stHeader"] {
-                background: rgba(16,14,10,.92);
-            }
-            .st-key-game2-ui {
-                --g2-gold: #d6ad61;
-                --g2-gold-light: #f1d99e;
-                --g2-cream: #f4ead7;
-                --g2-muted: #cbbd9f;
-            }
-            .st-key-game2-ui h1, .st-key-game2-ui h2, .st-key-game2-ui h3 {
-                color: var(--g2-cream) !important;
-                text-shadow: none !important;
-                letter-spacing: -.025em;
-            }
-            .st-key-game2-ui [data-testid="stMarkdownContainer"] p {
-                color: #e2d5bd !important;
-                font-size: 1rem;
-                line-height: 1.65;
-            }
-            .st-key-game2-ui [data-testid="stMarkdownContainer"] strong {
-                color: #f1d18a !important;
-                font-weight: 800;
-            }
-            .st-key-game2-ui [data-testid="stCaptionContainer"] {
-                color: #d7c6a5 !important;
-                font-size: .94rem;
-            }
-            .st-key-game2-ui .game2-brand {
-                display: flex;
-                align-items: center;
-                gap: 20px;
-                padding: 10px 0 18px;
-                margin-bottom: 18px;
-                border-bottom: 1px solid rgba(214,173,97,.28);
-            }
-            .st-key-game2-ui .game2-brand img {
-                width: clamp(78px, 13vw, 132px);
-                height: auto;
-                object-fit: contain;
-                flex: 0 0 auto;
-            }
-            .st-key-game2-ui .game2-brand-title {
-                color: #f4ead7;
-                font-size: clamp(1.8rem, 5vw, 3.1rem);
-                font-weight: 800;
-                line-height: 1.12;
-                letter-spacing: -.04em;
-            }
-            .st-key-game2-ui .game2-brand-subtitle {
-                color: #d4c19b;
-                margin-top: 8px;
-                font-size: .98rem;
-                line-height: 1.5;
-            }
-            .st-key-game2-ui [data-testid="stAlert"] {
-                background: #211b10;
-                border: 1px solid rgba(214,173,97,.45);
-                color: #f4ead7;
-                border-radius: 12px;
-            }
-            .st-key-game2-ui [data-testid="stExpander"] {
-                border: 1px solid rgba(214,173,97,.35);
-                border-radius: 12px;
-                background: rgba(31,26,17,.72);
-            }
-            .st-key-game2-ui [data-testid="stExpander"] summary {
-                color: #ead8b5;
-            }
-            .st-key-game2-ui .stButton > button {
-                min-height: 48px;
-                border: 1px solid #b68b3c !important;
-                border-radius: 12px !important;
-                background: linear-gradient(180deg, #e0bd75, #bd9145) !important;
-                color: #21190d !important;
-                font-weight: 750 !important;
-                box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 5px 14px rgba(0,0,0,.22) !important;
-            }
-            .st-key-game2-ui .stButton > button:hover {
-                border-color: #f1d99e !important;
-                background: linear-gradient(180deg, #f0d18e, #cca052) !important;
-                color: #171108 !important;
-            }
-            .st-key-game2-ui [data-testid="stMetric"] {
-                background: #211b10;
-                border: 1px solid rgba(214,173,97,.35);
-                border-radius: 12px;
-                padding: 12px;
-            }
-            .st-key-game2-ui [data-testid="stMetricLabel"] {
-                color: #d8c8aa !important;
-            }
-            .st-key-game2-ui [data-testid="stMetricValue"] {
-                color: #f1d99e !important;
-            }
-            .st-key-game2-ui .game2-result-wallet {
-                display: flex;
-                flex-wrap: wrap;
-                justify-content: center;
-                gap: 14px 36px;
-                margin: 18px 0;
-                padding: 17px;
-                border: 1px solid rgba(214,173,97,.45);
-                border-radius: 14px;
-                background: linear-gradient(135deg, #211b10, #17140e);
-                color: #f4ead7;
-                text-align: center;
-            }
-            .st-key-game2-ui .game2-result-wallet p {
-                margin: 0;
-                color: #e4d5b8 !important;
-                font-weight: 650;
-            }
-            .st-key-game2-ui .game2-result-wallet strong {
-                color: #f1d18a;
-                margin-left: 6px;
-            }
-            @media (max-width: 600px) {
-                .st-key-game2-ui .game2-brand { gap: 12px; }
-                .st-key-game2-ui .game2-brand img { width: 76px; }
-                .st-key-game2-ui .game2-brand-subtitle { font-size: .86rem; }
-            }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            """
-            <div class="game2-brand">
-                <div class="game2-brand-mark" aria-hidden="true">₵</div>
+    _game_2_theme_css()
+
+    with st.container(key="game2-main"):
+        # Persistent title strip, matching Game 4 / roulette casino styling.
+        st.html("""
+            <header class="g2-brand">
+                <div class="g2-brand-emblem" aria-hidden="true">♛</div>
                 <div>
-                    <div class="game2-brand-title">소수점 승부</div>
-                    <div class="game2-brand-subtitle">AI 뉴스 유사도에서 소수점 두 자리의 높고 낮음을 맞혀보세요</div>
+                    <div class="g2-brand-kicker">NEWS ODDS · HIGH / LOW</div>
+                    <div class="g2-brand-title">소수점 승부</div>
+                    <div class="g2-brand-sub">AI 뉴스 유사도의 소수점 두 자리로 승부를 예측하세요.</div>
                 </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    
-        # [1단계] Shared wager screen: game 2 awards +2x net gain.
+            </header>
+        """)
+
+        # 1. Wager stage — preserve the shared betting and loan/interest workflow.
         if "game_2_bet" not in st.session_state:
-            if not check_user_coins_or_pop_bank():
+            if not check_user_coins_or_pop_bank(1_000):
                 return
+
             user = st.session_state.get("current_user_data") or {}
             try:
                 users_data = fetch_ranking_data()
             except Exception:
                 users_data = None
+
+            st.html("""
+                <div class="g2-section-label">STEP 01 · YOUR WAGER</div>
+                <div class="g2-panel">
+                    <strong style="color:#f5d995;font-size:1.05rem">베팅 금액을 정하세요</strong>
+                    <p style="margin:6px 0 0;color:#d4c2e3">
+                        예측에 성공하면 베팅액의 2배를 획득하고, 실패하면 베팅액이 차감됩니다.
+                    </p>
+                </div>
+            """)
             confirmed_bet = render_betting_ui(
                 current_coins=int(user.get("코인", 0)),
                 users_data=users_data,
                 current_sid=str(st.session_state.get("current_user", "")),
                 current_nickname=str(user.get("아이디", "")),
+                min_bet=1_000,
                 payout_multiplier=GAME_2_WIN_MULTIPLIER,
                 title="소수점 승부",
                 state_key="game_2",
@@ -450,64 +441,17 @@ def show_game_2():
                 st.rerun()
             return
 
-        # Game 2's target-number card is intentionally game-specific.
-        st.markdown("""
-            <style>
-            .target-num-card {
-                position: relative;
-                overflow: hidden;
-                background: linear-gradient(145deg, #201a10 0%, #17140e 58%, #282012 100%);
-                border: 1px solid #b68b3c;
-                border-radius: 18px;
-                padding: 24px 18px 20px;
-                text-align: center;
-                box-shadow: inset 0 1px 0 rgba(255,235,190,.10), 0 10px 28px rgba(0,0,0,.24);
-                margin: 20px 0;
-            }
-            .target-num-card::before {
-                content: "";
-                position: absolute;
-                inset: 7px;
-                border: 1px solid rgba(218,180,105,.22);
-                border-radius: 12px;
-                pointer-events: none;
-            }
-            .target-card-label {
-                color: #e9d8b6;
-                font-size: 1rem;
-                font-weight: 700;
-                letter-spacing: .04em;
-            }
-            .target-digit {
-                display: inline-block;
-                margin: 7px 0 3px;
-                color: #f2c96d;
-                font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-                font-size: clamp(3.5rem, 15vw, 5.2rem);
-                line-height: 1.05;
-                font-weight: 900;
-                letter-spacing: .12em;
-                text-shadow: 0 2px 0 #68491c;
-            }
-            .target-card-caption {
-                color: #d8c8aa;
-                font-size: .92rem;
-                line-height: 1.5;
-            }
-            </style>
-        """, unsafe_allow_html=True)
-
-        # [2단계] Reuse the roulette -> article reader flow, without a second slot.
+        # 2. Roulette / news reader stage — keep the existing shared flow intact.
         title, article_text, url = get_game_news_selection(
             "game_2", win_multiplier=GAME_2_WIN_MULTIPLIER
         )
         if not title:
             return
 
-        # [3단계] HIGH / LOW 예측 선택
+        # 3. Prediction stage — only the two decimal digits (YY) are compared.
         if (
             "game_2_target_num" not in st.session_state
-            or not isinstance(st.session_state.game_2_target_num, int)
+            or type(st.session_state.game_2_target_num) is not int
             or not 0 <= st.session_state.game_2_target_num <= 99
         ):
             st.session_state.game_2_target_num = random.randint(0, 99)
@@ -515,74 +459,98 @@ def show_game_2():
         target_num = st.session_state.game_2_target_num
 
         if "game_2_user_choice" not in st.session_state:
-            st.markdown("---")
-            st.markdown("### 오늘의 승부")
+            st.html("""
+                <div class="g2-section-label">STEP 02 · READ THE NEWS</div>
+                <div class="g2-panel">
+                    <div style="color:#f4e9ff;font-weight:850;font-size:1.05rem">
+                        선택한 기사를 확인하세요
+                    </div>
+                    <div style="color:#cbb9dc;font-size:.86rem;margin-top:5px">
+                        기사를 읽은 뒤 소수점 예측을 진행합니다.
+                    </div>
+                </div>
+            """)
             st.caption(f"선택한 기사 · {title}")
-            st.caption("AI가 계산한 유사도에서 정수 부분은 제외하고, 소수점 아래 두 자리만 비교합니다. 기준 숫자와 같으면 HIGH입니다.")
-
-            with st.expander("📄 선택한 뉴스 본문 보기", expanded=False):
+            with st.expander("📰 선택한 뉴스 본문 보기", expanded=False):
                 st.write(article_text if article_text else title)
 
-            st.markdown(
-                f"""
-                <div class="target-num-card">
-                    <div class="target-card-label">비교할 숫자</div>
-                    <div class="target-digit">{target_num:02d}</div>
-                    <div class="target-card-caption">AI 유사도 <b>XX.YY</b> 중 <b>YY</b>만 비교합니다<br>예: 87.04점이라면 <b>04</b>가 비교 대상</div>
+            st.html(f"""
+                <div class="g2-section-label">STEP 03 · MAKE YOUR CALL</div>
+                <div class="g2-target">
+                    <div class="g2-target-label">이번 라운드의 기준 숫자</div>
+                    <div class="g2-target-number">{target_num:02d}</div>
+                    <div class="g2-target-explain">
+                        AI 유사도 <b>XX.YY</b> 중 정수 부분은 제외하고<br>
+                        <b style="color:#f5d995">YY 두 자리만</b> 기준 숫자와 비교합니다.
+                    </div>
+                    <div class="g2-number-demo">
+                        <span>87</span><small>정수 부분 제외</small>
+                        <span>04</span>
+                    </div>
+                    <div class="g2-target-explain">예시: 87.04점 → 비교 대상은 04</div>
                 </div>
-                """,
-                unsafe_allow_html=True
-            )
+                <p class="g2-choice-note">
+                    기준 숫자 <b style="color:#f5d995">{target_num:02d}</b>와 같으면 HIGH에 포함됩니다.
+                </p>
+            """)
 
-
-            col_high, col_low = st.columns(2)
-            with col_high:
-                if st.button(f"HIGH  ·  {target_num:02d} 이상", use_container_width=True):
-                    st.session_state.game_2_user_choice = "HIGH"
-                    st.rerun()
-
-            with col_low:
-                if st.button(f"LOW  ·  {target_num:02d} 미만", use_container_width=True):
-                    st.session_state.game_2_user_choice = "LOW"
-                    st.rerun()
-
+            high_col, low_col = st.columns(2, gap="small")
+            with high_col:
+                with st.container(key="game2-choice-high"):
+                    if st.button(
+                        f"⬆ HIGH · {target_num:02d} 이상",
+                        key="game2_pick_high",
+                        use_container_width=True,
+                    ):
+                        st.session_state.game_2_user_choice = "HIGH"
+                        st.rerun()
+            with low_col:
+                with st.container(key="game2-choice-low"):
+                    if st.button(
+                        f"⬇ LOW · {target_num:02d} 미만",
+                        key="game2_pick_low",
+                        use_container_width=True,
+                    ):
+                        st.session_state.game_2_user_choice = "LOW"
+                        st.rerun()
             return
 
-        # [4단계] AI 판단 및 결과 계산
-        bet_coin = st.session_state.game_2_bet
+        # 4. Calculate and settle exactly once; scoring rule is unchanged.
+        bet_coin = int(st.session_state.game_2_bet)
         user_choice = st.session_state.game_2_user_choice
 
         if "game_2_result" not in st.session_state:
             with similarity_analysis_loading():
-                text_for_summary = article_text if (article_text and article_text.strip()) else title
+                text_for_summary = (
+                    article_text if article_text and article_text.strip() else title
+                )
                 try:
                     summary_text, score_details = analyze_round_once(
-                        st.session_state, "game_2", title=title, article_text=text_for_summary,
-                        summarize=summary, similarity=similarity_check,
+                        st.session_state,
+                        "game_2",
+                        title=title,
+                        article_text=text_for_summary,
+                        summarize=summary,
+                        similarity=similarity_check,
                         fallback_to_title=True,
                     )
+                    actual_score = score_details["score"]
+                    actual_decimal_digits = get_decimal_digits(actual_score)
                 except (RuntimeError, ValueError, TypeError, KeyError) as exc:
                     st.error(f"뉴스 유사도를 계산하지 못했습니다: {exc}")
                     return
-                actual_score = score_details["score"]
-                actual_decimal_digits = get_decimal_digits(actual_score)
 
-                # 정수 부분은 비교에서 제외한다. 동점은 기존 규칙대로 HIGH에 포함한다.
-                if user_choice == "HIGH":
-                    is_win = (actual_decimal_digits >= target_num)
-                else:
-                    is_win = (actual_decimal_digits < target_num)
-
-                if is_win:
-                    reward = int(bet_coin * GAME_2_WIN_MULTIPLIER)
-                    result_msg = "예측 성공"
-                else:
-                    reward = -bet_coin
-                    result_msg = "예측 실패"
+                is_win = (
+                    actual_decimal_digits >= target_num
+                    if user_choice == "HIGH"
+                    else actual_decimal_digits < target_num
+                )
 
                 try:
                     settled = settle_game_round(
-                        "game_2", int(bet_coin), is_win,
+                        "game_2",
+                        bet_coin,
+                        is_win,
                         badge_evidence={"choice": user_choice},
                     )
                 except BalanceChanged as changed:
@@ -592,9 +560,6 @@ def show_game_2():
                 except TransactionError as exc:
                     st.error(str(exc))
                     return
-                reward = settled["reward"]
-                new_coins = settled["new_coins"]
-                new_streak = settled["new_streak"]
 
                 st.session_state.game_2_result = {
                     "title": title,
@@ -603,69 +568,87 @@ def show_game_2():
                     "actual_decimal_digits": actual_decimal_digits,
                     "score_details": score_details,
                     "target_num": target_num,
-                    "reward": reward,
+                    "user_choice": user_choice,
+                    "reward": settled["reward"],
                     "is_win": is_win,
-                    "msg": result_msg,
-                    "new_coins": new_coins,
-                    "new_streak": new_streak
+                    "new_coins": settled["new_coins"],
+                    "new_streak": settled["new_streak"],
                 }
 
-        # [5단계] 결과 공개 직전 턴 종료 이자 부과
-        res = st.session_state.game_2_result
+        # 5. Preserve end-of-turn interest and the existing summary reveal.
+        result = st.session_state.game_2_result
         if not apply_end_of_turn_interest("game_2"):
             return
+
         show_summary_before_score(
-            res.get("summary", ""), "game_2_summary_revealed",
-            title=res.get("title", title), score=res["actual_score"],
-            details=res.get("score_details"),
+            result.get("summary", ""),
+            "game_2_summary_revealed",
+            title=result.get("title", title),
+            score=result["actual_score"],
+            details=result.get("score_details"),
         )
-        st.markdown("---")
-        st.markdown("### 🏆 최종 결과")
 
-        if res["is_win"]:
+        # 6. Result stage — reveal the exact two digits used for settlement.
+        actual_digits = int(result["actual_decimal_digits"])
+        target_digits = int(result["target_num"])
+        rounded_full_score = Decimal(str(result["actual_score"])).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
+        whole_part = int(rounded_full_score)
+        is_win = bool(result["is_win"])
+        choice_label = "HIGH" if result["user_choice"] == "HIGH" else "LOW"
+
+        st.html(f"""
+            <div class="g2-section-label">FINAL · ROUND RESULT</div>
+            <section class="g2-result-hero">
+                <div class="g2-result-status">{'CORRECT PREDICTION' if is_win else 'WRONG PREDICTION'}</div>
+                <div class="g2-result-title">{'예측 성공!' if is_win else '아쉽게 빗나갔어요'}</div>
+                <div class="g2-result-score">{whole_part}.{actual_digits:02d}</div>
+                <div class="g2-result-caption">AI가 분석한 실제 유사도 점수</div>
+                <div class="g2-result-compare">
+                    <div class="g2-compare-box">
+                        <div class="g2-compare-label">실제 소수점</div>
+                        <div class="g2-compare-value">{actual_digits:02d}</div>
+                    </div>
+                    <div class="g2-compare-vs">VS</div>
+                    <div class="g2-compare-box">
+                        <div class="g2-compare-label">기준 숫자</div>
+                        <div class="g2-compare-value">{target_digits:02d}</div>
+                    </div>
+                </div>
+                <div class="g2-result-caption">
+                    내 선택: <b style="color:#f5d995">{choice_label}</b>
+                    · 비교 대상은 소수점 두 자리뿐입니다.
+                </div>
+            </section>
+        """)
+
+        if is_win:
+            st.success(f"정답 · +{result['reward']:,} C")
             st.balloons()
-            st.success(f"{res['msg']} · +{res['reward']:,} C")
         else:
-            st.error(f"{res['msg']} · −{abs(res['reward']):,} C")
+            st.error(f"오답 · {result['reward']:,} C")
 
-        col_r1, col_r2, col_r3 = st.columns(3)
-        with col_r1: st.metric("소수점 기준 숫자", f"{res['target_num']:02d}")
-        with col_r2: st.metric("내 선택", "소수점 ≥ 기준" if user_choice == "HIGH" else "소수점 < 기준")
-        with col_r3: st.metric("AI 소수점 결과", f"{res['actual_decimal_digits']:02d}")
-        st.caption(
-            f"AI 전체 유사도 {res['actual_score']:.2f}점 → "
-            f"소수점 두 자리 {res['actual_decimal_digits']:02d}만 비교 "
-            f"(기준 {res['target_num']:02d})"
-        )
-
-        st.markdown(
-            f"""
-            <div class="game2-result-wallet">
-                <p>보유 코인 <strong>{res['new_coins']:,} C</strong></p>
-                <p>현재 연승 <strong>{res['new_streak']}연승</strong></p>
+        st.html(f"""
+            <div class="g2-wallet">
+                <div class="g2-wallet-item">
+                    <div class="g2-wallet-label">현재 보유 코인</div>
+                    <div class="g2-wallet-value">{result['new_coins']:,} C</div>
+                </div>
+                <div class="g2-wallet-item">
+                    <div class="g2-wallet-label">현재 연승 기록</div>
+                    <div class="g2-wallet-value">{result['new_streak']} 연승</div>
+                </div>
             </div>
-            """,
-            unsafe_allow_html=True
-        )
+        """)
 
-        def reset_game_2_state():
-            keys_to_clear = [
-                "game_2_bet", "selected_news_game_2", "candidates_game_2", 
-                "game_2_target_num", "game_2_user_choice", "game_2_result", "game_2_round_id",
-                "game_2_summary_revealed", "game_2_analysis_checkpoint", "game_2_slot_round",
-                "read_done_game_2", "game_2_reader_round", "game_2_direct_url_error"
-            ]
-            for k in keys_to_clear:
-                if k in st.session_state:
-                    del st.session_state[k]
-
-        col_btn1, col_btn2 = st.columns(2)
-        with col_btn1:
-            if st.button("🔄 다시 도전하기", use_container_width=True):
-                reset_game_2_state()
+        retry_col, main_col = st.columns(2, gap="small")
+        with retry_col:
+            if st.button("다시 도전하기", key="game2_result_retry", use_container_width=True):
+                _reset_game_2_state()
+                st.session_state.game_2_tutorial_done = True
                 st.rerun()
-
-        with col_btn2:
-            if st.button("⬅️ 메인으로 돌아가기", use_container_width=True):
-                reset_game_2_state()
-                change_page('main')
+        with main_col:
+            if st.button("메인으로", key="game2_result_main", use_container_width=True):
+                _reset_game_2_state()
+                change_page("main")
