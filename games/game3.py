@@ -136,7 +136,7 @@ def show_choice_screen():
 # ==========================================
 
 def show_bet_screen():
-    """Use the shared wager UI; Game 3 retains its half-stake loss rule."""
+    """Render Game 3 wagering with the same full-stake loss as other games."""
     ws = init_gspread()
     current_sid = str(st.session_state.current_user).strip().replace(".0", "")
     users_data = ws.get_all_records()
@@ -150,7 +150,7 @@ def show_bet_screen():
         return
 
     st.success(f"내 선택: {st.session_state.game_3_choice}")
-    st.caption("정답 +베팅액의 2배 · 오답 −베팅액의 절반")
+    st.caption("정답 +베팅액의 2배 · 오답 −베팅액 전부")
     round_number = st.session_state.get("game_3_round", 0)
     user = st.session_state.get("current_user_data") or {}
     confirmed_bet = render_betting_ui(

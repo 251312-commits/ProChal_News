@@ -18,15 +18,15 @@ const HEADERS = [
 ];
 const RULES = {game_1: 100, game_2: 2, game_3: 2, game_4: 3, game_5: 5};
 
-// Past wins were settled with the old +1x / +2x rules. A retry of the
-// *same* round must return its original receipt, never issue a new payout.
+// Historical +1x/+2x wins and Game 3 half-stake losses remain replayable.
+// New settlements always use the current payout and full-stake loss rules.
 const LEGACY_WIN_RULES = {game_2: 1, game_3: 1, game_4: 2};
 function settlementDeltaMatches_(game, bet, isWin, storedDelta) {
-  const expected = isWin ? bet * RULES[game] :
-    -(game === 'game_3' ? Math.floor(bet / 2) : bet);
+  const expected = isWin ? bet * RULES[game] : -bet;
   return storedDelta === expected ||
     (isWin && Object.prototype.hasOwnProperty.call(LEGACY_WIN_RULES, game) &&
-      storedDelta === bet * LEGACY_WIN_RULES[game]);
+      storedDelta === bet * LEGACY_WIN_RULES[game]) ||
+    (!isWin && game === 'game_3' && storedDelta === -Math.floor(bet / 2));
 }
 const MAX_PRINCIPAL = 10000; // The limit is on unpaid borrowed principal, not interest.
 const GATEWAY_VERSION = 3; // v3 also installs/awards user badges from settled rounds.
@@ -618,8 +618,7 @@ function process_(request) {
       }
       if (before.coins < tx.bet) fail_('INSUFFICIENT_FUNDS', 'Insufficient coins at settlement', before);
       tx.is_win = request.is_win;
-      tx.delta = tx.is_win ? tx.bet * RULES[tx.game] :
-        -(tx.game === 'game_3' ? Math.floor(tx.bet / 2) : tx.bet);
+      tx.delta = tx.is_win ? tx.bet * RULES[tx.game] : -tx.bet;
       after.coins += tx.delta;
       after.streak = tx.is_win ? before.streak + 1 : 0;
     } else if (tx.kind === 'interest') {
