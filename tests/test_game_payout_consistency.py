@@ -50,7 +50,7 @@ class GamePayoutConsistencyTests(unittest.TestCase):
             self.assertRegex(content, r"win_multiplier=GAME_[234]_WIN_MULTIPLIER")
 
         self.assertIn("정답 +베팅액의 2배 · 오답 −베팅액 전부", source("games/game3.py"))
-        self.assertIn("적중 <b>+베팅액의 2배</b>", source("games/game2.py"))
+        self.assertIn("예측에 성공하면 베팅액의 2배를 획득하고, 실패하면 베팅액이 차감됩니다.", source("games/game2.py"))
 
     def test_documentation_uses_net_gain_not_gross_return(self):
         notes = source("docs/transaction-ledger.md")
