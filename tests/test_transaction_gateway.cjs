@@ -1241,14 +1241,58 @@ test('prior game 2 and game 3 +1x wins replay their original receipts without ne
   }
 });
 
-test('game 3 keeps half-stake losses and game 2 keeps full-stake losses', () => {
-  for (const [game, delta] of [['game_3', -500], ['game_2', -1000]]) {
+test('all five games lose the entire bet, including Game 3', () => {
+  for (const game of ['game_1', 'game_2', 'game_3', 'game_4', 'game_5']) {
     const e = environment(), id = hex('f');
     e.call({kind: 'bet', transaction_id: 'bet:' + id, round_id: id,
       game, bet: 1000});
-    const loss = e.call({kind: 'settle', transaction_id: 'settle:' + id,
-      round_id: id, game, bet: 1000, is_win: false});
-    assert.equal(loss.settlement.delta, delta, game);
-    assert.equal(loss.balances.coins, 5000 + delta, game);
+    const request = {kind: 'settle', transaction_id: 'settle:' + id,
+      round_id: id, game, bet: 1000, is_win: false};
+    const loss = e.call(request);
+    assert.equal(loss.settlement.delta, -1000, game);
+    assert.equal(loss.balances.coins, 4000, game);
+    const replay = e.call(request);
+    assert.equal(replay.replayed, true, game);
+    assert.equal(replay.settlement.delta, -1000, game);
+    assert.equal(e.rows.users[1][2], 4000, game);
+    assert.equal(e.rows.ledger.filter(row => row[3] === 'settle').length, 1, game);
   }
+});
+
+test('Game 3 full-wallet loss reaches zero without extra deductions on replay', () => {
+  const e = environment(), id = hex('e');
+  e.call({kind: 'bet', transaction_id: 'bet:' + id, round_id: id,
+    game: 'game_3', bet: 5000});
+  const request = {kind: 'settle', transaction_id: 'settle:' + id,
+    round_id: id, game: 'game_3', bet: 5000, is_win: false};
+  const first = e.call(request);
+  assert.equal(first.settlement.delta, -5000);
+  assert.equal(first.balances.coins, 0);
+  assert.equal(e.call(request).settlement.delta, -5000);
+  assert.equal(e.rows.users[1][2], 0);
+  assert.equal(e.rows.ledger.filter(row => row[3] === 'settle').length, 1);
+});
+
+test('old Game 3 half-stake loss receipt replays without changing historical balance', () => {
+  const e = environment(), id = hex('9');
+  e.call({kind: 'bet', transaction_id: 'bet:' + id, round_id: id,
+    game: 'game_3', bet: 1050});
+  // The prior server charged only floor(1050/2) = 525C.
+  e.rows.ledger.push([
+    'settle:' + id, '2026-11-20T00:00:00Z', '11011', 'settle',
+    'game_3', id, 1050, -525, false, 5000, 4475, 1, 0, 0, 0, '',
+  ]);
+  e.rows.users[1][2] = 4475;
+  e.rows.users[1][3] = 0;
+  const request = {kind: 'settle', transaction_id: 'settle:' + id,
+    round_id: id, game: 'game_3', bet: 1050, is_win: false};
+  const before = e.state.batches;
+  const replay = e.call(request);
+  assert.equal(replay.replayed, true);
+  assert.equal(replay.settlement.delta, -525);
+  assert.equal(replay.balances.coins, 4475);
+  assert.equal(e.rows.users[1][2], 4475);
+  assert.equal(e.state.batches, before);
+  assert.equal(e.rows.ledger.filter(row => row[3] === 'settle').length, 1);
+  assert.throws(() => e.call({...request, is_win: true}), /different arguments/);
 });

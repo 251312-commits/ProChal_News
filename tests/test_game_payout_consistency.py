@@ -21,8 +21,15 @@ class GamePayoutConsistencyTests(unittest.TestCase):
         self.assertIn("const LEGACY_WIN_RULES = {game_2: 1, game_3: 1, game_4: 2};", script)
         self.assertIn("settlementDeltaMatches_", script)
         self.assertIn("tx.delta = tx.is_win ? tx.bet * RULES[tx.game]", script)
-        # Losing game 3 remains a half-bet loss.
-        self.assertIn("Math.floor(tx.bet / 2) : tx.bet", script)
+        # Fresh losses use the entire stake; only historical Game 3 receipts
+        # retain the old half-stake delta on idempotent replay.
+        self.assertIn(
+            "tx.delta = tx.is_win ? tx.bet * RULES[tx.game] : -tx.bet;", script,
+        )
+        self.assertIn(
+            "(!isWin && game === 'game_3' && storedDelta === -Math.floor(bet / 2))",
+            script,
+        )
 
     def test_python_game_payout_previews_are_consistent(self):
         games = {
@@ -42,8 +49,8 @@ class GamePayoutConsistencyTests(unittest.TestCase):
             content = source(game)
             self.assertRegex(content, r"win_multiplier=GAME_[234]_WIN_MULTIPLIER")
 
-        self.assertIn("정답 +베팅액의 2배 · 오답 −베팅액의 절반", source("games/game3.py"))
-        self.assertIn("적중 <b>+베팅액의 2배</b>", source("games/game2.py"))
+        self.assertIn("정답 +베팅액의 2배 · 오답 −베팅액 전부", source("games/game3.py"))
+        self.assertIn("예측에 성공하면 베팅액의 2배를 획득하고, 실패하면 베팅액이 차감됩니다.", source("games/game2.py"))
 
     def test_documentation_uses_net_gain_not_gross_return(self):
         notes = source("docs/transaction-ledger.md")

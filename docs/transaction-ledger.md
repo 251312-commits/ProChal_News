@@ -25,7 +25,7 @@ Keep the existing gcp_service_account for read-only account views and News sheet
 - Immediately before displaying a settled game's result, the shared turn-end helper requests **20% compound interest** on the current outstanding loan (Users!G). The interest is rounded **up to the next whole coin**: 1,000C → 1,200C → 1,440C after two turns. It never subtracts from wallet coins (Users!C) or changes the streak (Users!D).
 - Interest requires a matching committed settlement for the same player, game, and round. Even a 0C loan gets an interest ledger entry, preventing an old results screen from charging a loan taken later.
 - The stake is not deducted on confirmation (existing behavior). Settlement verifies a matching confirmed bet and available coins again; another tab may consume the balance between steps, in which case no settlement occurs.
-- The server enforces payout rules: game 1 +100×; games 2/3 +2×; game 4 +3×; game 5 +5×. Game 3 losses cost half the bet; other losses cost the whole bet. Winning increments the streak; losing resets it.
+- The server enforces payout rules: game 1 +100×; games 2/3 +2×; game 4 +3×; game 5 +5×. All five games deduct the full stake on a loss. Winning increments the streak; losing resets it.
 - Borrowing and repayment compare the current C/G/H wallet, total debt and principal to the displayed snapshot under lock. The 10,000C borrowing cap applies **only to unpaid borrowed principal (Users!H)**. Interest is added only to Users!G and may take total debt beyond 10,000C. Example: 8,000C principal + 1,600C interest = 9,600C total, yet 2,000C additional borrowing is available and leads to 10,000C principal / 11,600C total. Repayments pay accumulated interest first, then principal. Borrowing uses 1,000C increments (or final small repayment).
 - C/D/G/H and a ledger row are submitted in one Sheets spreadsheets.batchUpdate request. Google Sheets applies all requests in a batch atomically. Registration and referral credits are also bundled in a single batch.
 - On timeout the transaction might have committed. The client retains its transaction ID for a safe retry.
@@ -38,13 +38,13 @@ Winning payouts are **net increases to wallet coins**, not gross returns includi
 |---|---:|---:|---:|
 | 1 | +100× | +100,000C | -1,000C |
 | 2 | +2× | +2,000C | -1,000C |
-| 3 | +2× | +2,000C | -500C |
+| 3 | +2× | +2,000C | -1,000C |
 | 4 | +3× | +3,000C | -1,000C |
 | 5 | +5× | +5,000C | -1,000C |
 
 The `games/game2.py` and `games/game3.py` previews, reader rewards and backend rules were previously +1×. Both clients and `apps_script/Code.gs` must be updated together. The server returns its actual committed `settlement.delta`; clients display that authoritative receipt rather than a locally estimated win.
 
-**Deploy the new Apps Script web app version after the PR is merged.** GitHub updates do not update the deployed `/exec` endpoint. Use **Deploy → Manage deployments → Edit → New version → Deploy**, then verify a new Game 2 win and Game 3 win. Existing Game 2/3 +1× and Game 4 +2× receipts are replayable using their old deltas to preserve idempotency; historic balances are not modified or retrospectively compensated.
+**Deploy the new Apps Script web app version after the PR is merged.** GitHub updates do not update the deployed `/exec` endpoint. Use **Deploy → Manage deployments → Edit → New version → Deploy**, then verify a new Game 2 win and Game 3 win. Existing Game 2/3 +1× and Game 4 +2× win receipts, as well as old Game 3 half-stake loss receipts, are replayable using their recorded deltas to preserve idempotency; historic balances are not modified or retrospectively compensated.
 
 ## Game 4 payout correction (+2× → +3×)
 

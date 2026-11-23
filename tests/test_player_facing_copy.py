@@ -24,11 +24,11 @@ class PlayerFacingCopyTests(unittest.TestCase):
 
     def test_games_two_and_three_keep_rules_without_repeating_actions(self):
         game2 = source("games/game2.py")
-        self.assertIn("기준 점수 이상은 <b>HIGH</b>", game2)
-        self.assertIn("미만은 <b>LOW</b>", game2)
+        self.assertIn('f"⬆ HIGH · {target_num:02d} 이상"', game2)
+        self.assertIn('f"⬇ LOW · {target_num:02d} 미만"', game2)
         self.assertNotIn("소수 둘째 자리까지 표시한 유사도 점수가", game2)
         game3 = source("games/game3.py")
-        self.assertIn("정답 +베팅액의 2배 · 오답 −베팅액의 절반", game3)
+        self.assertIn("정답 +베팅액의 2배 · 오답 −베팅액 전부", game3)
         self.assertIn('"🤖 유사도 분석"', game3)
         self.assertNotIn("AI가 뉴스 본문을 요약하고 뉴스 제목과", game3)
         self.assertIn('st.metric("AI 점수의 홀짝"', game3)
